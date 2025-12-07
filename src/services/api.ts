@@ -27,7 +27,26 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       ...options,
     });
 
-    const data = await response.json();
+    // Check content type before parsing JSON
+    const contentType = response.headers.get('content-type');
+    let data: unknown;
+
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, create a generic error
+        throw new ApiRequestError(
+          response.status,
+          `Invalid JSON response: ${response.statusText}`,
+          { status: response.status, statusText: response.statusText }
+        );
+      }
+    } else {
+      // Non-JSON response
+      const text = await response.text();
+      data = { error: text || response.statusText };
+    }
 
     if (!response.ok) {
       const errorData = data as ApiError;
@@ -50,6 +69,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
         'Network error: Unable to connect to the server. Please check your connection.'
       );
     }
+    // Re-throw unknown errors
     throw error;
   }
 }

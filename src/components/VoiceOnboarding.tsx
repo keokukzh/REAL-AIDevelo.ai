@@ -110,7 +110,10 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         setAnalysisStatus("Höre zu...");
 
     } catch (err) {
-        console.error("Error accessing microphone:", err);
+        // Only log in development, suppress in production
+        if (import.meta.env.DEV) {
+            console.error("Error accessing microphone:", err);
+        }
         setAnalysisStatus("Fehler: Mikrofonzugriff verweigert.");
     }
   };

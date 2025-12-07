@@ -26,7 +26,12 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
   useEffect(() => {
     if (audioRef.current) {
         if (isPlaying) {
-            audioRef.current.play().catch(e => console.error("Audio play failed", e));
+            audioRef.current.play().catch((e: Error) => {
+              // Only log in development, suppress in production
+              if (import.meta.env.DEV) {
+                console.error("Audio play failed", e);
+              }
+            });
         } else {
             audioRef.current.pause();
         }

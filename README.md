@@ -33,6 +33,8 @@ src/
 
 ## ⚡ Getting Started
 
+### Frontend
+
 1. **Install dependencies:**
    ```bash
    npm install
@@ -41,8 +43,7 @@ src/
 2. **Set up Environment Variables:**
    Create a `.env.local` file in the root:
    ```env
-   VITE_GEMINI_API_KEY=your_key_here
-   VITE_API_URL=http://localhost:3000/api
+   VITE_API_URL=http://localhost:5000/api
    ```
 
 3. **Run Development Server:**
@@ -54,6 +55,32 @@ src/
    ```bash
    npm run build
    ```
+
+### Backend API
+
+1. **Navigate to server directory:**
+   ```bash
+   cd server
+   npm install
+   ```
+
+2. **Set up Environment Variables:**
+   Create a `server/.env` file:
+   ```env
+   ELEVENLABS_API_KEY=sk_5840c5c8a3e16900c499d500457537a0a7a15b5846818470
+   NODE_ENV=development
+   PORT=5000
+   ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+   ```
+
+3. **Run Development Server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Access API Documentation:**
+   - Interactive Swagger UI: `http://localhost:5000/api-docs`
+   - OpenAPI Spec: `http://localhost:5000/api-docs/swagger.json`
 
 ## 🎨 Design System
 
