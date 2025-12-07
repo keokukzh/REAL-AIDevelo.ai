@@ -96,7 +96,7 @@ export const OnboardingPage = () => {
             {/* Header */}
             <header className="p-6 border-b border-white/10 flex items-center justify-between">
                 <div onClick={() => navigate('/')} className="cursor-pointer flex items-center gap-2">
-                     <span className="font-display font-bold text-xl">AIDevelo.ai</span>
+                     <img src="/main-logo.png" alt="AIDevelo.ai" className="h-8 w-auto object-contain" />
                 </div>
                 <div className="text-sm text-gray-500">Setup Wizard</div>
             </header>
