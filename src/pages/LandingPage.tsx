@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
+import { SEO } from '../components/SEO';
+import { HelmetProvider } from 'react-helmet-async'; // Ensure it is available if not in index.tsx, but I put it in index.tsx. Wait, I'll just add SEO component.
 import { TrustSection } from '../components/TrustSection';
 import { Features } from '../components/Features';
 import { IndustryTabs } from '../components/IndustryTabs';
@@ -20,6 +22,7 @@ export const LandingPage = () => {
 
   return (
     <>
+      <SEO />
       <Navbar onStartOnboarding={startOnboarding} />
       <main>
         {/* 1. Hero with proper CTA */}
@@ -27,12 +30,13 @@ export const LandingPage = () => {
         
         {/* 2. Trust Indicators */}
         <TrustSection />
+
+        {/* 2b. Audio Demos - HIGH IMPACT (Moved up) */}
+        <DemoAudioSection />
         
         {/* 3. Features & Industries */}
         <Features />
         
-        {/* 3b. Audio Demos - Moved up for impact */}
-        <DemoAudioSection />
         
         <IndustryTabs onStartOnboarding={startOnboarding} />
         

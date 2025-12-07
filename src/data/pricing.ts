@@ -1,32 +1,36 @@
-import { PricingPlan } from '../types';
+import { Plan } from '../types';
 
-export const pricingPlans: PricingPlan[] = [
+export const pricingPlans: Plan[] = [
   {
-    name: "Standard",
-    price: 499,
-    originalPrice: 799,
+    name: 'Starter',
+    price: '290',
+    originalPrice: '390',
+    description: 'Perfekt für kleine Praxen & Salons',
     features: [
-      "24/7 Anrufannahme",
-      "Terminbuchung in Echtzeit",
-      "Schweizerdeutsche Mundart",
-      "E-Mail Benachrichtigungen",
-      "Basis Support"
+      'Bis zu 100 Anrufe/Monat',
+      '1x Telefonnummer (CH)',
+      'Terminbuchung & Kalender-Sync',
+      'Schweizer Support (Email)',
+      'Standard DSGVO-Vertrag',
+      'Einrichtung: CHF 250 (Einmalig)'
     ],
-    cta: "Jetzt starten"
+    cta: 'Starter wählen',
+    popular: false,
   },
   {
-    name: "Flash Deal",
-    price: 599,
-    originalPrice: 1497,
+    name: 'Professional',
+    price: '590',
+    originalPrice: '790',
+    description: 'Für wachsende KMU & Vieltelefonierer',
     features: [
-      "Ewiger Rabatt (50% auf Monatsgebühr)",
-      "3 Monate inklusive",
-      "Priorisierter Support",
-      "Custom Voice Cloning",
-      "SMS & WhatsApp Integration",
-      "Dashboard Zugang"
+      'Unlimitierte Anrufe',
+      '2x Telefonnummern (CH)',
+      'Erweiterte KI-Logik (Custom Prompts)',
+      'Priorisierter Support (Tel & Email)',
+      'SMS-Bestätigungen inklusive',
+      'Einrichtung: KOSTENLOS (Limited)'
     ],
-    cta: "Deal sichern",
-    popular: true
-  }
+    cta: 'Professional starten',
+    popular: true,
+  },
 ];

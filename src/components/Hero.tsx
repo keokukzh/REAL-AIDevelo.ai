@@ -276,43 +276,61 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
           transition={{ duration: 0.8 }}
           className="space-y-8"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-[0_0_15px_rgba(0,0,0,0.3)]">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-[0_0_15px_rgba(0,0,0,0.3)] mb-6">
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-accent"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
-            <span className="text-xs font-medium tracking-wider text-gray-300 uppercase">Swiss Engineered AI</span>
+            <span className="text-xs font-medium tracking-wider text-gray-300 uppercase">Jetzt live: Schweizerdeutsch v2.0</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl">
-            Der beste <br />
-            Mitarbeiter, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary drop-shadow-[0_0_15px_rgba(0,224,255,0.3)]">den Sie je hatten.</span>
+          <h1 className="text-5xl md:text-6xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl mb-6">
+            KI-Telefonanruf-Agent, <br />
+            der Ihre Termine bucht.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary drop-shadow-[0_0_15px_rgba(0,224,255,0.3)]">24/7 in Schweizerdeutsch.</span>
           </h1>
           
-          <div className="text-xl text-gray-400 max-w-lg leading-relaxed h-28">
-            <p className="mb-2 font-light text-white">Und der günstigste.</p>
-            <TypewriterText text="Ihr Telefon verkauft 24/7. Schweizer Präzision. Ohne Krankmeldungen." />
+          <div className="text-xl text-gray-300 max-w-lg leading-relaxed mb-8">
+            <p>Automatisieren Sie 80% Ihrer eingehenden Anrufe. <br/>Kostenlose Demo in unter 2 Min.</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button onClick={onStartOnboarding} variant="primary" icon={<ArrowRight size={20} />}>
-              Meinen Agenten starten
+          {/* Industry Quick Nav */}
+          <div className="flex flex-wrap gap-2 mb-8">
+             {['Friseur', 'Zahnarzt', 'Restaurant', 'Handwerk'].map((industry) => (
+                <button 
+                  key={industry}
+                  onClick={() => {
+                      const section = document.getElementById('industries');
+                      section?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-accent/30 text-xs text-gray-300 transition-all flex items-center gap-1"
+                >
+                   {industry === 'Friseur' && '✂️'}
+                   {industry === 'Zahnarzt' && '🦷'}
+                   {industry === 'Restaurant' && '🍽️'}
+                   {industry === 'Handwerk' && '🔧'}
+                   {industry}
+                </button>
+             ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button onClick={scrollToDemo} variant="primary" className="bg-blue-600 hover:bg-blue-500 border-none text-white shadow-[0_0_20px_rgba(37,99,235,0.5)]" icon={<Play size={20} className="fill-current" />}>
+               Kostenlose Agent-Demo
             </Button>
-            <Button onClick={scrollToDemo} variant="secondary" icon={<Play size={20} className="fill-current" />}>
-              Hörprobe (Schweizerdeutsch)
+            <Button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary">
+              Pricing ansehen
             </Button>
           </div>
           
-          <div className="flex flex-col gap-2 pt-2">
-            <p className="text-xs text-gray-500 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                In 24h eingerichtet • Kompatibel mit allen Schweizer Nummern
-            </p>
-            <button onClick={onStartOnboarding} className="text-xs text-left text-accent hover:text-white transition-colors flex items-center gap-1 w-fit group">
-                <Mic size={12} />
-                Oder direkt Stimme klonen & testen <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+          {/* Trust Bar */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wide">
+                <span className="flex items-center gap-1.5"><span className="text-red-500">🇨🇭</span> Schweizer Server & DSG-konform</span>
+                <span className="flex items-center gap-1.5">🔒 DSGVO certified</span>
+                <span className="flex items-center gap-1.5">⚡ 99.9% Verfügbarkeit</span>
+                <span className="flex items-center gap-1.5">💬 24/7 Support</span>
+            </div>
           </div>
         </motion.div>
 

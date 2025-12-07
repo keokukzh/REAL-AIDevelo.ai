@@ -63,7 +63,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                         
                         <ul className="space-y-3 mb-8 w-full text-left">
                             {plan.features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-3 text-gray-400 text-sm"><Check size={16} className="text-gray-600" /> {f}</li>
+                                <li key={i} className="flex items-center gap-3 text-gray-400 text-sm"><Check size={16} className="text-gray-600" /> {f.replace("Support", "Schweizer Support").replace("Setup", "Einrichtung")}</li>
                             ))}
                         </ul>
                         <Button variant="outline" className="w-full grayscale" disabled>{plan.cta}</Button>
@@ -88,13 +88,13 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                             <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                                 {plan.name} <Star size={16} className="text-yellow-400 fill-yellow-400" />
                             </h3>
-                            <p className="text-accent text-sm mt-1">Limitiertes Startup-Angebot</p>
+                            <p className="text-accent text-sm mt-1">Exklusives Eröffnungsangebot (Schweiz)</p>
                             </div>
                             <Countdown />
                         </div>
                         
                         <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10 text-left">
-                            <div className="text-sm text-gray-400 mb-1">Bundle-Preis (3 Monate):</div>
+                            <div className="text-sm text-gray-400 mb-1">Komplettpreis (3 Monate):</div>
                             <div className="flex items-center gap-3">
                                 <span className="text-5xl font-bold text-white">CHF {plan.price}</span>
                                 <div className="flex flex-col text-left">

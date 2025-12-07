@@ -11,12 +11,12 @@ const LogoItem: React.FC<{ Icon: any, name: string }> = ({ Icon, name }) => (
 
 export const TrustSection: React.FC = () => {
   const logos = [
-    { Icon: Scissors, name: "Barbershop Zurich" },
-    { Icon: Building2, name: "Swiss Estate" },
-    { Icon: Wrench, name: "Auto Garage Müller" },
-    { Icon: Stethoscope, name: "Praxis Dr. Weber" },
-    { Icon: Utensils, name: "Restaurant Seeblick" },
-    { Icon: Briefcase, name: "Consulting AG" },
+    { Icon: Scissors, name: "Barbershop Zürich" },
+    { Icon: Building2, name: "Meier Immobilien AG" },
+    { Icon: Wrench, name: "Garage Auto-Fit Bern" },
+    { Icon: Stethoscope, name: "Praxis Dr. med. Keller" },
+    { Icon: Utensils, name: "Ristorante Ticino" },
+    { Icon: Briefcase, name: "Consulting Group Basel" },
   ];
 
   return (
