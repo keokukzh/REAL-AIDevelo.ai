@@ -1,34 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { PhoneIncoming, Calendar, BarChart3, MessageSquare } from 'lucide-react';
+import { features } from '../data/features';
 import { Feature } from '../types';
-
-const features: Feature[] = [
-  {
-    id: 1,
-    title: "24/7 Erreichbarkeit",
-    description: "Kein verpasster Anruf mehr. Ihr Agent arbeitet rund um die Uhr, auch an Feiertagen.",
-    icon: PhoneIncoming
-  },
-  {
-    id: 2,
-    title: "Auto-Terminbuchung",
-    description: "Vollständige Integration in Google Calendar, Outlook und CRM-Systeme.",
-    icon: Calendar
-  },
-  {
-    id: 3,
-    title: "Lead-Qualifizierung",
-    description: "Der Agent stellt intelligente Fragen, filtert Anfragen und priorisiert für Ihr Sales-Team.",
-    icon: BarChart3
-  },
-  {
-    id: 4,
-    title: "Multichannel Support",
-    description: "Nahtloser Übergang zwischen Telefon, SMS und WhatsApp für maximale Konversion.",
-    icon: MessageSquare
-  }
-];
 
 const FeatureCard: React.FC<{ feature: Feature; index: number }> = ({ feature, index }) => {
   return (
@@ -78,7 +51,7 @@ export const Features: React.FC = () => {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <FeatureCard key={feature.id} feature={feature} index={index} />
           ))}

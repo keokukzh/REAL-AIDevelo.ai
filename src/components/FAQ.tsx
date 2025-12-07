@@ -1,30 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus } from 'lucide-react';
+import { faqs } from '../data/faq';
 import { FaqItem } from '../types';
-
-const faqData: FaqItem[] = [
-  {
-    question: "Ist der Voice Agent wirklich menschlich klingend?",
-    answer: "Ja. Wir nutzen die neueste Generation von Sprachmodellen. Der Agent atmet, macht Pausen und versteht Nuancen. 95% der Anrufer merken nicht, dass sie mit einer KI sprechen."
-  },
-  {
-    question: "Wie schnell ist die Einrichtung?",
-    answer: "Sehr schnell. Nach Ihrer Buchung erhalten Sie einen Fragebogen. Sobald wir diesen haben, ist Ihr Agent innerhalb von 24-48 Stunden einsatzbereit."
-  },
-  {
-    question: "Kann der Agent Termine direkt in meinen Kalender eintragen?",
-    answer: "Absolut. Wir integrieren uns in Google Calendar, Outlook, Calendly und viele branchenspezifische Lösungen (z.B. Salon-Software)."
-  },
-  {
-    question: "Was passiert, wenn der Agent eine Frage nicht beantworten kann?",
-    answer: "Der Agent ist so trainiert, dass er in solchen Fällen freundlich darauf hinweist, die Info weiterzugeben. Er sendet Ihnen sofort eine Zusammenfassung per SMS/Email, damit Sie persönlich zurückrufen können."
-  },
-  {
-    question: "Wie funktioniert die 48h Aktion?",
-    answer: "Wenn Sie sich innerhalb von 48h nach dem ersten Webseiten-Besuch für das Pro-Paket entscheiden, erhalten Sie den reduzierten Preis für die ersten 3 Monate und danach einen dauerhaften Rabatt."
-  }
-];
 
 const AccordionItem: React.FC<{ item: FaqItem, isOpen: boolean, onClick: () => void }> = ({ item, isOpen, onClick }) => {
   return (
@@ -68,7 +46,7 @@ export const FAQ: React.FC = () => {
         </div>
         
         <div className="bg-black/40 backdrop-blur-sm rounded-3xl p-8 border border-white/5">
-          {faqData.map((item, index) => (
+          {faqs.map((item, index) => (
             <AccordionItem 
               key={index} 
               item={item} 
