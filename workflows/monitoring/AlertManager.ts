@@ -104,7 +104,8 @@ export class AlertManager {
       });
       
       // Evaluate condition
-      return eval(expr) === true;
+      // Use truthiness evaluation to handle both boolean and truthy/falsy values
+      return !!eval(expr);
     } catch (error) {
       console.warn(`Failed to evaluate condition "${condition}":`, error);
       return false;

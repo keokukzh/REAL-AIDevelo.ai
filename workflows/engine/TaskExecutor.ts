@@ -145,7 +145,8 @@ export class TaskExecutor {
 
       // Evaluate the expression
       // Note: In production, use a proper expression evaluator for security
-      return eval(expr) === true;
+      // Use truthiness evaluation to handle both boolean and truthy/falsy values
+      return !!eval(expr);
     } catch (error) {
       console.warn(`Failed to evaluate condition "${condition}":`, error);
       return false;

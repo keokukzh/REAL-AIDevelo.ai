@@ -17,12 +17,17 @@ export interface Industry {
   icon: LucideIcon;
 }
 
+export type PlanId = "starter" | "business" | "premium" | "enterprise";
+
 export interface PricingPlan {
+  id: PlanId;
   name: string;
   price: string;
-  originalPrice: string;
   features: string[];
   cta: string;
-  popular?: boolean;
+  highlight?: boolean;
+  badge?: string;
   description?: string;
+  priceNote?: string;
+  ctaSubLabel?: string;
 }
