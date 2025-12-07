@@ -1,0 +1,7 @@
+{
+  "name": "AIDevelo.ai",
+  "description": "A premium, futuristic landing page for AIDevelo.ai - 24/7 AI Voice Agent service.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
