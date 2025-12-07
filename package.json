@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@lottiefiles/dotlottie-web": "^0.57.0",
     "@react-three/drei": "9.96.1",
     "@react-three/fiber": "8.15.14",
     "framer-motion": "^12.23.25",

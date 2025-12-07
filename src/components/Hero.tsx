@@ -2,28 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { Button } from './ui/Button';
-import { HeroHologram } from './hero/HeroHologram';
+import { HeroLottie } from './animations/HeroLottie';
+import { Button } from './ui/Button';
 
-const TypewriterText = ({ text }: { text: string }) => {
-  const [displayedText, setDisplayedText] = useState('');
+// ... existing TypewriterText and other sub-components ...
 
-  useEffect(() => {
-    let index = 0;
-    const intervalId = setInterval(() => {
-      setDisplayedText((prev) => prev + text.charAt(index));
-      index++;
-      if (index === text.length) clearInterval(intervalId);
-    }, 50);
-    return () => clearInterval(intervalId);
-  }, [text]);
-
-  return <span>{displayedText}<span className="animate-pulse text-accent">|</span></span>;
-};
-
-interface HeroProps {
-  onStartOnboarding?: () => void;
-  onScrollToSection?: (href: string) => void;
-}
+// ... (Use same Hero component logic as before, just swap the right column content)
 
 export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
   const { scrollY } = useScroll();
@@ -48,10 +32,9 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 bg-[#020617]">
       
-      {/* --- Optimized Background Layer --- */}
+      {/* ... Background Layers (Blobs, Grid) ... same as before */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 -z-50" />
       
-      {/* Animated Blobs */}
       <div className="absolute inset-0 overflow-hidden -z-40 pointer-events-none opacity-40">
          <motion.div 
             style={{ y: yBlobPrimary }}
@@ -63,7 +46,6 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
          />
       </div>
 
-      {/* Grid Overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)] -z-20 pointer-events-none" />
 
       {/* --- Main Content --- */}
@@ -76,6 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
           transition={{ duration: 0.8 }}
           className="space-y-8"
         >
+          {/* ... existing text content ... */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm shadow-lg mb-6">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
@@ -95,7 +78,6 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
             <p>Kostenlose Demo in unter 2 Min.</p>
           </div>
 
-          {/* Industry Quick Nav */}
           <div className="flex flex-wrap gap-2 mb-8">
              {['Friseur', 'Zahnarzt', 'Restaurant', 'Handwerk'].map((industry) => (
                 <button 
@@ -124,7 +106,6 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
             </Button>
           </div>
           
-          {/* Trust Bar */}
           <div className="mt-10 pt-6 border-t border-slate-800/50">
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] md:text-xs text-slate-400 font-semibold uppercase tracking-wide">
                 <span className="flex items-center gap-1.5"><span className="text-red-500 text-sm">🇨🇭</span> Schweizer Server & DSG-konform</span>
@@ -135,7 +116,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
           </div>
         </motion.div>
 
-        {/* Right Column: Visual Content - NEW Hologram */}
+        {/* Right Column: Visual Content - NEW DotLottie Player */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -145,7 +126,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
            {/* Glow behind the console */}
            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full blur-[80px] pointer-events-none" />
            
-           <HeroHologram />
+           <HeroLottie />
            
         </motion.div>
       </div>
