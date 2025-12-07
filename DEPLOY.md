@@ -1,44 +1,75 @@
 # Deployment Guide (Cloudflare + Backend)
 
-## 1. Frontend (Cloudflare Pages) - **Recommended**
+## 1. Frontend: Cloudflare Pages (Recommended)
 
-Your frontend is optimized for **Cloudflare Pages**. 
+This project is optimized for **Cloudflare Pages** as a Single Page Application (SPA).
 
-### Steps:
-1. **Push your code** to GitHub.
+### Prerequisites
+- Cloudflare Account
+- GitHub Repository connected
+- Node.js & npm (for local development)
+
+### Option A: Git Integration (Easiest)
+1. Push your code to GitHub.
 2. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com).
 3. Go to **Workers & Pages** > **Create Application** > **Pages** > **Connect to Git**.
-4. Select this repository.
+4. Select `REAL-AIDevelo.ai`.
 5. **Build Settings**:
-   - **Framework**: Vite
+   - **Framework**: `React` (or `Vite`)
    - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
+   - **Build Output Directory**: `dist`
 6. **Environment Variables**:
-   - `VITE_API_URL`: The URL of your deployed backend (see below). Example: `https://my-backend-app.onrender.com/api`
+   - `VITE_API_URL`: URL of your backend (e.g., `https://api.yourdomain.com/api`)
+7. Click **Save and Deploy**.
 
-> **Note**: A `public/_redirects` file has been created to handle routing automatically (SPA support).
+> **Note**: Routing is handled automatically by `public/_redirects`.
+
+### Option B: CLI Deployment (Advanced)
+If you prefer deploying from your terminal:
+
+1. **Install Wrangler**: `npm install -D wrangler` (Already done)
+2. **Set Secrets** (locally or in CI):
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `CLOUDFLARE_API_TOKEN`
+   - `CF_PAGES_PROJECT_NAME` (e.g., `aidevelo-web`)
+3. **Run Deployment**:
+   ```bash
+   npm run deploy:cf
+   ```
+   *This builds the project and uploads the `dist` folder directly to Cloudflare.*
+
+### Option C: GitHub Actions (CI/CD)
+A workflow is already set up in `.github/workflows/cloudflare-pages.yml`.
+1. Go to your GitHub Repo > **Settings** > **Secrets and variables** > **Actions**.
+2. Add the following Repository Secrets:
+   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token (Template: Edit Cloudflare Workers)
+   - `CLOUDFLARE_ACCOUNT_ID`: Your Account ID (found in Cloudflare URL/Dashboard)
+3. Push to `main` to trigger auto-deployment.
 
 ---
 
 ## 2. Backend (Node.js/Express)
 
-Since your backend uses a long-running process (Express) and in-memory state, it **cannot** be deployed strictly as a standard Cloudflare Worker without significant refactoring (e.g., preventing data loss).
+The backend requires a persistent environment (container) and cannot run as a standard Edge Worker.
 
-**Optimal Options:**
+### Deployment Options
 
-### Option A: Render (Easiest)
-1. Provide your repo to [Render.com](https://render.com).
-2. Create a **Web Service**.
-3. **Root Directory**: `server`
-4. **Build Command**: `npm install && npm run build`
-5. **Start Command**: `npm start`
-6. Add Environment Variable: `ELEVENLABS_API_KEY`.
+#### Docker (Universal)
+A `server/Dockerfile` is ready for use.
+1. Build: `docker build -t aidevelo-api ./server`
+2. Run: `docker run -p 5000:5000 --env-file ./server/.env aidevelo-api`
 
-### Option B: Docker (Universal)
-A `Dockerfile` has been enabled in the `server` folder for deploying to Fly.io, DigitalOcean, or Google Cloud Run.
+#### Render / Railway / Fly.io
+1. Connect your repo.
+2. Set **Root Directory** to `server`.
+3. **Build Command**: `npm install && npm run build`
+4. **Start Command**: `npm start`
+5. **Environment Variables**:
+   - `ELEVENLABS_API_KEY`: Your key.
 
-```bash
-cd server
-docker build -t aidevelo-api .
-docker run -p 5000:5000 aidevelo-api
-```
+---
+
+## 3. Development Check
+- **Build**: `npm run build` creates the `dist/` folder.
+- **Routing**: `public/_redirects` ensures all paths route to `index.html` (SPA behavior).
+- **Vite Config**: Default `base: '/'` is set for root domain deployment.
