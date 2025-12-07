@@ -1,4 +1,4 @@
-import { apiRequest } from '../services/api';
+import { apiRequest, ApiRequestError } from '../services/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VoiceOnboarding } from '../components/VoiceOnboarding';
@@ -63,9 +63,11 @@ export const OnboardingPage = () => {
 
             nextStep('success');
         } catch (error) {
-            console.error("Agent Creation Failed:", error);
-            // In a real app, show error toast
-            alert("Fehler beim Erstellen des Agents. Bitte versuchen Sie es später.");
+            // Error handling - in production, use toast notifications
+            const errorMessage = error instanceof ApiRequestError 
+                ? error.message 
+                : "Fehler beim Erstellen des Agents. Bitte versuchen Sie es später.";
+            alert(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

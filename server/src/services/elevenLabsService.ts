@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { AgentConfig, VoiceAgent } from '../models/types';
+import { AgentConfig } from '../models/types';
+import { config } from '../config/env';
+import { InternalServerError } from '../utils/errors';
 
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
 export class ElevenLabsService {
@@ -11,7 +12,8 @@ export class ElevenLabsService {
   async getVoices(locale: string = 'de') {
     try {
       const response = await axios.get(`${API_BASE}/voices`, {
-        headers: { 'xi-api-key': ELEVENLABS_API_KEY }
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        timeout: 10000 // 10 second timeout
       });
       
       const allVoices = response.data.voices;
@@ -19,47 +21,56 @@ export class ElevenLabsService {
       // For now, return top 10 to avoid payload bloat
       return allVoices.slice(0, 10);
     } catch (error) {
-      console.error('Error fetching voices:', error);
-      throw new Error('Failed to fetch voices from ElevenLabs');
+      if (axios.isAxiosError(error)) {
+        throw new InternalServerError(
+          `Failed to fetch voices from ElevenLabs: ${error.message}`
+        );
+      }
+      throw new InternalServerError('Failed to fetch voices from ElevenLabs');
     }
   }
 
   /**
    * Create a Conversational Agent in ElevenLabs
    */
-  async createAgent(agentName: string, config: AgentConfig): Promise<string> {
+  async createAgent(agentName: string, agentConfig: AgentConfig): Promise<string> {
     try {
       const payload = {
         name: agentName,
         conversation_config: {
           agent: {
             prompt: {
-              prompt: config.systemPrompt
+              prompt: agentConfig.systemPrompt
             },
             first_message: "Grüezi, hier ist der virtuelle Assistent von " + agentName, // Dynamic first message
-            language: "de" // Default to German for now, mapped from config.primaryLocale
+            language: "de" // Default to German for now, mapped from agentConfig.primaryLocale
           },
           tts: {
-            voice_id: config.elevenLabs.voiceId
+            voice_id: agentConfig.elevenLabs.voiceId
           }
         }
       };
 
       const response = await axios.post(`${API_BASE}/convai/agents/create`, payload, {
         headers: { 
-          'xi-api-key': ELEVENLABS_API_KEY,
+          'xi-api-key': config.elevenLabsApiKey,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000 // 30 second timeout for agent creation
       });
 
       return response.data.agent_id;
     } catch (error) {
         // Detailed error logging
         if (axios.isAxiosError(error)) {
-            console.error('ElevenLabs API Error:', error.response?.data);
-            throw new Error(`ElevenLabs Agent Creation Failed: ${JSON.stringify(error.response?.data)}`);
+          const errorMessage = error.response?.data 
+            ? JSON.stringify(error.response.data)
+            : error.message;
+          throw new InternalServerError(
+            `ElevenLabs Agent Creation Failed: ${errorMessage}`
+          );
         }
-        throw error;
+        throw new InternalServerError('Failed to create agent in ElevenLabs');
     }
   }
 

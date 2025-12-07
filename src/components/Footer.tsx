@@ -45,6 +45,10 @@ export const Footer: React.FC = () => {
               Die intelligente Sprach-KI für Schweizer KMUs. 
               Verpassen Sie nie wieder einen Anruf.
             </p>
+            <div className="mt-6 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+                <span className="text-xs font-mono text-gray-400">Made in Zürich</span>
+            </div>
           </div>
 
           <div>

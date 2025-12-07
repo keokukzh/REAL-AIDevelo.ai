@@ -27,6 +27,14 @@ export const TrustSection: React.FC = () => {
         </p>
       </div>
       
+      {/* Swiss Trust Badge */}
+      <div className="flex justify-center mb-10">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-gray-300">
+          <span className="text-red-500">🇨🇭</span>
+          <span>Hosted in Switzerland & DSGVO Konform</span>
+        </div>
+      </div>
+      
       <div className="relative flex overflow-hidden group">
         <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />

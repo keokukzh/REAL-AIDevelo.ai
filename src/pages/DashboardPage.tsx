@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '../services/api';
+import { apiRequest, ApiRequestError } from '../services/api';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
 import { Activity, Phone, Settings, Play, RefreshCw, BarChart } from 'lucide-react';
@@ -36,7 +36,11 @@ export const DashboardPage = () => {
             const res = await apiRequest<{ data: Agent[] }>('/agents');
             setAgents(res.data);
         } catch (error) {
-            console.error("Failed to fetch agents:", error);
+            // Error handling - in production, use toast notifications
+            if (error instanceof ApiRequestError) {
+                // Could show user-friendly error message here
+            }
+            // Silently fail for now - could add error state to show message
         } finally {
             setLoading(false);
         }
@@ -45,7 +49,7 @@ export const DashboardPage = () => {
     const handleRunDiagnostics = async (agentId: string) => {
         try {
             // Optimistic update or loading state could be added here
-            const res = await apiRequest<{ data: any }>(`/tests/${agentId}/run`, { method: 'POST' });
+            const res = await apiRequest<{ data: { score: number; passed: boolean; timestamp: string } }>(`/tests/${agentId}/run`, { method: 'POST' });
             
             // Update the local agent state with the new result
             setAgents(prev => prev.map(a => 
@@ -56,8 +60,11 @@ export const DashboardPage = () => {
             
             alert(`Diagnose abgeschlossen! Score: ${res.data.score}%`);
         } catch (error) {
-            console.error("Diagnostics failed:", error);
-            alert("Diagnose konnte nicht gestartet werden.");
+            // Error handling - in production, use toast notifications
+            const errorMessage = error instanceof ApiRequestError 
+                ? error.message 
+                : "Diagnose konnte nicht gestartet werden.";
+            alert(errorMessage);
         }
     };
 

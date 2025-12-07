@@ -24,7 +24,7 @@ export const SEO: React.FC<SEOProps> = ({
       <meta property="og:type" content={type} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      {/* <meta property="og:image" content="https://aidevelo.ai/og-image.jpg" /> */}
+      <meta property="og:image" content="https://aidevelo.ai/og-image.png" />
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

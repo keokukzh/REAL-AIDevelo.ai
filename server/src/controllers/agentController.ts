@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
 import { elevenLabsService } from '../services/elevenLabsService';
 import { generateSystemPrompt } from '../services/promptService';
-import { VoiceAgent, BusinessProfile } from '../models/types';
+import { VoiceAgent } from '../models/types';
+import { NotFoundError, InternalServerError } from '../utils/errors';
 
 export const createAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -30,7 +31,7 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       elevenLabsAgentId,
       businessProfile,
       config: finalConfig,
-      status: 'production_ready', // Assuming 'created' means ready for test/use
+      status: 'production_ready',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -47,15 +48,23 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const getAgents = (req: Request, res: Response) => {
+export const getAgents = (req: Request, res: Response, next: NextFunction) => {
+  try {
     const agents = db.getAllAgents();
     res.json({ success: true, data: agents });
+  } catch (error) {
+    next(new InternalServerError('Failed to retrieve agents'));
+  }
 };
 
-export const getAgentById = (req: Request, res: Response) => {
+export const getAgentById = (req: Request, res: Response, next: NextFunction) => {
+  try {
     const agent = db.getAgent(req.params.id);
     if (!agent) {
-        return res.status(404).json({ success: false, error: "Agent not found" });
+      return next(new NotFoundError('Agent'));
     }
     res.json({ success: true, data: agent });
+  } catch (error) {
+    next(new InternalServerError('Failed to retrieve agent'));
+  }
 };
