@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Play, Mic, Activity } from 'lucide-react';
 import { Button } from './ui/Button';
+import { HeroWaveAnimation } from './animations/HeroWaveAnimation';
 
 const TypewriterText = ({ text }: { text: string }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -321,6 +322,10 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
             <Button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary">
               Pricing ansehen
             </Button>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center sm:items-start w-full">
+            <HeroWaveAnimation />
           </div>
           
           {/* Trust Bar */}
