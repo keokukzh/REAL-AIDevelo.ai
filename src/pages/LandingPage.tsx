@@ -5,6 +5,7 @@ import { Hero } from '../components/Hero';
 import { TrustSection } from '../components/TrustSection';
 import { Features } from '../components/Features';
 import { IndustryTabs } from '../components/IndustryTabs';
+import { DemoAudioSection } from '../components/DemoAudioSection';
 import { CaseStudies } from '../components/CaseStudies';
 import { ROICalculator } from '../components/ROICalculator';
 import { DemoSection } from '../components/DemoSection';
@@ -29,6 +30,10 @@ export const LandingPage = () => {
         
         {/* 3. Features & Industries */}
         <Features />
+        
+        {/* 3b. Audio Demos - Moved up for impact */}
+        <DemoAudioSection />
+        
         <IndustryTabs onStartOnboarding={startOnboarding} />
         
         {/* 4. Social Proof / Case Studies */}

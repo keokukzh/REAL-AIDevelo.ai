@@ -8,24 +8,29 @@ interface DemoSectionProps {
 
 export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null); // In a real app, attach to real audio
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Simulate audio progress
   useEffect(() => {
-    let interval: any;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return prev + 0.5;
-        });
-      }, 50);
+    // Initialize audio
+    audioRef.current = new Audio('/audio/demo_de.mp3');
+    audioRef.current.onended = () => setIsPlaying(false);
+    
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        if (isPlaying) {
+            audioRef.current.play().catch(e => console.error("Audio play failed", e));
+        } else {
+            audioRef.current.pause();
+        }
     }
-    return () => clearInterval(interval);
   }, [isPlaying]);
 
   return (

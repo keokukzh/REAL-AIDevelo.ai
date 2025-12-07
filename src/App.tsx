@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { DashboardPage } from './pages/DashboardPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
             </Routes>
         </AnimatePresence>
       </div>

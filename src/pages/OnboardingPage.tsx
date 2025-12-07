@@ -1,9 +1,10 @@
+import { apiRequest } from '../services/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VoiceOnboarding } from '../components/VoiceOnboarding';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, CheckCircle2, ChevronRight, Building, Clock, Target, Calendar } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Building, Clock, Target, Calendar } from 'lucide-react';
 
 // Steps for the wizard
 type WizardStep = 'company' | 'hours' | 'goals' | 'calendar' | 'voice' | 'success';
@@ -11,25 +12,88 @@ type WizardStep = 'company' | 'hours' | 'goals' | 'calendar' | 'voice' | 'succes
 export const OnboardingPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<WizardStep>('company');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         companyName: '',
-        industry: '',
-        language: 'Swiss German',
+        industry: 'Handwerk / Sanitär',
+        city: 'Zürich',
+        email: '',
+        phone: '',
+        language: 'de-CH',
         goals: [] as string[]
     });
 
     const nextStep = (next: WizardStep) => setStep(next);
 
-    // If we are in the 'voice' step, we render the existing VoiceOnboarding component
-    // wrapped in a way that fits the layout, or full screen.
-    // The previous VoiceOnboarding takes full screen, so we can just return it.
+    const handleCreateAgent = async () => {
+        try {
+            setIsSubmitting(true);
+            
+            // Construct payload for Backend
+            const payload = {
+                businessProfile: {
+                    companyName: formData.companyName,
+                    industry: formData.industry,
+                    location: {
+                        country: 'CH',
+                        city: formData.city
+                    },
+                    contact: {
+                        email: formData.email,
+                        phone: formData.phone
+                    },
+                    openingHours: {
+                        "Mon-Fri": "08:00-18:00" // Default for now, can be expanded
+                    }
+                },
+                config: {
+                    primaryLocale: formData.language,
+                    fallbackLocales: ['en-US'],
+                    elevenLabs: {
+                        voiceId: "21m00Tcm4TlvDq8ikWAM", // Default Rachel, or dynamic choice
+                        modelId: "eleven_turbo_v2_5"
+                    }
+                }
+            };
+
+            await apiRequest('/agents', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            nextStep('success');
+        } catch (error) {
+            console.error("Agent Creation Failed:", error);
+            // In a real app, show error toast
+            alert("Fehler beim Erstellen des Agents. Bitte versuchen Sie es später.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Callback when Voice Wizard finishes
+    const handleVoiceFinished = () => {
+        handleCreateAgent();
+    };
+
+
     if (step === 'voice') {
-        return <VoiceOnboarding onBack={() => nextStep('success')} />;
+        return <VoiceOnboarding onBack={handleVoiceFinished} />;
     }
 
     return (
         <div className="min-h-screen bg-background text-white flex flex-col">
-            {/* Simple Header */}
+            {isSubmitting && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                    <div className="text-center">
+                         <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"/>
+                         <h2 className="text-2xl font-bold">Erstelle Ihren Agenten...</h2>
+                         <p className="text-gray-400">Verbinde mit ElevenLabs...</p>
+                    </div>
+                </div>
+            )}
+            
+            {/* Header */}
             <header className="p-6 border-b border-white/10 flex items-center justify-between">
                 <div onClick={() => navigate('/')} className="cursor-pointer flex items-center gap-2">
                      <span className="font-display font-bold text-xl">AIDevelo.ai</span>
@@ -69,15 +133,46 @@ export const OnboardingPage = () => {
                                         onChange={(e) => setFormData({...formData, companyName: e.target.value})}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Branche</label>
-                                    <select className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none">
-                                        <option>Handwerk / Sanitär</option>
-                                        <option>Ärzte / Gesundheit</option>
-                                        <option>Immobilien</option>
-                                        <option>Dienstleistung</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Stadt</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
+                                            placeholder="z.B. Zürich"
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({...formData, city: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Branche</label>
+                                        <select 
+                                            value={formData.industry}
+                                            onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
+                                        >
+                                            <option>Handwerk / Sanitär</option>
+                                            <option>Ärzte / Gesundheit</option>
+                                            <option>Immobilien</option>
+                                            <option>Dienstleistung</option>
+                                        </select>
+                                    </div>
                                 </div>
+                                
+                                <div className="pt-4 border-t border-white/5">
+                                    <h3 className="text-sm font-bold text-gray-300 mb-3">Kontakt für Rückfragen</h3>
+                                     <div>
+                                        <label className="block text-sm text-gray-400 mb-1">E-Mail</label>
+                                        <input 
+                                            type="email" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
+                                            placeholder="info@firma.ch"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
                                 <Button onClick={() => nextStep('hours')} variant="primary" className="w-full mt-6">
                                     Weiter <ChevronRight size={16} />
                                 </Button>
@@ -151,8 +246,8 @@ export const OnboardingPage = () => {
                                 <CheckCircle2 size={48} className="text-black" />
                             </div>
                             <h2 className="text-4xl font-bold mb-4">Setup abgeschlossen!</h2>
-                            <p className="text-xl text-gray-400 mb-8">Ihr Account wurde erstellt und der Agent wird trainiert.</p>
-                            <Button onClick={() => navigate('/')} variant="primary" className="w-full">
+                            <p className="text-xl text-gray-400 mb-8">Ihr Agent wurde erfolgreich konfiguriert und trainiert.</p>
+                            <Button onClick={() => navigate('/dashboard')} variant="primary" className="w-full">
                                 Zum Dashboard
                             </Button>
                         </motion.div>
