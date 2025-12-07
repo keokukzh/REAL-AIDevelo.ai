@@ -9,7 +9,7 @@ interface ButtonProps extends HTMLMotionProps<"button"> {
 }
 
 export const Button: React.FC<ButtonProps> = ({ variant = 'primary', children, className = '', icon, ...props }) => {
-  const baseStyles = "relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-semibold rounded-full transition-all duration-300 group";
+  const baseStyles = "relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-semibold rounded-full transition-all duration-300 group z-10";
   
   const variants = {
     primary: "bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_35px_rgba(0,224,255,0.4)] border border-transparent",
@@ -24,10 +24,10 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', children, c
       className={`${baseStyles} ${variants[variant]} ${className}`}
       {...props}
     >
-      {variant === 'primary' && (
-        <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-gray-200"></span>
+      {variant === 'primary' && !className.includes('bg-') && (
+        <span className="absolute inset-0 w-full h-full rounded-full opacity-10 bg-gradient-to-b from-transparent via-transparent to-gray-300 pointer-events-none"></span>
       )}
-      <span className="relative flex items-center gap-2">
+      <span className="relative flex items-center gap-2 z-10">
         {children}
         {icon && <span className="transition-transform group-hover:translate-x-1">{icon}</span>}
       </span>

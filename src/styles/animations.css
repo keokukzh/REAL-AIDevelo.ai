@@ -153,6 +153,18 @@
     }
 }
 
+/* Gradient Text with Shimmer */
+.gradient-text {
+    background: linear-gradient(to right, #38bdf8, #22d3ee, #38bdf8);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 3s linear infinite;
+    display: block;
+}
+
 /* Float Animation */
 @keyframes float {
     0%, 100% {

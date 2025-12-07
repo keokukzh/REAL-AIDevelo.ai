@@ -19,9 +19,10 @@ export interface Industry {
 
 export interface PricingPlan {
   name: string;
-  price: number;
-  originalPrice: number;
+  price: string;
+  originalPrice: string;
   features: string[];
   cta: string;
   popular?: boolean;
+  description?: string;
 }

@@ -148,7 +148,7 @@ export const DashboardPage = () => {
                                     <Button variant="outline" onClick={() => handleRunDiagnostics(agent.id)} className="flex-1 text-xs h-10">
                                         <Activity size={14} className="mr-2" /> Diagnose
                                     </Button>
-                                    <Button variant="primary" onClick={() => handleTestAgent(agent.elevenLabsAgentId)} className="flex-1 text-xs h-10 bg-white text-black hover:bg-gray-200">
+                                    <Button variant="primary" onClick={() => handleTestAgent(agent.elevenLabsAgentId)} className="flex-1 text-xs h-10 !bg-white !text-black hover:!bg-gray-200 font-semibold">
                                         <Play size={14} className="mr-2" /> Testen
                                     </Button>
                                 </div>

@@ -62,7 +62,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                         <p className="text-sm text-gray-500 mb-6">Regulärer Preis</p>
                         
                         <ul className="space-y-3 mb-8 w-full text-left">
-                            {plan.features.map((f, i) => (
+                            {plan.features.map((f: string, i: number) => (
                                 <li key={i} className="flex items-center gap-3 text-gray-400 text-sm"><Check size={16} className="text-gray-600" /> {f.replace("Support", "Schweizer Support").replace("Setup", "Einrichtung")}</li>
                             ))}
                         </ul>
@@ -99,15 +99,18 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                                 <span className="text-5xl font-bold text-white">CHF {plan.price}</span>
                                 <div className="flex flex-col text-left">
                                     <span className="text-sm text-gray-500 line-through">statt CHF {plan.originalPrice}</span>
-                                    <span className="text-green-400 text-xs font-bold">Sie sparen 60%</span>
+                                    <span className="text-green-400 text-xs font-bold">Sie sparen 67%</span>
                                 </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10">
+                                <div className="text-xs text-gray-400">Normalpreis: CHF 599/Monat</div>
                             </div>
                         </div>
 
                         <div className="space-y-4 mb-8 flex-1 text-left">
                             <p className="text-sm text-white font-semibold border-b border-white/10 pb-2">Alles inklusive für Ihren Erfolg:</p>
                             <ul className="space-y-4">
-                        {plan.features.map((f, i) => (
+                        {plan.features.map((f: string, i: number) => (
                             <li key={i} className="flex items-start gap-3 text-white text-sm">
                             <div className="min-w-5 h-5 rounded-full bg-accent flex items-center justify-center text-black mt-0.5 shadow-[0_0_10px_rgba(0,224,255,0.5)]">
                                 <Check size={12} strokeWidth={3} />
@@ -118,7 +121,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                             </ul>
                         </div>
                         
-                        <Button variant="primary" onClick={onStartOnboarding} className="w-full bg-accent text-black hover:bg-accent/90 shadow-[0_0_30px_rgba(0,224,255,0.4)] py-4 text-lg">
+                        <Button variant="primary" onClick={onStartOnboarding} className="w-full !bg-accent !text-black hover:!bg-accent/90 shadow-[0_0_30px_rgba(0,224,255,0.4)] py-4 text-lg font-semibold">
                             {plan.cta}
                         </Button>
                         <p className="text-xs text-center text-gray-500 mt-4">30 Tage Geld-zurück-Garantie. Keine Vertragsbindung.</p>

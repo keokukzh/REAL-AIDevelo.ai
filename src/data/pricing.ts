@@ -1,6 +1,6 @@
-import { Plan } from '../types';
+import { PricingPlan } from '../types';
 
-export const pricingPlans: Plan[] = [
+export const pricingPlans: PricingPlan[] = [
   {
     name: 'Starter',
     price: '290',
@@ -19,8 +19,8 @@ export const pricingPlans: Plan[] = [
   },
   {
     name: 'Professional',
-    price: '590',
-    originalPrice: '790',
+    price: '599',
+    originalPrice: '1797',
     description: 'Für wachsende KMU & Vieltelefonierer',
     features: [
       'Unlimitierte Anrufe',

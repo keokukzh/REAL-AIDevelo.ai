@@ -74,9 +74,10 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
               </div>
               
               {/* Heading with Rotating Text */}
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl text-white">
-                KI-Mitarbeiter für <br />
-                <div className="h-[1.2em] relative overflow-hidden text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-sky-400 animate-shimmer bg-[size:200%_auto]">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl">
+                <span className="text-white">KI-Mitarbeiter für</span>
+                <br />
+                <div className="relative h-[1.2em] overflow-hidden inline-block min-w-[200px] leading-[1.2em]">
                     <AnimatePresence mode="wait">
                         <motion.span
                             key={titleIndex}
@@ -84,11 +85,15 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: -40, opacity: 0 }}
                             transition={{ duration: 0.5, ease: "circOut" }}
-                            className="absolute block w-full"
+                            className="absolute top-0 left-0 w-full h-full"
                         >
-                            {ROTATING_TITLES[titleIndex]}
+                            <span className="gradient-text block w-full">
+                                {ROTATING_TITLES[titleIndex]}
+                            </span>
                         </motion.span>
                     </AnimatePresence>
+                    {/* Spacer to maintain height */}
+                    <span className="invisible block">{ROTATING_TITLES[0]}</span>
                 </div>
               </h1>
               
@@ -116,10 +121,10 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
 
               {/* Buttons */}
               <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-4">
-                <Button onClick={scrollToDemo} variant="primary" className="bg-blue-600 hover:bg-blue-500 border-none text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg" icon={<Play size={24} className="fill-current" />}>
+                <Button onClick={scrollToDemo} variant="secondary" className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" icon={<Play size={24} className="fill-current" />}>
                    Kostenlose Demo
                 </Button>
-                <Button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary" className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg">
+                <Button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary" className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg font-semibold">
                   Preise ansehen
                 </Button>
               </div>
