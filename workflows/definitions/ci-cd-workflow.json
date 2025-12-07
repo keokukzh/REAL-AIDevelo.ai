@@ -1,0 +1,105 @@
+{
+  "name": "ci-cd-workflow",
+  "version": "1.0.0",
+  "description": "Complete CI/CD pipeline for AIDevelo.ai - Build, test, and deploy frontend and backend",
+  "trigger": {
+    "type": "manual"
+  },
+  "environment": {
+    "NODE_ENV": "production"
+  },
+  "tasks": [
+    {
+      "id": "pre-build",
+      "name": "Pre-build validation",
+      "type": "shell",
+      "command": "npm run build --dry-run 2>&1 || echo 'No build validation script'",
+      "timeout": 300,
+      "retry": {
+        "attempts": 1,
+        "delay": 0
+      }
+    },
+    {
+      "id": "build-frontend",
+      "name": "Build frontend",
+      "type": "shell",
+      "command": "npm run build",
+      "depends_on": ["pre-build"],
+      "timeout": 600,
+      "cwd": ".",
+      "live_output": true
+    },
+    {
+      "id": "build-backend",
+      "name": "Build backend",
+      "type": "shell",
+      "command": "npm run build",
+      "depends_on": ["pre-build"],
+      "timeout": 300,
+      "cwd": "server",
+      "live_output": true
+    },
+    {
+      "id": "generate-api-docs",
+      "name": "Generate API documentation",
+      "type": "shell",
+      "command": "npx ts-node scripts/generate-openapi.ts",
+      "depends_on": ["build-backend"],
+      "timeout": 120,
+      "cwd": "server",
+      "condition": "${env.GENERATE_DOCS} != 'false'"
+    },
+    {
+      "id": "validate-build",
+      "name": "Validate build outputs",
+      "type": "shell",
+      "command": "test -d dist && test -d server/dist && echo 'Build outputs validated' || exit 1",
+      "depends_on": ["build-frontend", "build-backend"],
+      "timeout": 60
+    },
+    {
+      "id": "deploy-frontend",
+      "name": "Deploy frontend to Cloudflare Pages",
+      "type": "shell",
+      "command": "npm run deploy:cf",
+      "depends_on": ["validate-build"],
+      "timeout": 600,
+      "condition": "${env.DEPLOY_FRONTEND} == 'true'",
+      "on_failure": ["notify-deployment-failure"]
+    },
+    {
+      "id": "deploy-backend",
+      "name": "Deploy backend",
+      "type": "shell",
+      "command": "echo 'Backend deployment - configure your deployment command here'",
+      "depends_on": ["validate-build"],
+      "timeout": 300,
+      "condition": "${env.DEPLOY_BACKEND} == 'true'",
+      "on_failure": ["notify-deployment-failure"]
+    },
+    {
+      "id": "notify-deployment-failure",
+      "name": "Notify deployment failure",
+      "type": "shell",
+      "command": "echo 'Deployment failed - notification sent'",
+      "timeout": 30
+    },
+    {
+      "id": "notify-success",
+      "name": "Notify deployment success",
+      "type": "shell",
+      "command": "echo 'Deployment successful'",
+      "depends_on": ["deploy-frontend", "deploy-backend"],
+      "timeout": 30,
+      "condition": "${env.NOTIFY_ON_SUCCESS} == 'true'"
+    }
+  ],
+  "notifications": {
+    "channels": ["console"],
+    "on_completion": true,
+    "on_failure": true
+  },
+  "expected_duration": 1200000
+}
+

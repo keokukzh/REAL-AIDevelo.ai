@@ -1,0 +1,13 @@
+{
+  "storagePath": "./workflows/.executions",
+  "logLevel": "info",
+  "alerts": {
+    "enabled": true,
+    "channels": ["console"]
+  },
+  "cleanup": {
+    "enabled": true,
+    "daysToKeep": 30
+  }
+}
+

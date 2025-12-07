@@ -25,3 +25,6 @@ dist-ssr
 
 # Generated API documentation
 server/openapi.json
+
+# Workflow execution history
+workflows/.executions/

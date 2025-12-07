@@ -1,0 +1,79 @@
+{
+  "name": "scheduled-tasks",
+  "version": "1.0.0",
+  "description": "Scheduled maintenance tasks - Health checks, cleanup, and documentation updates",
+  "trigger": {
+    "type": "schedule",
+    "config": {
+      "schedule": "0 */6 * * *"
+    }
+  },
+  "environment": {
+    "NODE_ENV": "production"
+  },
+  "tasks": [
+    {
+      "id": "health-check-api",
+      "name": "Health check API endpoint",
+      "type": "http",
+      "url": "http://localhost:5000/health",
+      "method": "GET",
+      "timeout": 10000,
+      "retry": {
+        "attempts": 3,
+        "delay": 5000
+      }
+    },
+    {
+      "id": "health-check-frontend",
+      "name": "Health check frontend",
+      "type": "http",
+      "url": "http://localhost:3000",
+      "method": "GET",
+      "timeout": 10000,
+      "retry": {
+        "attempts": 3,
+        "delay": 5000
+      }
+    },
+    {
+      "id": "regenerate-api-docs",
+      "name": "Regenerate API documentation",
+      "type": "shell",
+      "command": "cd server && npm run build && npx ts-node scripts/generate-openapi.ts",
+      "timeout": 300,
+      "condition": "${env.REGENERATE_DOCS} == 'true'"
+    },
+    {
+      "id": "cleanup-logs",
+      "name": "Clean up old log files",
+      "type": "shell",
+      "command": "Get-ChildItem -Path . -Filter *.log -Recurse | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Force",
+      "timeout": 120,
+      "condition": "${env.CLEANUP_LOGS} == 'true'"
+    },
+    {
+      "id": "cleanup-build-artifacts",
+      "name": "Clean up old build artifacts",
+      "type": "shell",
+      "command": "if (Test-Path dist) { Remove-Item -Recurse -Force dist }",
+      "timeout": 60,
+      "condition": "${env.CLEANUP_BUILDS} == 'true'"
+    },
+    {
+      "id": "notify-health-check-failure",
+      "name": "Notify on health check failure",
+      "type": "shell",
+      "command": "echo 'Health check failed - notification sent'",
+      "timeout": 30,
+      "depends_on": ["health-check-api", "health-check-frontend"]
+    }
+  ],
+  "notifications": {
+    "channels": ["console"],
+    "on_completion": false,
+    "on_failure": true
+  },
+  "expected_duration": 300000
+}
+

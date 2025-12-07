@@ -1,0 +1,90 @@
+{
+  "name": "custom-workflow-example",
+  "version": "1.0.0",
+  "description": "Example custom workflow demonstrating various features",
+  "trigger": {
+    "type": "manual"
+  },
+  "environment": {
+    "NODE_ENV": "production"
+  },
+  "tasks": [
+    {
+      "id": "validate",
+      "name": "Validate environment",
+      "type": "shell",
+      "command": "echo 'Environment: ${env.NODE_ENV}'",
+      "timeout": 30
+    },
+    {
+      "id": "parallel-setup",
+      "name": "Parallel setup tasks",
+      "type": "parallel",
+      "wait_for": "all",
+      "tasks": [
+        {
+          "id": "setup-frontend",
+          "name": "Setup frontend",
+          "type": "shell",
+          "command": "npm install",
+          "timeout": 300,
+          "cwd": "."
+        },
+        {
+          "id": "setup-backend",
+          "name": "Setup backend",
+          "type": "shell",
+          "command": "npm install",
+          "timeout": 300,
+          "cwd": "server"
+        }
+      ]
+    },
+    {
+      "id": "conditional-build",
+      "name": "Build if enabled",
+      "type": "conditional",
+      "condition": "${env.BUILD_ENABLED} == 'true'",
+      "then": {
+        "type": "shell",
+        "command": "npm run build",
+        "timeout": 600
+      },
+      "else": {
+        "type": "shell",
+        "command": "echo 'Build skipped'",
+        "timeout": 10
+      },
+      "depends_on": ["parallel-setup"]
+    },
+    {
+      "id": "health-check",
+      "name": "Health check",
+      "type": "http",
+      "url": "http://localhost:5000/health",
+      "method": "GET",
+      "timeout": 10000,
+      "depends_on": ["conditional-build"],
+      "retry": {
+        "attempts": 3,
+        "delay": 5000
+      }
+    },
+    {
+      "id": "notify-success",
+      "name": "Notify success",
+      "type": "shell",
+      "command": "echo 'Workflow completed successfully'",
+      "depends_on": ["health-check"],
+      "timeout": 30,
+      "condition": "${env.NOTIFY} == 'true'"
+    }
+  ],
+  "notifications": {
+    "channels": ["console"],
+    "on_completion": true,
+    "on_failure": true
+  },
+  "expected_duration": 600000
+}
+

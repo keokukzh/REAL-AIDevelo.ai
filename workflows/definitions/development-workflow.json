@@ -1,0 +1,70 @@
+{
+  "name": "development-workflow",
+  "version": "1.0.0",
+  "description": "Development automation - Code generation, migrations, and setup tasks",
+  "trigger": {
+    "type": "manual"
+  },
+  "environment": {
+    "NODE_ENV": "development"
+  },
+  "tasks": [
+    {
+      "id": "generate-openapi-spec",
+      "name": "Generate OpenAPI specification",
+      "type": "shell",
+      "command": "npx ts-node scripts/generate-openapi.ts",
+      "timeout": 120,
+      "cwd": "server"
+    },
+    {
+      "id": "validate-types",
+      "name": "Validate TypeScript types",
+      "type": "shell",
+      "command": "npx tsc --noEmit",
+      "timeout": 300,
+      "parallel": true
+    },
+    {
+      "id": "validate-backend-types",
+      "name": "Validate backend TypeScript types",
+      "type": "shell",
+      "command": "npx tsc --noEmit",
+      "timeout": 300,
+      "cwd": "server",
+      "parallel": true
+    },
+    {
+      "id": "setup-dependencies",
+      "name": "Install dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "timeout": 600,
+      "parallel": true
+    },
+    {
+      "id": "setup-backend-dependencies",
+      "name": "Install backend dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "timeout": 600,
+      "cwd": "server",
+      "parallel": true
+    },
+    {
+      "id": "verify-setup",
+      "name": "Verify development setup",
+      "type": "shell",
+      "command": "echo 'Development environment ready'",
+      "depends_on": ["setup-dependencies", "setup-backend-dependencies", "validate-types", "validate-backend-types"],
+      "timeout": 30
+    }
+  ],
+  "notifications": {
+    "channels": ["console"],
+    "on_completion": true,
+    "on_failure": true
+  },
+  "expected_duration": 600000
+}
+
