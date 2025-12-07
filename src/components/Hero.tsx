@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { Button } from './ui/Button';
-import { HeroVisualization } from './hero/HeroVisualization';
+import { HeroHologram } from './hero/HeroHologram';
 
 const TypewriterText = ({ text }: { text: string }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -135,7 +135,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
           </div>
         </motion.div>
 
-        {/* Right Column: Visual Content - New Voice Console */}
+        {/* Right Column: Visual Content - NEW Hologram */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -143,9 +143,9 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
           className="relative flex justify-center items-center py-10 lg:py-0"
         >
            {/* Glow behind the console */}
-           <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/10 to-transparent rounded-full blur-[80px] pointer-events-none" />
+           <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full blur-[80px] pointer-events-none" />
            
-           <HeroVisualization />
+           <HeroHologram />
            
         </motion.div>
       </div>
