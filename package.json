@@ -14,12 +14,14 @@
     "@lottiefiles/dotlottie-web": "^0.57.0",
     "@react-three/drei": "9.96.1",
     "@react-three/fiber": "8.15.14",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.555.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.10.1",
+    "tailwind-merge": "^3.4.0",
     "three": "0.160.0"
   },
   "devDependencies": {
