@@ -81,7 +81,7 @@ function AudioCard({ title, subtitle, file, flag, delay }: AudioCardProps) {
       </div>
       
       <div className="bg-white/5 rounded-lg p-2">
-          <audio controls className="w-full h-8 custom-audio-player" style={{ filter: 'invert(1) hue-rotate(180deg)' }}>
+          <audio controls className="w-full h-8 custom-audio-player invert hue-rotate-180">
             <source src={file} type="audio/mpeg" />
             Ihr Browser unterstützt dieses Audio-Element nicht.
           </audio>

@@ -104,8 +104,9 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                             </div>
                         </div>
 
-                        <ul className="space-y-4 mb-8 flex-1 text-left">
+                        <div className="space-y-4 mb-8 flex-1 text-left">
                             <p className="text-sm text-white font-semibold border-b border-white/10 pb-2">Alles inklusive für Ihren Erfolg:</p>
+                            <ul className="space-y-4">
                         {plan.features.map((f, i) => (
                             <li key={i} className="flex items-start gap-3 text-white text-sm">
                             <div className="min-w-5 h-5 rounded-full bg-accent flex items-center justify-center text-black mt-0.5 shadow-[0_0_10px_rgba(0,224,255,0.5)]">
@@ -114,7 +115,8 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
                             {f}
                             </li>
                         ))}
-                        </ul>
+                            </ul>
+                        </div>
                         
                         <Button variant="primary" onClick={onStartOnboarding} className="w-full bg-accent text-black hover:bg-accent/90 shadow-[0_0_30px_rgba(0,224,255,0.4)] py-4 text-lg">
                             {plan.cta}

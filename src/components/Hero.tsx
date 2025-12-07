@@ -3,11 +3,26 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { Button } from './ui/Button';
 import { HeroLottie } from './animations/HeroLottie';
-import { Button } from './ui/Button';
+const TypewriterText = ({ text }: { text: string }) => {
+  const [displayedText, setDisplayedText] = useState('');
 
-// ... existing TypewriterText and other sub-components ...
+  useEffect(() => {
+    let index = 0;
+    const intervalId = setInterval(() => {
+      setDisplayedText((prev) => prev + text.charAt(index));
+      index++;
+      if (index === text.length) clearInterval(intervalId);
+    }, 50);
+    return () => clearInterval(intervalId);
+  }, [text]);
 
-// ... (Use same Hero component logic as before, just swap the right column content)
+  return <span>{displayedText}<span className="animate-pulse text-accent">|</span></span>;
+};
+
+interface HeroProps {
+  onStartOnboarding?: () => void;
+  onScrollToSection?: (href: string) => void;
+}
 
 export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
   const { scrollY } = useScroll();

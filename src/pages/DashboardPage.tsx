@@ -130,8 +130,8 @@ export const DashboardPage = () => {
                                             </div>
                                             <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
                                                 <div 
-                                                    className={`h-full ${agent.lastTestResult.score > 90 ? 'bg-green-500' : 'bg-yellow-500'}`} 
-                                                    style={{ width: `${agent.lastTestResult.score}%` }}
+                                                    className={`h-full ${agent.lastTestResult.score > 90 ? 'bg-green-500' : 'bg-yellow-500'} w-[var(--score)]`} 
+                                                    style={{ '--score': `${agent.lastTestResult.score}%` } as React.CSSProperties}
                                                 />
                                             </div>
                                         </div>

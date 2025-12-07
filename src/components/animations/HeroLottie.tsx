@@ -11,9 +11,8 @@ export function HeroLottie() {
     const player = new DotLottie({
       autoplay: true,
       loop: true,
-      mode: "normal", // 'bounce' can look unnatural for tech/voice waves
       canvas: canvasRef.current,
-      src: "/animations/hero_agent.lottie",
+      src: "/animations/hero_fallback.json", // TODO: Replace with "/animations/hero_agent.lottie" when file is available
       backgroundColor: "transparent",
     });
 
