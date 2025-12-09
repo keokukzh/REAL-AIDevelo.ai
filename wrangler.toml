@@ -1,0 +1,9 @@
+# Cloudflare Pages Configuration
+name = "real-aidevelo-ai"
+pages_build_output_dir = "dist"
+
+[env.production]
+vars = { VITE_API_URL = "https://api.aidevelo.ai/api" }
+
+[env.preview]
+vars = { VITE_API_URL = "https://api-staging.aidevelo.ai/api" }
