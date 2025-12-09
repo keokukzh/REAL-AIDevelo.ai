@@ -3,6 +3,7 @@ import { ShellTask } from '../tasks/ShellTask.js';
 import { HttpTask } from '../tasks/HttpTask.js';
 import { NodeTask } from '../tasks/NodeTask.js';
 import { DockerTask } from '../tasks/DockerTask.js';
+import { Parser } from 'expr-eval';
 
 /**
  * Executes tasks based on their type
@@ -94,7 +95,7 @@ export class TaskExecutor {
    * Execute task with retry logic
    */
   async executeWithRetry(task: WorkflowTask, execution: TaskExecution): Promise<TaskExecution> {
-    const retry = task.retry || { attempts: 1, delay: 0 };
+    const retry = task.retry || { attempts: 1, delay: 0, strategy: 'fixed' as const };
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= retry.attempts; attempt++) {
@@ -105,7 +106,14 @@ export class TaskExecutor {
         
         if (attempt < retry.attempts) {
           // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, retry.delay));
+          const factor = retry.backoff_factor ?? 2;
+          const maxDelay = retry.max_delay ?? retry.delay * 8 || retry.delay;
+          const baseDelay = retry.strategy === 'exponential'
+            ? Math.min(retry.delay * Math.pow(factor, attempt - 1), maxDelay || retry.delay)
+            : retry.delay;
+          const jitter = retry.jitter ? Math.random() * retry.jitter : 0;
+          const waitMs = Math.max(0, baseDelay + jitter);
+          await new Promise(resolve => setTimeout(resolve, waitMs));
           // Reset execution for retry
           execution.status = 'running';
           execution.error = undefined;
@@ -120,33 +128,24 @@ export class TaskExecutor {
    * Evaluate condition expression
    */
   private evaluateCondition(condition: string): boolean {
-    // Simple condition evaluation
-    // Supports: ${env.VAR}, ${tasks.taskId.result}, ==, !=, &&, ||
     try {
-      let expr = condition;
-      
-      // Replace environment variables
-      expr = expr.replace(/\$\{env\.(\w+)\}/g, (_, varName) => {
-        const value = this.environment[varName];
-        return value !== undefined ? JSON.stringify(value) : 'undefined';
+      const parser = new Parser({
+        operators: {
+          add: true, concatenate: true, conditional: true, divide: true, factorial: true, logical: true,
+          multiply: true, power: true, remainder: true, subtract: true, comparison: true
+        }
       });
 
-      // Replace task outputs
-      expr = expr.replace(/\$\{tasks\.(\w+)\.result\}/g, (_, taskId) => {
-        const output = this.taskOutputs.get(taskId);
-        return output !== undefined ? JSON.stringify(output) : 'undefined';
-      });
+      const envProxy: Record<string, unknown> = { ...this.environment };
+      const tasksProxy: Record<string, unknown> = {};
 
-      // Replace task exit codes
-      expr = expr.replace(/\$\{tasks\.(\w+)\.exit_code\}/g, (_, taskId) => {
-        // This would need to be tracked separately
-        return '0'; // Placeholder
-      });
+      for (const [taskId, output] of this.taskOutputs.entries()) {
+        tasksProxy[taskId] = { result: output };
+      }
 
-      // Evaluate the expression
-      // Note: In production, use a proper expression evaluator for security
-      // Use truthiness evaluation to handle both boolean and truthy/falsy values
-      return !!eval(expr);
+      const expr = parser.parse(condition);
+      const value = expr.evaluate({ env: envProxy, tasks: tasksProxy });
+      return Boolean(value);
     } catch (error) {
       console.warn(`Failed to evaluate condition "${condition}":`, error);
       return false;

@@ -1,14 +1,14 @@
 import { WorkflowExecution, WorkflowMetrics } from '../types.js';
-import { ExecutionStore } from './ExecutionStore.js';
+import { ExecutionStoreAdapter } from './ExecutionStore.js';
 
 /**
  * Monitor workflow executions and collect metrics
  */
 export class WorkflowMonitor {
   private metrics: WorkflowMetrics;
-  private executionStore: ExecutionStore;
+  private executionStore: ExecutionStoreAdapter;
 
-  constructor(executionStore: ExecutionStore) {
+  constructor(executionStore: ExecutionStoreAdapter) {
     this.executionStore = executionStore;
     this.metrics = {
       totalRuns: 0,

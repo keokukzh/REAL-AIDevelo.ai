@@ -21,12 +21,17 @@ export interface WorkflowTask {
   retry?: {
     attempts: number;
     delay: number;
+    strategy?: 'fixed' | 'exponential';
+    backoff_factor?: number;
+    max_delay?: number;
+    jitter?: number;
   };
   condition?: string;
   parallel?: boolean;
   wait_for?: 'all' | 'any' | 'first';
   on_success?: string[];
   on_failure?: string[];
+  continue_on_error?: boolean;
   cwd?: string;
   environment?: Record<string, string>;
   live_output?: boolean;
@@ -71,6 +76,7 @@ export interface Workflow {
   description?: string;
   trigger: WorkflowTrigger;
   environment?: Record<string, string>;
+  concurrency?: number;
   tasks: WorkflowTask[];
   notifications?: {
     channels?: string[];

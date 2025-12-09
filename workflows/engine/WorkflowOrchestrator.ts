@@ -2,6 +2,7 @@ import { Workflow, WorkflowExecution, TaskExecution } from '../types.js';
 import { DependencyGraph } from './DependencyGraph.js';
 import { TaskExecutor } from './TaskExecutor.js';
 import { WorkflowValidator } from './WorkflowValidator.js';
+import type { ExecutionStoreAdapter } from '../monitoring/ExecutionStore.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -9,14 +10,17 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export class WorkflowOrchestrator {
   private logger: (message: string, level?: 'info' | 'warn' | 'error') => void;
+  private executionStore?: ExecutionStoreAdapter;
 
   constructor(
-    logger?: (message: string, level?: 'info' | 'warn' | 'error') => void
+    logger?: (message: string, level?: 'info' | 'warn' | 'error') => void,
+    executionStore?: ExecutionStoreAdapter
   ) {
     this.logger = logger || ((msg, level = 'info') => {
       const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : 'ℹ️';
       console.log(`${prefix} ${msg}`);
     });
+    this.executionStore = executionStore;
   }
 
   /**
@@ -73,6 +77,9 @@ export class WorkflowOrchestrator {
       const execution = await this.executeWorkflow(workflow, environment);
       
       this.logger(`Workflow completed: ${workflow.name} (${execution.status})`);
+      if (this.executionStore) {
+        await this.executionStore.saveExecution(execution);
+      }
       
       return execution;
     } catch (error) {
@@ -102,73 +109,84 @@ export class WorkflowOrchestrator {
       const executor = new TaskExecutor(environment);
       const completed = new Set<string>();
       const failed = new Set<string>();
+      const running = new Map<string, Promise<void>>();
+      const maxConcurrency = Math.max(1, workflow.concurrency ?? 4);
+      let fatalError: Error | null = null;
 
-      // Execute tasks
-      while (graph.hasRunnableTasks(completed)) {
-        const runnableTasks = graph.getRunnableTasks(completed);
+      const startTask = (taskId: string) => {
+        const task = graph.getTask(taskId)!;
+        this.logger(`Executing task: ${task.name} (${task.id})`);
 
-        if (runnableTasks.length === 0) {
-          // No runnable tasks but graph says there should be
-          // This means we have a deadlock (likely due to failures)
-          const remainingTasks = graph.getAllTasks()
-            .filter(t => !completed.has(t.id) && !failed.has(t.id))
-            .map(t => t.id);
-          
-          if (remainingTasks.length > 0) {
+        const taskExecution: TaskExecution = {
+          id: task.id,
+          name: task.name,
+          startTime: Date.now(),
+          status: 'running'
+        };
+        execution.tasks[task.id] = taskExecution;
+
+        const promise = (async () => {
+          try {
+            const result = await executor.executeWithRetry(task, taskExecution);
+            execution.tasks[task.id] = result;
+            completed.add(task.id);
+            this.logger(`Task completed: ${task.name}`);
+            if (task.on_success) {
+              await this.executeCallbacks(task.on_success, graph, executor, execution);
+            }
+          } catch (error) {
+            const taskExecutionRef = execution.tasks[task.id];
+            if (taskExecutionRef) {
+              taskExecutionRef.status = 'failed';
+              taskExecutionRef.error = error instanceof Error ? error.message : String(error);
+              taskExecutionRef.endTime = Date.now();
+              taskExecutionRef.duration = taskExecutionRef.endTime - taskExecutionRef.startTime;
+            }
+            failed.add(task.id);
+            this.logger(`Task failed: ${task.name} - ${error instanceof Error ? error.message : String(error)}`, 'error');
+            if (task.on_failure) {
+              await this.executeCallbacks(task.on_failure, graph, executor, execution);
+            }
+            if (!task.continue_on_error) {
+              fatalError = error instanceof Error ? error : new Error(String(error));
+            }
+          } finally {
+            running.delete(task.id);
+          }
+        })();
+
+        running.set(task.id, promise);
+      };
+
+      while ((graph.hasRunnableTasks(completed) || running.size > 0) && !fatalError) {
+        const runnableTasks = graph.getRunnableTasks(completed)
+          .filter(t => !running.has(t.id) && !failed.has(t.id) && !completed.has(t.id));
+
+        // Start tasks up to concurrency limit
+        for (const task of runnableTasks) {
+          if (running.size >= maxConcurrency) {
+            break;
+          }
+          startTask(task.id);
+        }
+
+        if (running.size === 0) {
+          // No tasks running and nothing runnable -> deadlock or done
+          if (graph.hasRunnableTasks(completed)) {
+            const remainingTasks = graph.getAllTasks()
+              .filter(t => !completed.has(t.id) && !failed.has(t.id))
+              .map(t => t.id);
             throw new Error(`Workflow deadlock: Cannot execute remaining tasks: ${remainingTasks.join(', ')}`);
           }
           break;
         }
 
-        // Execute runnable tasks
-        // For now, execute sequentially. Can be parallelized later.
-        for (const task of runnableTasks) {
-          try {
-            this.logger(`Executing task: ${task.name} (${task.id})`);
-            
-            const taskExecution: TaskExecution = {
-              id: task.id,
-              name: task.name,
-              startTime: Date.now(),
-              status: 'running'
-            };
+        // Wait for any task to finish before continuing loop
+        await Promise.race(running.values());
+      }
 
-            execution.tasks[task.id] = taskExecution;
-
-            // Execute with retry
-            const result = await executor.executeWithRetry(task, taskExecution);
-            execution.tasks[task.id] = result;
-
-            completed.add(task.id);
-            this.logger(`Task completed: ${task.name}`);
-
-            // Execute success callbacks
-            if (task.on_success) {
-              await this.executeCallbacks(task.on_success, graph, executor, execution);
-            }
-          } catch (error) {
-            const taskExecution = execution.tasks[task.id];
-            if (taskExecution) {
-              taskExecution.status = 'failed';
-              taskExecution.error = error instanceof Error ? error.message : String(error);
-              taskExecution.endTime = Date.now();
-              taskExecution.duration = taskExecution.endTime - taskExecution.startTime;
-            }
-
-            failed.add(task.id);
-            this.logger(`Task failed: ${task.name} - ${error instanceof Error ? error.message : String(error)}`, 'error');
-
-            // Execute failure callbacks
-            if (task.on_failure) {
-              await this.executeCallbacks(task.on_failure, graph, executor, execution);
-            }
-
-            // Check if we should continue or fail workflow
-            // For now, fail workflow on any task failure
-            // Can be made configurable later
-            throw error;
-          }
-        }
+      if (fatalError) {
+        throw fatalError;
       }
 
       execution.endTime = Date.now();

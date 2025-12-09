@@ -5,7 +5,15 @@ import path from 'path';
 /**
  * Store and retrieve workflow execution history
  */
-export class ExecutionStore {
+export interface ExecutionStoreAdapter {
+  saveExecution(execution: WorkflowExecution): Promise<void>;
+  getExecution(executionId: string): Promise<WorkflowExecution | null>;
+  getAllExecutions(): Promise<WorkflowExecution[]>;
+  getExecutionsByWorkflow(workflowName: string): Promise<WorkflowExecution[]>;
+  getRecentExecutions(limit?: number): Promise<WorkflowExecution[]>;
+}
+
+export class ExecutionStore implements ExecutionStoreAdapter {
   private storagePath: string;
 
   constructor(storagePath: string = './workflows/.executions') {
