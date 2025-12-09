@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  aidevelo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aidevelo-app
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5000}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5000,https://aidevelo.ai,https://www.aidevelo.ai}
+      # Stripe wird später integriert - erstmal nicht benötigt
+      # - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      # - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    volumes:
+      # Optional: Mount for persistent data if needed
+      - ./data:/app/data
+

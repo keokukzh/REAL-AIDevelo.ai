@@ -31,3 +31,16 @@ workflows/.executions/
 
 # Vendor directory (external dependencies)
 vendor/
+
+# Build artifacts and logs
+build_log.txt
+build_output.txt
+*.tmp
+*.temp
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local

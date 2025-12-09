@@ -76,6 +76,13 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 
+// Serve static files from frontend build (in production)
+if (config.isProduction) {
+  const path = require('path');
+  const publicPath = path.join(__dirname, '../public');
+  app.use(express.static(publicPath));
+}
+
 // API Documentation (Swagger UI)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
@@ -163,6 +170,18 @@ app.use('/api/enterprise', enterpriseRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/onboarding', onboardingAIAssistantRoutes);
 app.use('/api/voice-agent', voiceAgentRoutes);
+
+// Serve frontend SPA (catch-all for client-side routing)
+if (config.isProduction) {
+  const path = require('path');
+  app.get('*', (req: Request, res: Response) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/api-docs')) {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+}
 
 // Error Handling
 app.use(errorHandler);
