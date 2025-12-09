@@ -30,14 +30,23 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow if origin is in allowed list
     if (origin && config.allowedOrigins.includes(origin)) {
       callback(null, true);
+    } else if (!origin) {
+      // Allow requests with no origin in development
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log the rejected origin for debugging
+      console.warn(`[CORS] Rejected origin: ${origin}. Allowed origins: ${config.allowedOrigins.join(', ')}`);
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 }));
 
 // Rate Limiting

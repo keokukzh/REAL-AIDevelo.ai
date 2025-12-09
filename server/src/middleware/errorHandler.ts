@@ -8,6 +8,32 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  // Handle CORS errors specifically
+  if (err.message && err.message.includes('CORS')) {
+    console.warn('[CORS Error]', {
+      message: err.message,
+      origin: req.headers.origin,
+      path: req.path,
+      method: req.method
+    });
+    
+    // For CORS errors, send proper response with CORS headers
+    // This prevents 500 errors on OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      return res.status(403).json({
+        success: false,
+        error: 'CORS policy violation',
+        message: err.message
+      });
+    }
+    
+    return res.status(403).json({
+      success: false,
+      error: 'CORS policy violation',
+      message: err.message
+    });
+  }
+
   // Log error (in production, use proper logging service)
   if (!config.isProduction) {
     console.error('[ErrorHandler]', {

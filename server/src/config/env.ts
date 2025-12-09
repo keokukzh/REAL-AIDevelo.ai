@@ -50,7 +50,9 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
     'http://localhost:3000',
-    'http://localhost:5173' // Vite default port
+    'http://localhost:5173', // Vite default port
+    'https://aidevelo.ai', // Production frontend
+    'https://www.aidevelo.ai' // Production frontend with www
   ],
   isProduction: process.env.NODE_ENV === 'production',
   stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,
