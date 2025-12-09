@@ -24,7 +24,24 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onConn
       );
 
       if (response && response.data && response.data.authUrl) {
-        // Open OAuth window
+        // Check if this is a mock URL (for testing without OAuth configured)
+        const isMockUrl = response.data.authUrl.includes('/calendar/') && response.data.authUrl.includes('code=mock_code');
+        
+        if (isMockUrl) {
+          // For testing: simulate OAuth flow with mock URL
+          console.warn('[CalendarIntegration] OAuth not configured, simulating success for testing');
+          
+          // Simulate opening OAuth window and receiving callback
+          setTimeout(() => {
+            // Trigger the success handler directly
+            setConnected(provider);
+            onConnected(provider);
+            setConnecting(null);
+          }, 1500);
+          return;
+        }
+
+        // Open OAuth window for real OAuth flow
         const width = 600;
         const height = 700;
         const left = window.screen.width / 2 - width / 2;

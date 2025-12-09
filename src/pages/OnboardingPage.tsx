@@ -423,8 +423,12 @@ export const OnboardingPage = () => {
                             </h2>
                             <CalendarIntegration 
                                 onConnected={(provider) => {
-                                    setFormData({...formData, calendarConnected: true});
-                                    handleTaskComplete('calendar');
+                                    console.log('[OnboardingPage] Calendar connected:', provider);
+                                    setFormData(prev => ({...prev, calendarConnected: true}));
+                                    // Small delay to ensure state is updated before closing
+                                    setTimeout(() => {
+                                        handleTaskComplete('calendar');
+                                    }, 100);
                                 }}
                             />
                         </motion.div>
