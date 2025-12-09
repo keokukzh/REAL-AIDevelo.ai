@@ -28,3 +28,6 @@ server/openapi.json
 
 # Workflow execution history
 workflows/.executions/
+
+# Vendor directory (external dependencies)
+vendor/
