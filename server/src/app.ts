@@ -1,10 +1,14 @@
+// Initialize observability (must be first import)
+import { setupObservability } from './config/observability';
+import { config } from './config/env';
+setupObservability(config.otlpExporterEndpoint);
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
-import { config } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';

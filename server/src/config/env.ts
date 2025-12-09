@@ -12,6 +12,7 @@ const optionalEnvVars = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
 };
 
 const validateEnv = () => {
@@ -58,5 +59,6 @@ export const config = {
   stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,
   stripeWebhookSecret: optionalEnvVars.STRIPE_WEBHOOK_SECRET,
   frontendUrl: optionalEnvVars.FRONTEND_URL,
+  otlpExporterEndpoint: optionalEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT,
 };
 
