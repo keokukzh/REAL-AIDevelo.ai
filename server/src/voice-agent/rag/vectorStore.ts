@@ -15,6 +15,7 @@ export class VectorStore {
     this.qdrantClient = new QdrantClient({
       url: voiceAgentConfig.vectorDb.qdrantUrl,
       apiKey: voiceAgentConfig.vectorDb.qdrantApiKey || undefined,
+      checkCompatibility: false,
     });
 
     this.openaiClient = new OpenAI({
