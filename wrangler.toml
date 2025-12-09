@@ -3,7 +3,7 @@ name = "real-aidevelo-ai"
 pages_build_output_dir = "dist"
 
 [env.production]
-vars = { VITE_API_URL = "real-aideveloai-production.up.railway.app" }
+vars = { VITE_API_URL = "https://real-aideveloai-production.up.railway.app/api" }
 
 [env.preview]
-vars = { VITE_API_URL = "real-aideveloai-production.up.railway.app" }
+vars = { VITE_API_URL = "https://real-aideveloai-production.up.railway.app/api" }
