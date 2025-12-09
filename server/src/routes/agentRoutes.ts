@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAgent, getAgents, getAgentById, activateAgent } from '../controllers/agentController';
+import { createAgent, getAgents, getAgentById, activateAgent, syncAgent } from '../controllers/agentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
 
@@ -157,5 +157,23 @@ router.get('/:id', validateParams(AgentIdParamSchema), getAgentById);
  *         description: Agent activated successfully
  */
 router.patch('/:id/activate', validateParams(AgentIdParamSchema), activateAgent);
+
+/**
+ * @swagger
+ * /agents/{id}/sync:
+ *   post:
+ *     summary: Sync agent with ElevenLabs
+ *     tags: [Agents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent synchronized successfully
+ */
+router.post('/:id/sync', validateParams(AgentIdParamSchema), syncAgent);
 
 export default router;

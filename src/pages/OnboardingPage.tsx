@@ -45,6 +45,8 @@ export const OnboardingPage = () => {
         openingHours: '', // Initialize as empty - user must explicitly select
         calendarConnected: false,
         recordingConsent: false, // Opt-in for call recording
+        voiceId: undefined as string | undefined, // Voice clone ID from VoiceOnboarding
+        voiceName: undefined as string | undefined, // Voice clone name
     });
 
     // Define tasks
@@ -170,10 +172,24 @@ export const OnboardingPage = () => {
                     fallbackLocales: ['en-US'],
                     recordingConsent: formData.recordingConsent, // Opt-in for call recording
                     elevenLabs: {
-                        voiceId: "21m00Tcm4TlvDq8ikWAM",
+                        voiceId: formData.voiceId || "21m00Tcm4TlvDq8ikWAM", // Use cloned voice if available
                         modelId: "eleven_turbo_v2_5"
                     }
-                }
+                },
+                // Add subscription info if available
+                subscription: planId && planName ? {
+                    planId: planId,
+                    planName: planName,
+                    purchaseId: purchaseId || '',
+                    purchasedAt: new Date().toISOString(),
+                } : undefined,
+                // Add voice cloning info if available
+                voiceCloning: formData.voiceId ? {
+                    voiceId: formData.voiceId,
+                    voiceName: formData.voiceName || 'Custom Voice Clone',
+                } : undefined,
+                // Pass purchaseId for linking
+                purchaseId: purchaseId || undefined,
             };
 
             await apiRequest('/agents', {
@@ -193,9 +209,13 @@ export const OnboardingPage = () => {
         }
     };
 
-    const handleVoiceFinished = () => {
+    const handleVoiceFinished = (voiceId?: string, voiceName?: string) => {
         // Mark voice task as completed
         setTasks(prev => prev.map(t => t.id === 'voice' ? { ...t, completed: true } : t));
+        // Store voice ID if provided
+        if (voiceId) {
+            setFormData(prev => ({ ...prev, voiceId, voiceName }));
+        }
         // Return to main view - don't create agent yet
         // Agent creation should only happen when all tasks are completed
         setActiveTask(null);
@@ -207,10 +227,11 @@ export const OnboardingPage = () => {
     if (activeTask === 'voice') {
         return (
             <VoiceOnboarding 
-                onBack={handleVoiceFinished}
+                onBack={() => handleVoiceFinished()}
                 onComplete={(voiceId?: string, audioData?: string) => {
-                    // Navigate to voice edit page after completion
+                    // Store voice ID and navigate to voice edit page
                     if (voiceId) {
+                        setFormData(prev => ({ ...prev, voiceId, voiceName: 'Custom Voice Clone' }));
                         navigate(`/voice-edit?voiceId=${voiceId}`);
                     } else {
                         handleVoiceFinished();

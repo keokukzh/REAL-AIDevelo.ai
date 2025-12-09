@@ -1,0 +1,105 @@
+import { Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '../services/db';
+import { Purchase } from '../models/types';
+import { NotFoundError, InternalServerError, BadRequestError } from '../utils/errors';
+
+/**
+ * Create a purchase record after successful payment
+ */
+export const createPurchase = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { planId, planName, customerEmail, purchaseId } = req.body;
+
+    if (!planId || !planName || !customerEmail || !purchaseId) {
+      return next(new BadRequestError('planId, planName, customerEmail, and purchaseId are required'));
+    }
+
+    const purchase: Purchase = {
+      id: uuidv4(),
+      planId,
+      planName,
+      customerEmail,
+      status: 'completed',
+      purchaseId,
+      createdAt: new Date(),
+      completedAt: new Date(),
+    };
+
+    db.savePurchase(purchase);
+
+    res.status(201).json({
+      success: true,
+      data: purchase,
+    });
+  } catch (error) {
+    next(new InternalServerError('Failed to create purchase'));
+  }
+};
+
+/**
+ * Link purchase to agent after onboarding
+ */
+export const linkPurchaseToAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { purchaseId } = req.params;
+    const { agentId } = req.body;
+
+    if (!agentId) {
+      return next(new BadRequestError('agentId is required'));
+    }
+
+    const purchase = db.getPurchaseByPurchaseId(purchaseId);
+    if (!purchase) {
+      return next(new NotFoundError('Purchase'));
+    }
+
+    // Verify agent exists
+    const agent = db.getAgent(agentId);
+    if (!agent) {
+      return next(new NotFoundError('Agent'));
+    }
+
+    purchase.agentId = agentId;
+    db.savePurchase(purchase);
+
+    // Update agent with subscription info
+    agent.subscription = {
+      planId: purchase.planId,
+      planName: purchase.planName,
+      purchaseId: purchase.purchaseId,
+      purchasedAt: purchase.completedAt || purchase.createdAt,
+      status: 'active',
+    };
+    db.saveAgent(agent);
+
+    res.json({
+      success: true,
+      data: purchase,
+    });
+  } catch (error) {
+    next(new InternalServerError('Failed to link purchase to agent'));
+  }
+};
+
+/**
+ * Get purchase by agent ID
+ */
+export const getPurchaseByAgentId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { agentId } = req.params;
+
+    const purchase = db.getPurchaseByAgentId(agentId);
+    if (!purchase) {
+      return next(new NotFoundError('Purchase'));
+    }
+
+    res.json({
+      success: true,
+      data: purchase,
+    });
+  } catch (error) {
+    next(new InternalServerError('Failed to retrieve purchase'));
+  }
+};
+

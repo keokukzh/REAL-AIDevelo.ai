@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest, ApiRequestError } from '../services/api';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
-import { Activity, Phone, Settings, Play, RefreshCw, BarChart } from 'lucide-react';
+import { Activity, Phone, Settings, Play, RefreshCw, BarChart, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 interface Agent {
     id: string;
@@ -14,7 +14,16 @@ interface Agent {
     config: {
         primaryLocale: string;
     };
-    status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'active' | 'live';
+    subscription?: {
+        planId: string;
+        planName: string;
+    };
+    telephony?: {
+        phoneNumber?: string;
+        phoneNumberId?: string;
+        status: 'unassigned' | 'assigned' | 'active' | 'inactive';
+    };
+    status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live';
     lastTestResult?: {
         score: number;
         passed: boolean;
@@ -26,6 +35,9 @@ export const DashboardPage = () => {
     const navigate = useNavigate();
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activatingAgentId, setActivatingAgentId] = useState<string | null>(null);
+    const [availableNumbers, setAvailableNumbers] = useState<Array<{ id: string; number: string; status: string }>>([]);
+    const [showActivationModal, setShowActivationModal] = useState(false);
 
     useEffect(() => {
         fetchAgents();
@@ -76,24 +88,64 @@ export const DashboardPage = () => {
         window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agentId}`, '_blank');
     };
 
-    const handleActivateAgent = async (agentId: string) => {
+    const handleActivateAgent = async (agentId: string, phoneNumberId?: string) => {
+        setActivatingAgentId(agentId);
         try {
             const res = await apiRequest<{ success: boolean; data: Agent; message?: string }>(`/agents/${agentId}/activate`, {
                 method: 'PATCH',
+                body: phoneNumberId ? { phoneNumberId } : undefined,
             });
             
             // Update the local agent state
             setAgents(prev => prev.map(a => 
                 a.id === agentId 
-                ? { ...a, status: res.data.status } 
+                ? { ...a, status: res.data.status, telephony: res.data.telephony } 
                 : a
             ));
             
+            setShowActivationModal(false);
+            setAvailableNumbers([]);
             alert(res.message || 'Agent erfolgreich aktiviert!');
         } catch (error) {
             const errorMessage = error instanceof ApiRequestError 
                 ? error.message 
                 : "Fehler beim Aktivieren des Agents.";
+            alert(errorMessage);
+        } finally {
+            setActivatingAgentId(null);
+        }
+    };
+
+    const handleOpenActivationModal = async (agentId: string) => {
+        const agent = agents.find(a => a.id === agentId);
+        if (!agent) return;
+
+        setShowActivationModal(true);
+        setActivatingAgentId(agentId);
+
+        // Fetch available phone numbers for the plan
+        try {
+            const planId = agent.subscription?.planId || 'starter';
+            const res = await apiRequest<{ success: boolean; data: Array<{ id: string; number: string; status: string }> }>(
+                `/telephony/numbers?planId=${planId}`
+            );
+            setAvailableNumbers(res.data);
+        } catch (error) {
+            console.error('Failed to fetch phone numbers:', error);
+            // Continue without phone number selection
+        }
+    };
+
+    const handleSyncAgent = async (agentId: string) => {
+        try {
+            await apiRequest(`/sync/agents/${agentId}`, { method: 'POST' });
+            // Refresh agents
+            fetchAgents();
+            alert('Agent erfolgreich synchronisiert!');
+        } catch (error) {
+            const errorMessage = error instanceof ApiRequestError 
+                ? error.message 
+                : "Fehler beim Synchronisieren des Agents.";
             alert(errorMessage);
         }
     };
@@ -135,25 +187,49 @@ export const DashboardPage = () => {
                                 key={agent.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-surface rounded-2xl border border-white/10 overflow-hidden hover:border-accent/50 transition-colors group"
+                                className="bg-surface rounded-2xl border border-white/10 overflow-hidden hover:border-accent/50 transition-colors group cursor-pointer"
+                                onClick={() => navigate(`/agent/${agent.id}`)}
                             >
                                 <div className="p-6 border-b border-white/5">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center text-accent">
                                             <Phone size={24} />
                                         </div>
-                                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                        <div className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
                                             agent.status === 'active' || agent.status === 'live' 
                                                 ? 'bg-green-500/20 text-green-400' 
+                                                : agent.status === 'pending_activation'
+                                                ? 'bg-yellow-500/20 text-yellow-400'
                                                 : agent.status === 'inactive'
                                                 ? 'bg-gray-500/20 text-gray-400'
                                                 : 'bg-yellow-500/20 text-yellow-400'
                                         }`}>
-                                            {agent.status === 'inactive' ? 'INAKTIV' : agent.status.toUpperCase()}
+                                            {agent.status === 'live' && <CheckCircle size={12} />}
+                                            {agent.status === 'pending_activation' && <Clock size={12} />}
+                                            {agent.status === 'inactive' && <XCircle size={12} />}
+                                            {agent.status === 'pending_activation' ? 'WARTEND' : agent.status === 'inactive' ? 'INAKTIV' : agent.status.toUpperCase()}
                                         </div>
                                     </div>
                                     <h3 className="text-xl font-bold mb-1">{agent.businessProfile.companyName}</h3>
                                     <p className="text-sm text-gray-400">{agent.config.primaryLocale}</p>
+                                    {agent.telephony?.phoneNumber && (
+                                        <div className="mt-2 flex items-center gap-2 text-sm text-gray-300">
+                                            <Phone size={14} />
+                                            <span>{agent.telephony.phoneNumber}</span>
+                                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                                agent.telephony.status === 'active' 
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-gray-500/20 text-gray-400'
+                                            }`}>
+                                                {agent.telephony.status === 'active' ? 'Aktiv' : 'Zugewiesen'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {agent.subscription && (
+                                        <div className="mt-1 text-xs text-gray-500">
+                                            Plan: {agent.subscription.planName}
+                                        </div>
+                                    )}
                                     
                                     {agent.lastTestResult && (
                                         <div className="mt-3 bg-white/5 p-2 rounded text-xs">
@@ -173,16 +249,20 @@ export const DashboardPage = () => {
                                     )}
                                 </div>
                                 <div className="p-4 bg-black/20 flex flex-col gap-2">
-                                    {agent.status === 'inactive' && (
+                                    {(agent.status === 'inactive' || agent.status === 'pending_activation') && (
                                         <Button 
                                             variant="primary" 
-                                            onClick={() => handleActivateAgent(agent.id)} 
+                                            onClick={() => handleOpenActivationModal(agent.id)} 
+                                            disabled={activatingAgentId === agent.id}
                                             className="w-full text-xs h-10 !bg-accent hover:!bg-accent/80 font-semibold"
                                         >
-                                            Agent aktivieren
+                                            {activatingAgentId === agent.id ? 'Aktiviere...' : 'Agent aktivieren'}
                                         </Button>
                                     )}
                                     <div className="flex gap-2">
+                                        <Button variant="outline" onClick={() => handleSyncAgent(agent.id)} className="flex-1 text-xs h-10">
+                                            <RefreshCw size={14} className="mr-2" /> Sync
+                                        </Button>
                                         <Button variant="outline" onClick={() => handleRunDiagnostics(agent.id)} className="flex-1 text-xs h-10">
                                             <Activity size={14} className="mr-2" /> Diagnose
                                         </Button>
@@ -196,6 +276,63 @@ export const DashboardPage = () => {
                     </div>
                 )}
             </main>
+
+            {/* Activation Modal */}
+            {showActivationModal && activatingAgentId && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-surface rounded-2xl border border-white/10 p-6 max-w-md w-full"
+                    >
+                        <h2 className="text-2xl font-bold mb-4">Agent aktivieren</h2>
+                        <p className="text-gray-400 mb-6">
+                            Wählen Sie eine Telefonnummer für diesen Agenten aus oder aktivieren Sie ihn mit der bereits zugewiesenen Nummer.
+                        </p>
+
+                        {availableNumbers.length > 0 && (
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium mb-2">Verfügbare Telefonnummern:</label>
+                                <div className="space-y-2">
+                                    {availableNumbers.map((number) => (
+                                        <button
+                                            key={number.id}
+                                            onClick={() => handleActivateAgent(activatingAgentId, number.id)}
+                                            className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-left transition-colors"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium">{number.number}</span>
+                                                <span className="text-xs text-gray-400">{number.status}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowActivationModal(false);
+                                    setAvailableNumbers([]);
+                                }}
+                                className="flex-1"
+                            >
+                                Abbrechen
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => handleActivateAgent(activatingAgentId)}
+                                disabled={activatingAgentId === activatingAgentId}
+                                className="flex-1"
+                            >
+                                Mit zugewiesener Nummer aktivieren
+                            </Button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 };

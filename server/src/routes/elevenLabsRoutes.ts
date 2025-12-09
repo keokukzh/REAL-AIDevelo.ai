@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getVoices, generateSpeech } from '../controllers/elevenLabsController';
+import { getVoices, generateSpeech, testConnection } from '../controllers/elevenLabsController';
 
 const router = Router();
 
@@ -104,5 +104,39 @@ router.get('/voices', getVoices);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/generate-speech', generateSpeech);
+
+/**
+ * @swagger
+ * /elevenlabs/test:
+ *   get:
+ *     summary: Test ElevenLabs API connection
+ *     tags: [ElevenLabs]
+ *     description: Tests the connection to ElevenLabs API by validating the API key, fetching user info, and testing TTS generation
+ *     responses:
+ *       200:
+ *         description: Connection test successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     apiKeyValid:
+ *                       type: boolean
+ *                     subscription:
+ *                       type: object
+ *                     voicesCount:
+ *                       type: number
+ *                     ttsTest:
+ *                       type: object
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/test', testConnection);
 
 export default router;

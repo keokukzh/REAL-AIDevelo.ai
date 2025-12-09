@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AgentConfig } from '../models/types';
+import { AgentConfig, PhoneNumber, PhoneSettings, PhoneStatus } from '../models/types';
 import { config } from '../config/env';
 import { InternalServerError } from '../utils/errors';
 
@@ -183,6 +183,368 @@ export class ElevenLabsService {
   async getAgentLink(agentId: string) {
        // Return the widget link for simplicity in V1
        return `https://elevenlabs.io/app/talk-to?agent_id=${agentId}`;
+  }
+
+  /**
+   * Create a voice clone from audio
+   */
+  async createVoiceClone(audioBuffer: Buffer, name: string, mimeType: string = 'audio/mpeg'): Promise<string> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      // Use form-data library for multipart/form-data
+      const FormData = require('form-data');
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('files', audioBuffer, {
+        filename: 'voice-clone.mp3',
+        contentType: mimeType,
+      });
+
+      const response = await axios.post(`${API_BASE}/voices/add`, formData, {
+        headers: {
+          'xi-api-key': config.elevenLabsApiKey,
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000, // 60 second timeout for voice cloning
+      });
+
+      return response.data.voice_id;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `ElevenLabs Voice Clone Creation Failed: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to create voice clone in ElevenLabs');
+    }
+  }
+
+  /**
+   * Get voice clone details
+   */
+  async getVoiceClone(voiceId: string): Promise<{
+    voice_id: string;
+    name: string;
+    samples?: Array<{ sample_id: string; file_name: string }>;
+    category?: string;
+    fine_tuning?: any;
+  }> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/voices/${voiceId}`, {
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        timeout: 10000,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to get voice clone: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to get voice clone from ElevenLabs');
+    }
+  }
+
+  /**
+   * Delete a voice clone
+   */
+  async deleteVoiceClone(voiceId: string): Promise<void> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      await axios.delete(`${API_BASE}/voices/${voiceId}`, {
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        timeout: 10000,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to delete voice clone: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to delete voice clone from ElevenLabs');
+    }
+  }
+
+  /**
+   * Update an agent in ElevenLabs
+   */
+  async updateAgent(agentId: string, updates: {
+    name?: string;
+    prompt?: string;
+    voiceId?: string;
+    firstMessage?: string;
+  }): Promise<void> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      const payload: any = {};
+      
+      if (updates.name) payload.name = updates.name;
+      if (updates.prompt || updates.voiceId || updates.firstMessage) {
+        payload.conversation_config = {};
+        if (updates.prompt || updates.firstMessage) {
+          payload.conversation_config.agent = {};
+          if (updates.prompt) {
+            payload.conversation_config.agent.prompt = { prompt: updates.prompt };
+          }
+          if (updates.firstMessage) {
+            payload.conversation_config.agent.first_message = updates.firstMessage;
+          }
+        }
+        if (updates.voiceId) {
+          payload.conversation_config.tts = { voice_id: updates.voiceId };
+        }
+      }
+
+      await axios.patch(`${API_BASE}/convai/agents/${agentId}`, payload, {
+        headers: {
+          'xi-api-key': config.elevenLabsApiKey,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to update agent in ElevenLabs: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to update agent in ElevenLabs');
+    }
+  }
+
+  /**
+   * Get agent status from ElevenLabs
+   */
+  async getAgentStatus(agentId: string): Promise<{
+    agent_id: string;
+    status: string;
+    name?: string;
+    created_at?: string;
+  }> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/convai/agents/${agentId}`, {
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        timeout: 10000,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to get agent status: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to get agent status from ElevenLabs');
+    }
+  }
+
+  /**
+   * Sync agent with ElevenLabs (get latest status and update)
+   */
+  async syncAgent(agentId: string): Promise<void> {
+    // This will be implemented to sync agent status
+    // For now, just get the status
+    await this.getAgentStatus(agentId);
+  }
+
+  /**
+   * Get available phone numbers from ElevenLabs Telephony
+   */
+  async getAvailablePhoneNumbers(country: string = 'CH'): Promise<PhoneNumber[]> {
+    if (!config.isElevenLabsConfigured) {
+      // Return mock data for testing
+      return [
+        { id: 'mock_1', number: '+41 44 123 45 67', country: 'CH', status: 'available' },
+        { id: 'mock_2', number: '+41 44 123 45 68', country: 'CH', status: 'available' },
+      ];
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/telephony/phone-numbers`, {
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        params: { country },
+        timeout: 10000,
+      });
+
+      return response.data.phone_numbers?.map((pn: any) => ({
+        id: pn.id,
+        number: pn.number,
+        country: pn.country || country,
+        status: pn.status || 'available',
+        agentId: pn.agent_id,
+      })) || [];
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to fetch phone numbers: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to fetch phone numbers from ElevenLabs');
+    }
+  }
+
+  /**
+   * Assign a phone number to an agent
+   */
+  async assignPhoneNumber(agentId: string, phoneNumberId?: string): Promise<PhoneNumber> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      // If no phoneNumberId provided, get first available number
+      let targetPhoneNumberId = phoneNumberId;
+      if (!targetPhoneNumberId) {
+        const availableNumbers = await this.getAvailablePhoneNumbers('CH');
+        const available = availableNumbers.find(pn => pn.status === 'available');
+        if (!available) {
+          throw new InternalServerError('No available phone numbers found');
+        }
+        targetPhoneNumberId = available.id;
+      }
+
+      const response = await axios.post(
+        `${API_BASE}/telephony/phone-numbers/${targetPhoneNumberId}/assign`,
+        { agent_id: agentId },
+        {
+          headers: {
+            'xi-api-key': config.elevenLabsApiKey,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      );
+
+      return {
+        id: response.data.id || targetPhoneNumberId,
+        number: response.data.number,
+        country: response.data.country || 'CH',
+        status: 'assigned',
+        agentId: agentId,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to assign phone number: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to assign phone number in ElevenLabs');
+    }
+  }
+
+  /**
+   * Update phone number settings
+   */
+  async updatePhoneNumberSettings(phoneNumberId: string, settings: PhoneSettings): Promise<void> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      const payload: any = {
+        agent_id: settings.agentId,
+      };
+      
+      if (settings.greetingMessage) {
+        payload.greeting_message = settings.greetingMessage;
+      }
+      if (settings.voicemailEnabled !== undefined) {
+        payload.voicemail_enabled = settings.voicemailEnabled;
+      }
+      if (settings.callRecordingEnabled !== undefined) {
+        payload.call_recording_enabled = settings.callRecordingEnabled;
+      }
+
+      await axios.patch(`${API_BASE}/telephony/phone-numbers/${phoneNumberId}`, payload, {
+        headers: {
+          'xi-api-key': config.elevenLabsApiKey,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to update phone number settings: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to update phone number settings in ElevenLabs');
+    }
+  }
+
+  /**
+   * Get phone number status
+   */
+  async getPhoneNumberStatus(phoneNumberId: string): Promise<PhoneStatus> {
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError('ElevenLabs API key is not configured');
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/telephony/phone-numbers/${phoneNumberId}`, {
+        headers: { 'xi-api-key': config.elevenLabsApiKey },
+        timeout: 10000,
+      });
+
+      return {
+        phoneNumberId: response.data.id || phoneNumberId,
+        status: response.data.status || 'inactive',
+        agentId: response.data.agent_id,
+        lastCallAt: response.data.last_call_at ? new Date(response.data.last_call_at) : undefined,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `Failed to get phone number status: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to get phone number status from ElevenLabs');
+    }
   }
 }
 

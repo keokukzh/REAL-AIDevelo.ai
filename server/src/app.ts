@@ -15,6 +15,10 @@ import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
+import purchaseRoutes from './routes/purchaseRoutes';
+import voiceRoutes from './routes/voiceRoutes';
+import telephonyRoutes from './routes/telephonyRoutes';
+import syncRoutes from './routes/syncRoutes';
 import { createServer } from 'http';
 
 const app = express();
@@ -151,6 +155,10 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/elevenlabs', elevenLabsRoutes);
 app.use('/api/tests', testRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/purchases', purchaseRoutes);
+app.use('/api/voice', voiceRoutes);
+app.use('/api/telephony', telephonyRoutes);
+app.use('/api/sync', syncRoutes);
 app.use('/api/enterprise', enterpriseRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/onboarding', onboardingAIAssistantRoutes);
@@ -166,11 +174,18 @@ if (require.main === module) {
   // Setup WebSocket server for voice agent
   setupWebSocketServer(httpServer);
   
+  // Register and start background jobs
+  const { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } = require('./jobs/syncJobs');
+  registerSyncJobs();
+  scheduleDailySync();
+  scheduleStatusChecks();
+  
   httpServer.listen(config.port, () => {
     console.log(`[AIDevelo Server] Running on http://localhost:${config.port}`);
     console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
     console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
     console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
+    console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
   });
 }
 

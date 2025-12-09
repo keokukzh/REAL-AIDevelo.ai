@@ -14,6 +14,7 @@ import { ImpressumPage } from './pages/ImpressumPage';
 import { DatenschutzPage } from './pages/DatenschutzPage';
 import { AGBPage } from './pages/AGBPage';
 import { VoiceEditPage } from './pages/VoiceEditPage';
+import { AgentDetailsPage } from './pages/AgentDetailsPage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/voice-edit" element={<VoiceEditPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/agent/:id" element={<AgentDetailsPage />} />
                 <Route path="/impressum" element={<ImpressumPage />} />
                 <Route path="/datenschutz" element={<DatenschutzPage />} />
                 <Route path="/agb" element={<AGBPage />} />

@@ -6,9 +6,17 @@ import { generateSystemPrompt } from '../services/promptService';
 import { VoiceAgent } from '../models/types';
 import { NotFoundError, InternalServerError } from '../utils/errors';
 
+// Plan-based phone number limits
+const PHONE_NUMBER_LIMITS: Record<string, number> = {
+  starter: 1,
+  business: 2,
+  premium: 3,
+  enterprise: 5, // Default for enterprise
+};
+
 export const createAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { businessProfile, config } = req.body;
+    const { businessProfile, config, subscription, voiceCloning, purchaseId } = req.body;
     
     // 1. Generate System Prompt based on profile and recording consent
     const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent: config.recordingConsent });
@@ -19,24 +27,96 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       systemPrompt: config.systemPrompt || systemPrompt
     };
 
-    // 3. Create Agent in ElevenLabs
+    // 3. Handle Voice Cloning if provided
+    let voiceId = config.elevenLabs.voiceId;
+    if (voiceCloning?.voiceId) {
+      voiceId = voiceCloning.voiceId;
+      finalConfig.elevenLabs.voiceId = voiceId;
+    }
+
+    // 4. Create Agent in ElevenLabs
     const elevenLabsAgentId = await elevenLabsService.createAgent(
       `${businessProfile.companyName} - Assistant`,
       finalConfig
     );
 
-    // 4. Save to internal DB (status: inactive - needs manual activation)
+    // 5. Assign phone number(s) based on plan (but don't activate)
+    let telephony;
+    if (subscription?.planId) {
+      const phoneNumberLimit = PHONE_NUMBER_LIMITS[subscription.planId] || 1;
+      try {
+        const availableNumbers = await elevenLabsService.getAvailablePhoneNumbers('CH');
+        const numbersToAssign = availableNumbers
+          .filter(pn => pn.status === 'available')
+          .slice(0, phoneNumberLimit);
+
+        if (numbersToAssign.length > 0) {
+          // Assign first number
+          const assignedNumber = await elevenLabsService.assignPhoneNumber(elevenLabsAgentId, numbersToAssign[0].id);
+          telephony = {
+            phoneNumber: assignedNumber.number,
+            phoneNumberId: assignedNumber.id,
+            status: 'assigned' as const,
+            assignedAt: new Date(),
+          };
+        }
+      } catch (error) {
+        // Log error but don't fail agent creation
+        console.warn('[AgentController] Failed to assign phone number:', error);
+      }
+    }
+
+    // 6. Link purchase if provided
+    if (purchaseId) {
+      try {
+        const purchase = db.getPurchaseByPurchaseId(purchaseId);
+        if (purchase) {
+          purchase.agentId = undefined; // Will be set after agent creation
+        }
+      } catch (error) {
+        console.warn('[AgentController] Failed to link purchase:', error);
+      }
+    }
+
+    // 7. Save to internal DB (status: pending_activation - needs manual activation)
     const newAgent: VoiceAgent = {
       id: uuidv4(),
       elevenLabsAgentId,
       businessProfile,
       config: finalConfig,
-      status: 'inactive', // Agent created but not activated yet
+      subscription: subscription ? {
+        planId: subscription.planId,
+        planName: subscription.planName,
+        purchaseId: subscription.purchaseId || purchaseId || '',
+        purchasedAt: subscription.purchasedAt ? new Date(subscription.purchasedAt) : new Date(),
+        status: 'active',
+      } : undefined,
+      telephony,
+      voiceCloning: voiceCloning?.voiceId ? {
+        voiceId: voiceCloning.voiceId,
+        voiceName: voiceCloning.voiceName,
+        audioUrl: voiceCloning.audioUrl,
+        createdAt: voiceCloning.createdAt ? new Date(voiceCloning.createdAt) : new Date(),
+      } : undefined,
+      status: 'pending_activation', // Agent created but needs manual activation
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
     db.saveAgent(newAgent);
+
+    // 8. Link purchase to agent if purchaseId provided
+    if (purchaseId) {
+      try {
+        const purchase = db.getPurchaseByPurchaseId(purchaseId);
+        if (purchase) {
+          purchase.agentId = newAgent.id;
+          db.savePurchase(purchase);
+        }
+      } catch (error) {
+        console.warn('[AgentController] Failed to link purchase:', error);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -72,6 +152,7 @@ export const getAgentById = (req: Request, res: Response, next: NextFunction) =>
 export const activateAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agentId = req.params.id;
+    const { phoneNumberId } = req.body; // Optional: specific phone number to activate
     const agent = db.getAgent(agentId);
     
     if (!agent) {
@@ -85,17 +166,111 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    // Update agent status to active
+    if (!agent.elevenLabsAgentId) {
+      return next(new InternalServerError('Agent has no ElevenLabs ID'));
+    }
+
+    // 1. Activate phone number if assigned
+    if (agent.telephony?.phoneNumberId) {
+      try {
+        const targetPhoneNumberId = phoneNumberId || agent.telephony.phoneNumberId;
+        
+        // Update phone number settings to activate
+        await elevenLabsService.updatePhoneNumberSettings(targetPhoneNumberId, {
+          agentId: agent.elevenLabsAgentId,
+          callRecordingEnabled: agent.config.recordingConsent || false,
+        });
+
+        // Update telephony status
+        agent.telephony.status = 'active';
+        agent.telephony.assignedAt = new Date();
+      } catch (error) {
+        console.error('[AgentController] Failed to activate phone number:', error);
+        // Continue with activation even if phone number activation fails
+      }
+    }
+
+    // 2. Update ElevenLabs agent status (if API supports it)
+    // Note: ElevenLabs might not have explicit "live" status, but we can verify agent exists
+    try {
+      await elevenLabsService.getAgentStatus(agent.elevenLabsAgentId);
+    } catch (error) {
+      console.warn('[AgentController] Failed to verify ElevenLabs agent status:', error);
+    }
+
+    // 3. Update agent status
     agent.status = 'active';
     agent.updatedAt = new Date();
     db.saveAgent(agent);
 
+    // 4. After a short delay, mark as "live" (fully operational)
+    setTimeout(() => {
+      const updatedAgent = db.getAgent(agentId);
+      if (updatedAgent && updatedAgent.status === 'active') {
+        updatedAgent.status = 'live';
+        updatedAgent.updatedAt = new Date();
+        db.saveAgent(updatedAgent);
+      }
+    }, 5000); // 5 second delay to ensure everything is ready
+
     res.json({
       success: true,
       data: agent,
-      message: 'Agent successfully activated'
+      message: 'Agent successfully activated. Status will update to "live" shortly.'
     });
   } catch (error) {
     next(new InternalServerError('Failed to activate agent'));
+  }
+};
+
+/**
+ * Sync agent with ElevenLabs
+ */
+export const syncAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.params.id;
+    const agent = db.getAgent(agentId);
+    
+    if (!agent) {
+      return next(new NotFoundError('Agent'));
+    }
+
+    if (!agent.elevenLabsAgentId) {
+      return next(new InternalServerError('Agent has no ElevenLabs ID'));
+    }
+
+    try {
+      // Get latest status from ElevenLabs
+      const elevenLabsStatus = await elevenLabsService.getAgentStatus(agent.elevenLabsAgentId);
+
+      // Update phone number status if assigned
+      if (agent.telephony?.phoneNumberId) {
+        try {
+          const phoneStatus = await elevenLabsService.getPhoneNumberStatus(agent.telephony.phoneNumberId);
+          if (agent.telephony) {
+            agent.telephony.status = phoneStatus.status as any;
+          }
+        } catch (error) {
+          console.warn('[AgentController] Failed to sync phone number status:', error);
+        }
+      }
+
+      // Update agent
+      agent.updatedAt = new Date();
+      db.saveAgent(agent);
+
+      res.json({
+        success: true,
+        data: {
+          agent,
+          elevenLabsStatus,
+        },
+        message: 'Agent synchronized successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  } catch (error) {
+    next(new InternalServerError('Failed to sync agent'));
   }
 };
