@@ -16,7 +16,7 @@ const DEMO_SCENARIOS: DemoScenario[] = [
         id: 'friseur',
         title: 'Friseursalon',
         subtitle: 'Terminvereinbarung',
-        audioFile: '/audio/demo_friseur.mp3', // Branchenspezifische Audio-Datei
+        audioFile: '/audio/demo_de.mp3', // Fallback auf vorhandene Datei
         transcript: 'Guten Tag! Hier ist der digitale Assistent von Salon Beauty. Möchten Sie einen Termin für einen Haarschnitt vereinbaren?',
         icon: '✂️'
     },
@@ -24,7 +24,7 @@ const DEMO_SCENARIOS: DemoScenario[] = [
         id: 'garage',
         title: 'Autowerkstatt',
         subtitle: 'Service-Anfrage',
-        audioFile: '/audio/demo_garage.mp3', // Branchenspezifische Audio-Datei
+        audioFile: '/audio/demo_de.mp3', // Fallback auf vorhandene Datei
         transcript: 'Grüezi! Hier ist die Garage Müller. Wie kann ich Ihnen helfen? Möchten Sie einen Service-Termin vereinbaren?',
         icon: '🔧'
     },
@@ -32,7 +32,7 @@ const DEMO_SCENARIOS: DemoScenario[] = [
         id: 'zahnarzt',
         title: 'Zahnarztpraxis',
         subtitle: 'Terminbuchung',
-        audioFile: '/audio/demo_zahnarzt.mp3', // Branchenspezifische Audio-Datei
+        audioFile: '/audio/demo_de.mp3', // Fallback auf vorhandene Datei
         transcript: 'Guten Tag! Hier ist der digitale Assistent von Dr. Weber. Möchten Sie einen Termin für eine Untersuchung vereinbaren?',
         icon: '🦷'
     },
@@ -40,7 +40,7 @@ const DEMO_SCENARIOS: DemoScenario[] = [
         id: 'restaurant',
         title: 'Restaurant',
         subtitle: 'Tischreservierung',
-        audioFile: '/audio/demo_restaurant.mp3', // Branchenspezifische Audio-Datei
+        audioFile: '/audio/demo_de.mp3', // Fallback auf vorhandene Datei
         transcript: 'Grüezi! Hier ist das Restaurant Alpenblick. Möchten Sie einen Tisch reservieren? Für wie viele Personen?',
         icon: '🍽️'
     },
@@ -48,7 +48,7 @@ const DEMO_SCENARIOS: DemoScenario[] = [
         id: 'immobilien',
         title: 'Immobilien',
         subtitle: 'Besichtigungstermin',
-        audioFile: '/audio/demo_immobilien.mp3', // Branchenspezifische Audio-Datei
+        audioFile: '/audio/demo_de.mp3', // Fallback auf vorhandene Datei
         transcript: 'Guten Tag! Hier ist Immobilien AG. Möchten Sie eine Besichtigung vereinbaren? Welche Art von Immobilie suchen Sie?',
         icon: '🏠'
     }
