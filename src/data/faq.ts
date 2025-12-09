@@ -48,5 +48,41 @@ export const faqs: FaqItem[] = [
   {
     question: "Was ist der Unterschied zwischen den Plänen?",
     answer: "Die Pläne unterscheiden sich hauptsächlich im Anrufvolumen (Starter: 120, Business: 350, Premium: 800 Anrufe/Monat), der Anzahl der Telefonnummern, Voice-Cloning-Optionen und Support-Level. Der Business-Plan ist für die meisten KMUs optimal. Details finden Sie in der Preistabelle."
+  },
+  {
+    question: "Was ist der Flash-Deal (3 Monate für 599 CHF)?",
+    answer: "Der Flash-Deal ist ein zeitlich begrenztes Einführungsangebot für den Business-Plan. Sie zahlen einmalig 599 CHF für 3 Monate (statt 537 CHF bei regulärer monatlicher Zahlung) und sparen 37 CHF. Nach den 3 Monaten wechseln Sie automatisch auf den regulären Monatspreis von 179 CHF. Der Deal ist nur für Neukunden gültig."
+  },
+  {
+    question: "Was passiert bei mehr Anrufen als im Plan enthalten?",
+    answer: "Wenn Sie Ihr monatliches Anruf-Limit überschreiten, können Sie zusätzliche Anruf-Pakete erwerben. Alternativ können Sie jederzeit auf einen höheren Plan upgraden. Wir benachrichtigen Sie per E-Mail, wenn Sie 80% Ihres Limits erreicht haben, damit Sie rechtzeitig reagieren können."
+  },
+  {
+    question: "Wie lange werden Anrufaufzeichnungen gespeichert?",
+    answer: "Aufgezeichnete Anrufe werden maximal 90 Tage gespeichert, sofern Sie der Aufzeichnung zugestimmt haben. Sie können Aufzeichnungen jederzeit über Ihr Dashboard löschen oder die Aufzeichnung komplett deaktivieren. Die Löschung erfolgt automatisch nach 90 Tagen."
+  },
+  {
+    question: "Welche Daten werden gespeichert und wo?",
+    answer: "Wir speichern nur die für den Betrieb notwendigen Daten: Firmeninformationen, Kontaktdaten, Kalender-Integrationen (Token), Voice-Cloning-Daten und Anruf-Logs (ohne Aufzeichnung, falls nicht gewünscht). Alle Daten werden gemäß nDSG in der Schweiz oder EU gespeichert. Eine detaillierte Auflistung finden Sie in unserer Datenschutzerklärung."
+  },
+  {
+    question: "Kann ich mehrere Agenten mit verschiedenen Stimmen betreiben?",
+    answer: "Ja, ab dem Business-Plan können Sie Voice Cloning nutzen. Der Business-Plan beinhaltet 1 Stimme, der Premium-Plan 2 Stimmen. Zusätzliche Stimmen können gegen Aufpreis hinzugefügt werden. Jede Stimme kann für verschiedene Zwecke oder Standorte verwendet werden."
+  },
+  {
+    question: "Wie funktioniert die Integration mit meinem CRM?",
+    answer: "Der Premium-Plan beinhaltet API-Zugriff für CRM-Integrationen. Sie können Webhooks konfigurieren, um Anruf-Events (z.B. Terminbuchungen, Lead-Qualifizierungen) direkt in Ihr CRM zu übertragen. Wir unterstützen gängige CRMs wie HubSpot, Salesforce, Pipedrive und bieten auch eine generische REST-API für Custom-Integrationen."
+  },
+  {
+    question: "Was kostet die Telefonnummer?",
+    answer: "Die Schweizer Telefonnummer ist in allen Plänen inklusive. Sie erhalten je nach Plan 1-3 Nummern. Eine Portierung Ihrer bestehenden Nummer ist kostenlos. Zusätzliche Nummern können gegen Aufpreis hinzugefügt werden."
+  },
+  {
+    question: "Gibt es eine Testphase oder Geld-zurück-Garantie?",
+    answer: "Ja, Sie können den Service 14 Tage lang kostenlos testen. Während der Testphase haben Sie Zugriff auf alle Features Ihres gewählten Plans. Falls Sie nicht zufrieden sind, können Sie innerhalb der ersten 14 Tage ohne Angabe von Gründen kündigen und erhalten Ihr Geld zurück."
+  },
+  {
+    question: "Wie kann ich meinen Agent anpassen oder umkonfigurieren?",
+    answer: "Sie können Ihren Agent jederzeit über das Dashboard anpassen: Öffnungszeiten ändern, Ziele aktualisieren, Kalender verbinden/trennen, Voice-Clone neu aufnehmen oder Prompts anpassen. Größere Änderungen (z.B. neue Branchen-Templates) sind im Premium-Plan enthalten oder können als Add-on gebucht werden."
   }
 ];

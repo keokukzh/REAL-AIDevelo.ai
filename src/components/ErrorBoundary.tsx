@@ -24,10 +24,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to error reporting service in production
-    if (import.meta.env.PROD) {
-      // Could integrate with error reporting service here
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Always log errors for debugging
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   handleReset = () => {
@@ -52,10 +50,13 @@ export class ErrorBoundary extends Component<Props, State> {
               Es tut uns leid, aber es ist ein unerwarteter Fehler aufgetreten. 
               Bitte versuchen Sie es erneut oder kontaktieren Sie uns, wenn das Problem weiterhin besteht.
             </p>
-            {import.meta.env.DEV && this.state.error && (
+            {this.state.error && (
               <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-left">
                 <p className="text-xs font-mono text-red-400 break-all">
                   {this.state.error.toString()}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Stack: {this.state.error.stack?.substring(0, 500)}
                 </p>
               </div>
             )}

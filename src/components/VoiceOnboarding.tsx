@@ -389,15 +389,30 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         }
     } catch (error) {
         // Retry logic for network errors
-        if (retryCount < 2 && error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
+        const isNetworkError = error instanceof Error && (
+            error.message.includes('fetch') || 
+            error.message.includes('network') || 
+            error.message.includes('Failed to fetch') ||
+            error.message.includes('NetworkError')
+        );
+        
+        if (retryCount < 2 && isNetworkError) {
             setAnalysisStatus(`Wiederhole... (${retryCount + 1}/2)`);
             setTimeout(() => {
                 processRecording(blob, retryCount + 1);
             }, 2000);
         } else {
             // Final error - allow user to continue or go back
+            const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
             setAnalysisStatus("Fehler: Verbindung zum Server fehlgeschlagen. Sie können es erneut versuchen oder später fortfahren.");
-            console.error('[VoiceOnboarding] Error processing recording:', error);
+            console.error('[VoiceOnboarding] Error processing recording:', errorMessage);
+            
+            // Show a retry button option
+            setTimeout(() => {
+                if (analysisStatus?.includes('Fehler')) {
+                    // Keep error message visible for user to see
+                }
+            }, 100);
         }
     }
   };
@@ -509,11 +524,25 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
             <span className="font-display font-bold text-xl">AIDevelo Voice Studio</span>
         </div>
         <button 
-            onClick={onBack} 
-            className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-white/5"
+            onClick={() => {
+                // Stop recording if active
+                if (isRecording || isRecordingRef.current) {
+                    if (confirm('Aufnahme wird beendet. Möchten Sie wirklich zurückgehen?')) {
+                        handleStopRecording();
+                        // Wait a moment for cleanup, then go back
+                        setTimeout(() => {
+                            onBack();
+                        }, 500);
+                    }
+                } else {
+                    onBack();
+                }
+            }} 
+            className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Zurück zum Onboarding"
+            disabled={step === 'processing'}
         >
-            Schliessen
+            {isRecording ? 'Aufnahme beenden & zurück' : 'Schliessen'}
         </button>
       </header>
 
@@ -716,6 +745,22 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
                             >
                                 Klicken Sie auf den roten Button zum Stoppen
                             </motion.p>
+                        )}
+                        
+                        {/* Error retry button */}
+                        {analysisStatus?.includes('Fehler') && !isRecording && (
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setAnalysisStatus(null);
+                                    setCurrentSentenceIndex(0);
+                                    setMetrics({ clarity: 0, emotion: 'Neutral', dialect: 0 });
+                                }}
+                                className="mt-2"
+                            >
+                                <RefreshCw size={16} className="mr-2" />
+                                Erneut versuchen
+                            </Button>
                         )}
                     </div>
                 </motion.div>
