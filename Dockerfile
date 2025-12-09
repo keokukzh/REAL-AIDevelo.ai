@@ -2,11 +2,11 @@
 # Stage 1: Build Frontend
 FROM node:20-alpine AS frontend-builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Copy frontend package files
 COPY package*.json ./
-RUN npm ci --only=production=false
+RUN npm ci --legacy-peer-deps
 
 # Copy frontend source
 COPY . .
@@ -21,11 +21,10 @@ WORKDIR /app/server
 
 # Copy backend package files
 COPY server/package*.json ./
-RUN npm ci --only=production=false
+RUN npm ci --legacy-peer-deps
 
 # Copy backend source
-COPY server/tsconfig.json ./
-COPY server/src ./src
+COPY server/ .
 
 # Build backend TypeScript
 RUN npm run build
@@ -38,7 +37,7 @@ WORKDIR /app
 # Install production dependencies for backend
 COPY server/package*.json ./server/
 WORKDIR /app/server
-RUN npm ci --only=production
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # Copy built backend files
 COPY --from=backend-builder /app/server/dist ./dist
