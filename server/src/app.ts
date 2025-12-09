@@ -49,7 +49,13 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/', limiter);
+// Apply rate limiting to API routes (except health check)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') && req.path !== '/api') {
+    return limiter(req, res, next);
+  }
+  next();
+});
 
 // Logging
 app.use(morgan(config.isProduction ? 'combined' : 'dev'));

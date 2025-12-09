@@ -111,7 +111,10 @@ export const VoiceEditPage = () => {
                 throw new Error('Keine Audio-Daten in der Antwort erhalten.');
             }
         } catch (error) {
-            console.error('[VoiceEditPage] Error generating speech:', error);
+            // Only log full error in development
+            if (import.meta.env.DEV) {
+                console.error('[VoiceEditPage] Error generating speech:', error);
+            }
             if (error instanceof ApiRequestError) {
                 // Check if it's a network error (server not running)
                 if (error.statusCode === 0 || error.message.includes('Network error') || error.message.includes('Unable to connect')) {

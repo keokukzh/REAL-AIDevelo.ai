@@ -5,6 +5,8 @@ const getApiBaseUrl = (): string => {
     // @ts-ignore
     return import.meta.env.VITE_API_URL;
   }
+  // Default to localhost:5000/api for development
+  // In production, this should be set via VITE_API_URL
   return 'http://localhost:5000/api';
 };
 
@@ -30,7 +32,10 @@ export class ApiRequestError extends Error {
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log('[API] Making request to:', url);
+    // Only log in development and for debugging
+    if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API === 'true') {
+      console.log('[API] Making request to:', url);
+    }
     
     const response = await fetch(url, {
       headers: {
