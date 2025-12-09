@@ -64,6 +64,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customfavIcon: '/favicon.ico'
 }));
 
+// Root endpoint
+app.get('/', (req: Request, res: Response) => {
+  res.json({ 
+    success: true, 
+    message: 'AIDevelo API Server',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      apiDocs: '/api-docs',
+      agents: '/api/agents',
+      elevenlabs: '/api/elevenlabs',
+      calendar: '/api/calendar',
+      payments: '/api/payments',
+      enterprise: '/api/enterprise',
+      onboarding: '/api/onboarding',
+      voiceAgent: '/api/voice-agent'
+    }
+  });
+});
+
 // Health Check
 /**
  * @swagger
