@@ -136,11 +136,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
              viewport={{ once: true }}
            >
              <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">
-                So klingt Ihr <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">persönlicher Voice Agent.</span>
+               So klingt Ihr <br />
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">persönlicher Voice Agent.</span>
              </h2>
              <p className="text-xl text-gray-400 leading-relaxed mb-8">
-                Vergessen Sie robotische Computerstimmen. AIDevelo nutzt modernste Sprachsynthese mit Schweizer Dialekt-Verständnis, um natürliche, einfühlsame Gespräche zu führen.
+               Schweizerdeutsch, empathisch und schnell. Der Agent nimmt 24/7 ab, qualifiziert und bucht direkt in Ihren Kalender.
              </p>
              
              <ul className="space-y-4 mb-8">
@@ -152,9 +152,19 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
                 ))}
              </ul>
 
-             <button onClick={onStartOnboarding} className="text-white border-b border-accent pb-1 hover:text-accent transition-colors flex items-center gap-2 group">
-                Jetzt gratis testen <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-             </button>
+             <div className="flex flex-wrap gap-4">
+               <button onClick={onStartOnboarding} className="text-white border-b border-accent pb-1 hover:text-accent transition-colors flex items-center gap-2 group">
+                  Jetzt gratis testen <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+               </button>
+               <a
+                 href="https://calendly.com/aidevelo-enterprise"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="text-sm text-accent hover:text-white border border-accent/40 rounded-full px-4 py-2 transition-colors"
+               >
+                 Termin buchen
+               </a>
+             </div>
            </motion.div>
         </div>
 

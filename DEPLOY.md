@@ -46,6 +46,19 @@ A workflow is already set up in `.github/workflows/cloudflare-pages.yml`.
    - `CLOUDFLARE_ACCOUNT_ID`: Your Account ID (found in Cloudflare URL/Dashboard)
 3. Push to `main` to trigger auto-deployment.
 
+## CI/CD (GitHub Actions)
+
+The workflow `.github/workflows/ci.yml` runs on pushes to `main` and pull requests:
+- Frontend: `npm ci`, `npm run test -- --runInBand`, `npm run build`, uploads `dist/` artifact on push.
+- Backend: `npm ci`, `npm run build`, `npm run docs:generate`, uploads `server/openapi.json` artifact on push.
+- Docker image: builds the root `Dockerfile`, pushes to GHCR (`ghcr.io/<owner>/aidevelo-api`) on `main`.
+- Optional deploy: if `DEPLOY_BACKEND` variable is `true` and `RAILWAY_TOKEN` secret is set, deploys to Railway using `railway up --ci --detach`.
+
+Required Actions secrets/vars:
+- `RAILWAY_TOKEN` (secret) – enables the optional deploy job.
+- `DEPLOY_BACKEND` (repo or org variable) – set to `true` to turn on the deploy job.
+- Optional: set `CF_PAGES_*` secrets as above if you keep the Cloudflare workflow.
+
 ---
 
 ## 2. Backend (Node.js/Express)
@@ -55,17 +68,20 @@ The backend requires a persistent environment (container) and cannot run as a st
 ### Deployment Options
 
 #### Docker (Universal)
-A `server/Dockerfile` is ready for use.
-1. Build: `docker build -t aidevelo-api ./server`
+Use the root `Dockerfile` (multi-stage, builds frontend + backend) or the `server/Dockerfile` (backend only).
+1. Build (full stack image): `docker build -t aidevelo-api .`
 2. Run: `docker run -p 5000:5000 --env-file ./server/.env aidevelo-api`
+3. From CI: pull `ghcr.io/<owner>/aidevelo-api:latest` if using the new workflow.
 
 #### Render / Railway / Fly.io
 1. Connect your repo.
-2. Set **Root Directory** to `server`.
-3. **Build Command**: `npm install && npm run build`
-4. **Start Command**: `npm start`
-5. **Environment Variables**:
+2. For source builds: set **Root Directory** to `server`, **Build Command** `npm install && npm run build`, **Start Command** `npm start`.
+3. For image deploys: use `ghcr.io/<owner>/aidevelo-api:latest` and point command to `node dist/app.js`.
+4. **Environment Variables**:
    - `ELEVENLABS_API_KEY`: Your key.
+   - `ALLOWED_ORIGINS`, `FRONTEND_URL`, `PORT` (default 5000), `NODE_ENV`.
+   - Optional: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`.
+5. Run migrations on startup: `npm run wait-and-migrate` (uses `server/db/migrations`).
 
 ---
 

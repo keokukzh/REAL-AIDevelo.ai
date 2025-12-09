@@ -12,11 +12,11 @@ interface HeroProps {
 
 const ROTATING_TITLES = [
   "Schweizer KMU",
-  "Friseure",
+  "Praxen",
   "Garagen",
-  "Zahnärzte",
+  "Makler",
   "Restaurants",
-  "Immobilien"
+  "Salons"
 ];
 
 export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
@@ -107,22 +107,26 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
               
               {/* Subheading */}
               <div className="text-lg md:text-xl text-slate-300 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
-                <p>Vergessen Sie verpasste Anrufe. Unsere KI nimmt ab, berät und bucht Termine – 24/7 in perfektem Schweizerdeutsch.</p>
+                <p>Vergessen Sie verpasste Anrufe. Ihr Voice Agent qualifiziert Leads, bucht Termine und spricht Schweizerdeutsch – voll eingerichtet in 24h.</p>
               </div>
 
                {/* Benefits List (from screenshot idea) */}
-               <div className="space-y-3 max-w-md mx-auto lg:mx-0">
+                 <div className="space-y-3 max-w-md mx-auto lg:mx-0">
                     <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Versteht Schweizerdeutsch & Hochdeutsch</span>
+                    <span>Versteht Schweizerdeutsch & Hochdeutsch</span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Erkennt Emotionen und Dringlichkeit</span>
+                    <span>Erkennt Emotionen und Dringlichkeit</span>
                     </div>
                      <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Kann unterbrochen werden (Full Duplex)</span>
+                    <span>Kann unterbrochen werden (Full Duplex)</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-300 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <span>Geht in 24h live – inkl. Kalender und Skript</span>
                     </div>
                </div>
 
@@ -147,6 +151,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                   Demo anhören
                 </Button>
               </div>
+              <p className="text-sm text-slate-400">24/7 erreichbar, Termin-Ready in 24h. Keine verpassten Anrufe mehr.</p>
             </motion.div>
 
             {/* Right Column: Hero Phone Visual */}

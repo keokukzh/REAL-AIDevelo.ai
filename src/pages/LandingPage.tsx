@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
 import { SEO } from '../components/SEO';
-import { HelmetProvider } from 'react-helmet-async'; // Ensure it is available if not in index.tsx, but I put it in index.tsx. Wait, I'll just add SEO component.
 import { TrustSection } from '../components/TrustSection';
 import { Features } from '../components/Features';
 import { IndustryTabs } from '../components/IndustryTabs';
