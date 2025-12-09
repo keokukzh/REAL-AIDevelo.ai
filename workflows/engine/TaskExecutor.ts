@@ -75,11 +75,22 @@ export class TaskExecutor {
 
       execution.status = 'completed';
       execution.result = result;
+      if (result && typeof result === 'object') {
+        const resObj = result as Record<string, unknown>;
+        if (resObj.stdout !== undefined) execution.stdout = String(resObj.stdout);
+        if (resObj.stderr !== undefined) execution.stderr = String(resObj.stderr);
+        if (resObj.exitCode !== undefined) execution.exitCode = Number(resObj.exitCode);
+      }
       execution.endTime = Date.now();
       execution.duration = execution.endTime - execution.startTime;
 
-      // Store output for use in other tasks
-      this.taskOutputs.set(task.id, result);
+      // Store output for use in other tasks (including exitCode/stdout/stderr)
+      this.taskOutputs.set(task.id, {
+        result,
+        exitCode: execution.exitCode,
+        stdout: execution.stdout,
+        stderr: execution.stderr
+      });
 
       return execution;
     } catch (error) {
@@ -107,7 +118,7 @@ export class TaskExecutor {
         if (attempt < retry.attempts) {
           // Wait before retry
           const factor = retry.backoff_factor ?? 2;
-          const maxDelay = retry.max_delay ?? retry.delay * 8 || retry.delay;
+          const maxDelay = retry.max_delay ?? (retry.delay ? retry.delay * 8 : retry.delay);
           const baseDelay = retry.strategy === 'exponential'
             ? Math.min(retry.delay * Math.pow(factor, attempt - 1), maxDelay || retry.delay)
             : retry.delay;
@@ -140,7 +151,12 @@ export class TaskExecutor {
       const tasksProxy: Record<string, unknown> = {};
 
       for (const [taskId, output] of this.taskOutputs.entries()) {
-        tasksProxy[taskId] = { result: output };
+        tasksProxy[taskId] = {
+          result: (output as any).result,
+          exitCode: (output as any).exitCode,
+          stdout: (output as any).stdout,
+          stderr: (output as any).stderr
+        };
       }
 
       const expr = parser.parse(condition);

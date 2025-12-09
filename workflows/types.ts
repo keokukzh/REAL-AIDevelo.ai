@@ -35,6 +35,14 @@ export interface WorkflowTask {
   cwd?: string;
   environment?: Record<string, string>;
   live_output?: boolean;
+  rate_limit?: {
+    limit: number;
+    interval_ms: number;
+  };
+  circuit_breaker?: {
+    threshold: number;
+    cooldown_ms: number;
+  };
   
   // HTTP task specific
   url?: string;

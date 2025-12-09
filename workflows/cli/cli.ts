@@ -9,6 +9,7 @@ import { WorkflowMonitor } from '../monitoring/WorkflowMonitor.js';
 import { AlertManager } from '../monitoring/AlertManager.js';
 import { WorkflowValidator } from '../engine/WorkflowValidator.js';
 import { Workflow } from '../types.js';
+import { DbExecutionStore } from '../monitoring/DbExecutionStore.js';
 import cron from 'node-cron';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -16,7 +17,13 @@ import path from 'path';
 const program = new Command();
 
 // Initialize components
-const executionStore = new ExecutionStore();
+const dbUrl = process.env.WORKFLOW_DB_URL;
+const executionStore = dbUrl
+  ? new DbExecutionStore({
+      connectionString: dbUrl,
+      ssl: process.env.WORKFLOW_DB_SSL === 'true'
+    })
+  : new ExecutionStore();
 const monitor = new WorkflowMonitor(executionStore);
 const alertManager = new AlertManager(monitor);
 
@@ -30,7 +37,7 @@ const logger = (message: string, level: 'info' | 'warn' | 'error' = 'info') => {
   console.log(colors[level](message));
 };
 
-const orchestrator = new WorkflowOrchestrator(logger);
+const orchestrator = new WorkflowOrchestrator(logger, executionStore);
 
 /**
  * Run a workflow
