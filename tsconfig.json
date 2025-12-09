@@ -11,6 +11,8 @@
     ],
     "skipLibCheck": true,
     "types": [
+      "vitest",
+      "vitest/globals",
       "node"
     ],
     "moduleResolution": "bundler",

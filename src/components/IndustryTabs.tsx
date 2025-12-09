@@ -6,7 +6,7 @@ import { IndustryDemoPreview } from './IndustryDemoPreview';
 import { getIndustryDemo } from '../data/industryDemos';
 
 interface IndustryTabsProps {
-  onStartOnboarding?: () => void;
+  onStartOnboarding?: (industry?: string) => void;
 }
 
 const industries = [
@@ -79,7 +79,7 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
   const [activeTab, setActiveTab] = useState(industries[0]);
 
   return (
-    <section className="py-24 bg-black relative">
+    <section className="py-24 bg-black relative" id="industries">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
            <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">Versteht <span className="text-accent">Ihr Business.</span></h2>
@@ -147,10 +147,7 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
                                     key={`demo-${activeTab.id}`}
                                     demo={demo}
                                     onStartOnboarding={() => {
-                                        if (onStartOnboarding) {
-                                            const url = `/onboarding?industry=${activeTab.id}`;
-                                            window.location.href = url;
-                                        }
+                                        onStartOnboarding?.(activeTab.id);
                                     }}
                                 />
                             );
@@ -164,10 +161,7 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
                     <Button 
                         variant="secondary" 
                         onClick={() => {
-                            if (onStartOnboarding) {
-                                const url = `/onboarding?industry=${activeTab.id}`;
-                                window.location.href = url;
-                            }
+                            onStartOnboarding?.(activeTab.id);
                         }} 
                         className="px-8 py-3"
                     >

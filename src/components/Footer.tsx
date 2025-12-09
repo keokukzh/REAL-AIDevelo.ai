@@ -58,7 +58,13 @@ export const Footer: React.FC = () => {
                 <motion.a whileHover="hover" variants={linkVariants} href="#features" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#features')} className="inline-block transition-colors cursor-pointer">Funktionen</motion.a>
               </li>
               <li>
+                <motion.a whileHover="hover" variants={linkVariants} href="#industries" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#industries')} className="inline-block transition-colors cursor-pointer">Branchen</motion.a>
+              </li>
+              <li>
                 <motion.a whileHover="hover" variants={linkVariants} href="#demo" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')} className="inline-block transition-colors cursor-pointer">Live Demo</motion.a>
+              </li>
+              <li>
+                <motion.a whileHover="hover" variants={linkVariants} href="#how-it-works" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#how-it-works')} className="inline-block transition-colors cursor-pointer">Ablauf</motion.a>
               </li>
               <li>
                 <motion.a whileHover="hover" variants={linkVariants} href="#pricing" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#pricing')} className="inline-block transition-colors cursor-pointer">Preise</motion.a>

@@ -58,7 +58,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
 
   const navLinks = [
     { name: 'Funktionen', href: '#features' },
+    { name: 'Branchen', href: '#industries' },
     { name: 'Demo', href: '#demo' },
+    { name: 'Ablauf', href: '#how-it-works' },
     { name: 'Preise', href: '#pricing' },
     { name: 'FAQ', href: '#faq' },
   ];

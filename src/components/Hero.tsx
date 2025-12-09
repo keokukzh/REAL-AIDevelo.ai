@@ -44,6 +44,14 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
     }
   };
 
+  const handlePrimary = () => {
+    if (onStartOnboarding) {
+      onStartOnboarding();
+      return;
+    }
+    scrollToDemo();
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-12">
       
@@ -122,21 +130,21 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
               {/* Buttons */}
               <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-4">
                 <Button 
-                  onClick={scrollToDemo} 
+                  onClick={handlePrimary} 
                   variant="secondary" 
                   className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" 
                   icon={<Play size={24} className="fill-current" />}
-                  aria-label="Zur Demo-Sektion scrollen"
+                  aria-label="Onboarding starten oder Demo öffnen"
                 >
-                   Kostenlose Demo
+                   Jetzt testen
                 </Button>
                 <Button 
-                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} 
+                  onClick={scrollToDemo} 
                   variant="secondary" 
                   className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg font-semibold"
-                  aria-label="Zur Preise-Sektion scrollen"
+                  aria-label="Zur Demo-Sektion scrollen"
                 >
-                  Preise ansehen
+                  Demo anhören
                 </Button>
               </div>
             </motion.div>

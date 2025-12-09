@@ -18,7 +18,13 @@ import { Footer } from '../components/Footer';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
-  const startOnboarding = () => navigate('/onboarding');
+  const startOnboarding = (industry?: string) => {
+    if (industry) {
+      navigate(`/onboarding?industry=${industry}`);
+    } else {
+      navigate('/onboarding');
+    }
+  };
 
   return (
     <>

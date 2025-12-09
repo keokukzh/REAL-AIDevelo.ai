@@ -18,6 +18,16 @@ export default defineConfig(({ mode }) => {
           'react': path.resolve(__dirname, './node_modules/react'),
           'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
         }
+      },
+      test: {
+        environment: 'jsdom',
+        setupFiles: './src/setupTests.ts',
+        globals: true,
+        css: true,
+        coverage: {
+          reporter: ['text', 'html'],
+          include: ['src/**/*.{ts,tsx}'],
+        },
       }
     };
 });
