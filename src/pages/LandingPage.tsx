@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
 import { SEO } from '../components/SEO';
@@ -18,6 +18,26 @@ import { LeadCaptureForm } from '../components/LeadCaptureForm';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as { scrollTarget?: string } | null;
+    if (!state?.scrollTarget) return;
+
+    const headerOffset = 80;
+    const scrollToTarget = () => {
+      const target = document.querySelector(state.scrollTarget as string);
+      if (target) {
+        const elementPosition = target.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      }
+    };
+
+    // allow DOM to paint before scrolling
+    requestAnimationFrame(() => scrollToTarget());
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location, navigate]);
   const startOnboarding = (industry?: string) => {
     if (industry) {
       navigate(`/onboarding?industry=${industry}`);

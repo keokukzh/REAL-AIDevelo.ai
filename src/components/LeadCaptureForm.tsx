@@ -21,12 +21,15 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
   const [success, setSuccess] = useState(false);
 
   const handleChange = (field: keyof DemoRequest) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setError(null);
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const validate = () => {
     if (!formData.name.trim()) return 'Bitte geben Sie Ihren Namen an.';
     if (!formData.email.trim() || !formData.email.includes('@')) return 'Bitte eine gültige E-Mail eingeben.';
+    if (formData.phone && formData.phone.trim().length < 7) return 'Bitte eine gültige Telefonnummer angeben oder leer lassen.';
+    if (formData.useCase && formData.useCase.trim().length < 10) return 'Kurz Ihren Use Case schildern (mind. 10 Zeichen).';
     return null;
   };
 
@@ -128,13 +131,14 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm text-gray-300">Kurz Ihr Use Case</label>
+        <label className="text-sm text-gray-300">Kurz Ihr Use Case *</label>
         <textarea
           value={formData.useCase}
           onChange={handleChange('useCase')}
           rows={3}
           className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none resize-none"
           placeholder="Z.B. Terminbuchung für Praxis, Öffnungszeiten, gewünschte Sprachen..."
+          required
         />
       </div>
 

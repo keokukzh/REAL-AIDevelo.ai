@@ -7,17 +7,17 @@ export const HowItWorks: React.FC = () => {
     {
       icon: Settings,
       title: "1. Agent konfigurieren",
-      desc: "Wir richten den Voice Agent in 24h für Sie ein. Definieren Sie Tonalität und Wissen."
+      desc: "Wir richten Ihren Agent in 24h ein – Stimme, Skript, FAQ, gewünschte Sprachen."
     },
     {
       icon: CalendarCheck,
       title: "2. Systeme verbinden",
-      desc: "Nahtlose Integration mit Ihrem Google Kalender, Outlook oder CRM."
+      desc: "Kalender (Google/Outlook/Calendly) und CRM werden angebunden – ohne IT-Aufwand."
     },
     {
       icon: Zap,
-      title: "3. Loslegen",
-      desc: "Leiten Sie Ihre Anrufe um. Der Voice Agent übernimmt sofort 24/7."
+      title: "3. Live gehen",
+      desc: "Leiten Sie Anrufe um, der Agent übernimmt 24/7: Termine setzen, Leads qualifizieren."
     }
   ];
 

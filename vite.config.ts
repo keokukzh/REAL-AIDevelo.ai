@@ -10,6 +10,17 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
+      build: {
+        chunkSizeWarningLimit: 1200,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              react: ['react', 'react-dom'],
+              motion: ['framer-motion'],
+            },
+          },
+        },
+      },
       // Removed API key definitions - API keys should NEVER be exposed in client bundle
       // All external API calls should go through the backend
       resolve: {

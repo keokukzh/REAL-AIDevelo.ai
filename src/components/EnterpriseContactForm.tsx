@@ -22,6 +22,22 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) {
+      setError('Bitte Namen angeben.');
+      return;
+    }
+    if (!formData.company.trim()) {
+      setError('Bitte Firmennamen angeben.');
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setError('Bitte eine gültige E-Mail eingeben.');
+      return;
+    }
+    if (formData.message.trim().length < 12) {
+      setError('Kurz Ihr Anliegen schildern (mind. 12 Zeichen).');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -86,7 +102,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             type="text"
             required
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => { setError(null); setFormData({ ...formData, name: e.target.value }); }}
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="Max Mustermann"
           />
@@ -99,7 +115,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             type="text"
             required
             value={formData.company}
-            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+            onChange={(e) => { setError(null); setFormData({ ...formData, company: e.target.value }); }}
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="Muster AG"
           />
@@ -115,7 +131,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             type="email"
             required
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) => { setError(null); setFormData({ ...formData, email: e.target.value }); }}
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="max@muster.ch"
           />
@@ -127,7 +143,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
           <input
             type="tel"
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) => { setError(null); setFormData({ ...formData, phone: e.target.value }); }}
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="+41 44 123 45 67"
           />
@@ -142,7 +158,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
           required
           rows={5}
           value={formData.message}
-          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+          onChange={(e) => { setError(null); setFormData({ ...formData, message: e.target.value }); }}
           className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none resize-none"
           placeholder="Erzählen Sie uns von Ihren Anforderungen..."
         />

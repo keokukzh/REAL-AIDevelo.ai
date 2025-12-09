@@ -1,4 +1,46 @@
-## AIDevelo.ai – AI Agent Development Guide
+# Copilot Instructions – AIDevelo.ai
+
+## System Snapshot
+- Stack: React 19 + Vite + Tailwind + Framer Motion + R3F (frontend); Express + TypeScript (backend); Voice Agent domain in `server/src/voice-agent` (RAG + ASR→LLM→TTS, Qdrant, ElevenLabs, OpenAI/Anthropic/DeepSeek providers, tool registry).
+- Routing: React Router in `src/App.tsx`; keep links/CTAs real (no placeholders). Components live in `src/components`, pages in `src/pages`, data in `src/data`.
+- API patterns: Frontend calls go through `src/services/api.ts`/`apiRequest<T>()`; backend routes under `server/src/routes` registered in `server/src/app.ts`; errors use `AppError` + `errorHandler` middleware; rate limiter 100 req/15min on `/api/*`.
+
+## Environments
+- Frontend env (`.env.local`): `VITE_API_URL` (default `http://localhost:5000/api`), optional `VITE_DEBUG_API=true`.
+- Backend env (`server/.env`): prod requires `ELEVENLABS_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`; common: `PORT=5000`, `ALLOWED_ORIGINS`, `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`. Validation in `server/src/config/env.ts` fails fast in prod.
+
+## Dev & Build
+- Frontend: `npm install && npm run dev` (:5173); build `npm run build`; tests `npm run test` (Vitest).
+- Backend: `cd server && npm install && npm run dev` (:5000); build `npm run build`; migrations `npm run migrate` or `npm run wait-and-migrate`; ElevenLabs check `npm run test:elevenlabs`; OpenAPI `npm run docs:generate`.
+- Compose dev stack (recommended): `docker compose -f docker-compose.dev.yml up` (server, frontend, Postgres, Redis, Qdrant, Jaeger; runs wait-and-migrate automatically). Health: `/health`, `/health/ready`, `/metrics`.
+- Docker images: root `Dockerfile` builds frontend+backend multi-stage and serves backend on :5000 with `public/` from `dist`. Backend-only alternative in `server/Dockerfile`.
+
+## CI/CD
+- GitHub Actions: `.github/workflows/ci.yml` runs FE tests/build, BE build + OpenAPI, builds/pushes GHCR image `ghcr.io/<owner>/aidevelo-api`, optional Railway deploy when `DEPLOY_BACKEND=true` var and `RAILWAY_TOKEN` secret set. Frontend Pages deploy lives in `cloudflare-pages.yml` (secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
+- Deploy targets: Frontend → Cloudflare Pages (`wrangler.toml`); Backend → Railway/Render/Fly; image consumers should pull GHCR `:latest` or SHA.
+
+## Voice Agent domain
+- Key files: `server/src/voice-agent/routes/voiceAgentRoutes.ts`, `.../rag/*`, `.../llm/*`, `.../voice/*`, `.../tools/toolRegistry.ts`. HTTP entry `/api/voice-agent/query`; WebSocket `/api/voice-agent/call-session`; ingestion `/api/voice-agent/ingest`.
+- Qdrant config and embeddings in `voice-agent/rag`; tool calls (calendar/CRM/notifications) defined in `tools/*`.
+
+## Frontend patterns
+- Use existing sections/components (`Hero`, `DemoSection`, `Pricing`, `LeadCaptureForm`, etc.) and keep CTAs wired: onboarding route `/onboarding`, Calendly link `https://calendly.com/aidevelo-enterprise`, demo scroll target `#demo`.
+- Styling via Tailwind classes; animations with Framer Motion; 3D avatar in `src/components/ThreeAvatar.tsx` (R3F). Maintain mobile-first layouts and avoid dead links.
+
+## Testing/Debugging
+- Health endpoints above; Swagger served at `/api-docs` (built from JSDoc). 
+- Common pitfalls: set `ALLOWED_ORIGINS` to avoid CORS; respect rate limit; ensure `VITE_API_URL` matches backend port; WebSocket path `/api/voice-agent/call-session`.
+
+## Workflow Orchestrator
+- CLI in `workflows/` (`npm run workflow:run workflows/definitions/ci-cd-workflow.json`, `workflow:validate`, `workflow:monitor`, etc.); tasks cover build/test/deploy and scheduled health checks; uses env toggles `DEPLOY_FRONTEND`, `DEPLOY_BACKEND`, `GENERATE_DOCS`.
+
+## Conventions
+- Keep shared types aligned: `src/types.ts` (FE) and `server/src/models/types` (BE).
+- New APIs: add route file under `server/src/routes`, wire in `app.ts`, document with `@swagger` JSDoc, add client call via `apiRequest`.
+- Migrations: drop SQL files into `server/db/migrations` (filename-ordered); compose auto-runs.
+
+## When editing
+- Preserve ASCII; keep links real; ensure routing/CTA targets exist; run `npm run build` (root and server) when changing build-critical code.## AIDevelo.ai – AI Agent Development Guide
 
 ### Architecture Overview
 **Frontend**: React 19 + Vite (`src/App.tsx`) with React Router, Tailwind CSS, Framer Motion animations, and React Three Fiber for 3D avatars.  

@@ -30,14 +30,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     }
   });
 
+  const handleStart = () => {
+    if (onStartOnboarding) {
+      onStartOnboarding();
+    } else {
+      navigate('/onboarding');
+    }
+    setMobileMenuOpen(false);
+  };
+
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     
     // If we are not on the landing page, navigate there with the hash
     if (location.pathname !== '/') {
-        navigate(`/${href}`); // e.g., /#features
-        setMobileMenuOpen(false);
-        return;
+      navigate('/', { state: { scrollTarget: href } });
+      setMobileMenuOpen(false);
+      return;
     }
 
     const section = document.querySelector(href);
@@ -107,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             {/* CTA */}
             <div className="hidden md:block">
                 <Button 
-                  onClick={onStartOnboarding} 
+                  onClick={handleStart} 
                   variant="secondary" 
                   className="!px-6 !py-2 text-sm"
                   aria-label="Onboarding starten"
@@ -144,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         </a>
                     ))}
                     <Button 
-                      onClick={() => { onStartOnboarding?.(); setMobileMenuOpen(false); }} 
+                      onClick={handleStart} 
                       variant="primary"
                       aria-label="Onboarding starten"
                     >
