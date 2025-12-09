@@ -88,6 +88,8 @@ export const AudioUploadOption: React.FC<AudioUploadOptionProps> = ({ onUploadCo
           accept={acceptedFormats.join(',')}
           onChange={handleFileSelect}
           className="hidden"
+          aria-label="Audio-Datei hochladen"
+          title="Audio-Datei auswählen"
         />
 
         {!uploadedFile ? (
@@ -131,6 +133,8 @@ export const AudioUploadOption: React.FC<AudioUploadOptionProps> = ({ onUploadCo
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
               className="text-red-400 hover:text-red-300"
+              aria-label="Fehler schließen"
+              title="Fehler schließen"
             >
               <X size={20} />
             </button>

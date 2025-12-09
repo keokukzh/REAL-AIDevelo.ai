@@ -37,6 +37,8 @@ export const ROICalculator: React.FC = () => {
                 value={missedCalls} 
                 onChange={(e) => setMissedCalls(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent"
+                aria-label="Verpasste Anrufe pro Tag"
+                title="Verpasste Anrufe pro Tag einstellen"
               />
               <p className="text-xs text-gray-500 mt-2">Durchschnitt an Arbeitstagen</p>
             </div>
@@ -54,6 +56,8 @@ export const ROICalculator: React.FC = () => {
                 value={customerValue} 
                 onChange={(e) => setCustomerValue(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent"
+                aria-label="Durchschnittlicher Kundenwert"
+                title="Durchschnittlicher Kundenwert in CHF einstellen"
               />
               <p className="text-xs text-gray-500 mt-2">Umsatz pro Termin/Verkauf</p>
             </div>
