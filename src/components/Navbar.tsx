@@ -121,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 className="md:hidden text-white z-50"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
-                aria-expanded={mobileMenuOpen}
+                aria-expanded={mobileMenuOpen ? "true" : "false"}
             >
                 {mobileMenuOpen ? <X /> : <Menu />}
             </button>

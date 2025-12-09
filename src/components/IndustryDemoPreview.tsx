@@ -127,7 +127,11 @@ export const IndustryDemoPreview: React.FC<IndustryDemoPreviewProps> = ({
 
             {/* Controls */}
             <div className="flex gap-4 w-full justify-center pb-6">
-              <button className="w-14 h-14 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+              <button 
+                className="w-14 h-14 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                aria-label="Anruf beenden"
+                title="Anruf beenden"
+              >
                 <div className="w-5 h-5 bg-current rounded-full" />
               </button>
               <button 
