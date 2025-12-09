@@ -91,6 +91,24 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// API root endpoint
+app.get('/api', (req: Request, res: Response) => {
+  res.json({ 
+    success: true, 
+    message: 'AIDevelo API is running',
+    version: '1.0.0',
+    endpoints: {
+      agents: '/api/agents',
+      elevenlabs: '/api/elevenlabs',
+      calendar: '/api/calendar',
+      payments: '/api/payments',
+      enterprise: '/api/enterprise',
+      onboarding: '/api/onboarding',
+      voiceAgent: '/api/voice-agent'
+    }
+  });
+});
+
 // Routes
 app.use('/api/agents', agentRoutes);
 app.use('/api/elevenlabs', elevenLabsRoutes);
