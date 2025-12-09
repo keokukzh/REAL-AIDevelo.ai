@@ -17,6 +17,7 @@ export interface AgentConfig {
   primaryLocale: string; // e.g. 'de-CH'
   fallbackLocales: string[];
   systemPrompt?: string;
+  recordingConsent?: boolean; // Opt-in for call recording
   elevenLabs: {
     voiceId: string;
     modelId: string;
@@ -28,7 +29,7 @@ export interface VoiceAgent {
   elevenLabsAgentId?: string; // External ID from ElevenLabs API
   businessProfile: BusinessProfile;
   config: AgentConfig;
-  status: 'draft' | 'configuring' | 'production_ready' | 'live';
+  status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'active' | 'live';
   createdAt: Date;
   updatedAt: Date;
 }

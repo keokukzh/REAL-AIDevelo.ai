@@ -47,7 +47,7 @@ export const Features: React.FC = () => {
              transition={{ delay: 0.2 }}
              className="text-gray-400 text-lg"
           >
-            Eine komplette KI-Mitarbeiterin, die Ihr Geschäft skaliert und Prozesse automatisiert.
+            Ein kompletter Voice Agent, der Ihr Geschäft skaliert und Prozesse automatisiert.
           </motion.p>
         </div>
 

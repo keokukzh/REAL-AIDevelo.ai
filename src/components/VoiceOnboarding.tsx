@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Check, Play, Square, RefreshCw, Shield, Globe, Lock, Cpu, AlertCircle } from 'lucide-react';
+import { Mic, Check, Play, Square, RefreshCw, Shield, Globe, Lock, Cpu, AlertCircle, Upload } from 'lucide-react';
 import { Button } from './ui/Button';
 import { aiService } from '../services/aiService';
+import { AudioUploadOption } from './AudioUploadOption';
 
 // Phase 3 Data: Sentences tailored for Swiss SMEs
 const sentences = [
@@ -18,8 +19,13 @@ const sentences = [
   "Hiermit bestätige ich, dass dies meine echte Stimme ist."
 ];
 
-export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [step, setStep] = useState<'intro' | 'recording' | 'processing' | 'result'>('intro');
+interface VoiceOnboardingProps {
+    onBack: () => void;
+    onComplete?: (voiceId?: string, audioData?: string) => void;
+}
+
+export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComplete }) => {
+  const [step, setStep] = useState<'intro' | 'recording' | 'upload' | 'processing' | 'result'>('intro');
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
@@ -34,6 +40,9 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const audioLevelCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isRecordingRef = useRef<boolean>(false); // Ref to track recording state synchronously
   
   // Visualization State
   const [audioVisuals, setAudioVisuals] = useState<number[]>(new Array(30).fill(10));
@@ -47,35 +56,94 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      // Stop recording if active (use ref for immediate check)
+      isRecordingRef.current = false;
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+          }
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
+      
+      // Stop all media tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          try {
+            track.stop();
+          } catch (e) {
+            // Ignore errors
+          }
+        });
+      }
+      
+      // Close audio context
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {
+          // Ignore errors when closing
+        });
+      }
+      
+      // Cancel animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // Clear interval
+      if (audioLevelCheckIntervalRef.current) {
+        clearInterval(audioLevelCheckIntervalRef.current);
+        audioLevelCheckIntervalRef.current = null;
       }
     };
   }, []);
 
   const updateVisuals = () => {
-    if (analyserRef.current && dataArrayRef.current) {
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-        const newVisuals = Array.from(dataArrayRef.current)
-            .slice(0, 30)
-            .map((val: number) => Math.max(10, (val / 255) * 60)); // Scale to height
-        setAudioVisuals(newVisuals);
-        animationFrameRef.current = requestAnimationFrame(updateVisuals);
+    // Use ref for synchronous check instead of state
+    if (analyserRef.current && dataArrayRef.current && isRecordingRef.current) {
+        try {
+            // @ts-ignore - TypeScript strict mode issue with Uint8Array types
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+            const newVisuals = Array.from(dataArrayRef.current)
+                .slice(0, 30)
+                .map((val: number) => {
+                    // Enhanced scaling: more sensitive to voice frequencies
+                    const scaled = (val / 255) * 100;
+                    return Math.max(8, scaled); // Minimum height for visibility
+                });
+            
+            setAudioVisuals(newVisuals);
+            
+            // Continue animation - always continue if recording
+            animationFrameRef.current = requestAnimationFrame(updateVisuals);
+        } catch (error) {
+            console.error('[VoiceOnboarding] Error updating visuals:', error);
+            // Stop on error
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+        }
+    } else if (!isRecordingRef.current && animationFrameRef.current) {
+        // Stop animation when not recording
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
     }
   };
 
   const handleStartRecording = async () => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream; // Store stream for cleanup
         
         // Setup Visualization
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         audioContextRef.current = audioContext;
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 64;
+        analyser.fftSize = 128; // Increased for better frequency resolution
+        analyser.smoothingTimeConstant = 0.8;
         analyserRef.current = analyser;
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
@@ -83,96 +151,348 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         updateVisuals();
 
         // Setup Recorder
-        const mediaRecorder = new MediaRecorder(stream);
+        const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+        });
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
+            if (event.data && event.data.size > 0) {
                 audioChunksRef.current.push(event.data);
             }
         };
 
         mediaRecorder.onstop = async () => {
+            // Update ref immediately to prevent race conditions
+            isRecordingRef.current = false;
+            
             // Stop tracks
-            stream.getTracks().forEach(track => track.stop());
-            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+            if (audioLevelCheckIntervalRef.current) {
+                clearInterval(audioLevelCheckIntervalRef.current);
+                audioLevelCheckIntervalRef.current = null;
+            }
             setAudioVisuals(new Array(30).fill(10)); // Reset visuals
 
-            // Use the recorder's mime type for the blob to ensure compatibility (Safari uses audio/mp4 often)
+            // Check if we have audio data
+            if (audioChunksRef.current.length === 0) {
+                setAnalysisStatus("Keine Audio-Daten aufgenommen. Bitte versuchen Sie es erneut.");
+                setIsRecording(false);
+                return;
+            }
+
+            // Use the recorder's mime type for the blob to ensure compatibility
             const mimeType = mediaRecorder.mimeType || 'audio/webm';
             const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+            
+            // Validate audio blob size (should be at least 2KB for a meaningful recording)
+            if (audioBlob.size < 2048) {
+                setAnalysisStatus("Aufnahme zu kurz. Bitte sprechen Sie länger (mindestens 2-3 Sekunden).");
+                isRecordingRef.current = false;
+                setIsRecording(false);
+                return;
+            }
+            
+            // Close audio context
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close().catch(() => {
+                    // Ignore errors when closing
+                });
+            }
+            
             processRecording(audioBlob);
         };
 
-        mediaRecorder.start();
+        mediaRecorder.onerror = (event) => {
+            console.error('[VoiceOnboarding] MediaRecorder error:', event);
+            isRecordingRef.current = false;
+            setAnalysisStatus("Fehler bei der Aufnahme. Bitte versuchen Sie es erneut.");
+            setIsRecording(false);
+            // Cleanup on error
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+            if (audioLevelCheckIntervalRef.current) {
+                clearInterval(audioLevelCheckIntervalRef.current);
+                audioLevelCheckIntervalRef.current = null;
+            }
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => {
+                    try {
+                        track.stop();
+                    } catch (e) {
+                        // Ignore
+                    }
+                });
+                streamRef.current = null;
+            }
+        };
+
+        // Set recording state in both state and ref
+        isRecordingRef.current = true;
         setIsRecording(true);
         setAnalysisStatus("Höre zu...");
+        
+        // Start recording
+        mediaRecorder.start(100); // Collect data every 100ms for better responsiveness
+        
+        // Start visualization loop immediately
+        updateVisuals();
+        
+        // Start audio level monitoring
+        audioLevelCheckIntervalRef.current = setInterval(() => {
+            if (!isRecordingRef.current) {
+                if (audioLevelCheckIntervalRef.current) {
+                    clearInterval(audioLevelCheckIntervalRef.current);
+                    audioLevelCheckIntervalRef.current = null;
+                }
+                return;
+            }
+            
+            if (analyserRef.current && dataArrayRef.current) {
+                try {
+                    // @ts-ignore
+                    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+                    const averageVolume = Array.from(dataArrayRef.current)
+                        .slice(0, 30)
+                        .reduce((sum, val) => sum + val, 0) / 30;
+                    
+                    // Update status based on audio level
+                    if (averageVolume < 3) {
+                        setAnalysisStatus("Höre zu... (Bitte sprechen Sie in das Mikrofon)");
+                    } else if (averageVolume < 10) {
+                        setAnalysisStatus("Höre zu... (Bitte lauter sprechen)");
+                    } else {
+                        setAnalysisStatus("Höre zu... ✓");
+                    }
+                } catch (error) {
+                    console.error('[VoiceOnboarding] Error checking audio level:', error);
+                }
+            }
+        }, 1000);
 
     } catch (err) {
-        // Only log in development, suppress in production
-        if (import.meta.env.DEV) {
-            console.error("Error accessing microphone:", err);
+        // Handle microphone access errors gracefully
+        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        setAnalysisStatus("Fehler: Mikrofonzugriff verweigert. Bitte erlauben Sie den Zugriff in Ihren Browsereinstellungen.");
+        // Only log in development for debugging
+        if ((import.meta as any).env?.DEV) {
+            console.warn("Microphone access error:", errorMessage);
         }
-        setAnalysisStatus("Fehler: Mikrofonzugriff verweigert.");
     }
   };
 
   const handleStopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
+    // Use ref for immediate check
+    if (!isRecordingRef.current && !isRecording) return;
+    
+    try {
+        // Set ref immediately to prevent race conditions
+        isRecordingRef.current = false;
         setIsRecording(false);
         setAnalysisStatus("Sende an AI...");
+        
+        // Stop recording immediately
+        const recorder = mediaRecorderRef.current;
+        if (recorder) {
+            try {
+                if (recorder.state === 'recording' || recorder.state === 'paused') {
+                    recorder.stop();
+                }
+            } catch (e) {
+                console.warn('[VoiceOnboarding] Error stopping recorder:', e);
+            }
+        }
+        
+        // Stop all media tracks
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => {
+                try {
+                    track.stop();
+                } catch (e) {
+                    console.warn('[VoiceOnboarding] Error stopping track:', e);
+                }
+            });
+            streamRef.current = null;
+        }
+        
+        // Stop audio visualization
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        
+        // Stop audio level monitoring
+        if (audioLevelCheckIntervalRef.current) {
+            clearInterval(audioLevelCheckIntervalRef.current);
+            audioLevelCheckIntervalRef.current = null;
+        }
+        
+        setAudioVisuals(new Array(30).fill(10)); // Reset visuals
+        
+        // Close audio context (but don't block on it)
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close().catch(() => {
+                // Ignore errors when closing
+            });
+        }
+    } catch (error) {
+        console.error('[VoiceOnboarding] Error stopping recording:', error);
+        isRecordingRef.current = false;
+        setIsRecording(false);
+        setAnalysisStatus("Fehler beim Stoppen. Bitte versuchen Sie es erneut.");
     }
   };
 
-  const processRecording = async (blob: Blob) => {
+  const processRecording = async (blob: Blob, retryCount = 0) => {
     setAnalysisStatus("Analysiere Audio...");
     
-    // Call AI Service
-    const result = await aiService.analyzeAudio(blob, sentences[currentSentenceIndex]);
+    // Validate audio blob
+    if (blob.size < 1024) {
+        setAnalysisStatus("Aufnahme zu kurz. Bitte sprechen Sie länger und versuchen Sie es erneut.");
+        return;
+    }
     
-    setMetrics({
-        clarity: result.clarity || 85,
-        emotion: result.emotion || 'Neutral',
-        dialect: result.dialect || 80
-    });
+    try {
+        // Call AI Service with retry logic
+        const result = await aiService.analyzeAudio(blob, sentences[currentSentenceIndex]);
+        
+        setMetrics({
+            clarity: result.clarity || 85,
+            emotion: result.emotion || 'Neutral',
+            dialect: result.dialect || 80
+        });
 
-    if (result.match) {
-        setAnalysisStatus("Perfekt! ✔️");
-        setTimeout(() => {
-            if (currentSentenceIndex < totalSentences - 1) {
-                setCurrentSentenceIndex(prev => prev + 1);
-                setAnalysisStatus(null);
-            } else {
-                startProcessingPhase();
-            }
-        }, 1500);
-    } else {
-        setAnalysisStatus("Bitte wiederholen (Text nicht erkannt).");
+        if (result.match) {
+            setAnalysisStatus("Perfekt! ✔️");
+            setTimeout(() => {
+                if (currentSentenceIndex < totalSentences - 1) {
+                    setCurrentSentenceIndex(prev => prev + 1);
+                    setAnalysisStatus(null);
+                    // Reset metrics for next sentence
+                    setMetrics({ clarity: 0, emotion: 'Neutral', dialect: 0 });
+                } else {
+                    startProcessingPhase();
+                }
+            }, 1500);
+        } else {
+            setAnalysisStatus("Bitte wiederholen (Text nicht erkannt). Sprechen Sie deutlich und langsam.");
+        }
+    } catch (error) {
+        // Retry logic for network errors
+        if (retryCount < 2 && error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
+            setAnalysisStatus(`Wiederhole... (${retryCount + 1}/2)`);
+            setTimeout(() => {
+                processRecording(blob, retryCount + 1);
+            }, 2000);
+        } else {
+            // Final error - allow user to continue or go back
+            setAnalysisStatus("Fehler: Verbindung zum Server fehlgeschlagen. Sie können es erneut versuchen oder später fortfahren.");
+            console.error('[VoiceOnboarding] Error processing recording:', error);
+        }
+    }
+  };
+
+  const processUploadedAudio = async (blob: Blob) => {
+    try {
+        setAnalysisStatus("Analysiere hochgeladene Audio-Datei...");
+        
+        // Process uploaded audio (similar to recorded audio)
+        const result = await aiService.analyzeAudio(blob, "Uploaded audio file");
+        
+        setMetrics({
+            clarity: result.clarity || 85,
+            emotion: result.emotion || 'Neutral',
+            dialect: result.dialect || 80
+        });
+
+        // Proceed to processing phase
+        await startProcessingPhase();
+    } catch (error) {
+        console.error('[VoiceOnboarding] Error processing uploaded audio:', error);
+        setAnalysisStatus("Fehler beim Verarbeiten der Audio-Datei. Bitte versuchen Sie es erneut.");
+        setStep('upload');
     }
   };
 
   const startProcessingPhase = async () => {
     setStep('processing');
-    // Simulate training time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Generate result sample using TTS
-    const sampleText = "Hallo! Ich bin dein neuer digitaler Zwilling. Ich klinge genau wie du, oder?";
-    const audioData = await aiService.generateSpeech(sampleText);
-    setGeneratedAudioBase64(audioData || null);
-    
-    setStep('result');
+    try {
+        // Simulate training time
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Generate result sample using TTS
+        const sampleText = "Hallo! Ich bin dein neuer digitaler Zwilling. Ich klinge genau wie du, oder?";
+        const audioData = await aiService.generateSpeech(sampleText);
+        setGeneratedAudioBase64(audioData || null);
+        
+        // Generate a mock voiceId (in production, this would come from the API)
+        const mockVoiceId = `voice_${Date.now()}`;
+        
+        setStep('result');
+        
+        // Call onComplete callback if provided
+        if (onComplete) {
+            onComplete(mockVoiceId, audioData || undefined);
+        }
+    } catch (error) {
+        // If processing fails, still show result but with error message
+        console.error('[VoiceOnboarding] Error in processing phase:', error);
+        setStep('result');
+        // User can still proceed even if audio generation failed
+        if (onComplete) {
+            onComplete(undefined, undefined);
+        }
+    }
   };
 
-  const playGeneratedAudio = () => {
+  const playGeneratedAudio = async () => {
     if (!generatedAudioBase64) return;
     
-    const audio = new Audio(`data:audio/mp3;base64,${generatedAudioBase64}`);
-    audio.onplay = () => setIsPlaying(true);
-    audio.onended = () => setIsPlaying(false);
-    audio.play();
+    try {
+        // Handle both base64 strings and data URLs
+        let audioSrc: string;
+        if (generatedAudioBase64.startsWith('data:')) {
+            audioSrc = generatedAudioBase64;
+        } else if (generatedAudioBase64.startsWith('http')) {
+            audioSrc = generatedAudioBase64;
+        } else {
+            // Assume it's base64 and try different formats
+            audioSrc = `data:audio/mp3;base64,${generatedAudioBase64}`;
+        }
+        
+        const audio = new Audio(audioSrc);
+        audio.onplay = () => setIsPlaying(true);
+        audio.onended = () => setIsPlaying(false);
+        audio.onerror = (e) => {
+            console.error('[VoiceOnboarding] Audio playback error:', e);
+            setIsPlaying(false);
+            // Try alternative format
+            if (!audioSrc.includes('audio/wav')) {
+                const altAudio = new Audio(`data:audio/wav;base64,${generatedAudioBase64}`);
+                altAudio.onplay = () => setIsPlaying(true);
+                altAudio.onended = () => setIsPlaying(false);
+                altAudio.play().catch(err => {
+                    console.error('[VoiceOnboarding] Alternative audio format also failed:', err);
+                    alert('Audio-Wiedergabe fehlgeschlagen. Bitte versuchen Sie es später erneut oder nehmen Sie neu auf.');
+                });
+            }
+        };
+        await audio.play();
+    } catch (error) {
+        console.error('[VoiceOnboarding] Error playing audio:', error);
+        setIsPlaying(false);
+        alert('Audio-Wiedergabe fehlgeschlagen. Bitte versuchen Sie es später erneut oder nehmen Sie neu auf.');
+    }
   };
 
   return (
@@ -188,7 +508,11 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <Cpu className="text-accent" />
             <span className="font-display font-bold text-xl">AIDevelo Voice Studio</span>
         </div>
-        <button onClick={onBack} className="text-sm text-gray-400 hover:text-white transition-colors">
+        <button 
+            onClick={onBack} 
+            className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-white/5"
+            aria-label="Zurück zum Onboarding"
+        >
             Schliessen
         </button>
       </header>
@@ -227,14 +551,41 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                         ))}
                     </div>
 
-                    <Button onClick={() => setStep('recording')} variant="primary" className="text-lg px-12">
-                        Aufnahme starten
-                    </Button>
-                    <p className="mt-4 text-xs text-gray-500">Benötigt Mikrofonzugriff • Dauer ca. 2 Min</p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button onClick={() => setStep('recording')} variant="primary" className="text-lg px-8">
+                            <Mic size={20} className="mr-2" />
+                            Live aufnehmen
+                        </Button>
+                        <Button onClick={() => setStep('upload')} variant="outline" className="text-lg px-8">
+                            <Upload size={20} className="mr-2" />
+                            Datei hochladen
+                        </Button>
+                    </div>
+                    <p className="mt-4 text-xs text-gray-500">Benötigt Mikrofonzugriff oder Audio-Datei • Dauer ca. 2 Min</p>
                 </motion.div>
             )}
 
-            {/* PHASE 2: RECORDING */}
+            {/* PHASE 2A: UPLOAD */}
+            {step === 'upload' && (
+                <motion.div
+                    key="upload"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.05 }}
+                    className="w-full max-w-3xl"
+                >
+                    <AudioUploadOption
+                        onUploadComplete={async (blob) => {
+                            // Process uploaded audio
+                            setStep('processing');
+                            await processUploadedAudio(blob);
+                        }}
+                        onCancel={() => setStep('intro')}
+                    />
+                </motion.div>
+            )}
+
+            {/* PHASE 2B: RECORDING */}
             {step === 'recording' && (
                 <motion.div 
                     key="recording"
@@ -266,16 +617,42 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                             "{sentences[currentSentenceIndex]}"
                         </h2>
 
-                        {/* Visualization Area */}
-                        <div className="h-24 flex items-end justify-center gap-1 mb-4">
-                             {audioVisuals.map((height, i) => (
-                                 <motion.div 
-                                    key={i}
-                                    className={`w-1.5 rounded-full ${isRecording ? 'bg-accent' : 'bg-gray-700'}`}
-                                    animate={{ height }}
-                                    transition={{ duration: 0.1 }}
-                                 />
-                             ))}
+                        {/* Visualization Area - Enhanced */}
+                        <div className="h-32 flex flex-col items-center justify-center mb-4">
+                            <div className="flex items-end justify-center gap-1 h-24 w-full">
+                                 {audioVisuals.map((height, i) => (
+                                    <motion.div 
+                                       key={i}
+                                       className={`w-2 rounded-full transition-colors ${
+                                           isRecording 
+                                               ? height > 20 
+                                                   ? 'bg-green-400' 
+                                                   : height > 10 
+                                                   ? 'bg-accent' 
+                                                   : 'bg-gray-600'
+                                               : 'bg-gray-700'
+                                       }`}
+                                       animate={{ height: `${height}px` }}
+                                       transition={{ duration: 0.05, ease: 'easeOut' }}
+                                    />
+                                 ))}
+                            </div>
+                            
+                            {/* Audio Level Indicator */}
+                            {isRecording && (
+                                <div className="mt-2 flex items-center gap-2 text-xs">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                        audioVisuals.reduce((sum, val) => sum + val, 0) / audioVisuals.length > 15
+                                            ? 'bg-green-400 animate-pulse'
+                                            : 'bg-yellow-400 animate-pulse'
+                                    }`} />
+                                    <span className="text-gray-400">
+                                        {audioVisuals.reduce((sum, val) => sum + val, 0) / audioVisuals.length > 15
+                                            ? 'Audio erkannt ✓'
+                                            : 'Bitte lauter sprechen...'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         
                         {!isRecording && !analysisStatus && (
@@ -315,15 +692,32 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     </div>
 
                     {/* Controls */}
-                    <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={isRecording ? handleStopRecording : handleStartRecording}
-                        disabled={!!analysisStatus && !analysisStatus.includes('Fehler') && !analysisStatus.includes('wiederholen')}
-                        className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] ${isRecording ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)]' : 'bg-white text-black hover:bg-gray-200'}`}
-                    >
-                        {isRecording ? <Square fill="currentColor" size={32} /> : <Mic fill="currentColor" size={32} />}
-                    </motion.button>
+                    <div className="flex flex-col items-center gap-4">
+                        <motion.button
+                            whileHover={{ scale: isRecording ? 1.05 : 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={isRecording ? handleStopRecording : handleStartRecording}
+                            disabled={!!analysisStatus && !analysisStatus.includes('Fehler') && !analysisStatus.includes('wiederholen') && !analysisStatus.includes('Höre') && !analysisStatus.includes('Sende') && !analysisStatus.includes('Analysiere')}
+                            className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] ${
+                                isRecording 
+                                    ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.6)] animate-pulse cursor-pointer hover:bg-red-600 active:bg-red-700' 
+                                    : 'bg-white text-black hover:bg-gray-200 cursor-pointer active:bg-gray-300'
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none`}
+                            aria-label={isRecording ? "Aufnahme stoppen" : "Aufnahme starten"}
+                        >
+                            {isRecording ? <Square fill="currentColor" size={32} /> : <Mic fill="currentColor" size={32} />}
+                        </motion.button>
+                        
+                        {isRecording && (
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="text-sm text-gray-400 animate-pulse"
+                            >
+                                Klicken Sie auf den roten Button zum Stoppen
+                            </motion.p>
+                        )}
+                    </div>
                 </motion.div>
             )}
 
@@ -391,10 +785,31 @@ export const VoiceOnboarding: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        <Button variant="primary" onClick={onBack} className="w-full justify-center">
-                            In meinen Account speichern
+                        <Button 
+                            variant="primary" 
+                            onClick={() => {
+                                // Navigate to voice edit page or call onBack
+                                if (onComplete) {
+                                    const mockVoiceId = `voice_${Date.now()}`;
+                                    onComplete(mockVoiceId, generatedAudioBase64 || undefined);
+                                } else {
+                                    onBack();
+                                }
+                            }} 
+                            className="w-full justify-center"
+                        >
+                            Voice Clone bearbeiten & testen
                         </Button>
-                        <Button variant="outline" onClick={() => { setStep('recording'); setCurrentSentenceIndex(0); setMetrics({clarity:0, emotion:'Neutral', dialect:0}); }} className="w-full justify-center">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => { 
+                                setStep('recording'); 
+                                setCurrentSentenceIndex(0); 
+                                setMetrics({clarity:0, emotion:'Neutral', dialect:0});
+                                setGeneratedAudioBase64(null);
+                            }} 
+                            className="w-full justify-center"
+                        >
                             Neu aufnehmen
                         </Button>
                     </div>

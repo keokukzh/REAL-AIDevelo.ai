@@ -75,7 +75,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
               
               {/* Heading with Rotating Text */}
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl">
-                <span className="text-white">KI-Mitarbeiter für</span>
+                <span className="text-white">Voice Agent für</span>
                 <br />
                 <div className="relative h-[1.2em] overflow-hidden inline-block min-w-[200px] leading-[1.2em]">
                     <AnimatePresence mode="wait">
@@ -121,10 +121,21 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
 
               {/* Buttons */}
               <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-4">
-                <Button onClick={scrollToDemo} variant="secondary" className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" icon={<Play size={24} className="fill-current" />}>
+                <Button 
+                  onClick={scrollToDemo} 
+                  variant="secondary" 
+                  className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" 
+                  icon={<Play size={24} className="fill-current" />}
+                  aria-label="Zur Demo-Sektion scrollen"
+                >
                    Kostenlose Demo
                 </Button>
-                <Button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary" className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg font-semibold">
+                <Button 
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} 
+                  variant="secondary" 
+                  className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg font-semibold"
+                  aria-label="Zur Preise-Sektion scrollen"
+                >
                   Preise ansehen
                 </Button>
               </div>

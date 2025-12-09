@@ -23,6 +23,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message: string, public readonly details?: unknown) {
+    super(400, message);
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(resource: string) {
     super(404, `${resource} not found`);

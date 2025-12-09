@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAgent, getAgents, getAgentById } from '../controllers/agentController';
+import { createAgent, getAgents, getAgentById, activateAgent } from '../controllers/agentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
 
@@ -139,5 +139,23 @@ router.get('/', getAgents);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/:id', validateParams(AgentIdParamSchema), getAgentById);
+
+/**
+ * @swagger
+ * /agents/{id}/activate:
+ *   patch:
+ *     summary: Activate an agent
+ *     tags: [Agents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent activated successfully
+ */
+router.patch('/:id/activate', validateParams(AgentIdParamSchema), activateAgent);
 
 export default router;

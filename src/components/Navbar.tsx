@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             </motion.a>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-8" aria-label="Hauptnavigation">
                 {navLinks.map((link) => (
                     <motion.a 
                         key={link.name} 
@@ -95,6 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, link.href)}
                         className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
                         whileHover={{ scale: 1.05, color: '#fff' }}
+                        aria-label={`Zu ${link.name} navigieren`}
                     >
                         {link.name}
                     </motion.a>
@@ -103,7 +104,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
 
             {/* CTA */}
             <div className="hidden md:block">
-                <Button onClick={onStartOnboarding} variant="secondary" className="!px-6 !py-2 text-sm">
+                <Button 
+                  onClick={onStartOnboarding} 
+                  variant="secondary" 
+                  className="!px-6 !py-2 text-sm"
+                  aria-label="Onboarding starten"
+                >
                     Jetzt testen
                 </Button>
             </div>
@@ -112,25 +118,37 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             <button 
                 className="md:hidden text-white z-50"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
+                aria-expanded={mobileMenuOpen}
             >
                 {mobileMenuOpen ? <X /> : <Menu />}
             </button>
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
-                <div className="absolute top-0 right-0 w-full h-screen bg-black flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0">
+                <nav 
+                  className="absolute top-0 right-0 w-full h-screen bg-black flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
+                  aria-label="Hauptnavigation"
+                >
                     {navLinks.map((link) => (
                         <a 
                             key={link.name} 
                             href={link.href}
                             onClick={(e) => scrollToSection(e, link.href)}
                             className="text-2xl font-bold text-white hover:text-accent cursor-pointer"
+                            aria-label={`Zu ${link.name} navigieren`}
                         >
                             {link.name}
                         </a>
                     ))}
-                    <Button onClick={() => { onStartOnboarding?.(); setMobileMenuOpen(false); }} variant="primary">Jetzt testen</Button>
-                </div>
+                    <Button 
+                      onClick={() => { onStartOnboarding?.(); setMobileMenuOpen(false); }} 
+                      variant="primary"
+                      aria-label="Onboarding starten"
+                    >
+                      Jetzt testen
+                    </Button>
+                </nav>
             )}
         </div>
       </div>

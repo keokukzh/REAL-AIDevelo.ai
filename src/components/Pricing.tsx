@@ -14,9 +14,11 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
 
   const handleCardClick = (planId: string) => {
     if (planId === 'enterprise') {
-      window.location.href = "mailto:enterprise@aidevelo.ai";
-    } else if (onStartOnboarding) {
-      onStartOnboarding();
+      // Redirect to enterprise contact form
+      window.location.href = '/enterprise';
+    } else {
+      // Redirect to checkout
+      window.location.href = `/checkout?planId=${planId}`;
     }
   };
 
@@ -35,7 +37,27 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold font-display mb-4">Preise für Schweizer KMU.</h2>
-          <p className="text-gray-400">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
+          <p className="text-gray-400 mb-6">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
+          
+          {/* Flash Deal Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-block mb-8"
+          >
+            <div className="bg-gradient-to-r from-accent/20 to-primary/20 border-2 border-accent/50 rounded-2xl px-6 py-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3 justify-center">
+                <span className="text-2xl">⚡</span>
+                <div className="text-left">
+                  <div className="font-bold text-white text-lg">Flash-Deal: 3 Monate für 599 CHF</div>
+                  <div className="text-sm text-gray-300">Statt 537 CHF (3x 179 CHF) - Sparen Sie 37 CHF!</div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                Gültig für Business Plan. Danach regulärer Monatspreis von 179 CHF.
+              </p>
+            </div>
+          </motion.div>
         </div>
 
         {/* 3+1 Layout: 3 Plans oben, Enterprise darunter */}

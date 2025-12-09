@@ -39,7 +39,7 @@ export const Footer: React.FC = () => {
           
           <div className="col-span-1 md:col-span-1">
             <div className="mb-6">
-              <img src="/main-logo.png" alt="AIDevelo.ai" className="h-8 w-auto object-contain" />
+              <img src="/main-logo.png" alt="AIDevelo.ai Logo - Intelligente Sprach-KI für Schweizer KMUs" className="h-8 w-auto object-contain" />
             </div>
             <p className="text-gray-500 text-sm leading-relaxed">
               Die intelligente Sprach-KI für Schweizer KMUs. 
@@ -70,13 +70,37 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Rechtliches</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#" className="inline-block transition-colors cursor-pointer">Impressum</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="/impressum" 
+                  onClick={(e) => { e.preventDefault(); navigate('/impressum'); }}
+                  className="inline-block transition-colors cursor-pointer"
+                >
+                  Impressum
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#" className="inline-block transition-colors cursor-pointer">Datenschutz</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="/datenschutz" 
+                  onClick={(e) => { e.preventDefault(); navigate('/datenschutz'); }}
+                  className="inline-block transition-colors cursor-pointer"
+                >
+                  Datenschutz
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#" className="inline-block transition-colors cursor-pointer">AGB</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="/agb" 
+                  onClick={(e) => { e.preventDefault(); navigate('/agb'); }}
+                  className="inline-block transition-colors cursor-pointer"
+                >
+                  AGB
+                </motion.a>
               </li>
             </ul>
           </div>
@@ -86,7 +110,6 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-gray-400">
               <li>Zürich, Schweiz</li>
               <li><a href="mailto:hello@aidevelo.ai" className="hover:text-white transition-colors">hello@aidevelo.ai</a></li>
-              <li>+41 44 123 45 67</li>
             </ul>
           </div>
         </div>

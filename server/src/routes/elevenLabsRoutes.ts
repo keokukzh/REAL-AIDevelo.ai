@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getVoices } from '../controllers/elevenLabsController';
+import { getVoices, generateSpeech } from '../controllers/elevenLabsController';
 
 const router = Router();
 
@@ -46,5 +46,63 @@ const router = Router();
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/voices', getVoices);
+
+/**
+ * @swagger
+ * /elevenlabs/generate-speech:
+ *   post:
+ *     summary: Generate speech from text using ElevenLabs TTS
+ *     tags: [ElevenLabs]
+ *     description: Converts text to speech using the specified voice. Returns base64-encoded audio.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Text to convert to speech
+ *                 example: "Hallo! Ich bin dein neuer digitaler Zwilling."
+ *               voiceId:
+ *                 type: string
+ *                 description: ElevenLabs voice ID (optional, defaults to Rachel)
+ *                 example: "21m00Tcm4TlvDq8ikWAM"
+ *               modelId:
+ *                 type: string
+ *                 description: ElevenLabs model ID (optional, defaults to eleven_multilingual_v2)
+ *                 example: "eleven_multilingual_v2"
+ *     responses:
+ *       200:
+ *         description: Speech generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     audioBase64:
+ *                       type: string
+ *                       description: Base64-encoded audio data
+ *                     voiceId:
+ *                       type: string
+ *                     modelId:
+ *                       type: string
+ *                     textLength:
+ *                       type: number
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/generate-speech', generateSpeech);
 
 export default router;

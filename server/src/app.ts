@@ -10,6 +10,12 @@ import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import enterpriseRoutes from './routes/enterpriseRoutes';
+import calendarRoutes from './routes/calendarRoutes';
+import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
+import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
+import { createServer } from 'http';
 
 const app = express();
 
@@ -89,16 +95,27 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/agents', agentRoutes);
 app.use('/api/elevenlabs', elevenLabsRoutes);
 app.use('/api/tests', testRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/enterprise', enterpriseRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/onboarding', onboardingAIAssistantRoutes);
+app.use('/api/voice-agent', voiceAgentRoutes);
 
 // Error Handling
 app.use(errorHandler);
 
 // Start Server
 if (require.main === module) {
-  app.listen(config.port, () => {
+  const httpServer = createServer(app);
+  
+  // Setup WebSocket server for voice agent
+  setupWebSocketServer(httpServer);
+  
+  httpServer.listen(config.port, () => {
     console.log(`[AIDevelo Server] Running on http://localhost:${config.port}`);
     console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
     console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
+    console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
   });
 }
 

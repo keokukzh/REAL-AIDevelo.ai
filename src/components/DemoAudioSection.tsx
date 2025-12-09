@@ -20,7 +20,7 @@ export function DemoAudioSection() {
             Hören Sie den <span className="text-accent">Unterschied</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Unsere KI-Agenten klingen so menschlich, dass Ihre Kunden den Unterschied nicht bemerken werden. Überzeugen Sie sich selbst.
+            Unsere Voice Agents klingen so menschlich, dass Ihre Kunden den Unterschied nicht bemerken werden. Überzeugen Sie sich selbst.
             </p>
         </motion.div>
 

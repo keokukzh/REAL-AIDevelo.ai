@@ -10,6 +10,14 @@ export class ElevenLabsService {
    * Fetch available voices filtering for language suitability
    */
   async getVoices(locale: string = 'de') {
+    if (!config.isElevenLabsConfigured) {
+      // Return default voices for testing
+      return [
+        { voice_id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel', category: 'premade' },
+        { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', category: 'premade' },
+      ];
+    }
+    
     try {
       const response = await axios.get(`${API_BASE}/voices`, {
         headers: { 'xi-api-key': config.elevenLabsApiKey },
@@ -71,6 +79,53 @@ export class ElevenLabsService {
           );
         }
         throw new InternalServerError('Failed to create agent in ElevenLabs');
+    }
+  }
+
+  /**
+   * Generate speech from text using ElevenLabs TTS
+   */
+  async generateSpeech(text: string, voiceId: string = '21m00Tcm4TlvDq8ikWAM', modelId: string = 'eleven_multilingual_v2'): Promise<Buffer> {
+    // Check if API key is configured
+    if (!config.isElevenLabsConfigured) {
+      throw new InternalServerError(
+        'ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in your .env file. ' +
+        'Get your API key from: https://elevenlabs.io/app/settings/api-keys'
+      );
+    }
+    
+    try {
+      const response = await axios.post(
+        `${API_BASE}/text-to-speech/${voiceId}`,
+        {
+          text,
+          model_id: modelId,
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        },
+        {
+          headers: {
+            'xi-api-key': config.elevenLabsApiKey,
+            'Content-Type': 'application/json',
+          },
+          responseType: 'arraybuffer',
+          timeout: 30000, // 30 second timeout
+        }
+      );
+
+      return Buffer.from(response.data);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data 
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(
+          `ElevenLabs TTS Generation Failed: ${errorMessage}`
+        );
+      }
+      throw new InternalServerError('Failed to generate speech from ElevenLabs');
     }
   }
 

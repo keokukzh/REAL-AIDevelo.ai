@@ -10,8 +10,8 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
   try {
     const { businessProfile, config } = req.body;
     
-    // 1. Generate System Prompt based on profile
-    const systemPrompt = generateSystemPrompt(businessProfile);
+    // 1. Generate System Prompt based on profile and recording consent
+    const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent: config.recordingConsent });
     
     // 2. Enhance config with generated prompt (if not provided specifically)
     const finalConfig = {
@@ -25,13 +25,13 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       finalConfig
     );
 
-    // 4. Save to internal DB
+    // 4. Save to internal DB (status: inactive - needs manual activation)
     const newAgent: VoiceAgent = {
       id: uuidv4(),
       elevenLabsAgentId,
       businessProfile,
       config: finalConfig,
-      status: 'production_ready',
+      status: 'inactive', // Agent created but not activated yet
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -66,5 +66,36 @@ export const getAgentById = (req: Request, res: Response, next: NextFunction) =>
     res.json({ success: true, data: agent });
   } catch (error) {
     next(new InternalServerError('Failed to retrieve agent'));
+  }
+};
+
+export const activateAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.params.id;
+    const agent = db.getAgent(agentId);
+    
+    if (!agent) {
+      return next(new NotFoundError('Agent'));
+    }
+
+    if (agent.status === 'active' || agent.status === 'live') {
+      return res.json({
+        success: true,
+        data: { ...agent, message: 'Agent is already active' }
+      });
+    }
+
+    // Update agent status to active
+    agent.status = 'active';
+    agent.updatedAt = new Date();
+    db.saveAgent(agent);
+
+    res.json({
+      success: true,
+      data: agent,
+      message: 'Agent successfully activated'
+    });
+  } catch (error) {
+    next(new InternalServerError('Failed to activate agent'));
   }
 };

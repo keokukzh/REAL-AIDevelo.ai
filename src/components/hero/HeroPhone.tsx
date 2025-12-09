@@ -115,15 +115,12 @@ export const HeroPhone = () => {
         if (audioRef.current) {
             if (isPlaying) {
                 audioRef.current.play().catch((e: Error) => {
-                    // Only log in development, suppress in production
-                    try {
-                        if ((import.meta as any).env?.DEV) {
-                            console.error("Audio play failed", e);
-                        }
-                    } catch {
-                        // Ignore if env check fails
-                    }
+                    // Silently handle audio play errors (user interaction required, autoplay blocked, etc.)
                     setIsPlaying(false);
+                    // Only log in development for debugging
+                    if (import.meta.env.DEV) {
+                        console.warn("Audio playback failed (this is normal if autoplay is blocked):", e.message);
+                    }
                 });
             } else {
                 audioRef.current.pause();

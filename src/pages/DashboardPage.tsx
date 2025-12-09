@@ -14,7 +14,7 @@ interface Agent {
     config: {
         primaryLocale: string;
     };
-    status: string;
+    status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'active' | 'live';
     lastTestResult?: {
         score: number;
         passed: boolean;
@@ -76,6 +76,28 @@ export const DashboardPage = () => {
         window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agentId}`, '_blank');
     };
 
+    const handleActivateAgent = async (agentId: string) => {
+        try {
+            const res = await apiRequest<{ success: boolean; data: Agent; message?: string }>(`/agents/${agentId}/activate`, {
+                method: 'PATCH',
+            });
+            
+            // Update the local agent state
+            setAgents(prev => prev.map(a => 
+                a.id === agentId 
+                ? { ...a, status: res.data.status } 
+                : a
+            ));
+            
+            alert(res.message || 'Agent erfolgreich aktiviert!');
+        } catch (error) {
+            const errorMessage = error instanceof ApiRequestError 
+                ? error.message 
+                : "Fehler beim Aktivieren des Agents.";
+            alert(errorMessage);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-background text-white">
             <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50">
@@ -120,8 +142,14 @@ export const DashboardPage = () => {
                                         <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center text-accent">
                                             <Phone size={24} />
                                         </div>
-                                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${agent.status === 'live' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                                            {agent.status.toUpperCase()}
+                                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                            agent.status === 'active' || agent.status === 'live' 
+                                                ? 'bg-green-500/20 text-green-400' 
+                                                : agent.status === 'inactive'
+                                                ? 'bg-gray-500/20 text-gray-400'
+                                                : 'bg-yellow-500/20 text-yellow-400'
+                                        }`}>
+                                            {agent.status === 'inactive' ? 'INAKTIV' : agent.status.toUpperCase()}
                                         </div>
                                     </div>
                                     <h3 className="text-xl font-bold mb-1">{agent.businessProfile.companyName}</h3>
@@ -144,13 +172,24 @@ export const DashboardPage = () => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-4 bg-black/20 flex gap-2">
-                                    <Button variant="outline" onClick={() => handleRunDiagnostics(agent.id)} className="flex-1 text-xs h-10">
-                                        <Activity size={14} className="mr-2" /> Diagnose
-                                    </Button>
-                                    <Button variant="primary" onClick={() => handleTestAgent(agent.elevenLabsAgentId)} className="flex-1 text-xs h-10 !bg-white !text-black hover:!bg-gray-200 font-semibold">
-                                        <Play size={14} className="mr-2" /> Testen
-                                    </Button>
+                                <div className="p-4 bg-black/20 flex flex-col gap-2">
+                                    {agent.status === 'inactive' && (
+                                        <Button 
+                                            variant="primary" 
+                                            onClick={() => handleActivateAgent(agent.id)} 
+                                            className="w-full text-xs h-10 !bg-accent hover:!bg-accent/80 font-semibold"
+                                        >
+                                            Agent aktivieren
+                                        </Button>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" onClick={() => handleRunDiagnostics(agent.id)} className="flex-1 text-xs h-10">
+                                            <Activity size={14} className="mr-2" /> Diagnose
+                                        </Button>
+                                        <Button variant="primary" onClick={() => handleTestAgent(agent.elevenLabsAgentId)} className="flex-1 text-xs h-10 !bg-white !text-black hover:!bg-gray-200 font-semibold">
+                                            <Play size={14} className="mr-2" /> Testen
+                                        </Button>
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}

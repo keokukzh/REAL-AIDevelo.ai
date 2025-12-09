@@ -1,4 +1,14 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Get API URL from environment or use default
+const getApiBaseUrl = (): string => {
+  // @ts-ignore - Vite environment variable
+  if (import.meta.env?.VITE_API_URL) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_URL;
+  }
+  return 'http://localhost:5000/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export interface ApiError {
   success: false;
@@ -19,7 +29,10 @@ export class ApiRequestError extends Error {
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log('[API] Making request to:', url);
+    
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -63,10 +76,10 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       throw error;
     }
     // Handle network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
       throw new ApiRequestError(
         0,
-        'Network error: Unable to connect to the server. Please check your connection.'
+        'Network error: Unable to connect to the server. Please check your connection and ensure the backend server is running on ' + API_BASE_URL.replace('/api', '')
       );
     }
     // Re-throw unknown errors

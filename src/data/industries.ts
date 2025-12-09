@@ -1,11 +1,23 @@
-import { Industry } from '../types';
-import { Scissors, Car, Stethoscope, Home, Utensils, Dumbbell } from 'lucide-react';
+export interface Industry {
+  id: string;
+  label: string;
+  value: string;
+}
 
 export const industries: Industry[] = [
-  { name: "Barbershops & Beauty", icon: Scissors },
-  { name: "Autogaragen", icon: Car },
-  { name: "Gesundheitswesen", icon: Stethoscope },
-  { name: "Immobilien", icon: Home },
-  { name: "Gastronomie", icon: Utensils },
-  { name: "Fitness & Sport", icon: Dumbbell }
+  { id: 'barber', label: 'Barber & Beauty', value: 'Barber & Beauty' },
+  { id: 'medical', label: 'Praxis & Medizin', value: 'Praxis & Medizin' },
+  { id: 'auto', label: 'Garage & Kfz', value: 'Garage & Kfz' },
+  { id: 'realestate', label: 'Immobilien', value: 'Immobilien' },
+  { id: 'handwerk', label: 'Handwerk / Sanitär', value: 'Handwerk / Sanitär' },
+  { id: 'health', label: 'Ärzte / Gesundheit', value: 'Ärzte / Gesundheit' },
+  { id: 'service', label: 'Dienstleistung', value: 'Dienstleistung' },
 ];
+
+export const getIndustryById = (id: string): Industry | undefined => {
+  return industries.find(ind => ind.id === id);
+};
+
+export const getIndustryByValue = (value: string): Industry | undefined => {
+  return industries.find(ind => ind.value === value);
+};

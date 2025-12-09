@@ -88,8 +88,14 @@ export const ROICalculator: React.FC = () => {
              <div className="w-full h-[1px] bg-white/10" />
 
              <div className="relative z-10 space-y-4 w-full">
-                <div className="text-gray-300">Kosten für AIDevelo Agent (Pro):</div>
-                <div className="text-2xl font-bold text-accent">599 CHF <span className="text-sm font-normal text-gray-400">/ einmalig für 3 Monate</span></div>
+                <div className="text-gray-300">Kosten für AIDevelo Agent:</div>
+                <div className="space-y-2">
+                    <div className="text-2xl font-bold text-accent">599 CHF <span className="text-sm font-normal text-gray-400">/ 3 Monate (Einführungsangebot)</span></div>
+                    <div className="text-sm text-gray-500">Danach: 179 CHF/Monat (Business Plan)</div>
+                    <div className="text-xs text-gray-600 bg-accent/10 px-2 py-1 rounded inline-block">
+                        ⚡ Flash-Deal: Sparen Sie 37 CHF (statt 537 CHF)
+                    </div>
+                </div>
                 
                 <div className="flex items-center justify-center gap-2 text-green-400 text-sm font-bold bg-green-500/10 py-2 rounded-lg">
                     <TrendingUp size={16} />

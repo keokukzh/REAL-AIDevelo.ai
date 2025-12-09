@@ -27,9 +27,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
     if (audioRef.current) {
         if (isPlaying) {
             audioRef.current.play().catch((e: Error) => {
-              // Only log in development, suppress in production
+              // Silently handle audio play errors (user interaction required, autoplay blocked, etc.)
+              setIsPlaying(false);
+              // Only log in development for debugging
               if (import.meta.env.DEV) {
-                console.error("Audio play failed", e);
+                console.warn("Audio playback failed (this is normal if autoplay is blocked):", e.message);
               }
             });
         } else {
@@ -135,7 +137,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
            >
              <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">
                 So klingt Ihr <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">persönlicher KI-Agent.</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">persönlicher Voice Agent.</span>
              </h2>
              <p className="text-xl text-gray-400 leading-relaxed mb-8">
                 Vergessen Sie robotische Computerstimmen. AIDevelo nutzt modernste Sprachsynthese mit Schweizer Dialekt-Verständnis, um natürliche, einfühlsame Gespräche zu führen.
