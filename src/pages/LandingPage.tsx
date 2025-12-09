@@ -15,6 +15,7 @@ import { Pricing } from '../components/Pricing';
 import { HowItWorks } from '../components/HowItWorks';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
+import { LeadCaptureForm } from '../components/LeadCaptureForm';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -23,6 +24,16 @@ export const LandingPage = () => {
       navigate(`/onboarding?industry=${industry}`);
     } else {
       navigate('/onboarding');
+    }
+  };
+
+  const scrollToLeadCapture = () => {
+    const target = document.getElementById('lead-capture');
+    if (target) {
+      const headerOffset = 80;
+      const elementPosition = target.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
@@ -55,8 +66,33 @@ export const LandingPage = () => {
         {/* 6. Demo Booking before Pricing */}
         <DemoSection onStartOnboarding={startOnboarding} />
         
+        {/* Lead Capture Form for demo requests */}
+        <section id="lead-capture" className="py-20 bg-gradient-to-b from-black via-slate-950 to-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
+          <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start relative z-10">
+            <div className="space-y-4">
+              <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide">
+                Demo & Beratung
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold font-display text-white">
+                Sichern Sie sich einen Rückruf innerhalb von 24h.
+              </h2>
+              <p className="text-gray-400 text-lg leading-relaxed">
+                Hinterlassen Sie Ihre Kontaktdaten – wir zeigen Ihnen, wie der Voice Agent in Ihrem Alltag Termine bucht,
+                Anrufe qualifiziert und keine Anfrage liegen bleibt.
+              </p>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li>✓ Schweizerdeutsch & Hochdeutsch – empathisch und klar</li>
+                <li>✓ Nahtlose Kalender-Integration (Google, Outlook, Calendly)</li>
+                <li>✓ Sofort startklar mit Branchen-Templates</li>
+              </ul>
+            </div>
+            <LeadCaptureForm />
+          </div>
+        </section>
+
         {/* 7. Pricing with Recommendation */}
-        <Pricing onStartOnboarding={startOnboarding} />
+        <Pricing onStartOnboarding={startOnboarding} onOpenLeadCapture={scrollToLeadCapture} />
         
         {/* 8. Process Explanation */}
         <HowItWorks />

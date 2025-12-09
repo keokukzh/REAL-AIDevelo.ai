@@ -1,15 +1,17 @@
 import { apiRequest } from './api';
 
 export interface DemoRequest {
-  companyName: string;
+  name: string;
+  company?: string;
   email: string;
-  phone: string;
+  phone?: string;
+  useCase?: string;
 }
 
 export const demoService = {
   submitDemoRequest: async (data: DemoRequest) => {
-    // Mock implementation for now
-    // In production: return apiRequest('/demo-request', { method: 'POST', body: JSON.stringify(data) });
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 1000));
+    // Mock implementation for now. Hook up to a backend endpoint when available.
+    // Example: return apiRequest('/demo-request', { method: 'POST', body: JSON.stringify(data) });
+    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 900));
   }
 };

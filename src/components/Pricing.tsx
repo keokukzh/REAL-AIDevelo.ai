@@ -6,11 +6,22 @@ import { pricingPlans } from '../data/pricing';
 
 interface PricingProps {
   onStartOnboarding?: () => void;
+  onOpenLeadCapture?: () => void;
 }
 
-export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
+type RegularPlanId = 'starter' | 'business' | 'premium';
+
+export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadCapture }) => {
   const regularPlans = pricingPlans.filter(p => p.id !== 'enterprise');
   const enterprisePlan = pricingPlans.find(p => p.id === 'enterprise');
+  const comparisonRows: { key: string; label: string; values: Record<RegularPlanId, string> }[] = [
+    { key: 'calls', label: 'Anrufe / Monat', values: { starter: '120', business: '350', premium: '800' } },
+    { key: 'numbers', label: 'Telefonnummern', values: { starter: '1', business: '2', premium: '3' } },
+    { key: 'voices', label: 'Stimmen', values: { starter: '–', business: '1 Voice-Cloning', premium: '2 Voice-Cloning' } },
+    { key: 'languages', label: 'Sprachen', values: { starter: 'DE', business: 'DE / EN', premium: 'DE / FR / IT / EN' } },
+    { key: 'api', label: 'API & CRM', values: { starter: '–', business: '–', premium: 'API + CRM ready' } },
+    { key: 'support', label: 'Support', values: { starter: 'E-Mail', business: 'CH Support', premium: 'Priority (Telefon & E-Mail)' } },
+  ];
 
   const handleCardClick = (planId: string) => {
     if (planId === 'enterprise') {
@@ -39,6 +50,15 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
           <h2 className="text-4xl md:text-5xl font-bold font-display mb-4">Preise für Schweizer KMU.</h2>
           <p className="text-gray-400 mb-6">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
           
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+            <Button variant="primary" onClick={() => onOpenLeadCapture?.()} className="px-6 py-3 text-base">
+              Demo anfragen
+            </Button>
+            <Button variant="outline" onClick={onStartOnboarding} className="px-6 py-3 text-base">
+              Direkt starten
+            </Button>
+          </div>
+
           {/* Flash Deal Banner */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -211,6 +231,63 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding }) => {
               </div>
             </motion.div>
           )}
+        </div>
+
+        {/* Comparison Table */}
+        <div className="mt-16 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-[0_0_60px_rgba(15,23,42,0.6)]">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white">Vergleich auf einen Blick</h3>
+              <p className="text-gray-400 text-sm">Kernmerkmale der Pläne, damit Sie schneller entscheiden können.</p>
+            </div>
+            <Button variant="secondary" onClick={() => onOpenLeadCapture?.()} className="px-4 py-3 text-sm">
+              Unklar? Demo anfragen
+            </Button>
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-200">
+              <thead>
+                <tr className="text-gray-400">
+                  <th className="py-3 pr-4 font-semibold">Merkmal</th>
+                  {regularPlans.map((p) => (
+                    <th key={p.id} className="py-3 px-4 font-semibold">{p.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {comparisonRows.map((row) => (
+                  <tr key={row.key}>
+                    <td className="py-3 pr-4 text-gray-300">{row.label}</td>
+                    {regularPlans.map((p) => (
+                      <td key={p.id} className="py-3 px-4">
+                        {row.values[p.id as RegularPlanId]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid grid-cols-1 md:hidden gap-4">
+            {regularPlans.map((p) => (
+              <div key={p.id} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-white">{p.name}</h4>
+                  <span className="text-gray-400 text-sm">CHF {p.price}/Mo.</span>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-200">
+                  {comparisonRows.map((row) => (
+                    <li key={row.key} className="flex justify-between gap-4">
+                      <span className="text-gray-400">{row.label}</span>
+                      <span className="text-right">{row.values[p.id as RegularPlanId]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Footer Text */}
