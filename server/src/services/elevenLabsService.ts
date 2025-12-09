@@ -129,7 +129,12 @@ export class ElevenLabsService {
             } 
             // If data is a Buffer or ArrayBuffer, try to parse as text
             else if (Buffer.isBuffer(error.response.data) || error.response.data instanceof ArrayBuffer) {
-              const text = Buffer.from(error.response.data).toString('utf-8');
+              let text: string;
+              if (Buffer.isBuffer(error.response.data)) {
+                text = error.response.data.toString('utf-8');
+              } else {
+                text = Buffer.from(new Uint8Array(error.response.data)).toString('utf-8');
+              }
               try {
                 const parsed = JSON.parse(text);
                 errorMessage = JSON.stringify(parsed);
