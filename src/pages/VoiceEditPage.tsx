@@ -8,7 +8,12 @@ import { apiRequest, ApiRequestError } from '../services/api';
 export const VoiceEditPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const voiceId = searchParams.get('voiceId');
+    const voiceIdParam = searchParams.get('voiceId');
+    // Use voiceId only if it's a valid ElevenLabs voice ID (not a mock ID)
+    // Mock IDs start with "voice_" and are not valid ElevenLabs voice IDs
+    const voiceId = voiceIdParam && !voiceIdParam.startsWith('voice_') && voiceIdParam.length > 10 
+        ? voiceIdParam 
+        : null;
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -87,6 +92,16 @@ export const VoiceEditPage = () => {
 
         setIsGenerating(true);
         try {
+            // Determine which voiceId to use
+            // If voiceId is a mock ID (starts with "voice_") or invalid, use default voice
+            // In production, the voiceId should be a valid ElevenLabs voice ID from the cloning process
+            let finalVoiceId = '21m00Tcm4TlvDq8ikWAM'; // Default: Rachel voice
+            
+            if (voiceId && !voiceId.startsWith('voice_') && voiceId.length > 10) {
+                // Use provided voiceId if it looks like a valid ElevenLabs voice ID
+                finalVoiceId = voiceId;
+            }
+            
             // Call API to generate speech with the cloned voice
             const response = await apiRequest<{ success: boolean; data: { audioUrl?: string; audioBase64?: string } }>(
                 '/elevenlabs/generate-speech',
@@ -94,7 +109,7 @@ export const VoiceEditPage = () => {
                     method: 'POST',
                     body: JSON.stringify({
                         text: testText,
-                        voiceId: voiceId || '21m00Tcm4TlvDq8ikWAM', // Fallback to default
+                        voiceId: finalVoiceId,
                     }),
                 }
             );
