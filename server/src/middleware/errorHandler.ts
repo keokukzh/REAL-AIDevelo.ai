@@ -46,13 +46,14 @@ export const errorHandler = (
 
   // Handle known operational errors
   if (err instanceof AppError && err.isOperational) {
-    return res.status(err.statusCode).json({
+    const payload: any = {
       success: false,
       error: err.message,
-      ...(err instanceof ValidationError && 'details' in err && err.details
-        ? { details: err.details }
-        : {})
-    });
+    };
+    if ('details' in err && (err as any).details) payload.details = (err as any).details;
+    if ((err as any).code) payload.code = (err as any).code;
+
+    return res.status(err.statusCode).json(payload);
   }
 
   // Handle unknown/unexpected errors
@@ -61,9 +62,12 @@ export const errorHandler = (
     ? 'Internal Server Error'
     : err.message || 'Internal Server Error';
 
-  res.status(statusCode).json({
+  const payload: any = {
     success: false,
     error: message,
-    ...(config.isProduction ? {} : { stack: err.stack })
-  });
+  };
+  if ((err as any).code) payload.code = (err as any).code;
+  if (!config.isProduction) payload.stack = err.stack;
+
+  res.status(statusCode).json(payload);
 };

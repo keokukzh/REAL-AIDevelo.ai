@@ -23,12 +23,33 @@ import purchaseRoutes from './routes/purchaseRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import telephonyRoutes from './routes/telephonyRoutes';
 import syncRoutes from './routes/syncRoutes';
+import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
 import { createServer } from 'http';
+import axios from 'axios';
 
 const app = express();
 
-// Security Middleware
-app.use(helmet());
+// Security: don't reveal server stack
+app.disable('x-powered-by');
+
+// Security Middleware — stricter defaults in production
+if (config.isProduction) {
+  app.set('trust proxy', 1); // behind load balancer / proxy
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'", 'https:']
+      }
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  }));
+} else {
+  app.use(helmet());
+}
 
 // CORS Configuration - Restrict to allowed origins
 app.use(cors({
@@ -66,7 +87,8 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply rate limiting to API routes (except health check)
+// Apply rate limiting to API routes (except health check). Keep the option to extend to a
+// redis-backed store later for distributed deployments.
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/') && req.path !== '/api') {
     return limiter(req, res, next);
@@ -143,6 +165,52 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Readiness check — validate connectivity to required upstream systems (best-effort)
+app.get('/health/ready', async (req: Request, res: Response) => {
+  const checks: Record<string, any> = { server: { ok: true } };
+
+  // Qdrant check (voice-agent vector DB)
+  try {
+    // Do best-effort check via voice-agent config (if available)
+    const { voiceAgentConfig } = require('./voice-agent/config');
+    const qdrantUrl = voiceAgentConfig?.vectorDb?.qdrantUrl;
+    if (qdrantUrl) {
+      const response = await axios.get(`${qdrantUrl.replace(/\/$/, '')}/collections`, { timeout: 2000 });
+      checks.qdrant = { ok: response.status === 200 };
+    } else {
+      checks.qdrant = { ok: false, reason: 'qdrant not configured' };
+    }
+  } catch (err: any) {
+    checks.qdrant = { ok: false, reason: err?.message || String(err) };
+  }
+
+  // Redis connectivity - optional check if configured
+  try {
+    const { config: appConfig } = require('./config/env');
+    if (appConfig?.redisUrl) {
+      // Try to load ioredis only if installed
+      let Redis: any;
+      try { Redis = require('ioredis'); } catch (e) { Redis = null; }
+      if (Redis) {
+        const client = new Redis(appConfig.redisUrl);
+        const pong = await client.ping();
+        checks.redis = { ok: pong === 'PONG' };
+        await client.quit();
+      } else {
+        checks.redis = { ok: false, reason: 'ioredis not installed' };
+      }
+    } else {
+      checks.redis = { ok: false, reason: 'redis not configured' };
+    }
+  } catch (err: any) {
+    checks.redis = { ok: false, reason: err?.message || String(err) };
+  }
+
+  // If any mandatory check failed, return 503
+  const ready = Object.values(checks).every((c: any) => c.ok === true);
+  res.status(ready ? 200 : 503).json({ ready, checks });
+});
+
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
   res.json({ 
@@ -161,19 +229,37 @@ app.get('/api', (req: Request, res: Response) => {
   });
 });
 
-// Routes
-app.use('/api/agents', agentRoutes);
-app.use('/api/elevenlabs', elevenLabsRoutes);
-app.use('/api/tests', testRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/purchases', purchaseRoutes);
-app.use('/api/voice', voiceRoutes);
-app.use('/api/telephony', telephonyRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/enterprise', enterpriseRoutes);
-app.use('/api/calendar', calendarRoutes);
-app.use('/api/onboarding', onboardingAIAssistantRoutes);
-app.use('/api/voice-agent', voiceAgentRoutes);
+// Basic runtime metrics endpoint (JSON) — useful for lightweight monitoring / health dashboards
+app.get('/metrics', (req: Request, res: Response) => {
+  const mem = process.memoryUsage();
+  res.json({
+    uptime: process.uptime(),
+    pid: process.pid,
+    memory: mem,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Routes: Register all routes under a versioned router (v1) and keep top-level /api as a compat shim
+const v1Router = express.Router();
+
+v1Router.use('/agents', agentRoutes);
+v1Router.use('/elevenlabs', elevenLabsRoutes);
+v1Router.use('/tests', testRoutes);
+v1Router.use('/payments', paymentRoutes);
+v1Router.use('/purchases', purchaseRoutes);
+v1Router.use('/voice', voiceRoutes);
+v1Router.use('/telephony', telephonyRoutes);
+v1Router.use('/sync', syncRoutes);
+v1Router.use('/enterprise', enterpriseRoutes);
+v1Router.use('/calendar', calendarRoutes);
+v1Router.use('/onboarding', onboardingAIAssistantRoutes);
+v1Router.use('/voice-agent', voiceAgentRoutes);
+
+// Versioned API mount and compatibility shim
+app.use('/api/v1', attachApiVersionHeader, v1Router);
+// Keep historical /api/<resource> working but add a deprecation warning header
+app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, v1Router);
 
 // Serve frontend SPA (catch-all for client-side routing)
 if (config.isProduction) {
