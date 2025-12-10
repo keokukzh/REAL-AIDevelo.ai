@@ -23,6 +23,7 @@ export const OnboardingPage = () => {
     const [selectedTemplate, setSelectedTemplate] = useState<AgentTemplate | null>(null);
     const [formData, setFormData] = useState<any>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionProgress, setSubmissionProgress] = useState<string>('');
     const [showVoiceOnboarding, setShowVoiceOnboarding] = useState(false);
 
     const handleTemplateSelect = (template: AgentTemplate) => {
@@ -49,6 +50,7 @@ export const OnboardingPage = () => {
         if (!selectedTemplate) return;
 
         setIsSubmitting(true);
+        setSubmissionProgress('Agent wird erstellt...');
         try {
             const payload: any = {
                 businessProfile: {
@@ -89,11 +91,19 @@ export const OnboardingPage = () => {
                 purchaseId: purchaseId || undefined,
             };
 
-            await apiRequest('/agents', {
+            console.log('[Onboarding] Creating agent with payload:', payload);
+            setSubmissionProgress('Daten werden gesendet...');
+            
+            const response = await apiRequest<{ success: boolean; data: any }>('/agents', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
 
+            console.log('[Onboarding] Agent created successfully:', response);
+            setSubmissionProgress('Agent erfolgreich erstellt!');
+            
+            // Small delay for UX
+            await new Promise(resolve => setTimeout(resolve, 500));
             navigate('/dashboard');
         } catch (error) {
             let errorMessage = "Fehler beim Erstellen des Agents.";
@@ -114,6 +124,7 @@ export const OnboardingPage = () => {
             alert(errorMessage);
         } finally {
             setIsSubmitting(false);
+            setSubmissionProgress('');
         }
     };
 
@@ -384,6 +395,19 @@ export const OnboardingPage = () => {
             ),
         },
     ];
+
+    // Show loading overlay when submitting
+    if (isSubmitting) {
+        return (
+            <div className="min-h-screen bg-background text-white relative">
+                <LoadingSpinner 
+                    message={submissionProgress || "Agent wird erstellt..."}
+                    size="lg"
+                    fullScreen={true}
+                />
+            </div>
+        );
+    }
 
     return (
         <OnboardingWizard
