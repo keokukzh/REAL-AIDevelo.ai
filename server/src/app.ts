@@ -11,15 +11,9 @@ if (config.databaseUrl) {
     // Test connection and run migrations asynchronously (don't block startup)
     testConnection().then(async (connected) => {
       if (connected) {
-        console.log('[Database] ✅ Connected successfully');
-        // Run migrations automatically
-        try {
-          const { runMigrations } = require('../scripts/runMigrations');
-          await runMigrations();
-          console.log('[Database] ✅ Migrations completed');
-        } catch (migrationError) {
-          console.warn('[Database] ⚠️  Migration error:', (migrationError as Error).message);
-        }
+        console.log('[Database] ✅ Connection test successful');
+        // Migrations are handled in the httpServer.listen callback below
+        // No need to run them here as well
       } else {
         console.warn('[Database] ⚠️  Connection test failed');
       }
