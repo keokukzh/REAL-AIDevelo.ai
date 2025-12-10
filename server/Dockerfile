@@ -4,14 +4,14 @@ FROM node:20-alpine AS base
 # Workspace directory
 WORKDIR /app
 
-# Copy package files
+# Copy server package files (NOT root package.json!)
 COPY package*.json ./
 COPY .npmrc ./
 
-# Install ALL dependencies (including dev for build)
+# Install ALL dependencies (including dev for TypeScript build)
 RUN npm ci
 
-# Copy source
+# Copy server source
 COPY . .
 
 # Build TypeScript
