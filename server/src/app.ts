@@ -341,6 +341,7 @@ if (require.main === module) {
           const migrationsDir = fs.existsSync('/app/db/migrations') 
             ? '/app/db/migrations'
             : path.join(__dirname, '../../db/migrations');
+          
           if (!fs.existsSync(migrationsDir)) {
             console.warn('[Database] Migrations directory not found:', migrationsDir);
             return;
