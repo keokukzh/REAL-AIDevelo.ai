@@ -1,7 +1,29 @@
 // Initialize observability (must be first import)
 import { setupObservability } from './config/observability';
 import { config } from './config/env';
+import { initializeDatabase, testConnection } from './services/database';
 setupObservability(config.otlpExporterEndpoint);
+
+// Initialize database connection
+if (config.databaseUrl) {
+  try {
+    initializeDatabase();
+    // Test connection asynchronously (don't block startup)
+    testConnection().then((connected) => {
+      if (connected) {
+        console.log('[Database] ✅ Connected successfully');
+      } else {
+        console.warn('[Database] ⚠️  Connection test failed');
+      }
+    }).catch((err) => {
+      console.warn('[Database] ⚠️  Connection test error:', err.message);
+    });
+  } catch (error) {
+    console.warn('[Database] ⚠️  Failed to initialize:', (error as Error).message);
+  }
+} else {
+  console.log('[Database] ℹ️  DATABASE_URL not set, using in-memory storage');
+}
 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';

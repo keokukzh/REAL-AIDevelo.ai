@@ -19,6 +19,7 @@ const optionalEnvVars = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  DATABASE_URL: process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
 };
@@ -82,6 +83,7 @@ export const config = {
   stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,
   stripeWebhookSecret: optionalEnvVars.STRIPE_WEBHOOK_SECRET,
   frontendUrl: optionalEnvVars.FRONTEND_URL,
+  databaseUrl: optionalEnvVars.DATABASE_URL,
   redisUrl: optionalEnvVars.REDIS_URL,
   otlpExporterEndpoint: optionalEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT,
 };

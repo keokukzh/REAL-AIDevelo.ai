@@ -80,8 +80,18 @@ Use the root `Dockerfile` (multi-stage, builds frontend + backend) or the `serve
 4. **Environment Variables**:
    - `ELEVENLABS_API_KEY`: Your key.
    - `ALLOWED_ORIGINS`, `FRONTEND_URL`, `PORT` (default 5000), `NODE_ENV`.
-   - Optional: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`.
-5. Run migrations on startup: `npm run wait-and-migrate` (uses `server/db/migrations`).
+   - **Database**: `DATABASE_URL` or `DATABASE_PRIVATE_URL` (for Railway Postgres, use `${{ Postgres.DATABASE_PRIVATE_URL }}`).
+   - Optional: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`.
+5. **Railway Postgres Connection**:
+   - In Railway, go to your Postgres service → Database tab → Credentials
+   - Copy the connection string or use the "Connect" button
+   - For **Private Network** (recommended, no egress costs):
+     - Create a variable in your backend service: `DATABASE_PRIVATE_URL`
+     - Set value to: `${{ Postgres.DATABASE_PRIVATE_URL }}`
+   - For **Public Network** (has egress costs):
+     - Create a variable: `DATABASE_URL`
+     - Set value to the public connection string from Railway
+6. Run migrations on startup: `npm run wait-and-migrate` (uses `server/db/migrations`).
 
 ---
 
