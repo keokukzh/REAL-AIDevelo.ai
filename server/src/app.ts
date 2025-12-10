@@ -328,15 +328,69 @@ if (require.main === module) {
     
     // Run migrations on startup if database is configured
     if (config.databaseUrl) {
-      try {
-        const { runMigrations } = require('../scripts/runMigrations');
-        console.log('[Database] Running migrations on startup...');
-        await runMigrations();
-        console.log('[Database] ✅ Migrations completed');
-      } catch (migrationError) {
-        console.error('[Database] ❌ Migration failed:', (migrationError as Error).message);
-        // Don't exit - server can still run with in-memory storage
-      }
+      // Run migrations asynchronously (don't block server startup)
+      (async () => {
+        try {
+          // Import and run migrations directly
+          const path = require('path');
+          const fs = require('fs');
+          const { Client } = require('pg');
+          
+          const migrationsDir = path.join(__dirname, '../../db/migrations');
+          if (!fs.existsSync(migrationsDir)) {
+            console.warn('[Database] Migrations directory not found:', migrationsDir);
+            return;
+          }
+
+          const client = new Client({ connectionString: config.databaseUrl });
+          await client.connect();
+          
+          // Create migrations table
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              id SERIAL PRIMARY KEY,
+              name TEXT UNIQUE NOT NULL,
+              applied_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            );
+          `);
+
+          // Read and apply migrations
+          const files = fs.readdirSync(migrationsDir)
+            .filter((f: string) => f.endsWith('.sql'))
+            .sort();
+          
+          console.log(`[Database] Found ${files.length} migration files`);
+          
+          for (const file of files) {
+            const name = file;
+            const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
+            if (res.rows.length > 0) {
+              console.log(`[Database] Skipping already-applied: ${name}`);
+              continue;
+            }
+
+            const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+            console.log(`[Database] Applying ${name}...`);
+            try {
+              await client.query('BEGIN');
+              await client.query(sql);
+              await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
+              await client.query('COMMIT');
+              console.log(`[Database] ✅ Applied ${name}`);
+            } catch (err: any) {
+              await client.query('ROLLBACK');
+              console.error(`[Database] ❌ Failed to apply ${name}:`, err.message);
+              throw err;
+            }
+          }
+
+          await client.end();
+          console.log('[Database] ✅ All migrations completed');
+        } catch (migrationError: any) {
+          console.error('[Database] ❌ Migration failed:', migrationError.message);
+          // Don't exit - server can still run with in-memory storage
+        }
+      })();
     }
   });
 }

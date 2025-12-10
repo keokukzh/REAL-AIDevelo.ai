@@ -33,6 +33,7 @@ RUN npm ci --omit=dev
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/db ./db
 COPY --from=base /app/scripts ./scripts
+COPY --from=base /app/node_modules ./node_modules
 
 # Expose port
 EXPOSE 5000
