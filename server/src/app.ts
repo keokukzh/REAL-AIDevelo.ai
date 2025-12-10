@@ -336,7 +336,11 @@ if (require.main === module) {
           const fs = require('fs');
           const { Client } = require('pg');
           
-          const migrationsDir = path.join(__dirname, '../../db/migrations');
+          // In Docker, migrations are in /app/db/migrations
+          // In development, they're in ../../db/migrations from dist/
+          const migrationsDir = fs.existsSync('/app/db/migrations') 
+            ? '/app/db/migrations'
+            : path.join(__dirname, '../../db/migrations');
           if (!fs.existsSync(migrationsDir)) {
             console.warn('[Database] Migrations directory not found:', migrationsDir);
             return;
