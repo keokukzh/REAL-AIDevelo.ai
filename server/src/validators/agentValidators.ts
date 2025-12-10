@@ -12,10 +12,11 @@ export const BusinessProfileSchema = z.object({
   industry: z.string()
     .min(1, 'Industry is required')
     .max(50, 'Industry must be less than 50 characters'),
-  website: z.string()
-    .url('Invalid website URL')
-    .optional()
-    .or(z.literal('')),
+  website: z.union([
+    z.string().url('Invalid website URL'),
+    z.string().length(0),
+    z.undefined()
+  ]).optional(),
   location: z.object({
     country: z.literal('CH'),
     city: z.string()
@@ -24,18 +25,16 @@ export const BusinessProfileSchema = z.object({
       .trim()
   }),
   contact: z.object({
-    phone: z.string()
-      .min(1, 'Phone number is required')
-      .regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format'),
+    phone: z.union([
+      z.string().regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format'),
+      z.string().length(0),
+      z.undefined()
+    ]).optional(),
     email: z.string()
       .email('Invalid email address')
       .min(1, 'Email is required')
   }),
-  openingHours: z.record(z.string(), z.string())
-    .refine(
-      (hours) => Object.keys(hours).length > 0,
-      'At least one opening hour entry is required'
-    )
+  openingHours: z.record(z.string(), z.string()).optional()
 });
 
 export const AgentConfigSchema = z.object({

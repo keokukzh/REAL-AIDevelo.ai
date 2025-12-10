@@ -15,8 +15,26 @@ class MockDatabase {
     return this.agents.get(id);
   }
 
+  getAgentById(id: string) {
+    return this.agents.get(id);
+  }
+
   getAllAgents() {
     return Array.from(this.agents.values());
+  }
+
+  updateAgent(id: string, updates: Partial<VoiceAgent>): VoiceAgent {
+    const agent = this.agents.get(id);
+    if (!agent) {
+      throw new Error('Agent not found');
+    }
+    const updatedAgent = {
+      ...agent,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.agents.set(id, updatedAgent);
+    return updatedAgent;
   }
 
   // Purchase methods

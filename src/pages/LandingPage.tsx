@@ -39,11 +39,9 @@ export const LandingPage = () => {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate]);
   const startOnboarding = (industry?: string) => {
-    if (industry) {
-      navigate(`/onboarding?industry=${industry}`);
-    } else {
-      navigate('/onboarding');
-    }
+    // All onboarding/agent creation happens in Studio only
+    // Landing page only shows demo data and previews
+    navigate('/dashboard');
   };
 
   const scrollToLeadCapture = () => {

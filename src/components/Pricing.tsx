@@ -54,8 +54,8 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
             <Button variant="primary" onClick={() => onOpenLeadCapture?.()} className="px-6 py-3 text-base">
               Demo anfragen
             </Button>
-            <Button variant="outline" onClick={onStartOnboarding} className="px-6 py-3 text-base">
-              Direkt starten
+            <Button variant="outline" onClick={() => window.location.href = '/dashboard'} className="px-6 py-3 text-base">
+              Zum Studio
             </Button>
           </div>
 

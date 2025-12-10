@@ -518,32 +518,47 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
       <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Header */}
-      <header className="p-6 flex justify-between items-center z-10 border-b border-white/5 bg-black/50 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-            <Cpu className="text-accent" />
-            <span className="font-display font-bold text-xl">AIDevelo Voice Studio</span>
-        </div>
-        <button 
-            onClick={() => {
-                // Stop recording if active
-                if (isRecording || isRecordingRef.current) {
-                    if (confirm('Aufnahme wird beendet. Möchten Sie wirklich zurückgehen?')) {
-                        handleStopRecording();
-                        // Wait a moment for cleanup, then go back
-                        setTimeout(() => {
-                            onBack();
-                        }, 500);
-                    }
-                } else {
-                    onBack();
+      <header className="p-6 flex justify-between items-center z-10 border-b border-white/5 bg-black/50 backdrop-blur-md relative">
+        <div className="flex-1"></div>
+        <div className="flex-1 flex justify-center">
+            <img 
+              src="/logo-studio-white.png" 
+              alt="AIDevelo Studio" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.parentElement?.querySelector('.logo-fallback-text');
+                if (fallback) {
+                  (fallback as HTMLElement).style.display = 'block';
                 }
-            }} 
-            className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Zurück zum Onboarding"
-            disabled={step === 'processing'}
-        >
-            {isRecording ? 'Aufnahme beenden & zurück' : 'Schliessen'}
-        </button>
+              }}
+            />
+            <span className="logo-fallback-text hidden font-display font-bold text-xl">AIDevelo Studio</span>
+        </div>
+        <div className="flex-1 flex justify-end">
+            <button 
+                onClick={() => {
+                    // Stop recording if active
+                    if (isRecording || isRecordingRef.current) {
+                        if (confirm('Aufnahme wird beendet. Möchten Sie wirklich zurückgehen?')) {
+                            handleStopRecording();
+                            // Wait a moment for cleanup, then go back
+                            setTimeout(() => {
+                                onBack();
+                            }, 500);
+                        }
+                    } else {
+                        onBack();
+                    }
+                }} 
+                className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Zurück zum Onboarding"
+                disabled={step === 'processing'}
+            >
+                {isRecording ? 'Aufnahme beenden & zurück' : 'Schliessen'}
+            </button>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">

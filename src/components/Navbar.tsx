@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Mic, Menu, X } from 'lucide-react';
+import { Mic, Menu, X, LogIn } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface NavbarProps {
@@ -90,11 +90,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             {/* Logo */}
             <motion.a 
                 href="/" 
-                onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                onClick={(e) => { e.preventDefault(); navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className="flex items-center gap-2 text-white font-display font-bold text-xl z-50 tracking-wide group"
                 whileHover={{ scale: 1.05 }}
             >
-                <img src="/main-logo.png" alt="AIDevelo.ai" className="h-8 w-auto object-contain" />
+                <img 
+                  src="/main-logo.png" 
+                  alt="AIDevelo.ai" 
+                  className="h-8 w-auto object-contain"
+                />
             </motion.a>
 
             {/* Desktop Nav */}
@@ -113,27 +117,57 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 ))}
             </nav>
 
-            {/* CTA */}
-            <div className="hidden md:block">
+            {/* Right Side: Login to Studio */}
+            <div className="hidden md:flex items-center gap-4">
                 <Button 
-                  onClick={handleStart} 
-                  variant="secondary" 
-                  className="!px-6 !py-2 text-sm"
-                  aria-label="Onboarding starten"
+                  onClick={() => navigate('/dashboard')} 
+                  variant="outline" 
+                  className="!px-4 !py-2 text-sm flex items-center gap-2"
+                  aria-label="Login to Aidevelo Studio"
                 >
-                    Jetzt testen
+                    <img 
+                      src="/logo-studio-white.png" 
+                      alt="Aidevelo Studio" 
+                      className="h-5 w-auto object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <LogIn size={16} />
+                    <span>Login</span>
                 </Button>
             </div>
 
-            {/* Mobile Toggle */}
-            <button 
-                className="md:hidden text-white z-50"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
-                aria-expanded={mobileMenuOpen ? "true" : "false"}
-            >
-                {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
+            {/* Mobile: Login Button + Toggle */}
+            <div className="md:hidden flex items-center gap-3">
+                <Button 
+                  onClick={() => navigate('/dashboard')} 
+                  variant="outline" 
+                  className="!px-3 !py-2 text-xs flex items-center gap-1"
+                  aria-label="Login to Studio"
+                >
+                    <img 
+                      src="/logo-studio-white.png" 
+                      alt="Studio" 
+                      className="h-4 w-auto object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <LogIn size={14} />
+                    <span>Login</span>
+                </Button>
+                <button 
+                    className="text-white z-50"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
+                    aria-expanded={mobileMenuOpen ? "true" : "false"}
+                >
+                    {mobileMenuOpen ? <X /> : <Menu />}
+                </button>
+            </div>
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
@@ -153,11 +187,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         </a>
                     ))}
                     <Button 
-                      onClick={handleStart} 
-                      variant="primary"
-                      aria-label="Onboarding starten"
+                      onClick={() => navigate('/dashboard')} 
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      aria-label="Login to Studio"
                     >
-                      Jetzt testen
+                        <img 
+                          src="/logo-studio-white.png" 
+                          alt="Studio" 
+                          className="h-5 w-auto object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                        <LogIn size={18} />
+                        <span>Login</span>
                     </Button>
                 </nav>
             )}

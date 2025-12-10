@@ -4,6 +4,7 @@ import App from './App';
 import { HelmetProvider } from 'react-helmet-async';
 import './index.css';
 import './styles/animations.css';
+import './styles/dashboard.css';
 
 // Suppress external library warnings that don't affect functionality
 const originalError = console.error;

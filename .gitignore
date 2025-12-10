@@ -38,6 +38,14 @@ build_output.txt
 *.tmp
 *.temp
 
+# Test coverage
+coverage/
+*.lcov
+
+# Stripe CLI (binary)
+stripe-cli/
+stripe-cli.zip
+
 # Environment variables
 .env
 .env.local

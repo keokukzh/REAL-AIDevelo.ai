@@ -92,3 +92,92 @@ export interface PhoneStatus {
   agentId?: string;
   lastCallAt?: Date;
 }
+
+// Agent Template Types
+export interface AgentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  language: string;
+  languageCode: string;
+  industry: string;
+  useCase: string[];
+  icon: string;
+  systemPrompt: string;
+  voiceId: string;
+  modelId: string;
+  defaultSettings: {
+    recordingConsent: boolean;
+    openingHours: string;
+    goals: string[];
+  };
+  tags: string[];
+}
+
+// Analytics Types
+export interface AgentAnalytics {
+  agentId: string;
+  period: {
+    start: Date;
+    end: Date;
+  };
+  metrics: {
+    totalCalls: number;
+    successfulCalls: number;
+    failedCalls: number;
+    avgDuration: number; // in seconds
+    avgSatisfaction?: number; // 0-100
+    callsByDay: Array<{
+      date: string;
+      count: number;
+    }>;
+    callsByHour: Array<{
+      hour: number;
+      count: number;
+    }>;
+    successRate: number; // percentage
+  };
+}
+
+// Call History Types
+export interface CallHistory {
+  id: string;
+  agentId: string;
+  phoneNumber?: string;
+  callerNumber?: string;
+  startTime: Date;
+  endTime?: Date;
+  duration?: number; // in seconds
+  status: 'completed' | 'failed' | 'missed' | 'voicemail';
+  transcript?: string;
+  audioUrl?: string;
+  recordingUrl?: string;
+  metadata?: {
+    satisfaction?: number;
+    notes?: string;
+    tags?: string[];
+  };
+}
+
+// RAG Document Types
+export interface RAGDocument {
+  id: string;
+  agentId: string;
+  name: string;
+  type: 'pdf' | 'txt' | 'docx' | 'md';
+  url?: string;
+  fileSize?: number;
+  uploadedAt: Date;
+  status: 'processing' | 'ready' | 'error';
+  chunks?: RAGChunk[];
+  error?: string;
+}
+
+export interface RAGChunk {
+  id: string;
+  documentId: string;
+  content: string;
+  index: number;
+  metadata?: Record<string, any>;
+  embedding?: number[];
+}

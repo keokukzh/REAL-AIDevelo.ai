@@ -45,11 +45,8 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
   };
 
   const handlePrimary = () => {
-    if (onStartOnboarding) {
-      onStartOnboarding();
-      return;
-    }
-    scrollToDemo();
+    // Always navigate to dashboard/studio - no direct onboarding from landing page
+    window.location.href = '/dashboard';
   };
 
   return (
@@ -138,9 +135,9 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                   variant="secondary" 
                   className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" 
                   icon={<Play size={24} className="fill-current" />}
-                  aria-label="Onboarding starten oder Demo öffnen"
+                  aria-label="Zum Studio navigieren"
                 >
-                   Jetzt testen
+                   Zum Studio
                 </Button>
                 <Button 
                   onClick={scrollToDemo} 

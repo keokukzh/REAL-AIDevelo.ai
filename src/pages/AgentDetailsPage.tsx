@@ -16,8 +16,16 @@ import {
     Building,
     Calendar,
     Mail,
-    Globe
+    Globe,
+    BarChart,
+    FileText,
+    Mic,
+    Zap
 } from 'lucide-react';
+import { ConfigurationTab } from '../components/agent/ConfigurationTab';
+import { RAGManagementTab } from '../components/agent/RAGManagementTab';
+import { AnalyticsTab } from '../components/agent/AnalyticsTab';
+import { CallHistoryTab } from '../components/agent/CallHistoryTab';
 
 interface Agent {
     id: string;
@@ -40,6 +48,7 @@ interface Agent {
         primaryLocale: string;
         fallbackLocales: string[];
         recordingConsent?: boolean;
+        systemPrompt?: string;
         elevenLabs: {
             voiceId: string;
             modelId: string;
@@ -69,13 +78,31 @@ interface Agent {
     updatedAt: string;
 }
 
+type TabId = 'overview' | 'configuration' | 'voice' | 'rag' | 'analytics' | 'calls' | 'integrations';
+
+interface Tab {
+    id: TabId;
+    label: string;
+    icon: React.ReactNode;
+}
+
+const tabs: Tab[] = [
+    { id: 'overview', label: 'Übersicht', icon: <BarChart size={18} /> },
+    { id: 'configuration', label: 'Konfiguration', icon: <Settings size={18} /> },
+    { id: 'voice', label: 'Voice & Sprache', icon: <Mic size={18} /> },
+    { id: 'rag', label: 'RAG & Wissen', icon: <FileText size={18} /> },
+    { id: 'analytics', label: 'Analytics', icon: <Activity size={18} /> },
+    { id: 'calls', label: 'Call History', icon: <Phone size={18} /> },
+    { id: 'integrations', label: 'Integrationen', icon: <Zap size={18} /> },
+];
+
 export const AgentDetailsPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [agent, setAgent] = useState<Agent | null>(null);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
-    const [availableNumbers, setAvailableNumbers] = useState<Array<{ id: string; number: string; status: string }>>([]);
+    const [activeTab, setActiveTab] = useState<TabId>('overview');
 
     useEffect(() => {
         if (id) {
@@ -89,7 +116,6 @@ export const AgentDetailsPage = () => {
             setAgent(res.data);
         } catch (error) {
             console.error('Failed to fetch agent:', error);
-            alert('Fehler beim Laden des Agents.');
         } finally {
             setLoading(false);
         }
@@ -101,12 +127,8 @@ export const AgentDetailsPage = () => {
         try {
             await apiRequest(`/sync/agents/${id}`, { method: 'POST' });
             await fetchAgent();
-            alert('Agent erfolgreich synchronisiert!');
         } catch (error) {
-            const errorMessage = error instanceof ApiRequestError 
-                ? error.message 
-                : "Fehler beim Synchronisieren.";
-            alert(errorMessage);
+            // Error handling
         } finally {
             setSyncing(false);
         }
@@ -117,18 +139,13 @@ export const AgentDetailsPage = () => {
         try {
             await apiRequest(`/agents/${id}/activate`, { method: 'PATCH' });
             await fetchAgent();
-            alert('Agent erfolgreich aktiviert!');
         } catch (error) {
-            const errorMessage = error instanceof ApiRequestError 
-                ? error.message 
-                : "Fehler beim Aktivieren.";
-            alert(errorMessage);
+            // Error handling
         }
     };
 
     const handleTestAgent = () => {
         if (!agent?.elevenLabsAgentId) {
-            alert("Dieser Agent hat noch keine Verknüpfung zu ElevenLabs.");
             return;
         }
         window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agent.elevenLabsAgentId}`, '_blank');
@@ -177,16 +194,32 @@ export const AgentDetailsPage = () => {
 
     return (
         <div className="min-h-screen bg-background text-white">
-            <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50">
-                <div className="flex items-center gap-3">
+            <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50 relative">
+                <div className="flex-1 flex items-center">
                     <Button variant="outline" onClick={() => navigate('/dashboard')} className="p-2">
                         <ArrowLeft size={20} />
                     </Button>
-                    <span className="font-display font-bold text-xl">AIDevelo.ai</span>
-                    <span className="text-gray-600">|</span>
-                    <span className="text-gray-300 font-medium">Agent Details</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex-1 flex justify-center">
+                    <img 
+                      src="/logo-studio-white.png" 
+                      alt="AIDevelo Studio" 
+                      className="h-8 w-auto object-contain cursor-pointer"
+                      onClick={() => navigate('/dashboard')}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback = target.parentElement?.querySelector('.logo-fallback-text');
+                        if (fallback) {
+                          (fallback as HTMLElement).style.display = 'block';
+                        }
+                      }}
+                    />
+                    <span className="logo-fallback-text hidden font-display font-bold text-xl cursor-pointer" onClick={() => navigate('/dashboard')}>
+                      AIDevelo Studio
+                    </span>
+                </div>
+                <div className="flex-1 flex justify-end items-center gap-3">
                     {getStatusBadge(agent.status)}
                     <Button variant="outline" onClick={handleSync} disabled={syncing}>
                         <RefreshCw size={16} className={`mr-2 ${syncing ? 'animate-spin' : ''}`} />
@@ -195,237 +228,204 @@ export const AgentDetailsPage = () => {
                 </div>
             </header>
 
-            <main className="container mx-auto p-6 md:p-12 max-w-6xl">
+            <main className="container mx-auto p-6 md:p-12 max-w-7xl">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold font-display mb-2">{agent.businessProfile.companyName}</h1>
                     <p className="text-gray-400">{agent.businessProfile.industry}</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Business Profile */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-surface rounded-2xl border border-white/10 p-6"
-                        >
-                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Building size={20} />
-                                Firmenprofil
-                            </h2>
-                            <div className="space-y-3">
-                                <div>
-                                    <span className="text-gray-400 text-sm">Standort:</span>
-                                    <p className="font-medium">{agent.businessProfile.location.city}, {agent.businessProfile.location.country}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 text-sm">E-Mail:</span>
-                                    <p className="font-medium flex items-center gap-2">
-                                        <Mail size={14} />
-                                        {agent.businessProfile.contact.email}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 text-sm">Telefon:</span>
-                                    <p className="font-medium flex items-center gap-2">
-                                        <Phone size={14} />
-                                        {agent.businessProfile.contact.phone}
-                                    </p>
-                                </div>
-                                {agent.businessProfile.website && (
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Website:</span>
-                                        <p className="font-medium flex items-center gap-2">
-                                            <Globe size={14} />
-                                            <a href={agent.businessProfile.website} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                                                {agent.businessProfile.website}
-                                            </a>
-                                        </p>
-                                    </div>
-                                )}
-                                {agent.businessProfile.openingHours && (
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Öffnungszeiten:</span>
-                                        <div className="mt-1 space-y-1">
-                                            {Object.entries(agent.businessProfile.openingHours).map(([day, hours]) => (
-                                                <p key={day} className="text-sm">
-                                                    <span className="font-medium">{day}:</span> {hours}
-                                                </p>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-
-                        {/* Configuration */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-surface rounded-2xl border border-white/10 p-6"
-                        >
-                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Settings size={20} />
-                                Konfiguration
-                            </h2>
-                            <div className="space-y-3">
-                                <div>
-                                    <span className="text-gray-400 text-sm">Sprache:</span>
-                                    <p className="font-medium">{agent.config.primaryLocale}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 text-sm">Voice ID:</span>
-                                    <p className="font-medium font-mono text-sm">{agent.config.elevenLabs.voiceId}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 text-sm">Modell:</span>
-                                    <p className="font-medium">{agent.config.elevenLabs.modelId}</p>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400 text-sm">Anrufaufzeichnung:</span>
-                                    <p className="font-medium">{agent.config.recordingConsent ? 'Aktiviert' : 'Deaktiviert'}</p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Telephony */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-surface rounded-2xl border border-white/10 p-6"
-                        >
-                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Phone size={20} />
-                                Telefonie
-                            </h2>
-                            {agent.telephony?.phoneNumber ? (
-                                <div className="space-y-3">
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Telefonnummer:</span>
-                                        <p className="font-medium text-lg">{agent.telephony.phoneNumber}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Status:</span>
-                                        <p className={`font-medium ${
-                                            agent.telephony.status === 'active' ? 'text-green-400' : 'text-gray-400'
-                                        }`}>
-                                            {agent.telephony.status === 'active' ? 'Aktiv' : 'Zugewiesen'}
-                                        </p>
-                                    </div>
-                                    {agent.telephony.assignedAt && (
-                                        <div>
-                                            <span className="text-gray-400 text-sm">Zugewiesen am:</span>
-                                            <p className="font-medium text-sm">
-                                                {new Date(agent.telephony.assignedAt).toLocaleDateString('de-CH')}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400 text-sm">Keine Telefonnummer zugewiesen</p>
-                            )}
-                        </motion.div>
-
-                        {/* Subscription */}
-                        {agent.subscription && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-surface rounded-2xl border border-white/10 p-6"
+                {/* Tabs */}
+                <div className="border-b border-white/10 mb-6">
+                    <div className="flex gap-2 overflow-x-auto">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                                    activeTab === tab.id
+                                        ? 'border-accent text-accent'
+                                        : 'border-transparent text-gray-400 hover:text-white'
+                                }`}
                             >
-                                <h2 className="text-xl font-bold mb-4">Abonnement</h2>
-                                <div className="space-y-3">
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Plan:</span>
-                                        <p className="font-medium">{agent.subscription.planName}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Status:</span>
-                                        <p className="font-medium">{agent.subscription.status}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Gekauft am:</span>
-                                        <p className="font-medium text-sm">
-                                            {new Date(agent.subscription.purchasedAt).toLocaleDateString('de-CH')}
-                                        </p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Voice Cloning */}
-                        {agent.voiceCloning?.voiceId && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-surface rounded-2xl border border-white/10 p-6"
-                            >
-                                <h2 className="text-xl font-bold mb-4">Voice Clone</h2>
-                                <div className="space-y-3">
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Name:</span>
-                                        <p className="font-medium">{agent.voiceCloning.voiceName || 'Custom Voice'}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400 text-sm">Voice ID:</span>
-                                        <p className="font-medium font-mono text-sm">{agent.voiceCloning.voiceId}</p>
-                                    </div>
-                                    {agent.voiceCloning.createdAt && (
-                                        <div>
-                                            <span className="text-gray-400 text-sm">Erstellt am:</span>
-                                            <p className="font-medium text-sm">
-                                                {new Date(agent.voiceCloning.createdAt).toLocaleDateString('de-CH')}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Actions */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-surface rounded-2xl border border-white/10 p-6"
-                        >
-                            <h2 className="text-xl font-bold mb-4">Aktionen</h2>
-                            <div className="space-y-3">
-                                {(agent.status === 'inactive' || agent.status === 'pending_activation') && (
-                                    <Button
-                                        variant="primary"
-                                        onClick={handleActivate}
-                                        className="w-full"
-                                    >
-                                        Agent aktivieren
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    onClick={handleTestAgent}
-                                    className="w-full"
-                                >
-                                    <Play size={16} className="mr-2" />
-                                    Agent testen
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleSync}
-                                    disabled={syncing}
-                                    className="w-full"
-                                >
-                                    <RefreshCw size={16} className={`mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                                    Synchronisieren
-                                </Button>
-                            </div>
-                        </motion.div>
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
+                </div>
+
+                {/* Tab Content */}
+                <div className="mt-6">
+                    {activeTab === 'overview' && (
+                        <OverviewTab agent={agent} onTest={handleTestAgent} onActivate={handleActivate} />
+                    )}
+                    {activeTab === 'configuration' && agent && (
+                        <ConfigurationTab 
+                            agent={agent} 
+                            onSave={async (updates) => {
+                                try {
+                                    await apiRequest(`/agents/${id}`, {
+                                        method: 'PATCH',
+                                        body: JSON.stringify(updates),
+                                    });
+                                    await fetchAgent();
+                                } catch (error) {
+                                    console.error('Failed to save:', error);
+                                }
+                            }}
+                        />
+                    )}
+                    {activeTab === 'voice' && (
+                        <div className="text-center py-12 text-gray-400">
+                            Voice & Sprache Tab - Wird implementiert
+                        </div>
+                    )}
+                    {activeTab === 'rag' && id && (
+                        <RAGManagementTab agentId={id} />
+                    )}
+                    {activeTab === 'analytics' && id && (
+                        <AnalyticsTab agentId={id} />
+                    )}
+                    {activeTab === 'calls' && id && (
+                        <CallHistoryTab agentId={id} />
+                    )}
+                    {activeTab === 'integrations' && (
+                        <div className="text-center py-12 text-gray-400">
+                            Integrationen Tab - Wird implementiert
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
     );
 };
 
+// Overview Tab Component
+const OverviewTab: React.FC<{
+    agent: Agent;
+    onTest: () => void;
+    onActivate: () => void;
+}> = ({ agent, onTest, onActivate }) => {
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-surface rounded-2xl border border-white/10 p-6"
+                >
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <Building size={20} />
+                        Firmenprofil
+                    </h2>
+                    <div className="space-y-3">
+                        <div>
+                            <span className="text-gray-400 text-sm">Standort:</span>
+                            <p className="font-medium">{agent.businessProfile.location.city}, {agent.businessProfile.location.country}</p>
+                        </div>
+                        <div>
+                            <span className="text-gray-400 text-sm">E-Mail:</span>
+                            <p className="font-medium flex items-center gap-2">
+                                <Mail size={14} />
+                                {agent.businessProfile.contact.email}
+                            </p>
+                        </div>
+                        <div>
+                            <span className="text-gray-400 text-sm">Telefon:</span>
+                            <p className="font-medium flex items-center gap-2">
+                                <Phone size={14} />
+                                {agent.businessProfile.contact.phone}
+                            </p>
+                        </div>
+                        {agent.businessProfile.website && (
+                            <div>
+                                <span className="text-gray-400 text-sm">Website:</span>
+                                <p className="font-medium flex items-center gap-2">
+                                    <Globe size={14} />
+                                    <a href={agent.businessProfile.website} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                                        {agent.businessProfile.website}
+                                    </a>
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-surface rounded-2xl border border-white/10 p-6"
+                >
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <Settings size={20} />
+                        Konfiguration
+                    </h2>
+                    <div className="space-y-3">
+                        <div>
+                            <span className="text-gray-400 text-sm">Sprache:</span>
+                            <p className="font-medium">{agent.config.primaryLocale}</p>
+                        </div>
+                        <div>
+                            <span className="text-gray-400 text-sm">Voice ID:</span>
+                            <p className="font-medium font-mono text-sm">{agent.config.elevenLabs.voiceId}</p>
+                        </div>
+                        <div>
+                            <span className="text-gray-400 text-sm">Modell:</span>
+                            <p className="font-medium">{agent.config.elevenLabs.modelId}</p>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+
+            <div className="space-y-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-surface rounded-2xl border border-white/10 p-6"
+                >
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <Phone size={20} />
+                        Telefonie
+                    </h2>
+                    {agent.telephony?.phoneNumber ? (
+                        <div className="space-y-3">
+                            <div>
+                                <span className="text-gray-400 text-sm">Telefonnummer:</span>
+                                <p className="font-medium text-lg">{agent.telephony.phoneNumber}</p>
+                            </div>
+                            <div>
+                                <span className="text-gray-400 text-sm">Status:</span>
+                                <p className={`font-medium ${
+                                    agent.telephony.status === 'active' ? 'text-green-400' : 'text-gray-400'
+                                }`}>
+                                    {agent.telephony.status === 'active' ? 'Aktiv' : 'Zugewiesen'}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm">Keine Telefonnummer zugewiesen</p>
+                    )}
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-surface rounded-2xl border border-white/10 p-6"
+                >
+                    <h2 className="text-xl font-bold mb-4">Aktionen</h2>
+                    <div className="space-y-3">
+                        {(agent.status === 'inactive' || agent.status === 'pending_activation') && (
+                            <Button variant="primary" onClick={onActivate} className="w-full">
+                                Agent aktivieren
+                            </Button>
+                        )}
+                        <Button variant="outline" onClick={onTest} className="w-full">
+                            <Play size={16} className="mr-2" />
+                            Agent testen
+                        </Button>
+                    </div>
+                </motion.div>
+            </div>
+        </div>
+    );
+};

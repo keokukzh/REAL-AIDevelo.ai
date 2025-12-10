@@ -5,17 +5,26 @@ The system provides 24/7 call handling, lead qualification, and appointment book
 
 ## 🚀 Key Features
 
-- **AI Voice Agent**: Natural-sounding, conversational AI (Google Gemini / VAPI powered).
-- **Voice Cloning**: Clone your own voice for a digital twin experience.
-- **Onboarding Wizard**: Step-by-step setup for companies (Hours, Objectives, Calendar).
-- **Swiss Compliance**: Data handling optimized for Swiss regulations.
+- **AI Voice Agent**: Natural-sounding, conversational AI with RAG (Retrieval-Augmented Generation) knowledge per customer
+- **Real-time Voice Pipeline**: ASR → LLM → TTS with OpenAI Realtime API and ElevenLabs
+- **Voice Cloning**: Clone your own voice for a digital twin experience
+- **Onboarding Wizard**: Step-by-step setup for companies (Hours, Objectives, Calendar)
+- **Professional Dashboard**: Complete agent management with analytics, RAG documents, and call history
+- **Agent Templates**: Pre-configured agents for different industries and languages
+- **Tool Integration**: Calendar (Google/Outlook), CRM webhooks, and notifications (SMS/Email)
+- **Swiss Compliance**: Data handling optimized for Swiss regulations (nDSG)
 
 ## 🛠 Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite
+- **Backend**: Node.js, Express, TypeScript
 - **Styling**: Tailwind CSS (Custom "Swiss" Theme), Framer Motion
 - **3D**: Three.js, React Three Fiber (for Avatar visualization)
-- **Routing**: React Router DOM v6+
+- **Routing**: React Router DOM v7+
+- **Voice**: OpenAI Realtime API (ASR), ElevenLabs (TTS)
+- **LLM**: OpenAI, Anthropic Claude, DeepSeek (configurable)
+- **Vector DB**: Qdrant (for RAG)
+- **Deployment**: Cloudflare Pages (Frontend), Railway/Render (Backend)
 
 ## 📂 Project Structure
 
@@ -93,8 +102,24 @@ See [DOCKER.md](DOCKER.md) for Docker setup and deployment instructions.
 ## 📚 Documentation
 
 - **API Documentation**: Available at `/api-docs` when server is running
+- **Deployment Guide**: See [DEPLOY.md](DEPLOY.md) for Cloudflare Pages setup
 - **Docker Setup**: See [DOCKER.md](DOCKER.md)
 - **Server API Docs**: See [server/API_DOCUMENTATION.md](server/API_DOCUMENTATION.md)
+- **Voice Agent Service**: See [server/src/voice-agent/README.md](server/src/voice-agent/README.md)
+
+## 🚀 Deployment
+
+### Cloudflare Pages (Frontend)
+
+1. Push code to GitHub
+2. Connect repository to Cloudflare Pages
+3. Build settings:
+   - **Build Command**: `npm run build`
+   - **Build Output Directory**: `dist`
+   - **Environment Variables**: `VITE_API_URL` (your backend URL)
+4. Deploy automatically on push to `main`
+
+See [DEPLOY.md](DEPLOY.md) for detailed instructions.
 
 ## 🤝 Contributing
 
