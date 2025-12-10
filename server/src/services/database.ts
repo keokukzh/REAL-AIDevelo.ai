@@ -103,12 +103,29 @@ export async function testConnection(): Promise<boolean> {
   try {
     const dbPool = getPool();
     if (!dbPool) {
+      console.warn('[Database] Pool not initialized');
       return false;
     }
-    await dbPool.query('SELECT NOW()');
-    return true;
-  } catch (error) {
-    console.error('[Database] Connection test failed:', error);
+    
+    // Test with a simple query and retry logic
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await dbPool.query('SELECT NOW()');
+        return true;
+      } catch (error: any) {
+        retries--;
+        if (retries > 0) {
+          console.warn(`[Database] Connection test failed, retrying... (${retries} attempts left)`, error.message);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          throw error;
+        }
+      }
+    }
+    return false;
+  } catch (error: any) {
+    console.error('[Database] Connection test failed:', error.message);
     return false;
   }
 }
