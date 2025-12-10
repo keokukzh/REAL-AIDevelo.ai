@@ -4,14 +4,22 @@ import { config } from './config/env';
 import { initializeDatabase, testConnection } from './services/database';
 setupObservability(config.otlpExporterEndpoint);
 
-// Initialize database connection
+// Initialize database connection and run migrations
 if (config.databaseUrl) {
   try {
     initializeDatabase();
-    // Test connection asynchronously (don't block startup)
-    testConnection().then((connected) => {
+    // Test connection and run migrations asynchronously (don't block startup)
+    testConnection().then(async (connected) => {
       if (connected) {
         console.log('[Database] ✅ Connected successfully');
+        // Run migrations automatically
+        try {
+          const { runMigrations } = require('../scripts/runMigrations');
+          await runMigrations();
+          console.log('[Database] ✅ Migrations completed');
+        } catch (migrationError) {
+          console.warn('[Database] ⚠️  Migration error:', (migrationError as Error).message);
+        }
       } else {
         console.warn('[Database] ⚠️  Connection test failed');
       }
