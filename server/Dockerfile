@@ -4,10 +4,12 @@ FROM node:20-alpine AS base
 # Workspace directory
 WORKDIR /app
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
 COPY .npmrc ./
-RUN npm ci --omit=dev
+
+# Install ALL dependencies (including dev for build)
+RUN npm ci
 
 # Copy source
 COPY . .
@@ -22,14 +24,15 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY .npmrc ./
 
 # Install only production dependencies
-COPY .npmrc ./
 RUN npm ci --omit=dev
 
 # Copy built application from base stage
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/db ./db
+COPY --from=base /app/scripts ./scripts
 
 # Expose port
 EXPOSE 5000
