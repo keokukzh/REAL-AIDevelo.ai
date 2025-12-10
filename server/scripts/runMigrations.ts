@@ -8,6 +8,13 @@ dotenv.config();
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'db', 'migrations');
 
 function getDatabaseUrl(): string {
+  // Check for DATABASE_PRIVATE_URL first (Railway private network)
+  const privateUrl = process.env.DATABASE_PRIVATE_URL;
+  if (privateUrl) {
+    return privateUrl;
+  }
+  
+  // Fallback to DATABASE_URL
   const envUrl = process.env.DATABASE_URL;
   if (envUrl && envUrl.includes('localhost')) {
     // If running inside docker the service name will be 'postgres'

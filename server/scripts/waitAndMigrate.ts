@@ -76,6 +76,13 @@ async function waitForTcp(host: string, port: number, name = 'tcp') {
 }
 
 function normalizeDatabaseUrl(envUrl?: string): string {
+  // Check for DATABASE_PRIVATE_URL first (Railway private network)
+  const privateUrl = process.env.DATABASE_PRIVATE_URL;
+  if (privateUrl) {
+    return privateUrl;
+  }
+  
+  // Fallback to DATABASE_URL
   const url = envUrl || process.env.DATABASE_URL || 'postgres://aidevelo:aidevelo@postgres:5432/aidevelo_dev';
   if (url.includes('localhost')) return url.replace('localhost', 'postgres');
   return url;
