@@ -404,9 +404,19 @@ if (require.main === module) {
           console.log('[Database] ✅ All migrations completed');
         } catch (migrationError: any) {
           console.error('[Database] ❌ Migration failed:', migrationError.message);
+          console.error('[Database] Error details:', {
+            code: migrationError.code,
+            errno: migrationError.errno,
+            syscall: migrationError.syscall,
+            hostname: migrationError.hostname,
+            port: migrationError.port,
+          });
           // Don't exit - server can still run with in-memory storage
         }
       })();
+    } else {
+      console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
+      console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
     }
   });
 }
