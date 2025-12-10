@@ -44,13 +44,20 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       console.log('[API] Making request to:', url);
     }
     
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     const response = await fetch(url, {
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
       ...options,
     });
+    
+    clearTimeout(timeoutId);
 
     // Check content type before parsing JSON
     const contentType = response.headers.get('content-type');
@@ -87,13 +94,31 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     if (error instanceof ApiRequestError) {
       throw error;
     }
-    // Handle network errors
-    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+    
+    // Handle abort (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new ApiRequestError(
         0,
-        'Network error: Unable to connect to the server. Please check your connection and ensure the backend server is running on ' + API_BASE_URL.replace('/api', '')
+        'Request timeout: Der Server antwortet nicht. Bitte versuchen Sie es später erneut.',
+        { timeout: true }
       );
     }
+    
+    // Handle network errors
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+      // Check if it's a CORS error
+      const isCorsError = error.message.includes('CORS') || error.message.includes('Access-Control');
+      const errorMsg = isCorsError
+        ? 'CORS-Fehler: Der Server erlaubt keine Anfragen von dieser Domain. Bitte kontaktieren Sie den Support.'
+        : `Netzwerkfehler: Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung und stellen Sie sicher, dass der Server läuft: ${API_BASE_URL.replace('/api', '')}`;
+      
+      throw new ApiRequestError(
+        0,
+        errorMsg,
+        { networkError: true, url: API_BASE_URL }
+      );
+    }
+    
     // Re-throw unknown errors
     throw error;
   }

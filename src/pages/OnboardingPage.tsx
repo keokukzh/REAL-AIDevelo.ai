@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { VoiceOnboarding } from '../components/VoiceOnboarding';
 import { CalendarIntegration } from '../components/CalendarIntegration';
 import { industries } from '../data/industries';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const OnboardingPage = () => {
     const navigate = useNavigate();
