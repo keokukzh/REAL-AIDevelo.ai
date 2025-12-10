@@ -17,12 +17,16 @@ export function initializeDatabase(): Pool {
   }
 
   try {
+    // Log connection attempt (without sensitive data)
+    const urlForLogging = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
+    console.log('[Database] Connecting to:', urlForLogging.split('@')[1] || 'database');
+    
     pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: config.isProduction ? { rejectUnauthorized: false } : false,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000, // Increased to 10s for Railway
     });
 
     pool.on('error', (err) => {

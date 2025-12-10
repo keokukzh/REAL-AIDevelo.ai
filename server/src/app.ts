@@ -336,6 +336,10 @@ if (require.main === module) {
           const fs = require('fs');
           const { Client } = require('pg');
           
+          // Use DATABASE_PRIVATE_URL if available (Railway private network)
+          const dbUrl = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || config.databaseUrl;
+          console.log('[Database] Using database URL:', dbUrl.replace(/:[^:@]+@/, ':****@').split('@')[1] || 'database');
+          
           // In Docker, migrations are in /app/db/migrations
           // In development, they're in ../../db/migrations from dist/
           const migrationsDir = fs.existsSync('/app/db/migrations') 
@@ -347,8 +351,15 @@ if (require.main === module) {
             return;
           }
 
-          const client = new Client({ connectionString: config.databaseUrl });
+          const client = new Client({ 
+            connectionString: dbUrl,
+            connectionTimeoutMillis: 10000, // 10 seconds for Railway
+            ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+          });
+          
+          console.log('[Database] Attempting to connect...');
           await client.connect();
+          console.log('[Database] ✅ Connected successfully');
           
           // Create migrations table
           await client.query(`

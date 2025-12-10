@@ -19,7 +19,8 @@ const optionalEnvVars = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
-  DATABASE_URL: process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || '',
+  // Railway: DATABASE_PRIVATE_URL has priority for private networking
+  DATABASE_URL: process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
 };
