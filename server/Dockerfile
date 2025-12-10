@@ -4,15 +4,15 @@ FROM node:20-alpine AS base
 # Workspace directory
 WORKDIR /app
 
-# Copy server package files (NOT root package.json!)
-COPY package*.json ./
-COPY .npmrc ./
+# Copy server package files (from server/ directory in build context)
+COPY server/package*.json ./
+COPY server/.npmrc ./
 
 # Install ALL dependencies (including dev for TypeScript build)
 RUN npm ci
 
 # Copy server source
-COPY . .
+COPY server/ ./
 
 # Build TypeScript
 RUN npm run build
@@ -23,8 +23,8 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-COPY .npmrc ./
+COPY server/package*.json ./
+COPY server/.npmrc ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev
