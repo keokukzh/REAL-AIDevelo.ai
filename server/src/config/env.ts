@@ -75,9 +75,12 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
     'http://localhost:3000',
+    'http://localhost:4000', // Vite dev port
     'http://localhost:5173', // Vite default port
     'https://aidevelo.ai', // Production frontend
-    'https://www.aidevelo.ai' // Production frontend with www
+    'https://www.aidevelo.ai', // Production frontend with www
+    'https://*.pages.dev', // Cloudflare Pages
+    'https://*.railway.app', // Railway preview deployments
   ],
   isProduction: process.env.NODE_ENV === 'production',
   stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,

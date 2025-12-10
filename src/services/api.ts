@@ -5,8 +5,15 @@ const getApiBaseUrl = (): string => {
     // @ts-ignore
     return import.meta.env.VITE_API_URL;
   }
-  // Default to localhost:5000/api for development
-  // In production, this should be set via VITE_API_URL
+  
+  // Check if we're in production (deployed on Cloudflare Pages)
+  // @ts-ignore
+  if (import.meta.env?.MODE === 'production' || window.location.hostname !== 'localhost') {
+    // Production: use Railway backend
+    return 'https://real-aideveloai-production.up.railway.app/api';
+  }
+  
+  // Development: use localhost
   return 'http://localhost:5000/api';
 };
 
