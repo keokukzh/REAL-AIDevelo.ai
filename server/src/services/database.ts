@@ -26,7 +26,9 @@ export function initializeDatabase(): Pool {
       ssl: config.isProduction ? { rejectUnauthorized: false } : false,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000, // Increased to 10s for Railway
+      connectionTimeoutMillis: 30000, // Increased to 30s for Railway
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     });
 
     pool.on('error', (err) => {

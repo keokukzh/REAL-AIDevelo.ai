@@ -353,13 +353,32 @@ if (require.main === module) {
 
           const client = new Client({ 
             connectionString: dbUrl,
-            connectionTimeoutMillis: 10000, // 10 seconds for Railway
+            connectionTimeoutMillis: 30000, // 30 seconds for Railway
             ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+            keepAlive: true,
+            keepAliveInitialDelayMillis: 10000,
           });
           
           console.log('[Database] Attempting to connect...');
-          await client.connect();
-          console.log('[Database] ✅ Connected successfully');
+          
+          // Retry logic for connection
+          let retries = 3;
+          let connected = false;
+          while (retries > 0 && !connected) {
+            try {
+              await client.connect();
+              connected = true;
+              console.log('[Database] ✅ Connected successfully');
+            } catch (connectError: any) {
+              retries--;
+              if (retries > 0) {
+                console.warn(`[Database] Connection attempt failed, retrying... (${retries} attempts left)`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+              } else {
+                throw connectError;
+              }
+            }
+          }
           
           // Create migrations table
           await client.query(`
