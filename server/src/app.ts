@@ -319,12 +319,25 @@ if (require.main === module) {
   scheduleDailySync();
   scheduleStatusChecks();
   
-  httpServer.listen(config.port, () => {
+  httpServer.listen(config.port, async () => {
     console.log(`[AIDevelo Server] Running on http://localhost:${config.port}`);
     console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
     console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
     console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
     console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
+    
+    // Run migrations on startup if database is configured
+    if (config.databaseUrl) {
+      try {
+        const { runMigrations } = require('../scripts/runMigrations');
+        console.log('[Database] Running migrations on startup...');
+        await runMigrations();
+        console.log('[Database] ✅ Migrations completed');
+      } catch (migrationError) {
+        console.error('[Database] ❌ Migration failed:', (migrationError as Error).message);
+        // Don't exit - server can still run with in-memory storage
+      }
+    }
   });
 }
 
