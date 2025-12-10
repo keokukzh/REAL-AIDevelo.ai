@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
+COPY .npmrc ./
 RUN npm ci --omit=dev
 
 # Copy source
@@ -23,6 +24,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
+COPY .npmrc ./
 RUN npm ci --omit=dev
 
 # Copy built application from base stage
