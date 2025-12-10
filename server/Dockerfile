@@ -32,7 +32,9 @@ RUN npm ci --omit=dev
 # Copy built application from base stage
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/db ./db
-COPY --from=base /app/scripts ./scripts
+
+# Copy node_modules from base to use ts-node for migrations  
+COPY --from=base /app/node_modules ./node_modules
 
 # Expose port
 EXPOSE 5000

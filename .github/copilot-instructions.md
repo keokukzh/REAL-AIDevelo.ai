@@ -1,198 +1,43 @@
+docker compose -f docker-compose.dev.yml up
+git push origin main  # Triggers Railway build from server/Dockerfile
 # Copilot Instructions – AIDevelo.ai
 
-## System Snapshot
-- Stack: React 19 + Vite + Tailwind + Framer Motion + R3F (frontend); Express + TypeScript (backend); Voice Agent domain in `server/src/voice-agent` (RAG + ASR→LLM→TTS, Qdrant, ElevenLabs, OpenAI/Anthropic/DeepSeek providers, tool registry).
-- Routing: React Router in `src/App.tsx`; keep links/CTAs real (no placeholders). Components live in `src/components`, pages in `src/pages`, data in `src/data`.
-- API patterns: Frontend calls go through `src/services/api.ts`/`apiRequest<T>()`; backend routes under `server/src/routes` registered in `server/src/app.ts`; errors use `AppError` + `errorHandler` middleware; rate limiter 100 req/15min on `/api/*`.
+## Snapshot
+- Frontend: React 19 + Vite + Tailwind + Framer Motion; React Router in `src/App.tsx`; 3D avatar via R3F `src/components/ThreeAvatar.tsx`.
+- Backend: Express + TypeScript in `server/`; voice agent domain under `server/src/voice-agent` (RAG + ASR→LLM→TTS, Qdrant, ElevenLabs, OpenAI/Anthropic/DeepSeek).
+- API shape: frontend uses `apiRequest` (`src/services/api.ts`), backend routes live in `server/src/routes` and are registered in `server/src/app.ts`; errors via `AppError` + `errorHandler`; rate limiter 100 req/15min on `/api/*`.
 
 ## Environments
-- Frontend env (`.env.local`): `VITE_API_URL` (default `http://localhost:5000/api`), optional `VITE_DEBUG_API=true`.
-- Backend env (`server/.env`): prod requires `ELEVENLABS_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`; common: `PORT=5000`, `ALLOWED_ORIGINS`, `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`. Validation in `server/src/config/env.ts` fails fast in prod.
+- Frontend `.env.local`: `VITE_API_URL` (default `http://localhost:5000/api`), optional `VITE_DEBUG_API=true`.
+- Backend `server/.env`: required in prod `ELEVENLABS_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`; common `PORT`, `ALLOWED_ORIGINS`, `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`; validation in `server/src/config/env.ts` fails fast in prod.
 
-## Dev & Build
-- Frontend: `npm install && npm run dev` (:5173); build `npm run build`; tests `npm run test` (Vitest).
-- Backend: `cd server && npm install && npm run dev` (:5000); build `npm run build`; migrations `npm run migrate` or `npm run wait-and-migrate`; ElevenLabs check `npm run test:elevenlabs`; OpenAPI `npm run docs:generate`.
-- Compose dev stack (recommended): `docker compose -f docker-compose.dev.yml up` (server, frontend, Postgres, Redis, Qdrant, Jaeger; runs wait-and-migrate automatically). Health: `/health`, `/health/ready`, `/metrics`.
-- Docker images: root `Dockerfile` builds frontend+backend multi-stage and serves backend on :5000 with `public/` from `dist`. Backend-only alternative in `server/Dockerfile`.
+## Dev / Build / Test
+- Frontend: `npm run dev` (:5173), `npm run build`, `npm run test` (Vitest). Chunking tuned in `vite.config.ts` (manualChunks, chunkSizeWarningLimit=1200).
+- Backend: `cd server && npm run dev`, `npm run build`, migrations `npm run migrate` or `npm run wait-and-migrate`, ElevenLabs check `npm run test:elevenlabs`, OpenAPI `npm run docs:generate`.
+- Compose stack: `docker compose -f docker-compose.dev.yml up` (backend, frontend, Postgres, Redis, Qdrant, Jaeger; runs wait-and-migrate). Health endpoints `/health`, `/health/ready`, `/metrics`.
 
-## CI/CD
-- GitHub Actions: `.github/workflows/ci.yml` runs FE tests/build, BE build + OpenAPI, builds/pushes GHCR image `ghcr.io/<owner>/aidevelo-api`, optional Railway deploy when `DEPLOY_BACKEND=true` var and `RAILWAY_TOKEN` secret set. Frontend Pages deploy lives in `cloudflare-pages.yml` (secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
-- Deploy targets: Frontend → Cloudflare Pages (`wrangler.toml`); Backend → Railway/Render/Fly; image consumers should pull GHCR `:latest` or SHA.
+## Frontend Conventions
+- Keep CTAs real: onboarding route `/onboarding`, Calendly `https://calendly.com/aidevelo-enterprise`, demo anchor `#demo`; navbar scroll uses location state + 80px offset.
+- Components live in `src/components`, pages in `src/pages`, data in `src/data`; forms (`LeadCaptureForm`, `EnterpriseContactForm`) already validated—reuse `apiRequest` for API calls.
+- Styling is Tailwind; motion via Framer Motion; prefer mobile-first layouts and avoid dead links.
 
-## Voice Agent domain
-- Key files: `server/src/voice-agent/routes/voiceAgentRoutes.ts`, `.../rag/*`, `.../llm/*`, `.../voice/*`, `.../tools/toolRegistry.ts`. HTTP entry `/api/voice-agent/query`; WebSocket `/api/voice-agent/call-session`; ingestion `/api/voice-agent/ingest`.
-- Qdrant config and embeddings in `voice-agent/rag`; tool calls (calendar/CRM/notifications) defined in `tools/*`.
+## Backend Conventions
+- Routes under `server/src/routes`, registered in `app.ts`; document with `@swagger` JSDoc; errors throw `AppError` and fall through `errorHandler`.
+- Voice agent entrypoints: HTTP `/api/voice-agent/query`, ingestion `/api/voice-agent/ingest`, WebSocket `/api/voice-agent/call-session`; see `server/src/voice-agent/{routes,rag,voice,llm,tools}` and README for pipeline details.
+- Migrations: drop SQL files in `server/db/migrations` (filename-ordered). Compose auto-runs them; manually use `npm run migrate`.
 
-## Frontend patterns
-- Use existing sections/components (`Hero`, `DemoSection`, `Pricing`, `LeadCaptureForm`, etc.) and keep CTAs wired: onboarding route `/onboarding`, Calendly link `https://calendly.com/aidevelo-enterprise`, demo scroll target `#demo`.
-- Styling via Tailwind classes; animations with Framer Motion; 3D avatar in `src/components/ThreeAvatar.tsx` (R3F). Maintain mobile-first layouts and avoid dead links.
+## Deployment / CI
+- Root `Dockerfile` builds frontend+backend multi-stage (serves backend on :5000 with `dist/` static); backend-only alt `server/Dockerfile`.
+- GitHub Actions `.github/workflows/ci.yml`: FE test/build, BE build/OpenAPI, publish GHCR `ghcr.io/<owner>/aidevelo-api`; Cloudflare Pages deploy in `cloudflare-pages.yml`.
+- Production targets: Frontend Cloudflare Pages (`wrangler.toml`), Backend Railway/Render/Fly; healthcheck `/health`.
 
-## Testing/Debugging
-- Health endpoints above; Swagger served at `/api-docs` (built from JSDoc). 
-- Common pitfalls: set `ALLOWED_ORIGINS` to avoid CORS; respect rate limit; ensure `VITE_API_URL` matches backend port; WebSocket path `/api/voice-agent/call-session`.
+## Workflows Package
+- CLI in `workflows/`: `npm run workflow:run workflows/definitions/ci-cd-workflow.json`, `workflow:validate`, `workflow:monitor`, `workflow:status`; env toggles `DEPLOY_FRONTEND`, `DEPLOY_BACKEND`, `GENERATE_DOCS`.
 
-## Workflow Orchestrator
-- CLI in `workflows/` (`npm run workflow:run workflows/definitions/ci-cd-workflow.json`, `workflow:validate`, `workflow:monitor`, etc.); tasks cover build/test/deploy and scheduled health checks; uses env toggles `DEPLOY_FRONTEND`, `DEPLOY_BACKEND`, `GENERATE_DOCS`.
+## Key Files
+- Frontend: `src/services/api.ts`, `src/hooks/useVoiceAgentChat.ts`, `src/pages/LandingPage.tsx`, `src/components/*` (Hero/Demo/Pricing).
+- Backend: `server/src/app.ts`, `server/src/config/env.ts`, `server/src/middleware/errorHandler.ts`, `server/src/voice-agent/routes/voiceAgentRoutes.ts`.
+- Ops: `docker-compose.dev.yml`, `railway.json`, `wrangler.toml`, `server/TRACING_SETUP.md`.
 
-## Conventions
-- Keep shared types aligned: `src/types.ts` (FE) and `server/src/models/types` (BE).
-- New APIs: add route file under `server/src/routes`, wire in `app.ts`, document with `@swagger` JSDoc, add client call via `apiRequest`.
-- Migrations: drop SQL files into `server/db/migrations` (filename-ordered); compose auto-runs.
-
-## When editing
-- Preserve ASCII; keep links real; ensure routing/CTA targets exist; run `npm run build` (root and server) when changing build-critical code.## AIDevelo.ai – AI Agent Development Guide
-
-### Architecture Overview
-**Frontend**: React 19 + Vite (`src/App.tsx`) with React Router, Tailwind CSS, Framer Motion animations, and React Three Fiber for 3D avatars.  
-**Backend**: Express + TypeScript (`server/src/app.ts`) exposing REST API with Swagger docs, WebSocket for real-time voice, and background job processing.  
-**Voice Agent**: Domain lives in `server/src/voice-agent/` with RAG pipeline (Qdrant vector store), LLM provider abstraction (OpenAI/Anthropic/Google), tool registry for calendar/CRM integration, and WebSocket audio pipeline (ASR→LLM→TTS via ElevenLabs).
-
-### Environment Configuration
-**Frontend** (root `.env.local`):
-- `VITE_API_URL` - API endpoint (default: `http://localhost:5000/api`, production: Railway backend URL)
-- `VITE_DEBUG_API=true` - Enable API request logging in dev
-
-**Backend** (`server/.env`):
-- **Required in production**: `ELEVENLABS_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- **Optional with defaults**: `PORT` (5000), `NODE_ENV` (development), `ALLOWED_ORIGINS` (comma-separated), `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT`
-- Validation in `server/src/config/env.ts` - fails fast in production if secrets missing, warns in dev
-
-### Development Workflows
-
-#### Local Development (Standalone)
-```bash
-# Frontend (root)
-npm install && npm run dev              # Vite dev server on :5173
-
-# Backend (server/)
-cd server
-npm install && npm run dev              # Nodemon hot-reload on :5000
-npm run docs:generate                   # Generate OpenAPI spec
-npm run test:elevenlabs                 # Test ElevenLabs TTS integration
-```
-
-#### Docker Compose Dev Stack (Recommended)
-```bash
-# From repo root - starts all services with auto-migration
-docker compose -f docker-compose.dev.yml up
-
-# Services: server (:5000), frontend (:5173), postgres (:5432), 
-#           redis (:6379), qdrant (:6333), jaeger (:16686)
-# Server waits for DB readiness, runs migrations, then starts with hot-reload
-```
-
-**Migration workflow**: SQL files in `server/db/migrations/` applied in order; tracked in `_prisma_migrations` table.
-- `npm run migrate` - Apply migrations only
-- `npm run wait-and-migrate` - Wait for services + apply migrations
-
-#### Testing & Debugging
-```bash
-# Frontend tests
-npm run test                            # Vitest
-npm run test:watch                      # Watch mode
-npm run test:coverage                   # Coverage report in coverage/
-
-# Backend debugging
-curl -X POST http://localhost:5000/api/voice-agent/query \
-  -H "Content-Type: application/json" \
-  -d '{"message": "test"}'
-
-# Check health endpoints
-http://localhost:5000/health            # Liveness
-http://localhost:5000/health/ready      # Dependencies check (Postgres/Redis/Qdrant)
-http://localhost:5000/metrics           # Observability metrics
-```
-
-**Common issues**:
-- 429/403 errors: Rate limiter (100 req/15min on `/api/*`) or CORS rejection (check `ALLOWED_ORIGINS`)
-- Frontend can't reach API: Verify `VITE_API_URL` matches backend port and backend is running
-- WebSocket errors: Ensure port 5000 accessible for `/api/voice-agent/call-session` endpoint
-
-### Deployment
-
-**Production Stack**:
-- Frontend: Cloudflare Pages (`wrangler.toml` configures `VITE_API_URL`)
-- Backend: Railway (`railway.json` specifies Dockerfile path, healthcheck, startup command)
-- Databases: Railway-hosted Postgres + Redis; Qdrant Cloud for vector storage
-- Payments: Stripe (webhook listener via Stripe CLI locally)
-
-**Deploy Commands**:
-```bash
-# Frontend to Cloudflare Pages
-CF_PAGES_PROJECT_NAME=real-aidevelo-ai npm run deploy:cf
-
-# Backend auto-deploys on git push to Railway
-git push origin main  # Triggers Railway build from server/Dockerfile
-```
-
-**Dockerfile stages** (`server/Dockerfile`):
-- `base` - Build TypeScript, install deps
-- `production` - Production runtime (copies `dist/` and `db/` from base)
-- `tracing` - Optional OpenTelemetry instrumentation (extend `base` with OTEL packages)
-
-**Railway config** (`railway.json`):
-```json
-{
-  "build": { "dockerfilePath": "server/Dockerfile", "buildEnvironment": "V3" },
-  "deploy": { "startCommand": "node dist/app.js", "healthcheckPath": "/health" }
-}
-```
-
-### Code Patterns & Conventions
-
-**Frontend API Calls**:
-- Use `apiRequest<T>()` from `src/services/api.ts` - handles base URL, JSON parsing, typed errors
-- Throws `ApiRequestError` with statusCode/details for network failures
-- Voice chat: `useVoiceAgentChat` hook posts to `/voice-agent/query`, handles optimistic UI updates
-
-**Backend API Routes**:
-- All routes in `server/src/routes/`, registered in `app.ts` under `/api/*`
-- Use middleware: `attachApiVersionHeader` (X-API-Version), `deprecationWarningMiddleware`, rate limiter
-- Error handling: Throw `AppError` with code/status; caught by `errorHandler` middleware (returns structured JSON)
-- Swagger annotations: Document endpoints with `@swagger` JSDoc comments (served at `/api-docs`)
-
-**Voice Agent Pipeline** (`server/src/voice-agent/`):
-1. HTTP: `POST /api/voice-agent/query` → RAG retrieval (Qdrant) → LLM prompt → Tool execution → Response
-2. WebSocket: `/api/voice-agent/call-session` → `VoicePipelineHandler` streams audio (ASR→LLM→TTS loop)
-3. Tools: Registry in `tools/toolRegistry.ts` wraps calendar/CRM/notifications; definitions passed to LLM for function calling
-
-**Styling**:
-- Tailwind config: `tailwind.config.cjs` with custom colors (`background`/`primary`/`accent`), fonts (Inter/Space Grotesk)
-- Components: `src/components/*` for shared UI, `src/pages/*` for route components
-- Animations: Framer Motion for transitions, React Three Fiber for 3D avatar (`src/components/ThreeAvatar.tsx`)
-
-**Type Safety**:
-- Shared types: `src/types.ts` (frontend) and `server/src/models/types` (backend) - keep aligned
-- Validation: Zod schemas in `server/src/validators/`
-
-**Observability**:
-- OpenTelemetry setup in `server/src/config/observability.ts` - dynamically loads OTEL packages (no-op fallback if missing)
-- Traces exported to Jaeger (default `http://localhost:4318` or `OTEL_EXPORTER_OTLP_ENDPOINT`)
-- Metrics endpoint: `/metrics`
-
-### Workflow Automation
-**Workflows package** (`workflows/`): JSON workflow orchestrator with CLI.
-```bash
-npm run workflow:run <definition-file>    # Execute workflow
-npm run workflow:validate <file>          # Validate JSON schema
-npm run workflow:status                   # Check running workflows
-```
-Example: `workflows/definitions/ci-cd-workflow.json` for automated deployment tasks.
-
-### Key Files Reference
-- `server/src/app.ts` - Express app setup, middleware, route registration
-- `server/src/config/env.ts` - Environment validation and config exports
-- `server/src/middleware/errorHandler.ts` - Centralized error formatting
-- `src/services/api.ts` - Frontend API request wrapper
-- `server/src/voice-agent/routes/voiceAgentRoutes.ts` - Voice agent endpoints + WebSocket handler
-- `docker-compose.dev.yml` - Full dev stack orchestration
-- `railway.json` + `wrangler.toml` - Production deployment configs
-
-### Development Tips
-- **Adding new API route**: Create in `server/src/routes/`, import and register in `app.ts`, add Swagger docs, create client call via `apiRequest` in frontend
-- **Database changes**: Add SQL file to `server/db/migrations/`, filename must sort after existing; run `npm run migrate` in server/
-- **CORS issues**: Add origin to `ALLOWED_ORIGINS` env var (comma-separated) or update `config.allowedOrigins` in `env.ts`
-- **React 19 peer deps**: Use `npm install --legacy-peer-deps` if encountering conflicts (e.g., @react-spring/three, react-helmet-async)
-- **Debugging Railway deploys**: Check logs in Railway dashboard, verify `railway.json` config, ensure all env vars set (especially secrets)
-
-**Ask for clarification if uncertain about integration points or workflows - otherwise proceed with these patterns.**
+## Editing Guardrails
+- Keep ASCII; maintain working routes/anchors/CTAs; align shared types (`src/types.ts` ↔ `server/src/models/types`). Run `npm run build` (root and `server/`) after build-critical changes.

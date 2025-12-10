@@ -3,9 +3,9 @@ version: '3.8'
 services:
   server:
     build:
-      context: ./server
-      dockerfile: Dockerfile
-      target: tracing
+      context: .
+      dockerfile: server/Dockerfile
+      target: base
     container_name: aidevelo-server-dev
     restart: unless-stopped
     env_file:
