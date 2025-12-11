@@ -8,14 +8,20 @@ dotenv.config();
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'db', 'migrations');
 
 function getDatabaseUrl(): string {
-  // Check for DATABASE_PRIVATE_URL first (Railway private network)
+  // Priority: DATABASE_URL (works with Supabase, Neon, Render, etc.)
+  const envUrl = process.env.DATABASE_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('postgres:5432')) {
+    // Production/Cloud database URL (Supabase, etc.)
+    return envUrl;
+  }
+  
+  // Check for DATABASE_PRIVATE_URL (Railway private network - deprecated)
   const privateUrl = process.env.DATABASE_PRIVATE_URL;
   if (privateUrl) {
     return privateUrl;
   }
   
-  // Fallback to DATABASE_URL
-  const envUrl = process.env.DATABASE_URL;
+  // Local development fallback
   if (envUrl && envUrl.includes('localhost')) {
     // If running inside docker the service name will be 'postgres'
     return envUrl.replace('localhost', 'postgres');

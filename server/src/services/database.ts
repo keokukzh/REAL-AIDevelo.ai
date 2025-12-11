@@ -53,8 +53,15 @@ export function initializeDatabase(): Pool {
     let sslConfig: any = false;
     if (config.isProduction || isRailway || isSupabase || isNeon || isRender) {
       // Most cloud providers require SSL
-      if (isSupabase || isNeon || isRender) {
-        // Supabase/Neon/Render use proper SSL certificates
+      if (isSupabase) {
+        // Supabase pooler may use self-signed certs, direct connection uses proper certs
+        // Use rejectUnauthorized: false for compatibility
+        sslConfig = {
+          rejectUnauthorized: false,
+        };
+        console.log('[Database] SSL enabled for Supabase (self-signed certs allowed)');
+      } else if (isNeon || isRender) {
+        // Neon/Render use proper SSL certificates
         sslConfig = {
           rejectUnauthorized: true,
         };
