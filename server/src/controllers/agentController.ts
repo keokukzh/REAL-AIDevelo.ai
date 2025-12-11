@@ -41,7 +41,8 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     // #endregion
     
     // 1. Generate System Prompt based on profile and recording consent
-    const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent: config.recordingConsent });
+    const recordingConsent = config.recordingConsent ?? false;
+    const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent });
     
     // 2. Enhance config with generated prompt (if not provided specifically)
     const finalConfig = {

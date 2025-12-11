@@ -44,6 +44,7 @@ export const AgentConfigSchema = z.object({
   fallbackLocales: z.array(z.string())
     .min(0)
     .max(5, 'Maximum 5 fallback locales allowed'),
+  recordingConsent: z.boolean().optional().default(false),
   systemPrompt: z.string()
     .max(5000, 'System prompt must be less than 5000 characters')
     .optional(),

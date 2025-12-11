@@ -1,9 +1,11 @@
 import { BusinessProfile } from "../models/types";
 
 export const generateSystemPrompt = (profile: BusinessProfile, config?: { recordingConsent?: boolean }): string => {
-  const openingHoursText = Object.entries(profile.openingHours)
-    .map(([day, hours]) => `${day}: ${hours}`)
-    .join('\n');
+  const openingHoursText = profile.openingHours 
+    ? Object.entries(profile.openingHours)
+        .map(([day, hours]) => `${day}: ${hours}`)
+        .join('\n')
+    : 'Not specified';
 
   const recordingNotice = config?.recordingConsent 
     ? '\n\nIMPORTANT: This call may be recorded for quality assurance and training purposes. The recording will be stored for a maximum of 90 days and can be deleted at any time upon request.'
