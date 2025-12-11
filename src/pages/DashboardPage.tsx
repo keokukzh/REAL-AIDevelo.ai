@@ -7,7 +7,9 @@ import { useToast, ToastContainer, toast } from '../components/ui/Toast';
 import { KPIOverview, DashboardStats } from '../components/dashboard/KPIOverview';
 import { AgentCard, AgentCardData } from '../components/dashboard/AgentCard';
 import { DashboardToolbar } from '../components/dashboard/DashboardToolbar';
-import { RefreshCw, Inbox } from 'lucide-react';
+import { VoiceAgentStreamingUI } from '../components/dashboard/VoiceAgentStreamingUI';
+import { PrivacyControls } from '../components/dashboard/PrivacyControls';
+import { RefreshCw, Inbox, Phone, Settings } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -60,6 +62,11 @@ export const DashboardPage = () => {
     language?: string;
   }>({});
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  
+  // Modal states
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [selectedAgentForVoice, setSelectedAgentForVoice] = useState<string | null>(null);
 
   const getUserIdentity = () => {
     let userId = localStorage.getItem('aidevelo-user-id');
@@ -327,7 +334,25 @@ export const DashboardPage = () => {
             </span>
           </Link>
         </div>
-        <div className="flex-1 flex justify-end">
+        <div className="flex-1 flex justify-end gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowVoiceModal(true)}
+            className="text-sm flex items-center gap-2"
+            title="Start a voice call with an agent"
+          >
+            <Phone size={16} />
+            Voice Call
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPrivacyModal(true)}
+            className="text-sm flex items-center gap-2"
+            title="Manage privacy and data"
+          >
+            <Settings size={16} />
+            Privacy
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => fetchAgents(true)} 
@@ -363,6 +388,82 @@ export const DashboardPage = () => {
         {/* Agent List/Grid */}
         {renderAgents()}
       </main>
+
+      {/* Voice Call Modal */}
+      {showVoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Voice Call</h2>
+              <button
+                onClick={() => setShowVoiceModal(false)}
+                className="text-gray-400 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            {agents.length === 0 ? (
+              <p className="text-gray-400">No agents available. Create one first.</p>
+            ) : (
+              <div>
+                {!selectedAgentForVoice ? (
+                  <div className="space-y-3">
+                    <p className="text-gray-300 mb-4">Select an agent to start a voice call:</p>
+                    {agents.map(agent => (
+                      <button
+                        key={agent.id}
+                        onClick={() => setSelectedAgentForVoice(agent.id)}
+                        className="w-full text-left p-4 border border-white/10 rounded-lg hover:bg-white/5 transition"
+                      >
+                        <p className="font-semibold">{agent.businessProfile.companyName}</p>
+                        <p className="text-sm text-gray-400">
+                          {agent.businessProfile.industry || 'General'} • Voice: Adam
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setSelectedAgentForVoice(null)}
+                      className="text-sm text-accent hover:text-accent/80 mb-4"
+                    >
+                      ← Back to agents
+                    </button>
+                    <VoiceAgentStreamingUI
+                      customerId={getUserIdentity().userId}
+                      agentId={selectedAgentForVoice}
+                      voiceId="pNInz6obpgDQGcFmaJgB"
+                      onClose={() => setShowVoiceModal(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Controls Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Privacy & Data Controls</h2>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="text-gray-400 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <PrivacyControls 
+              userId={getUserIdentity().userId}
+              userEmail={getUserIdentity().userEmail || 'unknown@example.com'}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
