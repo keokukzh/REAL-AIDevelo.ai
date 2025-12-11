@@ -137,6 +137,19 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 
+// Request logging middleware (before routes)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log('[Request]', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    origin: req.headers.origin,
+    contentType: req.headers['content-type'],
+    bodySize: req.body ? JSON.stringify(req.body).length : 0
+  });
+  next();
+});
+
 // Serve static files from frontend build (in production)
 if (config.isProduction) {
   const path = require('path');
