@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
         setupFiles: './src/setupTests.ts',
         globals: true,
         css: true,
+        testTimeout: 10000,
+        exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**', '**/*.e2e.{test,spec}.{ts,tsx}'],
+        include: ['src/**/*.{test,spec}.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
         coverage: {
           reporter: ['text', 'html'],
           include: ['src/**/*.{ts,tsx}'],

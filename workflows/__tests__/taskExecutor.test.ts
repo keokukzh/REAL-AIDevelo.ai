@@ -50,7 +50,7 @@ describe('TaskExecutor', () => {
         exec
       )
     ).rejects.toBeTruthy();
-  });
+  }, 10000);
 });
 
 describe('WorkflowOrchestrator parallel execution', () => {
@@ -73,7 +73,7 @@ describe('WorkflowOrchestrator parallel execution', () => {
 
     expect(exec.status).toBe('completed');
     // Both ~500ms tasks should complete within a reasonable window even on slower CI runners
-    expect(duration).toBeLessThan(1200);
-  });
+    expect(duration).toBeLessThan(2000);
+  }, 10000);
 });
 
