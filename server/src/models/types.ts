@@ -54,7 +54,7 @@ export interface VoiceAgent {
   subscription?: Subscription;
   telephony?: Telephony;
   voiceCloning?: VoiceCloning;
-  status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live';
+  status: 'draft' | 'configuring' | 'creating' | 'creation_failed' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live';
   createdAt: Date;
   updatedAt: Date;
 }

@@ -7,24 +7,27 @@ setupObservability(config.otlpExporterEndpoint);
 // Initialize database connection and run migrations
 if (config.databaseUrl) {
   try {
+    console.log('[Startup] Initializing database connection...');
+    const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
+    console.log('[Startup] DATABASE_URL:', databaseUrl);
+    
     initializeDatabase();
+    
     // Test connection and run migrations asynchronously (don't block startup)
     testConnection().then(async (connected) => {
       if (connected) {
-        console.log('[Database] ✅ Connection test successful');
-        // Migrations are handled in the httpServer.listen callback below
-        // No need to run them here as well
+        console.log('[Database] ✅ Connection successful and ready');
       } else {
-        console.warn('[Database] ⚠️  Connection test failed');
+        console.error('[Database] ❌ Connection test failed after retries - check DATABASE_URL and network');
       }
     }).catch((err) => {
-      console.warn('[Database] ⚠️  Connection test error:', err.message);
+      console.error('[Database] ❌ Connection error:', err.message);
     });
   } catch (error) {
-    console.warn('[Database] ⚠️  Failed to initialize:', (error as Error).message);
+    console.error('[Database] ❌ Failed to initialize:', (error as Error).message);
   }
 } else {
-  console.log('[Database] ℹ️  DATABASE_URL not set, using in-memory storage');
+  console.warn('[Database] ⚠️  DATABASE_URL not set - Agent/Purchase features will not work!');
 }
 
 import express, { Request, Response, NextFunction } from 'express';

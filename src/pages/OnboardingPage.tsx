@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { OnboardingWizard } from '../components/OnboardingWizard';
 import { AgentTemplateSelector } from '../components/AgentTemplateSelector';
 import { AgentTemplate, getTemplateById } from '../data/agentTemplates';
-import { Building, Clock, Target, Calendar, Mic, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VoiceOnboarding } from '../components/VoiceOnboarding';
 import { CalendarIntegration } from '../components/CalendarIntegration';
@@ -99,12 +99,48 @@ export const OnboardingPage = () => {
                 body: JSON.stringify(payload),
             });
 
-            console.log('[Onboarding] Agent created successfully:', response);
-            setSubmissionProgress('Agent erfolgreich erstellt!');
+            console.log('[Onboarding] Agent creation started:', response.data.id);
+            setSubmissionProgress('Agent wird konfiguriert (dies kann bis zu 30 Sekunden dauern)...');
             
-            // Small delay for UX
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Poll for agent status until it's no longer 'creating'
+            const agentId = response.data.id;
+            let pollingAttempts = 0;
+            const maxPollingAttempts = 60; // 60 * 1 second = 60 seconds max
+            
+            while (pollingAttempts < maxPollingAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between polls
+                
+                try {
+                    const statusResponse = await apiRequest<{ success: boolean; data: any }>(`/agents/${agentId}`, {
+                        method: 'GET',
+                    });
+                    
+                    const agentStatus = statusResponse.data.status;
+                    console.log(`[Onboarding] Agent status: ${agentStatus} (poll attempt ${pollingAttempts + 1})`);
+                    
+                    if (agentStatus === 'pending_activation') {
+                        console.log('[Onboarding] Agent creation completed!');
+                        setSubmissionProgress('Agent erfolgreich erstellt!');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        navigate('/dashboard');
+                        return;
+                    } else if (agentStatus === 'creation_failed') {
+                        throw new Error('Agent-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+                    }
+                } catch (pollError) {
+                    // Continue polling even if status check fails
+                    console.log('[Onboarding] Status check failed, will retry:', pollError);
+                }
+                
+                pollingAttempts++;
+            }
+            
+            // If we timeout, still navigate (agent might complete in background)
+            console.warn('[Onboarding] Agent creation timeout - agent may complete in background');
+            setSubmissionProgress('Agent-Setup wird im Hintergrund abgeschlossen...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             navigate('/dashboard');
+            
         } catch (error) {
             let errorMessage = "Fehler beim Erstellen des Agents.";
             if (error instanceof ApiRequestError) {

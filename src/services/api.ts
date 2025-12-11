@@ -46,7 +46,8 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     
     // Create AbortController for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    // Increase timeout to 60 seconds for long-running operations like agent creation
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
     
     const response = await fetch(url, {
       signal: controller.signal,

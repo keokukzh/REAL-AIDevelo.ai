@@ -21,12 +21,27 @@ export function initializeDatabase(): Pool {
     const urlForLogging = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
     console.log('[Database] Connecting to:', urlForLogging.split('@')[1] || 'database');
     
+    // Determine SSL configuration
+    // Railway Postgres requires SSL, but rejectUnauthorized must be false for self-signed certs
+    let sslConfig: any = false;
+    if (config.isProduction) {
+      // Always use SSL in production (Railway requires it)
+      sslConfig = {
+        rejectUnauthorized: false // Railway uses self-signed certificates
+      };
+    } else if (config.databaseUrl.includes('railway') || config.databaseUrl.includes('postgres:/')) {
+      // Also use SSL if connecting to any remote database
+      sslConfig = {
+        rejectUnauthorized: false
+      };
+    }
+    
     pool = new Pool({
       connectionString: config.databaseUrl,
-      ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+      ssl: sslConfig,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 30000, // Increased to 30s for Railway
+      connectionTimeoutMillis: 60000, // Increased to 60s for Railway slow network
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
     });
@@ -111,18 +126,19 @@ export async function testConnection(): Promise<boolean> {
     let retries = 3;
     while (retries > 0) {
       try {
-        await dbPool.query('SELECT NOW()');
+        console.log('[Database] Testing connection...');
+        const result = await dbPool.query('SELECT NOW()');
+        console.log('[Database] ✅ Connection successful, server time:', result.rows[0]?.now);
         return true;
       } catch (error: any) {
         retries--;
+        console.warn(`[Database] Connection test failed (${retries} retries left):`, error.message);
         if (retries > 0) {
-          console.warn(`[Database] Connection test failed, retrying... (${retries} attempts left)`, error.message);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-          throw error;
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s between retries
         }
       }
     }
+    console.error('[Database] All connection attempts failed');
     return false;
   } catch (error: any) {
     console.error('[Database] Connection test failed:', error.message);

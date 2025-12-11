@@ -34,54 +34,10 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       finalConfig.elevenLabs.voiceId = voiceId;
     }
 
-    // 4. Create Agent in ElevenLabs
-    const elevenLabsAgentId = await elevenLabsService.createAgent(
-      `${businessProfile.companyName} - Assistant`,
-      finalConfig
-    );
-
-    // 5. Assign phone number(s) based on plan (but don't activate)
-    let telephony;
-    if (subscription?.planId) {
-      const phoneNumberLimit = PHONE_NUMBER_LIMITS[subscription.planId] || 1;
-      try {
-        const availableNumbers = await elevenLabsService.getAvailablePhoneNumbers('CH');
-        const numbersToAssign = availableNumbers
-          .filter(pn => pn.status === 'available')
-          .slice(0, phoneNumberLimit);
-
-        if (numbersToAssign.length > 0) {
-          // Assign first number
-          const assignedNumber = await elevenLabsService.assignPhoneNumber(elevenLabsAgentId, numbersToAssign[0].id);
-          telephony = {
-            phoneNumber: assignedNumber.number,
-            phoneNumberId: assignedNumber.id,
-            status: 'assigned' as const,
-            assignedAt: new Date(),
-          };
-        }
-      } catch (error) {
-        // Log error but don't fail agent creation
-        console.warn('[AgentController] Failed to assign phone number:', error);
-      }
-    }
-
-    // 6. Link purchase if provided
-    if (purchaseId) {
-      try {
-        const purchase = db.getPurchaseByPurchaseId(purchaseId);
-        if (purchase) {
-          purchase.agentId = undefined; // Will be set after agent creation
-        }
-      } catch (error) {
-        console.warn('[AgentController] Failed to link purchase:', error);
-      }
-    }
-
-    // 7. Save to internal DB (status: pending_activation - needs manual activation)
+    // 4. Create initial agent record with status 'creating' (async job will complete it)
     const newAgent: VoiceAgent = {
       id: uuidv4(),
-      elevenLabsAgentId,
+      elevenLabsAgentId: '', // Will be populated async
       businessProfile,
       config: finalConfig,
       subscription: subscription ? {
@@ -91,21 +47,20 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
         purchasedAt: subscription.purchasedAt ? new Date(subscription.purchasedAt) : new Date(),
         status: 'active',
       } : undefined,
-      telephony,
       voiceCloning: voiceCloning?.voiceId ? {
         voiceId: voiceCloning.voiceId,
         voiceName: voiceCloning.voiceName,
         audioUrl: voiceCloning.audioUrl,
         createdAt: voiceCloning.createdAt ? new Date(voiceCloning.createdAt) : new Date(),
       } : undefined,
-      status: 'pending_activation', // Agent created but needs manual activation
+      status: 'creating', // Status indicating async job in progress
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
     db.saveAgent(newAgent);
 
-    // 8. Link purchase to agent if purchaseId provided
+    // 5. Link purchase to agent if purchaseId provided
     if (purchaseId) {
       try {
         const purchase = db.getPurchaseByPurchaseId(purchaseId);
@@ -118,9 +73,59 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       }
     }
 
+    // 6. Return immediately with status 'creating' - async job will complete creation
     res.status(201).json({
       success: true,
       data: newAgent
+    });
+
+    // 7. Run ElevenLabs agent creation asynchronously (don't block request)
+    setImmediate(async () => {
+      try {
+        const elevenLabsAgentId = await elevenLabsService.createAgent(
+          `${businessProfile.companyName} - Assistant`,
+          finalConfig
+        );
+
+        // Update agent with elevenLabsAgentId and setup phone numbers
+        newAgent.elevenLabsAgentId = elevenLabsAgentId;
+
+        // 8. Assign phone number(s) based on plan
+        if (subscription?.planId) {
+          const phoneNumberLimit = PHONE_NUMBER_LIMITS[subscription.planId] || 1;
+          try {
+            const availableNumbers = await elevenLabsService.getAvailablePhoneNumbers('CH');
+            const numbersToAssign = availableNumbers
+              .filter(pn => pn.status === 'available')
+              .slice(0, phoneNumberLimit);
+
+            if (numbersToAssign.length > 0) {
+              const assignedNumber = await elevenLabsService.assignPhoneNumber(elevenLabsAgentId, numbersToAssign[0].id);
+              newAgent.telephony = {
+                phoneNumber: assignedNumber.number,
+                phoneNumberId: assignedNumber.id,
+                status: 'assigned' as const,
+                assignedAt: new Date(),
+              };
+            }
+          } catch (error) {
+            console.warn('[AgentController] Failed to assign phone number:', error);
+          }
+        }
+
+        // Update status to pending_activation
+        newAgent.status = 'pending_activation';
+        newAgent.updatedAt = new Date();
+        db.saveAgent(newAgent);
+
+        console.log('[AgentController] Agent creation completed asynchronously:', newAgent.id);
+      } catch (error) {
+        // Mark agent as failed and log error
+        newAgent.status = 'creation_failed';
+        newAgent.updatedAt = new Date();
+        db.saveAgent(newAgent);
+        console.error('[AgentController] Async agent creation failed:', error);
+      }
     });
 
   } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Mic, Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface NavbarProps {
