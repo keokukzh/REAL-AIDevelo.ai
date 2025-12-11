@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import { listDocuments, uploadDocument, scrapeUrl, getJobStatus } from '../controllers/knowledgeController';
 import { UnauthorizedError } from '../utils/errors';
 
@@ -17,8 +17,14 @@ const knowledgeLimiter = rateLimit({
 	message: 'Too many knowledge ingestion requests, please try again later.',
 	keyGenerator: (req) => {
 		const agentId = (req.body as any)?.agentId || (req.query as any)?.agentId;
-		// Use ipKeyGenerator helper for proper IPv6 handling
-		return agentId || ipKeyGenerator(req);
+		if (agentId) {
+			return `agent:${agentId}`;
+		}
+		// Use socket.remoteAddress which properly handles IPv6 addresses
+		// This avoids the IPv6 keyGenerator warning
+		const ip = req.socket?.remoteAddress || req.ip || 'unknown';
+		// Normalize IPv6 mapped IPv4 addresses (::ffff:127.0.0.1 -> 127.0.0.1)
+		return ip.replace(/^::ffff:/, '');
 	},
 });
 
