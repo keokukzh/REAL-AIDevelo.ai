@@ -36,7 +36,7 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     try {
       fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:20',message:'createAgent controller entry',data:{hasBusinessProfile:!!businessProfile,hasConfig:!!config,companyName:businessProfile?.companyName,subscriptionPlanId:subscription?.planId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
     } catch (e) {
-      // Ignore file write errors (Railway is Linux)
+      // Ignore file write errors (cloud providers may be Linux)
     }
     // #endregion
     

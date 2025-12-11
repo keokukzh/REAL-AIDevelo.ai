@@ -22,7 +22,7 @@ function parseDatabaseUrl(url: string): { host: string; port: number; database: 
 }
 
 /**
- * Initialize PostgreSQL connection pool with optimized settings for Railway
+ * Initialize PostgreSQL connection pool with optimized settings for cloud providers
  */
 export function initializeDatabase(): Pool {
   if (pool) {
@@ -80,7 +80,7 @@ export function initializeDatabase(): Pool {
     pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: sslConfig,
-      max: 10, // Reduced from 20 for Railway (better connection management)
+      max: 10, // Optimized for cloud providers (better connection management)
       min: 2, // Keep minimum connections alive
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000, // Reduced timeout - fail fast and retry
@@ -110,7 +110,7 @@ export function initializeDatabase(): Pool {
       console.log('[Database] Client removed from pool');
     });
 
-    console.log('[Database] Connection pool initialized with optimized Railway settings');
+    console.log('[Database] Connection pool initialized with optimized cloud settings');
     return pool;
   } catch (error) {
     console.error('[Database] Failed to initialize connection pool:', error);

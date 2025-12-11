@@ -26,10 +26,10 @@ if (config.databaseUrl) {
         } else {
           console.error('[Database] ❌ Connection test failed after retries');
           console.error('[Database] Troubleshooting:');
-          console.error('[Database]   1. Verify DATABASE_URL is correct in Railway Variables');
-          console.error('[Database]   2. Check if DATABASE_PRIVATE_URL is set (preferred for Railway)');
-          console.error('[Database]   3. Ensure PostgreSQL service is running and accessible');
-          console.error('[Database]   4. Verify network connectivity and firewall rules');
+          console.error('[Database]   1. Verify DATABASE_URL is correct in environment variables');
+          console.error('[Database]   2. Ensure PostgreSQL service is running and accessible');
+          console.error('[Database]   3. Verify network connectivity and firewall rules');
+          console.error('[Database]   4. Check Supabase/Neon/Render dashboard for connection issues');
         }
       }).catch((err) => {
         console.error('[Database] ❌ Connection error:', err.message);
@@ -42,7 +42,7 @@ if (config.databaseUrl) {
   }
 } else {
   console.warn('[Database] ⚠️  DATABASE_URL not set - Agent/Purchase features will not work!');
-  console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables');
+  console.warn('[Database] Set DATABASE_URL environment variable (Supabase/Neon/Render connection string)');
 }
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -97,7 +97,7 @@ if (config.isProduction) {
   app.use(helmet());
 }
 
-// Explicit OPTIONS handler BEFORE CORS - respond immediately to avoid Railway timeout
+// Explicit OPTIONS handler BEFORE CORS - respond immediately to avoid timeout
 app.options('*', (req: Request, res: Response) => {
   const origin = req.headers.origin;
   
@@ -121,7 +121,7 @@ app.options('*', (req: Request, res: Response) => {
   res.status(200).end();
 });
 
-// CORS Configuration - Allow all Cloudflare Pages and Railway origins
+// CORS Configuration - Allow Cloudflare Pages and production domains
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
@@ -397,7 +397,7 @@ if (require.main === module) {
   const runMigrations = async () => {
     if (!config.databaseUrl) {
       console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
-      console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
+      console.warn('[Database] Set DATABASE_URL environment variable (Supabase/Neon/Render connection string).');
       return;
     }
 

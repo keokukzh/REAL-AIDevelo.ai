@@ -26,10 +26,9 @@ const getOptionalEnvVars = () => ({
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   // Database URL priority:
   // 1. DATABASE_URL (primary - works with Supabase, Neon, Render, etc.)
-  // 2. DATABASE_PRIVATE_URL (Railway private networking - deprecated)
-  // 3. POSTGRES_URL (fallback)
+  // 2. POSTGRES_URL (fallback)
   // Recommended: Use Supabase (free) - see MIGRATION_TO_SUPABASE.md
-  DATABASE_URL: process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || process.env.POSTGRES_URL || '',
+  DATABASE_URL: process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
   KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
@@ -50,13 +49,13 @@ const validateEnv = () => {
       const secret = generateSecret();
       process.env.JWT_SECRET = secret;
       console.warn('⚠️  JWT_SECRET not set - generated secure random secret (this will change on restart)');
-      console.warn('   For production, set JWT_SECRET in Railway environment variables for persistence.');
+      console.warn('   For production, set JWT_SECRET in environment variables for persistence.');
     }
     if (!process.env.JWT_REFRESH_SECRET) {
       const secret = generateSecret();
       process.env.JWT_REFRESH_SECRET = secret;
       console.warn('⚠️  JWT_REFRESH_SECRET not set - generated secure random secret (this will change on restart)');
-      console.warn('   For production, set JWT_REFRESH_SECRET in Railway environment variables for persistence.');
+      console.warn('   For production, set JWT_REFRESH_SECRET in environment variables for persistence.');
     }
   }
   
