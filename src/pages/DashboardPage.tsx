@@ -160,20 +160,24 @@ export const DashboardPage = () => {
 
   // Convert agents to card data format
   const agentCards: AgentCardData[] = useMemo(() => {
-    return agents.map(agent => {
+    return agents.map((agent): AgentCardData => {
       // Map agent status to AgentCardData status
-      let cardStatus: AgentCardData['status'] = 'draft';
+      // Backend supports: 'draft' | 'configuring' | 'creating' | 'creation_failed' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live'
+      // Card component supports: 'draft' | 'active' | 'inactive' | 'pending_activation'
+      let cardStatus: AgentCardData['status'];
+      
       if (agent.status === 'live' || agent.status === 'active' || agent.status === 'production_ready') {
         cardStatus = 'active';
       } else if (agent.status === 'inactive') {
         cardStatus = 'inactive';
-      } else if (agent.status === 'pending_activation' || agent.status === 'configuring') {
+      } else if (agent.status === 'pending_activation' || agent.status === 'configuring' || agent.status === 'creating') {
         cardStatus = 'pending_activation';
       } else {
+        // 'draft' or 'creation_failed' -> 'draft'
         cardStatus = 'draft';
       }
 
-      const card: AgentCardData = {
+      return {
         id: agent.id,
         name: agent.businessProfile.companyName,
         industry: agent.businessProfile.industry || 'Allgemein',
@@ -183,7 +187,6 @@ export const DashboardPage = () => {
         successRate: agent.metrics?.successRate,
         isDefaultAgent: (agent as any).metadata?.isDefaultAgent,
       };
-      return card;
     });
   }, [agents]);
 
