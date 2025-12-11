@@ -369,118 +369,112 @@ app.use(errorHandler);
 // Start Server
 if (require.main === module) {
   const httpServer = createServer(app);
-  
+
   // Setup WebSocket server for voice agent
   setupWebSocketServer(httpServer);
-  
+
   // Register and start background jobs
   const { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } = require('./jobs/syncJobs');
   registerSyncJobs();
   scheduleDailySync();
   scheduleStatusChecks();
-  
-  // Bind to 0.0.0.0 to accept connections from any interface (required for Railway/Docker)
-  httpServer.listen(config.port, '0.0.0.0', () => {
-    console.log(`[AIDevelo Server] Running on http://0.0.0.0:${config.port}`);
-    console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
-    console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
-    console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
-    console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
-    console.log(`[AIDevelo Server] ✅ Server is READY for requests`);
-  });
 
-  // Run migrations asynchronously in the background (non-blocking)
-  // This allows the server to start and respond to /health immediately
-  if (config.databaseUrl) {
-    setImmediate(async () => {
-      const path = require('path');
-      const fs = require('fs');
-      const { getPool } = require('./services/database');
-      
-      console.log('[Database] [Background] Starting migrations...');
-      
-      // In Docker, migrations are in /app/db/migrations
-      // In development, they're in ../../db/migrations from dist/
-      const migrationsDir = fs.existsSync('/app/db/migrations') 
-        ? '/app/db/migrations'
-        : path.join(__dirname, '../../db/migrations');
-      
-      if (!fs.existsSync(migrationsDir)) {
-        console.warn('[Database] [Background] Migrations directory not found:', migrationsDir);
-        return;
-      }
+  const runMigrations = async () => {
+    if (!config.databaseUrl) {
+      console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
+      console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
+      return;
+    }
 
-      // Use the existing pool instead of creating a new client
-      const pool = getPool();
-      if (!pool) {
-        console.error('[Database] [Background] Pool not available');
-        return;
-      }
-      
-      // Get a client from the pool for transactions
-      let client;
-      try {
-        client = await pool.connect();
-        console.log('[Database] [Background] ✅ Got client from pool');
-          
-          // Create migrations table
-          await client.query(`
-          CREATE TABLE IF NOT EXISTS schema_migrations (
-            id SERIAL PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL,
-            applied_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-          );
-        `);
+    const path = require('path');
+    const fs = require('fs');
+    const { getPool } = require('./services/database');
 
-        // Read and apply migrations
-        const files = fs.readdirSync(migrationsDir)
-          .filter((f: string) => f.endsWith('.sql'))
-          .sort();
-        
-        console.log(`[Database] [Background] Found ${files.length} migration files`);
-        
-        for (const file of files) {
-          const name = file;
-          const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
-          if (res.rows.length > 0) {
-            console.log(`[Database] [Background] Skipping already-applied: ${name}`);
-            continue;
-          }
+    console.log('[Database] [Startup] Starting migrations...');
 
-          const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-          console.log(`[Database] [Background] Applying ${name}...`);
-          try {
-            await client.query('BEGIN');
-            await client.query(sql);
-            await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
-            await client.query('COMMIT');
-            console.log(`[Database] [Background] ✅ Applied ${name}`);
-          } catch (err: any) {
-            await client.query('ROLLBACK');
-            console.error(`[Database] [Background] ❌ Failed to apply ${name}:`, err.message);
-            throw err;
-          }
+    const migrationsDir = fs.existsSync('/app/db/migrations') 
+      ? '/app/db/migrations'
+      : path.join(__dirname, '../../db/migrations');
+
+    if (!fs.existsSync(migrationsDir)) {
+      console.warn('[Database] [Startup] Migrations directory not found:', migrationsDir);
+      return;
+    }
+
+    const pool = getPool();
+    if (!pool) {
+      throw new Error('Database pool not available - check DATABASE_URL');
+    }
+
+    let client;
+    try {
+      client = await pool.connect();
+      console.log('[Database] [Startup] ✅ Got client from pool');
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+          id SERIAL PRIMARY KEY,
+          name TEXT UNIQUE NOT NULL,
+          applied_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+      `);
+
+      const files = fs.readdirSync(migrationsDir)
+        .filter((f: string) => f.endsWith('.sql'))
+        .sort();
+
+      console.log(`[Database] [Startup] Found ${files.length} migration files`);
+
+      for (const file of files) {
+        const name = file;
+        const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
+        if (res.rows.length > 0) {
+          console.log(`[Database] [Startup] Skipping already-applied: ${name}`);
+          continue;
         }
 
-        console.log('[Database] [Background] ✅ All migrations completed successfully');
-      } catch (migrationError: any) {
-        console.error('[Database] [Background] ❌ Migration failed:', migrationError.message);
-        console.error('[Database] [Background] Error details:', {
-          code: migrationError.code,
-          message: migrationError.message,
-        });
-      } finally {
-        // Release client back to pool (important!)
-        if (client) {
-          client.release();
-          console.log('[Database] [Background] Client released back to pool');
+        const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+        console.log(`[Database] [Startup] Applying ${name}...`);
+        try {
+          await client.query('BEGIN');
+          await client.query(sql);
+          await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
+          await client.query('COMMIT');
+          console.log(`[Database] [Startup] ✅ Applied ${name}`);
+        } catch (err: any) {
+          await client.query('ROLLBACK');
+          console.error(`[Database] [Startup] ❌ Failed to apply ${name}:`, err.message);
+          throw err;
         }
       }
+
+      console.log('[Database] [Startup] ✅ All migrations completed successfully');
+    } finally {
+      if (client) {
+        client.release();
+        console.log('[Database] [Startup] Client released back to pool');
+      }
+    }
+  };
+
+  const start = async () => {
+    try {
+      await runMigrations();
+    } catch (err: any) {
+      console.error('[Database] [Startup] Migration error:', err?.message || err);
+    }
+
+    httpServer.listen(config.port, '0.0.0.0', () => {
+      console.log(`[AIDevelo Server] Running on http://0.0.0.0:${config.port}`);
+      console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
+      console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
+      console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
+      console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
+      console.log(`[AIDevelo Server] ✅ Server is READY for requests`);
     });
-  } else {
-    console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
-    console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
-  }
+  };
+
+  void start();
 }
 
 export default app;
