@@ -98,7 +98,7 @@ export function initializeDatabase(): Pool {
       // Don't crash on pool errors - they're handled per-query
     });
 
-    pool.on('connect', (client) => {
+    pool.on('connect', (client: any) => {
       console.log('[Database] ✅ New client connected to database');
     });
 
