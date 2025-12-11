@@ -47,16 +47,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsLoading(false);
           return;
         }
-        const response = await apiRequest<{ token: string; refreshToken?: string }>('/auth/refresh', {
+        const response = await apiRequest<ApiResponse<{ token: string; refreshToken?: string }>>('/auth/refresh', {
           method: 'POST',
           data: { refreshToken: storedRefresh },
         });
-        const newTokens: AuthTokens = {
-          accessToken: response.token,
-          refreshToken: response.refreshToken ?? storedRefresh,
-        };
-        saveTokens(newTokens);
-        setTokens(newTokens);
+        const payload = response.data;
+        if (payload?.token) {
+          const newTokens: AuthTokens = {
+            accessToken: payload.token,
+            refreshToken: payload.refreshToken ?? storedRefresh,
+          };
+          saveTokens(newTokens);
+          setTokens(newTokens);
+        } else {
+          clearTokens();
+        }
       } catch {
         clearTokens();
       } finally {
@@ -68,13 +73,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const authenticate = async (path: '/auth/login' | '/auth/register', email: string, name?: string) => {
-    const response = await apiRequest<AuthPayload>(path, {
+    const response = await apiRequest<ApiResponse<AuthPayload>>(path, {
       method: 'POST',
       data: { email, name },
     });
-    saveTokens(response.tokens);
-    setTokens(response.tokens);
-    setUser(response.user);
+    const payload = response.data;
+    if (!payload) {
+      throw new ApiRequestError(0, 'Leere Auth-Antwort vom Server');
+    }
+    saveTokens(payload.tokens);
+    setTokens(payload.tokens);
+    setUser(payload.user);
   };
 
   const login = async (email: string, name?: string) => {
