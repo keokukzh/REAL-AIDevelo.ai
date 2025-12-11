@@ -33,7 +33,7 @@ function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/voice-edit" element={<VoiceEditPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/agent/:id" element={<AgentDetailsPage />} />
+                <Route path="/dashboard/agents/:id" element={<AgentDetailsPage />} />
                 <Route path="/dashboard/agents/:id/edit" element={<AgentEditPage />} />
                 <Route path="/impressum" element={<ImpressumPage />} />
                 <Route path="/datenschutz" element={<DatenschutzPage />} />

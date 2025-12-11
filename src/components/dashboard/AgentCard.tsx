@@ -148,7 +148,7 @@ const ListViewCard: React.FC<CardViewProps> = ({ agent, onTest, onToggleStatus, 
           ) : null}
           
           <Link
-            to={`/dashboard/agents/${agent.id}/settings`}
+            to={`/dashboard/agents/${agent.id}/edit`}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
@@ -221,7 +221,7 @@ const GridViewCard: React.FC<CardViewProps> = ({ agent, onTest, onToggleStatus, 
       ) : null}
       
       <Link
-        to={`/dashboard/agents/${agent.id}/settings`}
+        to={`/dashboard/agents/${agent.id}/edit`}
         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
