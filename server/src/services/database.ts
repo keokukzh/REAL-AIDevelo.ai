@@ -40,21 +40,33 @@ export function initializeDatabase(): Pool {
     const parsed = parseDatabaseUrl(config.databaseUrl);
     console.log('[Database] Connecting to:', parsed ? `${parsed.host}:${parsed.port}/${parsed.database}` : urlForLogging.split('@')[1] || 'database');
     
-    // Railway Postgres ALWAYS requires SSL in production
-    // Use SSL for any Railway connection or production environment
+    // Determine SSL configuration based on provider
     const isRailway = config.databaseUrl.includes('railway') || 
                       config.databaseUrl.includes('railway.internal') ||
                       config.databaseUrl.includes('postgres.railway');
+    const isSupabase = config.databaseUrl.includes('supabase.co') || 
+                       config.databaseUrl.includes('pooler.supabase.com');
+    const isNeon = config.databaseUrl.includes('neon.tech') || 
+                   config.databaseUrl.includes('neon.tech');
+    const isRender = config.databaseUrl.includes('render.com');
     
     let sslConfig: any = false;
-    if (config.isProduction || isRailway) {
-      // Railway requires SSL but uses self-signed certs
-      sslConfig = {
-        rejectUnauthorized: false,
-        // Additional SSL options for Railway
-        sslmode: 'require',
-      };
-      console.log('[Database] SSL enabled for Railway/Production connection');
+    if (config.isProduction || isRailway || isSupabase || isNeon || isRender) {
+      // Most cloud providers require SSL
+      if (isSupabase || isNeon || isRender) {
+        // Supabase/Neon/Render use proper SSL certificates
+        sslConfig = {
+          rejectUnauthorized: true,
+        };
+        console.log('[Database] SSL enabled with certificate validation');
+      } else {
+        // Railway uses self-signed certs
+        sslConfig = {
+          rejectUnauthorized: false,
+          sslmode: 'require',
+        };
+        console.log('[Database] SSL enabled (self-signed certs)');
+      }
     }
     
     // Optimized pool settings for Railway
