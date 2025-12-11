@@ -4,7 +4,25 @@ import { config } from '../config/env';
 let pool: Pool | null = null;
 
 /**
- * Initialize PostgreSQL connection pool
+ * Parse and validate database URL
+ */
+function parseDatabaseUrl(url: string): { host: string; port: number; database: string; user: string } | null {
+  try {
+    const urlObj = new URL(url);
+    return {
+      host: urlObj.hostname,
+      port: parseInt(urlObj.port || '5432', 10),
+      database: urlObj.pathname.slice(1) || 'railway',
+      user: urlObj.username || 'postgres',
+    };
+  } catch (error) {
+    console.error('[Database] Invalid DATABASE_URL format:', error);
+    return null;
+  }
+}
+
+/**
+ * Initialize PostgreSQL connection pool with optimized settings for Railway
  */
 export function initializeDatabase(): Pool {
   if (pool) {
@@ -19,38 +37,61 @@ export function initializeDatabase(): Pool {
   try {
     // Log connection attempt (without sensitive data)
     const urlForLogging = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
-    console.log('[Database] Connecting to:', urlForLogging.split('@')[1] || 'database');
+    const parsed = parseDatabaseUrl(config.databaseUrl);
+    console.log('[Database] Connecting to:', parsed ? `${parsed.host}:${parsed.port}/${parsed.database}` : urlForLogging.split('@')[1] || 'database');
     
-    // Determine SSL configuration
-    // Railway Postgres requires SSL, but rejectUnauthorized must be false for self-signed certs
+    // Railway Postgres ALWAYS requires SSL in production
+    // Use SSL for any Railway connection or production environment
+    const isRailway = config.databaseUrl.includes('railway') || 
+                      config.databaseUrl.includes('railway.internal') ||
+                      config.databaseUrl.includes('postgres.railway');
+    
     let sslConfig: any = false;
-    if (config.isProduction) {
-      // Always use SSL in production (Railway requires it)
+    if (config.isProduction || isRailway) {
+      // Railway requires SSL but uses self-signed certs
       sslConfig = {
-        rejectUnauthorized: false // Railway uses self-signed certificates
+        rejectUnauthorized: false,
+        // Additional SSL options for Railway
+        sslmode: 'require',
       };
-    } else if (config.databaseUrl.includes('railway') || config.databaseUrl.includes('postgres:/')) {
-      // Also use SSL if connecting to any remote database
-      sslConfig = {
-        rejectUnauthorized: false
-      };
+      console.log('[Database] SSL enabled for Railway/Production connection');
     }
     
+    // Optimized pool settings for Railway
     pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: sslConfig,
-      max: 20, // Maximum number of clients in the pool
+      max: 10, // Reduced from 20 for Railway (better connection management)
+      min: 2, // Keep minimum connections alive
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 60000, // Increased to 60s for Railway slow network
+      connectionTimeoutMillis: 10000, // Reduced timeout - fail fast and retry
+      statement_timeout: 30000, // Query timeout
+      query_timeout: 30000,
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000,
+      keepAliveInitialDelayMillis: 0, // Start keepalive immediately
+      // Retry configuration
+      allowExitOnIdle: false, // Don't close pool when idle
     });
 
+    // Enhanced error handling
     pool.on('error', (err) => {
-      console.error('[Database] Unexpected error on idle client', err);
+      console.error('[Database] Pool error:', err.message);
+      // Don't crash on pool errors - they're handled per-query
     });
 
-    console.log('[Database] Connection pool initialized');
+    pool.on('connect', (client) => {
+      console.log('[Database] ✅ New client connected to database');
+    });
+
+    pool.on('acquire', () => {
+      // Client acquired from pool (debugging)
+    });
+
+    pool.on('remove', () => {
+      console.log('[Database] Client removed from pool');
+    });
+
+    console.log('[Database] Connection pool initialized with optimized Railway settings');
     return pool;
   } catch (error) {
     console.error('[Database] Failed to initialize connection pool:', error);
@@ -112,9 +153,9 @@ export async function transaction<T>(
 }
 
 /**
- * Test database connection
+ * Test database connection with exponential backoff retry
  */
-export async function testConnection(): Promise<boolean> {
+export async function testConnection(maxRetries: number = 5): Promise<boolean> {
   try {
     const dbPool = getPool();
     if (!dbPool) {
@@ -122,26 +163,60 @@ export async function testConnection(): Promise<boolean> {
       return false;
     }
     
-    // Test with a simple query and retry logic
-    let retries = 3;
+    // Exponential backoff retry logic
+    let retries = maxRetries;
+    let attempt = 0;
+    
     while (retries > 0) {
+      attempt++;
       try {
-        console.log('[Database] Testing connection...');
-        const result = await dbPool.query('SELECT NOW()');
-        console.log('[Database] ✅ Connection successful, server time:', result.rows[0]?.now);
+        console.log(`[Database] Testing connection (attempt ${attempt}/${maxRetries})...`);
+        
+        // Use a simple query with timeout
+        const result = await Promise.race([
+          dbPool.query('SELECT NOW() as now, version() as version'),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Query timeout')), 5000)
+          )
+        ]) as any;
+        
+        console.log('[Database] ✅ Connection successful!');
+        console.log('[Database] Server time:', result.rows[0]?.now);
+        console.log('[Database] PostgreSQL version:', result.rows[0]?.version?.split(' ')[0] || 'unknown');
         return true;
       } catch (error: any) {
         retries--;
-        console.warn(`[Database] Connection test failed (${retries} retries left):`, error.message);
+        const errorMsg = error.message || String(error);
+        const errorCode = error.code || 'UNKNOWN';
+        
+        console.error(`[Database] Connection test failed (${retries} retries left):`, errorMsg);
+        console.error(`[Database] Error code: ${errorCode}`);
+        
+        // Don't retry on authentication errors - these won't fix themselves
+        if (errorCode === '28P01' || errorMsg.includes('password authentication failed')) {
+          console.error('[Database] ❌ Authentication failed - check DATABASE_URL credentials');
+          return false;
+        }
+        
+        // Don't retry on invalid connection string
+        if (errorCode === 'ENOTFOUND' || errorMsg.includes('getaddrinfo')) {
+          console.error('[Database] ❌ Invalid hostname - check DATABASE_URL');
+          return false;
+        }
+        
         if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s between retries
+          // Exponential backoff: 2s, 4s, 8s, 16s, 32s
+          const delay = Math.min(2000 * Math.pow(2, maxRetries - retries - 1), 30000);
+          console.log(`[Database] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-    console.error('[Database] All connection attempts failed');
+    
+    console.error('[Database] ❌ All connection attempts failed after', maxRetries, 'retries');
     return false;
   } catch (error: any) {
-    console.error('[Database] Connection test failed:', error.message);
+    console.error('[Database] ❌ Connection test exception:', error.message);
     return false;
   }
 }

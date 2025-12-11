@@ -4,30 +4,45 @@ import { config } from './config/env';
 import { initializeDatabase, testConnection } from './services/database';
 setupObservability(config.otlpExporterEndpoint);
 
-// Initialize database connection and run migrations
+// Initialize database connection with improved error handling
+let dbInitialized = false;
 if (config.databaseUrl) {
   try {
     console.log('[Startup] Initializing database connection...');
     const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
     console.log('[Startup] DATABASE_URL:', databaseUrl);
     
-    initializeDatabase();
-    
-    // Test connection and run migrations asynchronously (don't block startup)
-    testConnection().then(async (connected) => {
-      if (connected) {
-        console.log('[Database] ✅ Connection successful and ready');
-      } else {
-        console.error('[Database] ❌ Connection test failed after retries - check DATABASE_URL and network');
-      }
-    }).catch((err) => {
-      console.error('[Database] ❌ Connection error:', err.message);
-    });
+    // Validate connection string format
+    if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
+      console.error('[Database] ❌ Invalid DATABASE_URL format - must start with postgresql:// or postgres://');
+    } else {
+      initializeDatabase();
+      
+      // Test connection with more retries and better error reporting
+      testConnection(8).then(async (connected) => {
+        dbInitialized = connected;
+        if (connected) {
+          console.log('[Database] ✅ Connection successful and ready');
+        } else {
+          console.error('[Database] ❌ Connection test failed after retries');
+          console.error('[Database] Troubleshooting:');
+          console.error('[Database]   1. Verify DATABASE_URL is correct in Railway Variables');
+          console.error('[Database]   2. Check if DATABASE_PRIVATE_URL is set (preferred for Railway)');
+          console.error('[Database]   3. Ensure PostgreSQL service is running and accessible');
+          console.error('[Database]   4. Verify network connectivity and firewall rules');
+        }
+      }).catch((err) => {
+        console.error('[Database] ❌ Connection error:', err.message);
+        dbInitialized = false;
+      });
+    }
   } catch (error) {
     console.error('[Database] ❌ Failed to initialize:', (error as Error).message);
+    dbInitialized = false;
   }
 } else {
   console.warn('[Database] ⚠️  DATABASE_URL not set - Agent/Purchase features will not work!');
+  console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables');
 }
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -388,7 +403,25 @@ if (require.main === module) {
 
     const path = require('path');
     const fs = require('fs');
-    const { getPool } = require('./services/database');
+    const { getPool, testConnection } = require('./services/database');
+
+    // Wait for database connection before running migrations
+    console.log('[Database] [Startup] Waiting for database connection...');
+    let connected = false;
+    for (let i = 0; i < 10; i++) {
+      connected = await testConnection(3);
+      if (connected) {
+        break;
+      }
+      console.log(`[Database] [Startup] Waiting for database... (${i + 1}/10)`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    if (!connected) {
+      console.error('[Database] [Startup] ❌ Cannot run migrations - database not connected');
+      console.error('[Database] [Startup] Migrations will be skipped. Server will continue but database features may not work.');
+      return;
+    }
 
     console.log('[Database] [Startup] Starting migrations...');
 
@@ -408,7 +441,14 @@ if (require.main === module) {
 
     let client;
     try {
-      client = await pool.connect();
+      // Get client with timeout
+      client = await Promise.race([
+        pool.connect(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 10000)
+        )
+      ]) as any;
+      
       console.log('[Database] [Startup] ✅ Got client from pool');
 
       await client.query(`
@@ -442,13 +482,16 @@ if (require.main === module) {
           await client.query('COMMIT');
           console.log(`[Database] [Startup] ✅ Applied ${name}`);
         } catch (err: any) {
-          await client.query('ROLLBACK');
+          await client.query('ROLLBACK').catch(() => {}); // Ignore rollback errors
           console.error(`[Database] [Startup] ❌ Failed to apply ${name}:`, err.message);
           throw err;
         }
       }
 
       console.log('[Database] [Startup] ✅ All migrations completed successfully');
+    } catch (error: any) {
+      console.error('[Database] [Startup] ❌ Migration error:', error.message);
+      // Don't throw - allow server to start even if migrations fail
     } finally {
       if (client) {
         client.release();
