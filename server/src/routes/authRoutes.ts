@@ -5,7 +5,7 @@ import { defaultAgentService } from '../services/defaultAgentService';
 import { BadRequestError, UnauthorizedError } from '../utils/errors';
 import { userRepository } from '../repositories/userRepository';
 import { generateTokens, verifyRefreshToken } from '../services/authService';
-import { AuthPayload } from '../../shared/types/auth';
+import { AuthPayload } from '../shared/types/auth';
 import { validateRequest } from '../middleware/validateRequest';
 import { loginSchema, refreshSchema, registerSchema } from '../validators/authValidators';
 import { sendSuccess } from '../utils/apiResponse';

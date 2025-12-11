@@ -14,9 +14,9 @@ RUN npm ci
 # Copy server source
 COPY server/ ./
 
-# Copy shared types into server/shared (needed for TypeScript compilation)
-# This makes the import path consistent: ../../shared from src/models
-COPY shared ./shared
+# Copy shared types into src/shared (needed for TypeScript compilation, must be under rootDir)
+# Build context is repo root, so shared/ is at root level
+COPY shared ./src/shared
 
 # Build TypeScript
 RUN npm run build

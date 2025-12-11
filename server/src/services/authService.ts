@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
-import { AuthTokens, AuthenticatedRequest } from '../../shared/types/auth';
+import { AuthTokens, AuthenticatedRequest } from '../shared/types/auth';
 
 const ACCESS_TOKEN_TTL = '1h';
 const REFRESH_TOKEN_TTL = '7d';

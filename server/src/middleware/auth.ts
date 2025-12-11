@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { verifyAccessToken } from '../services/authService';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
-import { AuthenticatedRequest as AuthPayload } from '../../shared/types/auth';
+import { AuthenticatedRequest as AuthPayload } from '../shared/types/auth';
 
 export interface AuthenticatedRequest extends Request {
   auth?: AuthPayload;
