@@ -134,7 +134,7 @@ app.use(cors({
       origin === 'https://aidevelo.ai' ||
       origin.endsWith('.aidevelo.ai') ||
       origin.endsWith('.pages.dev') ||
-      origin.endsWith('.railway.app') ||
+      origin.endsWith('.cloudflare.com') ||
       origin.startsWith('http://localhost:') ||
       origin.startsWith('http://127.0.0.1:');
 

@@ -9,8 +9,9 @@ export const getApiBaseUrl = (): string => {
   // Check if we're in production (deployed on Cloudflare Pages)
   // @ts-ignore
   if (import.meta.env?.MODE === 'production' || window.location.hostname !== 'localhost') {
-    // Production: use Railway backend
-    return 'https://real-aideveloai-production.up.railway.app/api';
+    // Production: use same domain backend (Cloudflare Workers/Pages Functions)
+    // Or set VITE_API_URL environment variable in Cloudflare Pages
+    return window.location.origin + '/api';
   }
 
   // Development: use localhost
