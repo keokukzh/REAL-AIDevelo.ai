@@ -104,6 +104,18 @@ export const OnboardingPage = () => {
                 data: payload,
             });
 
+            console.log('[Onboarding] Full response:', response);
+            console.log('[Onboarding] Response structure:', {
+                hasSuccess: 'success' in response,
+                hasData: 'data' in response,
+                responseKeys: Object.keys(response),
+                dataKeys: response.data ? Object.keys(response.data) : 'no data'
+            });
+
+            if (!response.data || !response.data.id) {
+                throw new Error(`Unexpected response format: ${JSON.stringify(response)}`);
+            }
+
             console.log('[Onboarding] Agent creation started:', response.data.id);
             setSubmissionProgress('Agent wird konfiguriert (dies kann bis zu 30 Sekunden dauern)...');
             
@@ -150,6 +162,11 @@ export const OnboardingPage = () => {
             let errorMessage = "Fehler beim Erstellen des Agents.";
             if (error instanceof ApiRequestError) {
                 errorMessage = error.message;
+                console.error('[Onboarding] ApiRequestError:', {
+                    statusCode: error.statusCode,
+                    message: error.message,
+                    details: error.details
+                });
                 // Try to extract detailed validation errors
                 if (error.details && typeof error.details === 'object') {
                     const details = error.details as any;
@@ -160,8 +177,11 @@ export const OnboardingPage = () => {
                         errorMessage = `Validierungsfehler:\n${validationErrors}`;
                     }
                 }
+            } else {
+                console.error('[Onboarding] Unexpected error:', error);
+                errorMessage = error instanceof Error ? error.message : String(error);
             }
-            console.error('Agent creation error:', error);
+            console.error('[Onboarding] Full error object:', error);
             alert(errorMessage);
         } finally {
             setIsSubmitting(false);
