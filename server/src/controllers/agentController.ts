@@ -19,6 +19,24 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
   try {
     const { businessProfile, config, subscription, voiceCloning, purchaseId } = req.body;
     
+    console.log('[AgentController] createAgent called', {
+      hasBusinessProfile: !!businessProfile,
+      hasConfig: !!config,
+      companyName: businessProfile?.companyName,
+      path: req.path,
+      method: req.method,
+      origin: req.headers.origin
+    });
+    
+    // #region agent log
+    const fs = require('fs');
+    try {
+      fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:20',message:'createAgent controller entry',data:{hasBusinessProfile:!!businessProfile,hasConfig:!!config,companyName:businessProfile?.companyName,subscriptionPlanId:subscription?.planId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
+    } catch (e) {
+      // Ignore file write errors (Railway is Linux)
+    }
+    // #endregion
+    
     // 1. Generate System Prompt based on profile and recording consent
     const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent: config.recordingConsent });
     
@@ -59,7 +77,16 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       updatedAt: new Date()
     };
     
+    // #region agent log
+    const fs = require('fs');
+    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:62',message:'Before DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status,companyName:newAgent.businessProfile.companyName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
+    // #endregion
+    
     db.saveAgent(newAgent);
+
+    // #region agent log
+    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:68',message:'After DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
+    // #endregion
 
     // 5. Link purchase to agent if purchaseId provided
     if (purchaseId) {
@@ -75,6 +102,10 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     }
 
     // 6. Return immediately with status 'creating' - async job will complete creation
+    // #region agent log
+    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:87',message:'Sending response to client',data:{agentId:newAgent.id,status:newAgent.status,hasElevenLabsId:!!newAgent.elevenLabsAgentId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
+    // #endregion
+    
     res.status(201).json({
       success: true,
       data: newAgent
@@ -83,10 +114,18 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     // 7. Run ElevenLabs agent creation asynchronously (don't block request)
     setImmediate(async () => {
       try {
+        // #region agent log
+        fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:96',message:'Before ElevenLabs API call',data:{agentId:newAgent.id,companyName:businessProfile.companyName,voiceId:finalConfig.elevenLabs.voiceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'}) + '\n');
+        // #endregion
+        
         const elevenLabsAgentId = await elevenLabsService.createAgent(
           `${businessProfile.companyName} - Assistant`,
           finalConfig
         );
+        
+        // #region agent log
+        fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:106',message:'After ElevenLabs API call',data:{agentId:newAgent.id,elevenLabsAgentId:elevenLabsAgentId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'}) + '\n');
+        // #endregion
 
         // Update agent with elevenLabsAgentId and setup phone numbers
         newAgent.elevenLabsAgentId = elevenLabsAgentId;
