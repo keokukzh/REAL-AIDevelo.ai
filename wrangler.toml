@@ -2,10 +2,9 @@
 name = "real-aidevelo-ai"
 pages_build_output_dir = "dist"
 
-# Backend URL - Setze diese Variable in Cloudflare Pages Dashboard!
-# Oder deploye Backend auf Render/Fly.io und setze die URL hier
+# Backend URL - Render Deployment
 [env.production]
-vars = { VITE_API_URL = "https://aidevelo-api.onrender.com/api" }
+vars = { VITE_API_URL = "https://real-aidevelo-ai.onrender.com/api" }
 
 [env.preview]
-vars = { VITE_API_URL = "https://aidevelo-api.onrender.com/api" }
+vars = { VITE_API_URL = "https://real-aidevelo-ai.onrender.com/api" }
