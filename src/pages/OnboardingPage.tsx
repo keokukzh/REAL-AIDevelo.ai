@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { OnboardingWizard } from '../components/OnboardingWizard';
 import { AgentTemplateSelector } from '../components/AgentTemplateSelector';
 import { AgentTemplate, getTemplateById } from '../data/agentTemplates';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Mic } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VoiceOnboarding } from '../components/VoiceOnboarding';
 import { CalendarIntegration } from '../components/CalendarIntegration';
