@@ -6,6 +6,8 @@ import './index.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
 
+// Build: 2025-12-11 01:50 - Force fresh deployment
+
 // Suppress external library warnings that don't affect functionality
 const originalError = console.error;
 const originalWarn = console.warn;
