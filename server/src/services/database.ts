@@ -1,4 +1,5 @@
 import { Pool, PoolClient } from 'pg';
+import dns from 'dns';
 import { config } from '../config/env';
 
 let pool: Pool | null = null;
@@ -76,7 +77,7 @@ export function initializeDatabase(): Pool {
       }
     }
     
-    // Optimized pool settings for Railway
+    // Optimized pool settings for cloud providers (force IPv4 to avoid ENETUNREACH on IPv6-only DNS responses)
     pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: sslConfig,
@@ -88,8 +89,11 @@ export function initializeDatabase(): Pool {
       query_timeout: 30000,
       keepAlive: true,
       keepAliveInitialDelayMillis: 0, // Start keepalive immediately
-      // Retry configuration
       allowExitOnIdle: false, // Don't close pool when idle
+      // Force IPv4 to avoid ENETUNREACH when IPv6 is not available in the runtime
+      lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { ...options, family: 4, verbatim: false }, callback);
+      },
     });
 
     // Enhanced error handling

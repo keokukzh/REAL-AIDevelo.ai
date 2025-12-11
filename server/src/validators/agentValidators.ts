@@ -30,9 +30,11 @@ export const BusinessProfileSchema = z.object({
       z.string().length(0),
       z.undefined()
     ]).optional(),
-    email: z.string()
-      .email('Invalid email address')
-      .min(1, 'Email is required')
+    // Email can be optional/blank during quick onboarding to avoid hard-stop validation
+    email: z.union([
+      z.string().email('Invalid email address'),
+      z.string().length(0)
+    ]).optional()
   }),
   openingHours: z.record(z.string(), z.string()).optional()
 });
@@ -43,7 +45,9 @@ export const AgentConfigSchema = z.object({
     .regex(/^[a-z]{2}-[A-Z]{2}$/, 'Invalid locale format (expected: de-CH)'),
   fallbackLocales: z.array(z.string())
     .min(0)
-    .max(5, 'Maximum 5 fallback locales allowed'),
+    .max(5, 'Maximum 5 fallback locales allowed')
+    .optional()
+    .default([]),
   recordingConsent: z.boolean().optional().default(false),
   systemPrompt: z.string()
     .max(5000, 'System prompt must be less than 5000 characters')
@@ -51,17 +55,24 @@ export const AgentConfigSchema = z.object({
   elevenLabs: z.object({
     voiceId: z.string()
       .min(1, 'Voice ID is required')
-      .max(50, 'Invalid voice ID format'),
+      .max(50, 'Invalid voice ID format')
+      .default('21m00Tcm4TlvDq8ikWAM'),
     modelId: z.string()
       .min(1, 'Model ID is required')
       .max(50, 'Invalid model ID format')
+      .default('eleven_turbo_v2_5')
+  }).optional().default({
+    voiceId: '21m00Tcm4TlvDq8ikWAM',
+    modelId: 'eleven_turbo_v2_5'
   })
 });
 
 export const CreateAgentSchema = z.object({
   businessProfile: BusinessProfileSchema,
   config: AgentConfigSchema
-});
+})
+// allow extra optional fields (subscription, voiceCloning, purchaseId, etc.) to pass through
+.passthrough();
 
 export const AgentIdParamSchema = z.object({
   id: z.string().uuid('Invalid agent ID format')
