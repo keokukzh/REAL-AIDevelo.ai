@@ -9,6 +9,17 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  // Always log errors for debugging
+  console.error('[ErrorHandler] Error caught', {
+    message: err.message,
+    name: err.name,
+    statusCode: err instanceof AppError ? err.statusCode : 500,
+    path: req.path,
+    method: req.method,
+    origin: req.headers.origin,
+    stack: err.stack
+  });
+  
   // Handle CORS errors specifically
   if (err.message && err.message.includes('CORS')) {
     console.warn('[CORS Error]', {
@@ -25,16 +36,6 @@ export const errorHandler = (
     }
 
     return sendFailure(res, 403, 'CORS policy violation', err.message);
-  }
-
-  // Log error (in production, use proper logging service)
-  if (!config.isProduction) {
-    console.error('[ErrorHandler]', {
-      message: err.message,
-      stack: err.stack,
-      path: req.path,
-      method: req.method
-    });
   }
 
   // Handle known operational errors

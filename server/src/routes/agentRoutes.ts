@@ -58,7 +58,16 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/', validateRequest(CreateAgentSchema), createAgent);
+router.post('/', (req, res, next) => {
+  console.log('[AgentRoutes] POST /agents received', {
+    path: req.path,
+    method: req.method,
+    origin: req.headers.origin,
+    contentType: req.headers['content-type'],
+    bodySize: JSON.stringify(req.body).length
+  });
+  next();
+}, validateRequest(CreateAgentSchema), createAgent);
 
 /**
  * @swagger
