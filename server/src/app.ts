@@ -189,6 +189,9 @@ app.get('/', (req: Request, res: Response) => {
  *                   example: 2024-01-15T10:30:00Z
  */
 app.get('/health', (req: Request, res: Response) => {
+  // Simple liveness check — responds immediately without any database/external calls
+  // This is what Railway uses to verify the container is alive
+  res.setHeader('Content-Type', 'application/json');
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
