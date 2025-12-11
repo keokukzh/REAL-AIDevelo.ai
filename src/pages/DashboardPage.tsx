@@ -88,19 +88,15 @@ export const DashboardPage = () => {
         body: JSON.stringify({ userId, userEmail }),
       });
 
-      toast.success('Wir haben einen Starter-Agent für Sie angelegt.');
       return res.data;
     } catch (error) {
       if (error instanceof ApiRequestError) {
         if (error.statusCode === 409) {
-          return null; // Already exists, nothing to do
+          // Agent already exists - this is fine
+          return null;
         }
-        console.error('[Dashboard] Default agent provisioning failed:', error.message);
-      } else {
-        console.error('[Dashboard] Default agent provisioning failed:', error);
       }
-
-      // Allow manual retry on refresh if it failed for network/validation reasons
+      console.error('[Dashboard] Default agent provisioning failed:', error);
       setHasAttemptedDefaultProvision(false);
       return null;
     } finally {
@@ -114,20 +110,16 @@ export const DashboardPage = () => {
 
   const fetchAgents = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) setRefreshing(true);
+    
     try {
-      const res = await apiRequest<{ data: Agent[] }>('/agents');
-      let agentData = res.data;
-
-      if (agentData.length === 0 && !hasAttemptedDefaultProvision) {
-        const defaultAgent = await ensureDefaultAgent();
-        if (defaultAgent) {
-          agentData = [defaultAgent];
-        } else {
-          // Retry fetch to catch cases where backend created it despite race conditions
-          const retry = await apiRequest<{ data: Agent[] }>('/agents');
-          agentData = retry.data;
-        }
+      // Immer zuerst Default-Agent sicherstellen (nur beim ersten Load)
+      if (!hasAttemptedDefaultProvision) {
+        await ensureDefaultAgent();
       }
+
+      // Dann Agents laden
+      const res = await apiRequest<{ data: Agent[] }>('/agents');
+      const agentData = res.data;
 
       setAgents(agentData);
     } catch (error) {
@@ -234,22 +226,22 @@ export const DashboardPage = () => {
   };
 
   const renderAgents = () => {
-    if (loading) {
+    if (loading || isProvisioningDefault) {
       return (
-        <div className="flex justify-center p-12">
-          <RefreshCw className="animate-spin text-accent" size={32} />
-        </div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center p-12 bg-white/5 rounded-2xl border border-white/10"
+        >
+          <RefreshCw className="animate-spin text-accent mb-4" size={40} />
+          <p className="text-gray-400">
+            {isProvisioningDefault ? 'Ihr Agent wird vorbereitet...' : 'Lade Dashboard...'}
+          </p>
+        </motion.div>
       );
     }
 
     if (filteredAgents.length === 0) {
-      if (isProvisioningDefault) {
-        return (
-          <div className="flex justify-center p-12">
-            <RefreshCw className="animate-spin text-accent" size={32} />
-          </div>
-        );
-      }
 
       return (
         <motion.div 

@@ -90,9 +90,9 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ stats, loading }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <KPICard
-        title="Aktive Agents"
-        value={stats.activeAgents}
-        subtitle={`von ${stats.totalAgents} gesamt`}
+        title="Ihre Agents"
+        value={stats.totalAgents}
+        subtitle={`${stats.activeAgents} aktiv, 24/7 einsatzbereit`}
         icon={<Activity size={24} />}
         color="blue"
       />

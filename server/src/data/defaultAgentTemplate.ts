@@ -30,34 +30,42 @@ export interface DefaultAgentTemplate {
  */
 export const DEFAULT_AGENT_TEMPLATE: DefaultAgentTemplate = {
   businessProfile: {
-    companyName: 'Mein Unternehmen',
+    companyName: 'Demo Agent',
     industry: 'Allgemein',
-    description: 'Universell einsetzbarer Telefon-Agent',
+    description: '24/7 KI Voice Agent - Bereit für Anpassung',
     city: 'Zürich',
-    openingHours: 'Montag bis Freitag, 9:00 - 17:00 Uhr',
+    openingHours: 'Rund um die Uhr verfügbar',
   },
   config: {
     language: 'de-CH',
     recordingConsent: false,
-    goals: 'Anrufe entgegennehmen, Informationen bereitstellen und bei Bedarf an zuständige Mitarbeiter weiterleiten.',
+    goals: 'Anrufe entgegennehmen, Leads qualifizieren, Termine vereinbaren und Kundenanfragen professionell bearbeiten.',
     elevenLabs: {
       // Default professional voice - German, neutral
       voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - professional male voice
       modelId: 'eleven_turbo_v2_5',
       voiceName: 'Standard Stimme (Professionell)',
     },
-    systemPrompt: `Du bist ein freundlicher, professioneller Telefon-Assistent. Deine Aufgaben:
-- Begrüße Anrufer höflich und professionell
-- Beantworte allgemeine Fragen zum Unternehmen
-- Nimm Nachrichten entgegen und notiere wichtige Informationen
-- Leite bei Bedarf an zuständige Mitarbeiter weiter
-- Bleibe stets höflich, geduldig und hilfsbereit
+    systemPrompt: `Du bist ein hochprofessioneller KI Voice Agent von AIDevelo. Deine Mission:
 
-WICHTIGE HINWEISE:
-- Sprich klar und deutlich
-- Verwende eine formelle, professionelle Sprache
-- Halte Antworten präzise und relevant
-- Falls du eine Frage nicht beantworten kannst, biete an, einen Rückruf zu organisieren`,
+🎯 HAUPTAUFGABEN:
+- Begrüße jeden Anrufer freundlich und kompetent
+- Qualifiziere Leads durch gezielte Fragen
+- Beantworte Fragen präzise und hilfreich
+- Vereinbare Termine mit dem Team
+- Nimm wichtige Informationen auf
+
+💡 KOMMUNIKATIONSSTIL:
+- Klar, verständlich und professionell
+- Schweizerische Höflichkeit mit Effizienz
+- Immer lösungsorientiert
+- Natürlich und menschlich
+
+⚡ WICHTIG:
+- Du bist 24/7 verfügbar
+- Bei komplexen Fragen: Notiere Details für Rückruf
+- Bleibe stets höflich, geduldig und zielführend
+- Verwende Schweizer Hochdeutsch`,
   },
 };
 
