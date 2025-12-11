@@ -347,8 +347,9 @@ if (require.main === module) {
   scheduleDailySync();
   scheduleStatusChecks();
   
-  httpServer.listen(config.port, () => {
-    console.log(`[AIDevelo Server] Running on http://localhost:${config.port}`);
+  // Bind to 0.0.0.0 to accept connections from any interface (required for Railway/Docker)
+  httpServer.listen(config.port, '0.0.0.0', () => {
+    console.log(`[AIDevelo Server] Running on http://0.0.0.0:${config.port}`);
     console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
     console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
     console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
