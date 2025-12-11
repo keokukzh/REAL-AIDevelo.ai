@@ -4,19 +4,22 @@ FROM node:20-alpine AS base
 # Workspace directory
 WORKDIR /app
 
-# Copy server package files (from server/ directory in build context)
-COPY server/package*.json ./
-COPY server/.npmrc ./
+# Copy package files
+COPY package*.json ./
+# Copy .npmrc if it exists (optional - will fail silently if not present)
+COPY .npmrc ./
 
 # Install ALL dependencies (including dev for TypeScript build)
 RUN npm ci
 
 # Copy server source
-COPY server/ ./
+COPY . ./
 
-# Copy shared types into src/shared (needed for TypeScript compilation, must be under rootDir)
-# Build context is repo root, so shared/ is at root level
-COPY shared ./src/shared
+# Copy shared types into src/shared (needed for TypeScript compilation)
+# IMPORTANT: Build context MUST be repo root (not server/)
+# For Render/Railway: Set Root Directory to "." (repo root), not "server"
+# Then Dockerfile path should be: server/Dockerfile
+COPY ../shared ./src/shared
 
 # Build TypeScript
 RUN npm run build
@@ -27,8 +30,8 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # Copy package files
-COPY server/package*.json ./
-COPY server/.npmrc ./
+COPY package*.json ./
+COPY .npmrc ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev
