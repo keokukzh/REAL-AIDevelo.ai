@@ -23,6 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 
+# AI/Cursor editor files
+.cursor/
+.agent/
+.superdesign/
+
+# Cloudflare Wrangler
+.wrangler/
+
 # Generated API documentation
 server/openapi.json
 
