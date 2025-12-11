@@ -119,6 +119,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
 
             {/* Right Side: Login to Studio */}
             <div className="hidden md:flex items-center gap-4">
+                <Button
+                  onClick={handleStart}
+                  variant="primary"
+                  className="!px-4 !py-2 text-sm flex items-center gap-2"
+                  aria-label="Onboarding starten"
+                >
+                  Onboarding starten
+                </Button>
                 <Button 
                   onClick={() => navigate('/dashboard')} 
                   variant="outline" 
@@ -141,6 +149,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
 
             {/* Mobile: Login Button + Toggle */}
             <div className="md:hidden flex items-center gap-3">
+                <Button
+                  onClick={handleStart}
+                  variant="primary"
+                  className="!px-3 !py-2 text-xs flex items-center gap-1"
+                  aria-label="Onboarding starten"
+                >
+                  Onboarding
+                </Button>
                 <Button 
                   onClick={() => navigate('/dashboard')} 
                   variant="outline" 
@@ -203,6 +219,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         />
                         <LogIn size={18} />
                         <span>Login</span>
+                    </Button>
+                    <Button
+                      onClick={handleStart}
+                      variant="primary"
+                      className="w-full flex items-center justify-center gap-2"
+                      aria-label="Onboarding starten"
+                    >
+                      Onboarding starten
                     </Button>
                 </nav>
             )}

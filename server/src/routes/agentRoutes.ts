@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAgent, getAgents, getAgentById, activateAgent, syncAgent } from '../controllers/agentController';
+import { createAgent, getAgents, getAgentById, activateAgent, syncAgent, createDefaultAgent } from '../controllers/agentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
 import { db } from '../services/db';
@@ -58,6 +58,53 @@ const router = Router();
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/', validateRequest(CreateAgentSchema), createAgent);
+
+/**
+ * @swagger
+ * /agents/default:
+ *   post:
+ *     summary: Create a default agent for a new user
+ *     tags: [Agents]
+ *     description: Auto-provisions a standard agent with default configuration. Used during user registration.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: User ID to associate the agent with
+ *               userEmail:
+ *                 type: string
+ *                 description: User email for personalization (optional)
+ *           example:
+ *             userId: "user_123abc"
+ *             userEmail: "user@example.com"
+ *     responses:
+ *       201:
+ *         description: Default agent created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/VoiceAgent'
+ *                 message:
+ *                   type: string
+ *       409:
+ *         description: Default agent already exists for this user
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/default', createDefaultAgent);
 
 /**
  * @swagger

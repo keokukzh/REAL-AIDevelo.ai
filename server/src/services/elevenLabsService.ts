@@ -387,8 +387,22 @@ export class ElevenLabsService {
     if (!config.isElevenLabsConfigured) {
       // Return mock data for testing
       return [
-        { id: 'mock_1', number: '+41 44 123 45 67', country: 'CH', status: 'available' },
-        { id: 'mock_2', number: '+41 44 123 45 68', country: 'CH', status: 'available' },
+        {
+          id: 'mock_1',
+          providerSid: 'mock_provider_1',
+          number: '+41 44 123 45 67',
+          country: 'CH',
+          status: 'available',
+          capabilities: { voice: true, sms: false },
+        },
+        {
+          id: 'mock_2',
+          providerSid: 'mock_provider_2',
+          number: '+41 44 123 45 68',
+          country: 'CH',
+          status: 'available',
+          capabilities: { voice: true, sms: true },
+        },
       ];
     }
 
@@ -401,10 +415,12 @@ export class ElevenLabsService {
 
       return response.data.phone_numbers?.map((pn: any) => ({
         id: pn.id,
+        providerSid: pn.provider_sid || pn.id,
         number: pn.number,
         country: pn.country || country,
         status: pn.status || 'available',
-        agentId: pn.agent_id,
+        assignedAgentId: pn.agent_id,
+        capabilities: pn.capabilities || { voice: true },
       })) || [];
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -453,10 +469,12 @@ export class ElevenLabsService {
 
       return {
         id: response.data.id || targetPhoneNumberId,
+        providerSid: response.data.provider_sid || response.data.id || targetPhoneNumberId,
         number: response.data.number,
         country: response.data.country || 'CH',
         status: 'assigned',
-        agentId: agentId,
+        assignedAgentId: agentId,
+        capabilities: response.data.capabilities || { voice: true },
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {

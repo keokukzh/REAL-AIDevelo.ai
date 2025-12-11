@@ -42,6 +42,7 @@ import agentRoutes from './routes/agentRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
@@ -154,11 +155,13 @@ app.get('/', (req: Request, res: Response) => {
       health: '/health',
       api: '/api',
       apiDocs: '/api-docs',
+      auth: '/api/auth',
       agents: '/api/agents',
       elevenlabs: '/api/elevenlabs',
       calendar: '/api/calendar',
       payments: '/api/payments',
       enterprise: '/api/enterprise',
+      telephony: '/api/telephony',
       onboarding: '/api/onboarding',
       voiceAgent: '/api/voice-agent'
     }
@@ -248,11 +251,13 @@ app.get('/api', (req: Request, res: Response) => {
     message: 'AIDevelo API is running',
     version: '1.0.0',
     endpoints: {
+      auth: '/api/auth',
       agents: '/api/agents',
       elevenlabs: '/api/elevenlabs',
       calendar: '/api/calendar',
       payments: '/api/payments',
       enterprise: '/api/enterprise',
+      telephony: '/api/telephony',
       onboarding: '/api/onboarding',
       voiceAgent: '/api/voice-agent'
     }
@@ -281,6 +286,7 @@ v1Router.use('/purchases', purchaseRoutes);
 v1Router.use('/voice', voiceRoutes);
 v1Router.use('/telephony', telephonyRoutes);
 v1Router.use('/sync', syncRoutes);
+v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/calendar', calendarRoutes);
 v1Router.use('/onboarding', onboardingAIAssistantRoutes);

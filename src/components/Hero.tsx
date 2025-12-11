@@ -45,8 +45,13 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
   };
 
   const handlePrimary = () => {
-    // Always navigate to dashboard/studio - no direct onboarding from landing page
-    window.location.href = '/dashboard';
+    if (onStartOnboarding) {
+      onStartOnboarding();
+    } else if (onScrollToSection) {
+      onScrollToSection('#onboarding');
+    } else {
+      window.location.href = '/onboarding';
+    }
   };
 
   return (
@@ -104,7 +109,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
               
               {/* Subheading */}
               <div className="text-lg md:text-xl text-slate-300 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
-                <p>Vergessen Sie verpasste Anrufe. Ihr Voice Agent qualifiziert Leads, bucht Termine und spricht Schweizerdeutsch – voll eingerichtet in 24h.</p>
+                <p>Vergessen Sie verpasste Anrufe. Ihr Teamqualifizierer beantwortet Anfragen, bucht Termine und spricht Schweizerdeutsch – voll eingerichtet in 24h.</p>
               </div>
 
                {/* Benefits List (from screenshot idea) */}
@@ -135,9 +140,9 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                   variant="secondary" 
                   className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" 
                   icon={<Play size={24} className="fill-current" />}
-                  aria-label="Zum Studio navigieren"
+                  aria-label="Onboarding starten"
                 >
-                   Zum Studio
+                   Onboarding starten
                 </Button>
                 <Button 
                   onClick={scrollToDemo} 

@@ -1,32 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest, ApiRequestError } from '../services/api';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
-import { AgentCard } from '../components/AgentCard';
-import { Modal } from '../components/ui/Modal';
-import { useToast } from '../components/ui/Toast';
-import { ToastContainer } from '../components/ui/Toast';
-import { AgentInlineEditor } from '../components/agent/AgentInlineEditor';
-import { 
-  Activity, 
-  Phone, 
-  Settings, 
-  Play, 
-  RefreshCw, 
-  BarChart, 
-  CheckCircle, 
-  Clock, 
-  XCircle,
-  Search,
-  Filter,
-  Grid3x3,
-  List,
-  X,
-  TrendingUp,
-  Users,
-  PhoneCall
-} from 'lucide-react';
+import { useToast, ToastContainer, toast } from '../components/ui/Toast';
+import { KPIOverview, DashboardStats } from '../components/dashboard/KPIOverview';
+import { AgentCard, AgentCardData } from '../components/dashboard/AgentCard';
+import { DashboardToolbar } from '../components/dashboard/DashboardToolbar';
+import { RefreshCw, Inbox } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -60,196 +41,273 @@ interface Agent {
   };
 }
 
-type ViewMode = 'grid' | 'list' | 'compact';
-type SortOption = 'name' | 'status' | 'created' | 'calls';
+type ViewMode = 'grid' | 'list';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { toasts, removeToast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activatingAgentId, setActivatingAgentId] = useState<string | null>(null);
-  const [syncingAgentId, setSyncingAgentId] = useState<string | null>(null);
-  const [availableNumbers, setAvailableNumbers] = useState<Array<{ id: string; number: string; status: string }>>([]);
-  const [showActivationModal, setShowActivationModal] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasAttemptedDefaultProvision, setHasAttemptedDefaultProvision] = useState(false);
+  const [isProvisioningDefault, setIsProvisioningDefault] = useState(false);
   
-  // New state for filters and view
+  // View and filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [languageFilter, setLanguageFilter] = useState<string | null>(null);
+  const [filters, setFilters] = useState<{
+    status?: string;
+    industry?: string;
+    language?: string;
+  }>({});
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortBy, setSortBy] = useState<SortOption>('name');
-  const [showFilters, setShowFilters] = useState(false);
+
+  const getUserIdentity = () => {
+    let userId = localStorage.getItem('aidevelo-user-id');
+    if (!userId) {
+      userId = `guest-${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)}`;
+      localStorage.setItem('aidevelo-user-id', userId);
+    }
+
+    const userEmail = localStorage.getItem('aidevelo-user-email') || undefined;
+
+    return { userId, userEmail };
+  };
+
+  const ensureDefaultAgent = async () => {
+    if (hasAttemptedDefaultProvision || isProvisioningDefault) {
+      return null;
+    }
+
+    const { userId, userEmail } = getUserIdentity();
+    setHasAttemptedDefaultProvision(true);
+    setIsProvisioningDefault(true);
+
+    try {
+      const res = await apiRequest<{ success: boolean; data: Agent }>('/agents/default', {
+        method: 'POST',
+        body: JSON.stringify({ userId, userEmail }),
+      });
+
+      toast.success('Wir haben einen Starter-Agent für Sie angelegt.');
+      return res.data;
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        if (error.statusCode === 409) {
+          return null; // Already exists, nothing to do
+        }
+        console.error('[Dashboard] Default agent provisioning failed:', error.message);
+      } else {
+        console.error('[Dashboard] Default agent provisioning failed:', error);
+      }
+
+      // Allow manual retry on refresh if it failed for network/validation reasons
+      setHasAttemptedDefaultProvision(false);
+      return null;
+    } finally {
+      setIsProvisioningDefault(false);
+    }
+  };
 
   useEffect(() => {
     fetchAgents();
   }, []);
 
-  const fetchAgents = async () => {
+  const fetchAgents = async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) setRefreshing(true);
     try {
       const res = await apiRequest<{ data: Agent[] }>('/agents');
-      setAgents(res.data);
+      let agentData = res.data;
+
+      if (agentData.length === 0 && !hasAttemptedDefaultProvision) {
+        const defaultAgent = await ensureDefaultAgent();
+        if (defaultAgent) {
+          agentData = [defaultAgent];
+        } else {
+          // Retry fetch to catch cases where backend created it despite race conditions
+          const retry = await apiRequest<{ data: Agent[] }>('/agents');
+          agentData = retry.data;
+        }
+      }
+
+      setAgents(agentData);
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        // Could show toast here
+        console.error('Failed to fetch agents:', error);
       }
     } finally {
       setLoading(false);
+      if (showRefreshIndicator) setRefreshing(false);
     }
   };
 
-  // Calculate stats
-  const stats = useMemo(() => {
-    const total = agents.length;
-    const active = agents.filter(a => a.status === 'active' || a.status === 'live').length;
+  // Calculate dashboard stats
+  const dashboardStats: DashboardStats = useMemo(() => {
+    const activeAgents = agents.filter(a => a.status === 'active' || a.status === 'live').length;
+    const totalAgents = agents.length;
     const callsToday = agents.reduce((sum, a) => sum + (a.metrics?.callsToday || 0), 0);
-    const avgSuccessRate = agents.length > 0
-      ? agents.reduce((sum, a) => sum + (a.metrics?.successRate || 0), 0) / agents.length
+    const successRate = agents.length > 0
+      ? Math.round(agents.reduce((sum, a) => sum + (a.metrics?.successRate || 0), 0) / agents.length)
       : 0;
+    const missedCalls = 0; // Would need backend data
 
-    return { total, active, callsToday, avgSuccessRate };
+    return {
+      activeAgents,
+      totalAgents,
+      callsToday,
+      successRate,
+      missedCalls,
+    };
   }, [agents]);
 
-  // Filter and sort agents
-  const filteredAndSortedAgents = useMemo(() => {
-    let filtered = [...agents];
+  // Convert agents to card data format
+  const agentCards: AgentCardData[] = useMemo(() => {
+    return agents.map(agent => ({
+      id: agent.id,
+      name: agent.businessProfile.companyName,
+      industry: agent.businessProfile.industry || 'Allgemein',
+      status: agent.status === 'live' ? 'active' : agent.status,
+      phoneNumber: agent.telephony?.phoneNumber,
+      callsToday: agent.metrics?.callsToday,
+      successRate: agent.metrics?.successRate,
+      isDefaultAgent: (agent as any).metadata?.isDefaultAgent,
+    }));
+  }, [agents]);
+
+  // Filter agents based on search and filters
+  const filteredAgents = useMemo(() => {
+    let filtered = [...agentCards];
 
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(a =>
-        a.businessProfile.companyName.toLowerCase().includes(query) ||
-        a.businessProfile.industry?.toLowerCase().includes(query) ||
-        a.config.primaryLocale.toLowerCase().includes(query)
+        a.name.toLowerCase().includes(query) ||
+        a.industry.toLowerCase().includes(query) ||
+        a.phoneNumber?.toLowerCase().includes(query)
       );
     }
 
     // Status filter
-    if (statusFilter) {
-      filtered = filtered.filter(a => a.status === statusFilter);
+    if (filters.status) {
+      filtered = filtered.filter(a => a.status === filters.status);
     }
 
-    // Language filter
-    if (languageFilter) {
-      filtered = filtered.filter(a => a.config.primaryLocale === languageFilter);
+    // Industry filter
+    if (filters.industry) {
+      filtered = filtered.filter(a => a.industry === filters.industry);
     }
 
-    // Sort
+    // Sort by: Default agents first, then by name
     filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.businessProfile.companyName.localeCompare(b.businessProfile.companyName);
-        case 'status':
-          return a.status.localeCompare(b.status);
-        case 'created':
-          // Would need createdAt in Agent interface
-          return 0;
-        case 'calls':
-          const aCalls = a.metrics?.callsToday || 0;
-          const bCalls = b.metrics?.callsToday || 0;
-          return bCalls - aCalls;
-        default:
-          return 0;
-      }
+      if (a.isDefaultAgent && !b.isDefaultAgent) return -1;
+      if (!a.isDefaultAgent && b.isDefaultAgent) return 1;
+      return a.name.localeCompare(b.name);
     });
 
     return filtered;
-  }, [agents, searchQuery, statusFilter, languageFilter, sortBy]);
+  }, [agentCards, searchQuery, filters]);
 
-  const handleRunDiagnostics = async (agentId: string) => {
-    try {
-      const res = await apiRequest<{ data: { score: number; passed: boolean; timestamp: string } }>(`/tests/${agentId}/run`, { method: 'POST' });
-      setAgents(prev => prev.map(a => 
-        a.id === agentId 
-          ? { ...a, lastTestResult: res.data } 
-          : a
-      ));
-      // Use toast instead of alert
-    } catch (error) {
-      const errorMessage = error instanceof ApiRequestError 
-        ? error.message 
-        : "Diagnose konnte nicht gestartet werden.";
-      // Use toast
-    }
-  };
-
-  const handleTestAgent = (agentId?: string) => {
-    if (!agentId) {
-      // Use toast
+  const handleTestAgent = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent?.elevenLabsAgentId) {
+      console.warn('Agent has no ElevenLabs ID');
       return;
     }
-    window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agentId}`, '_blank');
+    window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agent.elevenLabsAgentId}`, '_blank');
   };
 
-  const handleActivateAgent = async (agentId: string, phoneNumberId?: string) => {
-    setActivatingAgentId(agentId);
+  const handleToggleStatus = async (agentId: string, newStatus: 'active' | 'inactive') => {
     try {
-      const res = await apiRequest<{ success: boolean; data: Agent; message?: string }>(`/agents/${agentId}/activate`, {
+      const endpoint = newStatus === 'active' ? 'activate' : 'deactivate';
+      const res = await apiRequest<{ success: boolean; data: Agent }>(`/agents/${agentId}/${endpoint}`, {
         method: 'PATCH',
-        body: phoneNumberId ? JSON.stringify({ phoneNumberId }) : undefined,
       });
       
       setAgents(prev => prev.map(a => 
         a.id === agentId 
-          ? { ...a, status: res.data.status, telephony: res.data.telephony } 
+          ? { ...a, status: res.data.status } 
           : a
       ));
-      
-      setShowActivationModal(false);
-      setAvailableNumbers([]);
-      // Use toast
     } catch (error) {
-      const errorMessage = error instanceof ApiRequestError 
-        ? error.message 
-        : "Fehler beim Aktivieren des Agents.";
-      // Use toast
-    } finally {
-      setActivatingAgentId(null);
+      console.error(`Failed to ${newStatus === 'active' ? 'activate' : 'deactivate'} agent:`, error);
     }
   };
 
-  const handleOpenActivationModal = async (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent) return;
-
-    setShowActivationModal(true);
-    setActivatingAgentId(agentId);
-
-    try {
-      const planId = agent.subscription?.planId || 'starter';
-      const res = await apiRequest<{ success: boolean; data: Array<{ id: string; number: string; status: string }> }>(
-        `/telephony/numbers?planId=${planId}`
+  const renderAgents = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center p-12">
+          <RefreshCw className="animate-spin text-accent" size={32} />
+        </div>
       );
-      setAvailableNumbers(res.data);
-    } catch (error) {
-      console.error('Failed to fetch phone numbers:', error);
     }
-  };
 
-  const handleSyncAgent = async (agentId: string) => {
-    setSyncingAgentId(agentId);
-    try {
-      await apiRequest(`/sync/agents/${agentId}`, { method: 'POST' });
-      fetchAgents();
-      // Use toast
-    } catch (error) {
-      const errorMessage = error instanceof ApiRequestError 
-        ? error.message 
-        : "Fehler beim Synchronisieren des Agents.";
-      // Use toast
-    } finally {
-      setSyncingAgentId(null);
+    if (filteredAgents.length === 0) {
+      if (isProvisioningDefault) {
+        return (
+          <div className="flex justify-center p-12">
+            <RefreshCw className="animate-spin text-accent" size={32} />
+          </div>
+        );
+      }
+
+      return (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center p-12 bg-white/5 rounded-2xl border border-white/10"
+        >
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center">
+              <Inbox size={40} className="text-accent" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold mb-2">
+            {searchQuery || Object.values(filters).some(Boolean) 
+              ? 'Keine Agents gefunden' 
+              : 'Noch keine Agents erstellt'}
+          </h3>
+          <p className="text-gray-400 mb-6">
+            {searchQuery || Object.values(filters).some(Boolean)
+              ? 'Versuchen Sie, Ihre Suchbegriffe oder Filter anzupassen.'
+              : 'Erstellen Sie Ihren ersten Agent, um loszulegen.'}
+          </p>
+          {searchQuery || Object.values(filters).some(Boolean) ? (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchQuery('');
+                setFilters({});
+              }}
+            >
+              Filter zurücksetzen
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => navigate('/onboarding')}>
+              Ersten Agent erstellen
+            </Button>
+          )}
+        </motion.div>
+      );
     }
-  };
 
-  const clearFilters = () => {
-    setSearchQuery('');
-    setStatusFilter(null);
-    setLanguageFilter(null);
+    return (
+      <div className={viewMode === 'grid' 
+        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+        : 'space-y-4'
+      }>
+        {filteredAgents.map(agent => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            viewMode={viewMode}
+            onTest={handleTestAgent}
+            onToggleStatus={handleToggleStatus}
+          />
+        ))}
+      </div>
+    );
   };
-
-  const hasActiveFilters = searchQuery.trim() || statusFilter || languageFilter;
 
   return (
     <div className="min-h-screen bg-background text-white">
@@ -258,306 +316,61 @@ export const DashboardPage = () => {
       <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50 relative">
         <div className="flex-1"></div>
         <div className="flex-1 flex justify-center">
-          <img 
-            src="/logo-studio-white.png" 
-            alt="AIDevelo Studio" 
-            className="h-8 w-auto object-contain cursor-pointer"
-            onClick={() => navigate('/dashboard')}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = target.parentElement?.querySelector('.logo-fallback-text');
-              if (fallback) {
-                (fallback as HTMLElement).style.display = 'block';
-              }
-            }}
-          />
-          <span className="logo-fallback-text hidden font-display font-bold text-xl cursor-pointer" onClick={() => navigate('/dashboard')}>
-            AIDevelo Studio
-          </span>
+          <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+            <img 
+              src="/logo-studio-white.png" 
+              alt="AIDevelo Studio" 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.parentElement?.querySelector('.logo-fallback-text');
+                if (fallback) {
+                  (fallback as HTMLElement).style.display = 'block';
+                }
+              }}
+            />
+            <span className="logo-fallback-text hidden font-display font-bold text-xl">
+              AIDevelo Studio
+            </span>
+          </Link>
         </div>
         <div className="flex-1 flex justify-end">
-          <Button variant="outline" onClick={() => navigate('/onboarding')} className="text-sm">
-            + Neuer Agent
+          <Button 
+            variant="outline" 
+            onClick={() => fetchAgents(true)} 
+            disabled={refreshing}
+            className="text-sm flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            Aktualisieren
           </Button>
         </div>
       </header>
 
       <main className="container mx-auto p-6 md:p-12">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold font-display mb-2">Meine AI Mitarbeiter</h1>
-          <p className="text-gray-400">Verwalten und überwachen Sie Ihre Voice Agents.</p>
+          <h1 className="text-3xl font-bold font-display mb-2">Dashboard</h1>
+          <p className="text-gray-400">Verwalten und überwachen Sie Ihre Telefon-Agents</p>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-surface rounded-xl border border-white/10 p-6"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm">Total Agents</span>
-              <Users size={20} className="text-accent" />
-            </div>
-            <div className="text-3xl font-bold">{stats.total}</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-surface rounded-xl border border-white/10 p-6"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm">Aktive</span>
-              <CheckCircle size={20} className="text-green-400" />
-            </div>
-            <div className="text-3xl font-bold">{stats.active}</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-surface rounded-xl border border-white/10 p-6"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm">Anrufe heute</span>
-              <PhoneCall size={20} className="text-blue-400" />
-            </div>
-            <div className="text-3xl font-bold">{stats.callsToday}</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-surface rounded-xl border border-white/10 p-6"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm">Ø Erfolgsrate</span>
-              <TrendingUp size={20} className="text-yellow-400" />
-            </div>
-            <div className="text-3xl font-bold">{Math.round(stats.avgSuccessRate)}%</div>
-          </motion.div>
-        </div>
+        {/* KPI Overview */}
+        <KPIOverview stats={dashboardStats} loading={loading} />
 
-        {/* Filters & Search */}
-        <div className="mb-6 space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Agents durchsuchen..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-accent focus:outline-none"
-              />
-            </div>
-            <Button
-              variant={showFilters ? 'primary' : 'outline'}
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter size={18} />
-              Filter
-              {hasActiveFilters && (
-                <span className="bg-accent text-black rounded-full px-2 py-0.5 text-xs font-bold">
-                  {[statusFilter, languageFilter].filter(Boolean).length}
-                </span>
-              )}
-            </Button>
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-                <X size={18} />
-                Zurücksetzen
-              </Button>
-            )}
-            <div className="flex gap-2 border border-white/10 rounded-lg p-1">
-              <Button
-                variant={viewMode === 'grid' ? 'primary' : 'outline'}
-                onClick={() => setViewMode('grid')}
-                className="p-2"
-              >
-                <Grid3x3 size={18} />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'primary' : 'outline'}
-                onClick={() => setViewMode('list')}
-                className="p-2"
-              >
-                <List size={18} />
-              </Button>
-            </div>
-          </div>
-
-          {/* Filter Panel */}
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bg-surface border border-white/10 rounded-lg p-4"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <select
-                    value={statusFilter || ''}
-                    onChange={(e) => setStatusFilter(e.target.value || null)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-accent focus:outline-none"
-                  >
-                    <option value="">Alle Status</option>
-                    <option value="active">Aktiv</option>
-                    <option value="live">Live</option>
-                    <option value="inactive">Inaktiv</option>
-                    <option value="pending_activation">Wartend</option>
-                    <option value="draft">Entwurf</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Sprache</label>
-                  <select
-                    value={languageFilter || ''}
-                    onChange={(e) => setLanguageFilter(e.target.value || null)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-accent focus:outline-none"
-                  >
-                    <option value="">Alle Sprachen</option>
-                    <option value="de-CH">Deutsch (CH)</option>
-                    <option value="fr-CH">Français (CH)</option>
-                    <option value="it-CH">Italiano (CH)</option>
-                    <option value="en-US">English (US)</option>
-                    <option value="en-GB">English (UK)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Sortieren nach</label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-accent focus:outline-none"
-                  >
-                    <option value="name">Name</option>
-                    <option value="status">Status</option>
-                    <option value="calls">Anrufe</option>
-                  </select>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </div>
+        {/* Toolbar */}
+        <DashboardToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          filters={filters}
+          onFilterChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          onCreateNew={() => navigate('/onboarding')}
+        />
 
         {/* Agent List/Grid */}
-        {loading ? (
-          <div className="flex justify-center p-12">
-            <RefreshCw className="animate-spin text-accent" size={32} />
-          </div>
-        ) : filteredAndSortedAgents.length === 0 ? (
-          <div className="text-center p-12 bg-white/5 rounded-2xl border border-white/10">
-            <p className="text-gray-400 mb-6">
-              {hasActiveFilters ? 'Keine Agents gefunden, die den Filtern entsprechen.' : 'Noch keine Agents erstellt.'}
-            </p>
-            {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters}>
-                Filter zurücksetzen
-              </Button>
-            ) : (
-              <Button variant="primary" onClick={() => navigate('/onboarding')}>
-                Ersten Agent erstellen
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-            : 'space-y-4'
-          }>
-            {filteredAndSortedAgents.map(agent => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                onEdit={(agent) => setEditingAgent(agent)}
-                onTest={handleTestAgent}
-                onSync={handleSyncAgent}
-                onDiagnostics={handleRunDiagnostics}
-                onActivate={handleOpenActivationModal}
-                onClick={(agent) => navigate(`/agent/${agent.id}`)}
-                activating={activatingAgentId === agent.id}
-                syncing={syncingAgentId === agent.id}
-              />
-            ))}
-          </div>
-        )}
+        {renderAgents()}
       </main>
-
-      {/* Activation Modal */}
-      <Modal
-        isOpen={showActivationModal}
-        onClose={() => {
-          setShowActivationModal(false);
-          setAvailableNumbers([]);
-        }}
-        title="Agent aktivieren"
-      >
-        <p className="text-gray-400 mb-6">
-          Wählen Sie eine Telefonnummer für diesen Agenten aus oder aktivieren Sie ihn mit der bereits zugewiesenen Nummer.
-        </p>
-
-        {availableNumbers.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Verfügbare Telefonnummern:</label>
-            <div className="space-y-2">
-              {availableNumbers.map((number) => (
-                <button
-                  key={number.id}
-                  onClick={() => handleActivateAgent(activatingAgentId!, number.id)}
-                  className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-left transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{number.number}</span>
-                    <span className="text-xs text-gray-400">{number.status}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setShowActivationModal(false);
-              setAvailableNumbers([]);
-            }}
-            className="flex-1"
-          >
-            Abbrechen
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => handleActivateAgent(activatingAgentId!)}
-            disabled={!activatingAgentId}
-            className="flex-1"
-          >
-            Mit zugewiesener Nummer aktivieren
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Inline Editor Drawer */}
-      {editingAgent && (
-        <AgentInlineEditor
-          agent={editingAgent as any}
-          isOpen={!!editingAgent}
-          onClose={() => setEditingAgent(null)}
-          onSave={(updatedAgent) => {
-            setAgents((prev) =>
-              prev.map((a) => (a.id === updatedAgent.id ? { ...a, ...updatedAgent } : a))
-            );
-            setEditingAgent(null);
-          }}
-        />
-      )}
     </div>
   );
 };

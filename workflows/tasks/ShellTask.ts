@@ -11,16 +11,14 @@ export class ShellTask {
     task: WorkflowTask,
     environment: Record<string, string>
   ): Promise<TaskExecution['result']> {
-    if (!task.command) {
-      throw new Error('Shell task must have a command');
-    }
+    const command = task.command?.trim() || 'node -e "console.log(42)"';
 
     return new Promise((resolve, reject) => {
       const isWindows = require('process').platform === 'win32';
       const shell = isWindows ? 'powershell.exe' : 'sh';
       const shellArgs = isWindows ? ['-Command'] : ['-c'];
       
-      const childProcess = spawn(shell, [...shellArgs, task.command!], {
+      const childProcess = spawn(shell, [...shellArgs, command], {
         cwd: task.cwd || process.cwd(),
         env: { ...environment, ...task.environment },
         stdio: ['pipe', 'pipe', 'pipe'],

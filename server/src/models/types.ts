@@ -13,6 +13,13 @@ export interface BusinessProfile {
   openingHours: Record<string, string>; // e.g., "Mon": "09:00-17:00"
 }
 
+export interface User {
+  id: string;
+  name?: string;
+  email?: string;
+  createdAt: Date;
+}
+
 export interface AgentConfig {
   primaryLocale: string; // e.g. 'de-CH'
   fallbackLocales: string[];
@@ -35,8 +42,13 @@ export interface Subscription {
 export interface Telephony {
   phoneNumber?: string;
   phoneNumberId?: string; // ElevenLabs phone number ID
+  providerSid?: string;
   status: 'unassigned' | 'assigned' | 'active' | 'inactive';
   assignedAt?: Date;
+  capabilities?: {
+    voice: boolean;
+    sms?: boolean;
+  };
 }
 
 export interface VoiceCloning {
@@ -46,9 +58,18 @@ export interface VoiceCloning {
   createdAt?: Date;
 }
 
+export interface AgentMetadata {
+  isDefaultAgent?: boolean;
+  createdFrom?: string;
+  userId?: string;
+  userEmail?: string;
+}
+
 export interface VoiceAgent {
   id: string; // Internal UUID
   elevenLabsAgentId?: string; // External ID from ElevenLabs API
+  userId?: string;
+  metadata?: AgentMetadata;
   businessProfile: BusinessProfile;
   config: AgentConfig;
   subscription?: Subscription;
@@ -72,11 +93,17 @@ export interface Purchase {
 }
 
 export interface PhoneNumber {
-  id: string; // ElevenLabs phone number ID
+  id: string; // Internal UUID
+  providerSid: string; // Provider-assigned SID
   number: string; // E.164 format
   country: string;
   status: 'available' | 'assigned' | 'active' | 'inactive';
-  agentId?: string;
+  capabilities: {
+    voice: boolean;
+    sms?: boolean;
+  };
+  assignedAgentId?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface PhoneSettings {

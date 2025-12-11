@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
 import { elevenLabsService } from '../services/elevenLabsService';
 import { generateSystemPrompt } from '../services/promptService';
+import { defaultAgentService } from '../services/defaultAgentService';
 import { VoiceAgent } from '../models/types';
 import { NotFoundError, InternalServerError } from '../utils/errors';
 
@@ -277,5 +278,42 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
     }
   } catch (error) {
     next(new InternalServerError('Failed to sync agent'));
+  }
+};
+
+/**
+ * Create a default agent for a new user
+ * Used during user registration to auto-provision a starter agent
+ */
+export const createDefaultAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, userEmail } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId is required'
+      });
+    }
+
+    // Check if user already has a default agent
+    if (await defaultAgentService.hasDefaultAgent(userId)) {
+      return res.status(409).json({
+        success: false,
+        error: 'Default agent already exists for this user'
+      });
+    }
+
+    // Provision default agent
+    const agent = await defaultAgentService.provisionDefaultAgent(userId, userEmail);
+
+    res.status(201).json({
+      success: true,
+      data: agent,
+      message: 'Default agent created successfully. You can now customize it in the dashboard.'
+    });
+  } catch (error) {
+    console.error('[AgentController] Failed to create default agent:', error);
+    next(new InternalServerError('Failed to create default agent'));
   }
 };

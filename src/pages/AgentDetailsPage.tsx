@@ -14,6 +14,7 @@ import {
     Clock,
     XCircle,
     Building,
+    Edit3,
     Calendar,
     Mail,
     Globe,
@@ -306,6 +307,7 @@ const OverviewTab: React.FC<{
     onTest: () => void;
     onActivate: () => void;
 }> = ({ agent, onTest, onActivate }) => {
+    const navigate = useNavigate();
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
@@ -414,6 +416,14 @@ const OverviewTab: React.FC<{
                 >
                     <h2 className="text-xl font-bold mb-4">Aktionen</h2>
                     <div className="space-y-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => navigate(`/dashboard/agents/${agent.id}/edit`)}
+                            className="w-full"
+                        >
+                            <Edit3 size={16} className="mr-2" />
+                            Agent bearbeiten
+                        </Button>
                         {(agent.status === 'inactive' || agent.status === 'pending_activation') && (
                             <Button variant="primary" onClick={onActivate} className="w-full">
                                 Agent aktivieren

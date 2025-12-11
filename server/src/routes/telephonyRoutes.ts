@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAvailableNumbers, assignNumber, updateNumberSettings, getNumberStatus } from '../controllers/telephonyController';
+import { getAvailableNumbers, assignNumber, assignNumberFromBody, updateNumberSettings, getNumberStatus } from '../controllers/telephonyController';
 
 const router = Router();
 
@@ -50,6 +50,32 @@ router.get('/numbers', getAvailableNumbers);
  *         description: Phone number assigned successfully
  */
 router.post('/agents/:agentId/assign', assignNumber);
+
+/**
+ * @swagger
+ * /telephony/assign:
+ *   post:
+ *     summary: Assign phone number to agent (body only)
+ *     tags: [Telephony]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - agentId
+ *               - phoneNumberId
+ *             properties:
+ *               agentId:
+ *                 type: string
+ *               phoneNumberId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Phone number assigned successfully
+ */
+router.post('/assign', assignNumberFromBody);
 
 /**
  * @swagger

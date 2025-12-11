@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { elevenLabsService } from '../services/elevenLabsService';
 import { db } from '../services/db';
+import { telephonyService } from '../services/telephonyService';
 import { BadRequestError, NotFoundError, InternalServerError } from '../utils/errors';
 
 /**
@@ -10,25 +10,12 @@ export const getAvailableNumbers = async (req: Request, res: Response, next: Nex
   try {
     const { country = 'CH', planId } = req.query;
 
-    try {
-      const phoneNumbers = await elevenLabsService.getAvailablePhoneNumbers(country as string);
+    const available = await telephonyService.listAvailableNumbers(country as string, planId as string | undefined);
 
-      // Filter by plan if needed (Starter: 1, Business: 2, Premium: 3)
-      let maxNumbers = 1;
-      if (planId === 'business') maxNumbers = 2;
-      if (planId === 'premium') maxNumbers = 3;
-
-      const available = phoneNumbers
-        .filter(pn => pn.status === 'available')
-        .slice(0, maxNumbers);
-
-      res.json({
-        success: true,
-        data: available,
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: available,
+    });
   } catch (error) {
     next(new InternalServerError('Failed to get available phone numbers'));
   }
@@ -53,32 +40,16 @@ export const assignNumber = async (req: Request, res: Response, next: NextFuncti
     }
 
     try {
-      // Assign phone number via ElevenLabs
-      const phoneNumber = await elevenLabsService.assignPhoneNumber(agentId, phoneNumberId);
+      const { phoneNumber, telephony } = await telephonyService.assignNumber(agentId, phoneNumberId);
 
-      // Update agent with telephony info
-      if (!agent.telephony) {
-        agent.telephony = {
-          phoneNumber: phoneNumber.number,
-          phoneNumberId: phoneNumber.id,
-          status: 'assigned',
-          assignedAt: new Date(),
-        };
-      } else {
-        agent.telephony.phoneNumber = phoneNumber.number;
-        agent.telephony.phoneNumberId = phoneNumber.id;
-        agent.telephony.status = 'assigned';
-        agent.telephony.assignedAt = new Date();
-      }
-      
-      agent.updatedAt = new Date();
-      db.saveAgent(agent);
+      const updatedAgent = db.getAgent(agentId);
 
       res.json({
         success: true,
         data: {
           agentId,
-          telephony: agent.telephony,
+          telephony: updatedAgent?.telephony || telephony,
+          phoneNumber,
         },
       });
     } catch (error) {
@@ -86,6 +57,33 @@ export const assignNumber = async (req: Request, res: Response, next: NextFuncti
     }
   } catch (error) {
     next(new InternalServerError('Failed to assign phone number'));
+  }
+};
+
+/**
+ * Assign phone number using body payload (no path param)
+ */
+export const assignNumberFromBody = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { agentId, phoneNumberId } = req.body;
+
+    if (!agentId || !phoneNumberId) {
+      return next(new BadRequestError('agentId and phoneNumberId are required'));
+    }
+
+    const { phoneNumber, telephony } = await telephonyService.assignNumber(agentId, phoneNumberId);
+    const updatedAgent = db.getAgent(agentId);
+
+    res.json({
+      success: true,
+      data: {
+        agentId,
+        telephony: updatedAgent?.telephony || telephony,
+        phoneNumber,
+      },
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -101,21 +99,17 @@ export const updateNumberSettings = async (req: Request, res: Response, next: Ne
       return next(new BadRequestError('agentId is required'));
     }
 
-    try {
-      await elevenLabsService.updatePhoneNumberSettings(phoneNumberId, {
-        agentId,
-        greetingMessage,
-        voicemailEnabled,
-        callRecordingEnabled,
-      });
+    await telephonyService.updateNumberSettings(phoneNumberId, {
+      agentId,
+      greetingMessage,
+      voicemailEnabled,
+      callRecordingEnabled,
+    });
 
-      res.json({
-        success: true,
-        message: 'Phone number settings updated successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      message: 'Phone number settings updated successfully',
+    });
   } catch (error) {
     next(new InternalServerError('Failed to update phone number settings'));
   }
@@ -128,16 +122,12 @@ export const getNumberStatus = async (req: Request, res: Response, next: NextFun
   try {
     const { phoneNumberId } = req.params;
 
-    try {
-      const status = await elevenLabsService.getPhoneNumberStatus(phoneNumberId);
+    const status = await telephonyService.getNumberStatus(phoneNumberId);
 
-      res.json({
-        success: true,
-        data: status,
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: status,
+    });
   } catch (error) {
     next(new InternalServerError('Failed to get phone number status'));
   }

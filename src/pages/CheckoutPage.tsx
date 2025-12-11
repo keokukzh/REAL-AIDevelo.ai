@@ -20,6 +20,17 @@ export const CheckoutPage = () => {
     if (!plan) {
       navigate('/');
     }
+    // Restore persisted identity info so we can provision defaults later
+    const savedEmail = localStorage.getItem('aidevelo-user-email');
+    if (savedEmail) {
+      setCustomerEmail(savedEmail);
+    }
+
+    const existingUserId = localStorage.getItem('aidevelo-user-id');
+    if (!existingUserId) {
+      const newUserId = `guest-${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)}`;
+      localStorage.setItem('aidevelo-user-id', newUserId);
+    }
   }, [plan, navigate]);
 
   const handleCheckout = async () => {
@@ -117,7 +128,11 @@ export const CheckoutPage = () => {
             <input
               type="email"
               value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomerEmail(value);
+                localStorage.setItem('aidevelo-user-email', value);
+              }}
               className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
               placeholder="ihre@email.ch"
             />
