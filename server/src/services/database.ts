@@ -93,7 +93,7 @@ export function initializeDatabase(): Pool {
     });
 
     // Enhanced error handling
-    pool.on('error', (err) => {
+    pool.on('error', (err: Error) => {
       console.error('[Database] Pool error:', err.message);
       // Don't crash on pool errors - they're handled per-query
     });

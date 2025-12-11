@@ -171,7 +171,7 @@ export class CallLoggingService {
     `;
 
     const result = await pool.query(query, [customerId, limit]);
-    return result.rows.map((row) => this.formatCallRecord(row));
+    return result.rows.map((row: any) => this.formatCallRecord(row));
   }
 
   private static formatCallRecord(row: any): CallRecord {
@@ -265,7 +265,7 @@ export class AuditLoggingService {
     `;
 
     const result = await pool.query(query, [userId, limit]);
-    return result.rows.map((row) => this.formatAuditLog(row));
+    return result.rows.map((row: any) => this.formatAuditLog(row));
   }
 
   private static formatAuditLog(row: any): AuditLog {

@@ -59,7 +59,7 @@ export class OpenAIRealtimeClient {
         }
       });
 
-      this.ws.on('error', (error) => {
+      this.ws.on('error', (error: Error) => {
         this.callbacks.onError?.(error);
         reject(error);
       });

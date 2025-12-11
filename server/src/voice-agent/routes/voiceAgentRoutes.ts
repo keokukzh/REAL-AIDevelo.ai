@@ -265,7 +265,7 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
   const activeElevenLabsClients = new Map<string, ElevenLabsStreamingClient>();
 
   // Handle traditional call sessions
-  wss.on('connection', async (ws: WebSocket, req) => {
+  wss.on('connection', async (ws: WebSocket, req: any) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const sessionId = url.searchParams.get('sessionId');
     const customerId = url.searchParams.get('customerId');
@@ -321,7 +321,7 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
   });
 
   // Handle ElevenLabs conversational streaming
-  elevenLabsWss.on('connection', async (ws: WebSocket, req) => {
+  elevenLabsWss.on('connection', async (ws: WebSocket, req: any) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const sessionId = url.searchParams.get('sessionId');
     const customerId = url.searchParams.get('customerId');

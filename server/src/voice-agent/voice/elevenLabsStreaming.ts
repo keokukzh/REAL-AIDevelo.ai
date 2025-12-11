@@ -59,13 +59,13 @@ export class ElevenLabsStreamingClient {
         resolve();
       });
 
-      this.ws.on('message', (data) => {
+      this.ws.on('message', (data: any) => {
         this.handleMessage(data);
       });
 
-      this.ws.on('error', (error) => {
+      this.ws.on('error', (error: Error) => {
         console.error('[ElevenLabs] WebSocket error:', error);
-        this.callbacks.onError?.(error as Error);
+        this.callbacks.onError?.(error);
         reject(error);
       });
 
