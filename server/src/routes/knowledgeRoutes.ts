@@ -9,23 +9,16 @@ const upload = multer({
 	limits: { fileSize: 15 * 1024 * 1024 }, // 15MB safety limit
 });
 
+// Rate limiter for knowledge ingestion endpoints
+// Uses default IP-based keyGenerator which properly handles IPv6 addresses
 const knowledgeLimiter = rateLimit({
 	windowMs: 60 * 60 * 1000, // 1 hour
 	limit: 60,
 	standardHeaders: true,
 	legacyHeaders: false,
 	message: 'Too many knowledge ingestion requests, please try again later.',
-	keyGenerator: (req) => {
-		const agentId = (req.body as any)?.agentId || (req.query as any)?.agentId;
-		if (agentId) {
-			return `agent:${agentId}`;
-		}
-		// Use socket.remoteAddress which properly handles IPv6 addresses
-		// This avoids the IPv6 keyGenerator warning
-		const ip = req.socket?.remoteAddress || req.ip || 'unknown';
-		// Normalize IPv6 mapped IPv4 addresses (::ffff:127.0.0.1 -> 127.0.0.1)
-		return ip.replace(/^::ffff:/, '');
-	},
+	// Using default keyGenerator (no custom keyGenerator) to avoid IPv6 ValidationError
+	// Default keyGenerator properly handles IPv6 addresses
 });
 
 const requireKnowledgeApiKey = (req: Request, res: Response, next: NextFunction) => {
