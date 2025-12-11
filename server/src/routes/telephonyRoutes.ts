@@ -1,5 +1,14 @@
 import { Router } from 'express';
-import { getAvailableNumbers, assignNumber, assignNumberFromBody, updateNumberSettings, getNumberStatus } from '../controllers/telephonyController';
+import {
+	getAvailableNumbers,
+	assignNumber,
+	assignNumberFromBody,
+	updateNumberSettings,
+	getNumberStatus,
+	activateNumber,
+	deactivateNumber,
+	handleProviderWebhook,
+} from '../controllers/telephonyController';
 
 const router = Router();
 
@@ -129,6 +138,60 @@ router.patch('/numbers/:phoneNumberId/settings', updateNumberSettings);
  *         description: Phone number status retrieved successfully
  */
 router.get('/numbers/:phoneNumberId/status', getNumberStatus);
+
+/**
+ * @swagger
+ * /telephony/agents/{agentId}/activate:
+ *   post:
+ *     summary: Activate an assigned phone number for an agent
+ *     tags: [Telephony]
+ *     parameters:
+ *       - in: path
+ *         name: agentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Phone number activated
+ */
+router.post('/agents/:agentId/activate', activateNumber);
+
+/**
+ * @swagger
+ * /telephony/agents/{agentId}/deactivate:
+ *   post:
+ *     summary: Deactivate an assigned phone number for an agent
+ *     tags: [Telephony]
+ *     parameters:
+ *       - in: path
+ *         name: agentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Phone number deactivated
+ */
+router.post('/agents/:agentId/deactivate', deactivateNumber);
+
+/**
+ * @swagger
+ * /telephony/webhooks/provider:
+ *   post:
+ *     summary: Provider webhook for call events/status updates
+ *     tags: [Telephony]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook accepted
+ */
+router.post('/webhooks/provider', handleProviderWebhook);
 
 export default router;
 

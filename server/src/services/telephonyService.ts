@@ -151,6 +151,64 @@ class TelephonyService {
     }
     return phoneNumber;
   }
+
+  async activateNumber(agentId: string): Promise<PhoneNumber> {
+    const agent = db.getAgent(agentId);
+    const phoneNumberId = agent?.telephony?.phoneNumberId;
+    if (!agent || !phoneNumberId) {
+      throw new BadRequestError('Agent has no assigned phone number');
+    }
+
+    if (this.useDatabase()) {
+      const updated = await telephonyRepository.setNumberStatus(agentId, phoneNumberId, 'active');
+      const refreshedAgent = db.getAgent(agentId);
+      if (refreshedAgent) {
+        refreshedAgent.telephony = { ...(refreshedAgent.telephony || {}), status: 'active' };
+        db.saveAgent(refreshedAgent);
+      }
+      return updated;
+    }
+
+    const phoneNumber = db.getPhoneNumber(phoneNumberId);
+    if (!phoneNumber) {
+      throw new NotFoundError('Phone number');
+    }
+    phoneNumber.status = 'active';
+    db.savePhoneNumber(phoneNumber);
+
+    agent.telephony = { ...(agent.telephony || {}), status: 'active' };
+    db.saveAgent(agent);
+    return phoneNumber;
+  }
+
+  async deactivateNumber(agentId: string): Promise<PhoneNumber> {
+    const agent = db.getAgent(agentId);
+    const phoneNumberId = agent?.telephony?.phoneNumberId;
+    if (!agent || !phoneNumberId) {
+      throw new BadRequestError('Agent has no assigned phone number');
+    }
+
+    if (this.useDatabase()) {
+      const updated = await telephonyRepository.setNumberStatus(agentId, phoneNumberId, 'inactive');
+      const refreshedAgent = db.getAgent(agentId);
+      if (refreshedAgent) {
+        refreshedAgent.telephony = { ...(refreshedAgent.telephony || {}), status: 'inactive' };
+        db.saveAgent(refreshedAgent);
+      }
+      return updated;
+    }
+
+    const phoneNumber = db.getPhoneNumber(phoneNumberId);
+    if (!phoneNumber) {
+      throw new NotFoundError('Phone number');
+    }
+    phoneNumber.status = 'inactive';
+    db.savePhoneNumber(phoneNumber);
+
+    agent.telephony = { ...(agent.telephony || {}), status: 'inactive' };
+    db.saveAgent(agent);
+    return phoneNumber;
+  }
 }
 
 export const telephonyService = new TelephonyService();

@@ -168,7 +168,200 @@ GET /api/elevenlabs/voices?locale=de
 POST /api/tests/{agentId}/run
 ```
 
-**Parameters:**
+### Telephony
+
+#### Get Available Numbers
+```http
+GET /api/telephony/numbers?country=CH
+```
+
+#### Assign Number to Agent
+```http
+POST /api/telephony/agents/{agentId}/assign
+Content-Type: application/json
+
+{ "phoneNumberId": "<uuid>" }
+```
+
+#### Activate / Deactivate Number
+```http
+POST /api/telephony/agents/{agentId}/activate
+POST /api/telephony/agents/{agentId}/deactivate
+```
+
+#### Update Number Settings
+```http
+PATCH /api/telephony/numbers/{phoneNumberId}/settings
+Content-Type: application/json
+
+{ "agentId": "<uuid>", "greetingMessage": "", "voicemailEnabled": true, "callRecordingEnabled": false }
+```
+
+#### Get Number Status
+```http
+GET /api/telephony/numbers/{phoneNumberId}/status
+```
+
+#### Provider Webhook
+```http
+POST /api/telephony/webhooks/provider
+```
+
+### Knowledge Ingestion
+
+#### List Documents
+```http
+GET /api/knowledge/documents?agentId=<uuid>
+```
+
+#### Upload Document (multipart)
+```http
+POST /api/knowledge/upload
+Content-Type: multipart/form-data
+
+agentId=<uuid>
+file=<binary>
+title=FAQ
+tags=pricing,faq
+```
+
+#### Scrape URL
+```http
+POST /api/knowledge/scrape
+Content-Type: application/json
+
+{ "agentId": "<uuid>", "url": "https://example.com/faq", "tags": ["faq"] }
+```
+
+#### Get Job Status
+```http
+GET /api/knowledge/jobs/{jobId}
+```
+
+### Payments / Billing
+
+#### Create Checkout Session
+```http
+POST /api/payments/create-session
+Content-Type: application/json
+
+{ "planId": "business", "customerEmail": "customer@example.com" }
+```
+
+#### Get Session Details
+```http
+GET /api/payments/session/{sessionId}
+```
+
+#### Stripe Webhook
+```http
+POST /api/payments/webhook
+```
+
+### ElevenLabs Real-Time Voice Streaming
+
+#### GET /api/voice-agent/elevenlabs-stream-token
+Get a session token for WebSocket real-time voice streaming via ElevenLabs Conversational API.
+
+**Request:**
+```http
+POST /api/voice-agent/elevenlabs-stream-token
+Content-Type: application/json
+
+{
+  "customerId": "customer123",
+  "agentId": "550e8400-e29b-41d4-a716-446655440000",
+  "voiceId": "pNInz6obpgDQGcFmaJgB",
+  "duration": 3600
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhZ2VudElkIjoiNTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIn0=",
+    "expiresIn": 3600
+  }
+}
+```
+
+#### WebSocket: /api/voice-agent/elevenlabs-stream
+Establish a WebSocket connection for real-time bidirectional voice conversation.
+
+**Connection URL:**
+```
+wss://api.aidevelo.ai/api/voice-agent/elevenlabs-stream?sessionId=<id>&customerId=<id>&agentId=<id>&voiceId=<id>
+```
+
+**Features:**
+- ✅ Real-time bidirectional voice conversation
+- ✅ Streaming audio output (no waiting for full response)
+- ✅ Server-side API key security (never exposed to client)
+- ✅ RAG context integration for knowledge-aware responses
+- ✅ Multi-language support per agent
+
+**Client Example:**
+```javascript
+const sessionId = 'session-' + Date.now();
+const ws = new WebSocket(
+  `wss://api.aidevelo.ai/api/voice-agent/elevenlabs-stream?` +
+  `sessionId=${sessionId}&customerId=cust123&agentId=550e8400-e29b-41d4-a716-446655440000`
+);
+
+ws.binaryType = 'arraybuffer';
+
+ws.onopen = () => {
+  console.log('✅ Connected to voice agent');
+};
+
+ws.onmessage = (event) => {
+  if (typeof event.data === 'string') {
+    const message = JSON.parse(event.data);
+    
+    if (message.type === 'connection_opened') {
+      console.log('🎤 Ready for voice input');
+    } else if (message.type === 'transcription') {
+      console.log('📝 User said:', message.text);
+      if (message.isFinal) console.log('✓ Final transcript');
+    } else if (message.type === 'error') {
+      console.error('❌', message.error);
+    }
+  } else if (event.data instanceof ArrayBuffer) {
+    // Agent response audio - play it
+    playAudio(event.data);
+  }
+};
+
+// Send text user input
+ws.send(JSON.stringify({
+  type: 'user_message',
+  text: 'Hallo, ich möchte einen Termin buchen.'
+}));
+
+// Send audio input (microphone recording)
+ws.send(audioBuffer);
+```
+
+**Message Format:**
+
+**Server → Client:**
+| Type | Payload | Description |
+|------|---------|-------------|
+| `connection_opened` | - | Connection established and ready |
+| `transcription` | `{text: string, isFinal: boolean}` | User speech transcribed in real-time |
+| `audio_chunk` | Binary WAV/PCM | Agent response audio streaming |
+| `error` | `{error: string}` | Error occurred |
+
+**Client → Server:**
+| Type | Payload | Description |
+|------|---------|-------------|
+| `user_message` | `{text: string}` | Send text for TTS conversion |
+| Binary data | WAV/PCM buffer | Audio from microphone/input |
+
+---
+
 - `agentId` (path, required): Agent UUID to test
 
 **Response:**

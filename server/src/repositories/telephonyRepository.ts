@@ -132,4 +132,45 @@ export const telephonyRepository = {
 
     return mapRow(rows[0]);
   },
+
+  async setNumberStatus(agentId: string, phoneNumberId: string, status: 'active' | 'inactive'): Promise<PhoneNumber> {
+    return transaction(async (client) => {
+      await ensureAgentExists(client, agentId);
+
+      const phoneRes = await client.query<PhoneNumberRow>(
+        `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
+         FROM phone_numbers
+         WHERE id = $1
+         FOR UPDATE`,
+        [phoneNumberId]
+      );
+
+      if (phoneRes.rowCount === 0) {
+        throw new NotFoundError('Phone number');
+      }
+
+      const phone = phoneRes.rows[0];
+      if (phone.assigned_agent_id !== agentId) {
+        throw new BadRequestError('Phone number not assigned to this agent');
+      }
+
+      await client.query(
+        `UPDATE phone_numbers
+         SET status = $1, updated_at = now()
+         WHERE id = $2`,
+        [status, phoneNumberId]
+      );
+
+      // Patch telephony blob on agent
+      await client.query(
+        `UPDATE agents
+         SET telephony = jsonb_set(COALESCE(telephony, '{}'::jsonb), '{status}', to_jsonb($1::text)),
+             updated_at = now()
+         WHERE id = $2`,
+        [status, agentId]
+      );
+
+      return mapRow({ ...phone, status });
+    });
+  },
 };

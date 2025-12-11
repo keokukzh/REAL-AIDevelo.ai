@@ -23,6 +23,7 @@ const optionalEnvVars = {
   DATABASE_URL: process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
+  KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
 };
 
 const validateEnv = () => {
@@ -90,5 +91,6 @@ export const config = {
   databaseUrl: optionalEnvVars.DATABASE_URL,
   redisUrl: optionalEnvVars.REDIS_URL,
   otlpExporterEndpoint: optionalEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT,
+  knowledgeApiKey: optionalEnvVars.KNOWLEDGE_API_KEY,
 };
 

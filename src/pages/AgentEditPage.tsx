@@ -536,16 +536,18 @@ const BusinessTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Firmenname *</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="companyName">Firmenname *</label>
           <input
+            id="companyName"
             value={form.companyName}
             onChange={(e) => onChange((prev) => ({ ...prev, companyName: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Branche</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="industry">Branche</label>
           <select
+            id="industry"
             value={form.industry}
             onChange={(e) => onChange((prev) => ({ ...prev, industry: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -558,16 +560,18 @@ const BusinessTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Stadt</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="city">Stadt</label>
           <input
+            id="city"
             value={form.city}
             onChange={(e) => onChange((prev) => ({ ...prev, city: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Website</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="website">Website</label>
           <input
+            id="website"
             value={form.website}
             onChange={(e) => onChange((prev) => ({ ...prev, website: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -578,8 +582,9 @@ const BusinessTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">E-Mail *</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="email">E-Mail *</label>
           <input
+            id="email"
             type="email"
             value={form.email}
             onChange={(e) => onChange((prev) => ({ ...prev, email: e.target.value }))}
@@ -587,8 +592,9 @@ const BusinessTab: React.FC<{
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Telefon</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="phone">Telefon</label>
           <input
+            id="phone"
             value={form.phone}
             onChange={(e) => onChange((prev) => ({ ...prev, phone: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -641,8 +647,9 @@ const VoiceTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Sprache</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="primaryLocale">Sprache</label>
           <select
+            id="primaryLocale"
             value={form.primaryLocale}
             onChange={(e) => onChange((prev) => ({ ...prev, primaryLocale: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -655,8 +662,9 @@ const VoiceTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Voice ID</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="voiceId">Voice ID</label>
           <input
+            id="voiceId"
             value={form.voiceId}
             onChange={(e) => onChange((prev) => ({ ...prev, voiceId: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none font-mono"
@@ -664,8 +672,9 @@ const VoiceTab: React.FC<{
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Modell</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="modelId">Modell</label>
           <input
+            id="modelId"
             value={form.modelId}
             onChange={(e) => onChange((prev) => ({ ...prev, modelId: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -673,21 +682,23 @@ const VoiceTab: React.FC<{
         </div>
         <div className="flex items-start gap-3">
           <input
+            id="recordingConsent"
             type="checkbox"
             checked={form.recordingConsent}
             onChange={(e) => onChange((prev) => ({ ...prev, recordingConsent: e.target.checked }))}
             className="mt-1 w-5 h-5 rounded border-white/20 bg-white/5 text-accent focus:ring-accent"
           />
-          <div>
+          <label htmlFor="recordingConsent" className="cursor-pointer select-none">
             <p className="font-semibold">Aufzeichnung aktivieren</p>
             <p className="text-sm text-gray-400">Optional für Qualitätssicherung und Training.</p>
-          </div>
+          </label>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm text-gray-400 mb-2">System Prompt</label>
+        <label className="block text-sm text-gray-400 mb-2" htmlFor="systemPrompt">System Prompt</label>
         <textarea
+          id="systemPrompt"
           value={form.systemPrompt}
           onChange={(e) => onChange((prev) => ({ ...prev, systemPrompt: e.target.value }))}
           rows={8}
@@ -764,8 +775,9 @@ const PhoneTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Land</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="numberCountry">Land</label>
           <select
+            id="numberCountry"
             value={numberCountry}
             onChange={(e) => onCountryChange(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
@@ -776,8 +788,9 @@ const PhoneTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Plan</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="planId">Plan</label>
           <select
+            id="planId"
             value={planId || ''}
             onChange={(e) => onPlanChange(e.target.value || undefined)}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"

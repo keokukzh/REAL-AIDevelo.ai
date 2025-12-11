@@ -133,3 +133,51 @@ export const getNumberStatus = async (req: Request, res: Response, next: NextFun
   }
 };
 
+/**
+ * Activate an assigned phone number for an agent
+ */
+export const activateNumber = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { agentId } = req.params;
+    if (!agentId) {
+      return next(new BadRequestError('agentId is required'));
+    }
+
+    const phoneNumber = await telephonyService.activateNumber(agentId);
+    res.json({ success: true, data: { agentId, phoneNumber } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Deactivate an assigned phone number for an agent
+ */
+export const deactivateNumber = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { agentId } = req.params;
+    if (!agentId) {
+      return next(new BadRequestError('agentId is required'));
+    }
+
+    const phoneNumber = await telephonyService.deactivateNumber(agentId);
+    res.json({ success: true, data: { agentId, phoneNumber } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Provider webhook handler (status updates, inbound events)
+ */
+export const handleProviderWebhook = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // TODO: verify signature using provider secret before trusting payload
+    const event = req.body;
+    console.log('[Telephony webhook] event received', event?.type || 'unknown');
+    res.status(200).json({ success: true });
+  } catch (error) {
+    next(new InternalServerError('Failed to process telephony webhook'));
+  }
+};
+

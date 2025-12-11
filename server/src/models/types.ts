@@ -186,6 +186,27 @@ export interface CallHistory {
   };
 }
 
+// Knowledge / RAG ingestion
+export type KnowledgeSourceType = 'upload' | 'url';
+export type KnowledgeStatus = 'queued' | 'processing' | 'ready' | 'failed';
+
+export interface KnowledgeDocument {
+  id: string;
+  agentId: string;
+  sourceType: KnowledgeSourceType;
+  title?: string;
+  url?: string;
+  locale?: string;
+  tags?: string[];
+  status: KnowledgeStatus;
+  chunkCount?: number;
+  error?: string;
+  fileName?: string;
+  fileType?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // RAG Document Types
 export interface RAGDocument {
   id: string;

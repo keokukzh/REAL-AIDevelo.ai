@@ -60,3 +60,4 @@ stripe-cli.zip
 .env.*.local
 server/.env
 server/.env.local
+.env.example

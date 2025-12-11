@@ -1,7 +1,6 @@
 import { WorkflowTask, TaskExecution } from '../types.js';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { setTimeout } from 'timers/promises';
+import { spawn } from 'node:child_process';
+import { platform } from 'node:process';
 
 /**
  * Execute shell commands
@@ -14,7 +13,7 @@ export class ShellTask {
     const command = task.command?.trim() || 'node -e "console.log(42)"';
 
     return new Promise((resolve, reject) => {
-      const isWindows = require('process').platform === 'win32';
+      const isWindows = platform === 'win32';
       const shell = isWindows ? 'powershell.exe' : 'sh';
       const shellArgs = isWindows ? ['-Command'] : ['-c'];
       

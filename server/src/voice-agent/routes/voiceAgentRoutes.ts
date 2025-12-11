@@ -6,6 +6,7 @@ import { ragQueryService } from '../rag/query';
 import { documentIngestionService } from '../rag/ingest';
 import { sessionStore } from '../voice/session';
 import { VoicePipelineHandler } from '../voice/handlers';
+import { ElevenLabsStreamingClient } from '../voice/elevenLabsStreaming';
 import { toolRegistry } from '../tools/toolRegistry';
 import { db } from '../../services/db';
 import { VoiceAgent } from '../../models/types';
@@ -199,16 +200,71 @@ router.delete('/call-session/:sessionId', (req: Request, res: Response) => {
 });
 
 /**
- * Setup WebSocket server for real-time call handling
+ * POST /api/voice-agent/elevenlabs-stream-token
+ * Get temporary token for ElevenLabs WebSocket connection
+ * Keeps API key server-side; frontend uses token with limited scope
+ */
+router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
+  try {
+    const { customerId, agentId, voiceId, duration = 3600 } = req.body;
+
+    if (!customerId || !agentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'customerId and agentId are required',
+      });
+    }
+
+    // In production, generate a signed token with exp claim
+    // For now, return agent-specific config (never expose API key)
+    const streamToken = {
+      agentId,
+      customerId,
+      voiceId: voiceId || undefined,
+      expiresIn: duration,
+      timestamp: Date.now(),
+    };
+
+    // In a real implementation, sign this token with a secret
+    // const signedToken = jwt.sign(streamToken, process.env.JWT_SECRET);
+
+    res.json({
+      success: true,
+      data: {
+        token: Buffer.from(JSON.stringify(streamToken)).toString('base64'),
+        expiresIn: duration,
+        // Frontend will connect via WebSocket using this config
+        // But actual API key is never exposed
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * Setup WebSocket server for real-time call handling and ElevenLabs streaming
  */
 export function setupWebSocketServer(httpServer: HTTPServer): void {
+  // WebSocket server for traditional call sessions
   const wss = new WebSocketServer({
     server: httpServer,
     path: '/api/voice-agent/call-session',
   });
 
-  const activePipelines = new Map<string, VoicePipelineHandler>();
+  // WebSocket server for ElevenLabs conversational API
+  const elevenLabsWss = new WebSocketServer({
+    server: httpServer,
+    path: '/api/voice-agent/elevenlabs-stream',
+  });
 
+  const activePipelines = new Map<string, VoicePipelineHandler>();
+  const activeElevenLabsClients = new Map<string, ElevenLabsStreamingClient>();
+
+  // Handle traditional call sessions
   wss.on('connection', async (ws: WebSocket, req) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const sessionId = url.searchParams.get('sessionId');
@@ -263,7 +319,103 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       ws.close(1011, 'Failed to initialize pipeline');
     }
   });
+
+  // Handle ElevenLabs conversational streaming
+  elevenLabsWss.on('connection', async (ws: WebSocket, req) => {
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    const sessionId = url.searchParams.get('sessionId');
+    const customerId = url.searchParams.get('customerId');
+    const agentId = url.searchParams.get('agentId');
+    const voiceId = url.searchParams.get('voiceId');
+
+    if (!sessionId || !customerId || !agentId) {
+      ws.close(1008, 'Missing required parameters');
+      return;
+    }
+
+    // Get agent info
+    const agent = db.getAgent(agentId);
+    if (!agent) {
+      ws.close(1008, 'Agent not found');
+      return;
+    }
+
+    // Create ElevenLabs streaming client
+    const client = new ElevenLabsStreamingClient(
+      {
+        agentId,
+        customerId,
+        voiceId: voiceId || agent.config.elevenLabs?.voiceId,
+        language: agent.config.primaryLocale || 'de',
+      },
+      {
+        onOpen: () => {
+          console.log(`[ElevenLabs] Streaming session opened: ${sessionId}`);
+          ws.send(JSON.stringify({ type: 'connection_opened' }));
+        },
+        onAudioChunk: (audio: Buffer) => {
+          // Send audio chunks to client as binary data
+          ws.send(audio, { binary: true });
+        },
+        onTranscription: (text: string, isFinal: boolean) => {
+          ws.send(JSON.stringify({
+            type: 'transcription',
+            text,
+            isFinal,
+          }));
+        },
+        onError: (error: Error) => {
+          console.error(`[ElevenLabs] Error in session ${sessionId}:`, error);
+          ws.send(JSON.stringify({
+            type: 'error',
+            error: error.message,
+          }));
+        },
+        onClose: () => {
+          console.log(`[ElevenLabs] Streaming session closed: ${sessionId}`);
+          ws.close();
+        },
+      }
+    );
+
+    try {
+      await client.connect();
+      activeElevenLabsClients.set(sessionId, client);
+
+      // Handle incoming messages from client
+      ws.on('message', (data: any) => {
+        try {
+          if (typeof data === 'string') {
+            // Text message (user input)
+            const message = JSON.parse(data);
+            if (message.type === 'user_message') {
+              client.sendUserMessage(message.text);
+            }
+          } else {
+            // Binary data (audio input)
+            client.sendAudioInput(data as Buffer);
+          }
+        } catch (error: any) {
+          console.error(`[ElevenLabs] Error processing message: ${error.message}`);
+          ws.send(JSON.stringify({
+            type: 'error',
+            error: 'Failed to process message',
+          }));
+        }
+      });
+
+      // Handle client disconnect
+      ws.on('close', () => {
+        client.disconnect();
+        activeElevenLabsClients.delete(sessionId);
+      });
+    } catch (error: any) {
+      console.error(`[ElevenLabs] Failed to initialize streaming: ${error.message}`);
+      ws.close(1011, 'Failed to initialize streaming');
+    }
+  });
 }
+
 
 export default router;
 
