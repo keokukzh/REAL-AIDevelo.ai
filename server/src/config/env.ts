@@ -85,6 +85,7 @@ export const config = {
     'http://localhost:5173', // Vite default port
     'https://aidevelo.ai', // Production frontend
     'https://www.aidevelo.ai', // Production frontend with www
+    'https://real-aideveloai-production.up.railway.app', // Production backend host
     'https://*.pages.dev', // Cloudflare Pages
     'https://*.railway.app', // Railway preview deployments
   ],

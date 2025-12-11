@@ -89,9 +89,13 @@ app.use(cors({
     if (!origin && !config.isProduction) {
       return callback(null, true);
     }
-    
-    // Allow if origin is in allowed list
-    if (origin && config.allowedOrigins.includes(origin)) {
+
+    const isWhitelisted =
+      (origin && config.allowedOrigins.includes(origin)) ||
+      (origin && origin.endsWith('.railway.app')) ||
+      (origin && origin.endsWith('.pages.dev'));
+
+    if (isWhitelisted) {
       callback(null, true);
     } else if (!origin) {
       // Allow requests with no origin in development
