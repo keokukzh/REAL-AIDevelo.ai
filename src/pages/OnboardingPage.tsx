@@ -275,11 +275,13 @@ export const OnboardingPage = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">Branche</label>
+                            <label htmlFor="industry-select" className="block text-sm font-medium mb-2">Branche</label>
                             <select
+                                id="industry-select"
                                 value={formData.industry || selectedTemplate?.industry || ''}
                                 onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none"
+                                aria-label="Branche auswählen"
                             >
                                 {industries.map((ind) => (
                                     <option key={ind.id} value={ind.value}>

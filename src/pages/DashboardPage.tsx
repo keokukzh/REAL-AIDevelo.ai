@@ -92,7 +92,7 @@ export const DashboardPage = () => {
     try {
       const res = await apiRequest<{ success: boolean; data: Agent }>('/agents/default', {
         method: 'POST',
-        body: JSON.stringify({ userId, userEmail }),
+        data: { userId, userEmail },
       });
 
       return res.data;
@@ -160,16 +160,31 @@ export const DashboardPage = () => {
 
   // Convert agents to card data format
   const agentCards: AgentCardData[] = useMemo(() => {
-    return agents.map(agent => ({
-      id: agent.id,
-      name: agent.businessProfile.companyName,
-      industry: agent.businessProfile.industry || 'Allgemein',
-      status: agent.status === 'live' ? 'active' : agent.status,
-      phoneNumber: agent.telephony?.phoneNumber,
-      callsToday: agent.metrics?.callsToday,
-      successRate: agent.metrics?.successRate,
-      isDefaultAgent: (agent as any).metadata?.isDefaultAgent,
-    }));
+    return agents.map(agent => {
+      // Map agent status to AgentCardData status
+      let cardStatus: AgentCardData['status'] = 'draft';
+      if (agent.status === 'live' || agent.status === 'active' || agent.status === 'production_ready') {
+        cardStatus = 'active';
+      } else if (agent.status === 'inactive') {
+        cardStatus = 'inactive';
+      } else if (agent.status === 'pending_activation' || agent.status === 'configuring') {
+        cardStatus = 'pending_activation';
+      } else {
+        cardStatus = 'draft';
+      }
+
+      const card: AgentCardData = {
+        id: agent.id,
+        name: agent.businessProfile.companyName,
+        industry: agent.businessProfile.industry || 'Allgemein',
+        status: cardStatus,
+        phoneNumber: agent.telephony?.phoneNumber,
+        callsToday: agent.metrics?.callsToday,
+        successRate: agent.metrics?.successRate,
+        isDefaultAgent: (agent as any).metadata?.isDefaultAgent,
+      };
+      return card;
+    });
   }, [agents]);
 
   // Filter agents based on search and filters
