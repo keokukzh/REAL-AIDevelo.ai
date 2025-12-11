@@ -24,3 +24,19 @@ vi.mock('framer-motion', async () => {
   };
 });
 
+// Provide matchMedia for components using it
+if (!window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+

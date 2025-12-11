@@ -85,8 +85,11 @@ if (config.isProduction) {
 // CORS Configuration - Restrict to allowed origins
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('[CORS] Checking origin:', origin, 'Allowed:', config.allowedOrigins);
+    
     // Allow requests with no origin (mobile apps, Postman, etc.) in development
     if (!origin && !config.isProduction) {
+      console.log('[CORS] Allowing request with no origin (development)');
       return callback(null, true);
     }
 
@@ -96,9 +99,11 @@ app.use(cors({
       (origin && origin.endsWith('.pages.dev'));
 
     if (isWhitelisted) {
+      console.log('[CORS] Allowing origin:', origin);
       callback(null, true);
     } else if (!origin) {
       // Allow requests with no origin in development
+      console.log('[CORS] Allowing request with no origin');
       callback(null, true);
     } else {
       // Log the rejected origin for debugging
@@ -122,9 +127,13 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply rate limiting to API routes (except health check). Keep the option to extend to a
-// redis-backed store later for distributed deployments.
+// Apply rate limiting to API routes (except health check and OPTIONS preflight).
+// Keep the option to extend to a redis-backed store later for distributed deployments.
 app.use((req, res, next) => {
+  // Skip rate limiting for OPTIONS (CORS preflight) and health checks
+  if (req.method === 'OPTIONS' || req.path === '/health') {
+    return next();
+  }
   if (req.path.startsWith('/api/') && req.path !== '/api') {
     return limiter(req, res, next);
   }
@@ -137,8 +146,12 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 
-// Request logging middleware (before routes)
+// Request logging middleware (after body parser)
 app.use((req: Request, res: Response, next: NextFunction) => {
+  // Skip logging for health checks to reduce noise
+  if (req.path === '/health') {
+    return next();
+  }
   console.log('[Request]', {
     method: req.method,
     path: req.path,
