@@ -1,12 +1,21 @@
 # 🚀 Backend auf Render deployen - SOFORT!
 
-## ✅ Supabase Connection String (aus deinem Bild):
+## ✅ Supabase Connection String:
 
 ```
 postgresql://postgres:jfH5dLfhBhdvQvIq@db.pdxdgfxhpyefqyouotat.supabase.co:5432/postgres
 ```
 
 ## 📝 Schritt-für-Schritt Render Deployment:
+
+### ⚠️ WICHTIG: OHNE Docker deployen (EINFACHER!)
+
+**Render Settings:**
+- **Root Directory:** `server` ⚠️ WICHTIG!
+- **Environment:** `Node` (NICHT Docker!)
+- **Build Command:** `npm install && npm run build`
+- **Start Command:** `npm start`
+- **Plan:** Free (kostenlos)
 
 ### 1. Render Account erstellen
 - Gehe zu https://render.com
@@ -23,7 +32,7 @@ postgresql://postgres:jfH5dLfhBhdvQvIq@db.pdxdgfxhpyefqyouotat.supabase.co:5432/
 - **Region:** Wähle nächstgelegenen (z.B. Frankfurt)
 - **Branch:** `main`
 - **Root Directory:** `server` ⚠️ WICHTIG!
-- **Environment:** `Node`
+- **Environment:** `Node` ⚠️ NICHT Docker!
 - **Build Command:** `npm install && npm run build`
 - **Start Command:** `npm start`
 - **Plan:** Free (kostenlos)
@@ -75,6 +84,7 @@ curl -X POST https://aidevelo-api.onrender.com/api/v1/agents \
 ## ⚠️ WICHTIG:
 
 - **Root Directory:** MUSS `server` sein!
+- **Environment:** MUSS `Node` sein (NICHT Docker!)
 - **Port:** Render verwendet Port 10000 (automatisch)
 - **DATABASE_URL:** Supabase Connection String (bereits korrekt!)
 
@@ -82,3 +92,7 @@ curl -X POST https://aidevelo-api.onrender.com/api/v1/agents \
 
 Nach diesen Schritten läuft alles online!
 
+## 🐳 Alternative: Mit Docker (Falls nötig)
+
+Falls du Docker verwenden willst, siehe `RENDER_DOCKERFILE_FIX.md` für Details.
+Aber **OHNE Docker ist einfacher und schneller!**

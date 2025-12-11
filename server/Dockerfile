@@ -6,8 +6,8 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-# Copy .npmrc if it exists (optional - will fail silently if not present)
-COPY .npmrc ./
+# Copy .npmrc if it exists (optional)
+COPY .npmrc* ./ || true
 
 # Install ALL dependencies (including dev for TypeScript build)
 RUN npm ci
@@ -16,12 +16,11 @@ RUN npm ci
 COPY . ./
 
 # Copy shared types into src/shared (needed for TypeScript compilation)
-# IMPORTANT: Build context MUST be repo root (not server/)
-# For Render/Railway: Set Root Directory to "." (repo root), not "server"
-# Then Dockerfile path should be: server/Dockerfile
+# Build context MUST be repo root for this to work
+# If build context is server/, use prepare-shared.js script instead
 COPY ../shared ./src/shared
 
-# Build TypeScript
+# Build TypeScript (prebuild script will copy shared types if needed)
 RUN npm run build
 
 # Production stage
@@ -31,7 +30,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY .npmrc ./
+COPY .npmrc* ./ || true
 
 # Install only production dependencies
 RUN npm ci --omit=dev
