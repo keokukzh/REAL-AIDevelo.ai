@@ -332,58 +332,38 @@ if (require.main === module) {
   // This allows the server to start and respond to /health immediately
   if (config.databaseUrl) {
     setImmediate(async () => {
-      try {
-        // Import and run migrations directly
-        const path = require('path');
-        const fs = require('fs');
-        const { Client } = require('pg');
-        
-        // Use DATABASE_PRIVATE_URL if available (Railway private network)
-        const dbUrl = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || config.databaseUrl;
-        console.log('[Database] [Background] Using database URL:', dbUrl.replace(/:[^:@]+@/, ':****@').split('@')[1] || 'database');
-        
-        // In Docker, migrations are in /app/db/migrations
-        // In development, they're in ../../db/migrations from dist/
-        const migrationsDir = fs.existsSync('/app/db/migrations') 
-          ? '/app/db/migrations'
-          : path.join(__dirname, '../../db/migrations');
-        
-        if (!fs.existsSync(migrationsDir)) {
-          console.warn('[Database] [Background] Migrations directory not found:', migrationsDir);
-          return;
-        }
+      const path = require('path');
+      const fs = require('fs');
+      const { getPool } = require('./services/database');
+      
+      console.log('[Database] [Background] Starting migrations...');
+      
+      // In Docker, migrations are in /app/db/migrations
+      // In development, they're in ../../db/migrations from dist/
+      const migrationsDir = fs.existsSync('/app/db/migrations') 
+        ? '/app/db/migrations'
+        : path.join(__dirname, '../../db/migrations');
+      
+      if (!fs.existsSync(migrationsDir)) {
+        console.warn('[Database] [Background] Migrations directory not found:', migrationsDir);
+        return;
+      }
 
-        const client = new Client({ 
-          connectionString: dbUrl,
-          connectionTimeoutMillis: 60000, // 60 seconds for Railway
-          ssl: config.isProduction ? { rejectUnauthorized: false } : false,
-          keepAlive: true,
-          keepAliveInitialDelayMillis: 10000,
-        });
-        
-        console.log('[Database] [Background] Attempting to connect...');
-        
-        // Retry logic for connection
-        let retries = 5;
-        let connected = false;
-        while (retries > 0 && !connected) {
-          try {
-            await client.connect();
-            connected = true;
-            console.log('[Database] [Background] ✅ Connected successfully');
-          } catch (connectError: any) {
-            retries--;
-            console.warn(`[Database] [Background] Connection failed (${retries} retries left):`, connectError.message);
-            if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s before retry
-            } else {
-              throw connectError;
-            }
-          }
-        }
-        
-        // Create migrations table
-        await client.query(`
+      // Use the existing pool instead of creating a new client
+      const pool = getPool();
+      if (!pool) {
+        console.error('[Database] [Background] Pool not available');
+        return;
+      }
+      
+      // Get a client from the pool for transactions
+      let client;
+      try {
+        client = await pool.connect();
+        console.log('[Database] [Background] ✅ Got client from pool');
+          
+          // Create migrations table
+          await client.query(`
           CREATE TABLE IF NOT EXISTS schema_migrations (
             id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
@@ -421,7 +401,6 @@ if (require.main === module) {
           }
         }
 
-        await client.end();
         console.log('[Database] [Background] ✅ All migrations completed successfully');
       } catch (migrationError: any) {
         console.error('[Database] [Background] ❌ Migration failed:', migrationError.message);
@@ -429,7 +408,12 @@ if (require.main === module) {
           code: migrationError.code,
           message: migrationError.message,
         });
-        // Don't exit - server can still run with in-memory storage
+      } finally {
+        // Release client back to pool (important!)
+        if (client) {
+          client.release();
+          console.log('[Database] [Background] Client released back to pool');
+        }
       }
     });
   } else {
