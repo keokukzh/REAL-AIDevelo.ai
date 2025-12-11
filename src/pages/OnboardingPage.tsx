@@ -96,7 +96,7 @@ export const OnboardingPage = () => {
             
             const response = await apiRequest<{ success: boolean; data: any }>('/agents', {
                 method: 'POST',
-                body: JSON.stringify(payload),
+                data: payload,
             });
 
             console.log('[Onboarding] Agent creation started:', response.data.id);
