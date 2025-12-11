@@ -16,6 +16,10 @@ const PHONE_NUMBER_LIMITS: Record<string, number> = {
 };
 
 export const createAgent = async (req: Request, res: Response, next: NextFunction) => {
+  // #region agent log
+  const fs = require('fs');
+  // #endregion
+  
   try {
     const { businessProfile, config, subscription, voiceCloning, purchaseId } = req.body;
     
@@ -29,7 +33,6 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     });
     
     // #region agent log
-    const fs = require('fs');
     try {
       fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:20',message:'createAgent controller entry',data:{hasBusinessProfile:!!businessProfile,hasConfig:!!config,companyName:businessProfile?.companyName,subscriptionPlanId:subscription?.planId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
     } catch (e) {
@@ -78,8 +81,9 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     };
     
     // #region agent log
-    const fs = require('fs');
-    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:62',message:'Before DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status,companyName:newAgent.businessProfile.companyName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
+    try {
+      fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:62',message:'Before DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status,companyName:newAgent.businessProfile.companyName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
+    } catch (e) {}
     // #endregion
     
     db.saveAgent(newAgent);

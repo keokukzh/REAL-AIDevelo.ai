@@ -36,6 +36,20 @@ export const userRepository = {
     return rows[0] ? mapRow(rows[0]) : null;
   },
 
+  async findById(id: string): Promise<User | null> {
+    if (!getPool()) return null;
+
+    const rows = await query<UserRow>(
+      `SELECT id, name, email, created_at
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [id]
+    );
+
+    return rows[0] ? mapRow(rows[0]) : null;
+  },
+
   async upsertUser(input: { id?: string; name: string; email?: string | null }): Promise<User> {
     const rows = await query<UserRow>(
       `INSERT INTO users (id, name, email)
