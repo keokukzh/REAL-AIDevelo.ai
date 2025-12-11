@@ -285,7 +285,7 @@ app.get('/metrics', (req: Request, res: Response) => {
 // Routes: Register all routes under a versioned router (v1) and keep top-level /api as a compat shim
 const v1Router = express.Router();
 
-v1Router.use('/agents', requireAuth, agentRoutes);
+v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
 v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
 v1Router.use('/payments', paymentRoutes);

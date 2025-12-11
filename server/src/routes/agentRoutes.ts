@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createAgent, getAgents, getAgentById, activateAgent, syncAgent, createDefaultAgent } from '../controllers/agentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
+import { requireAuth } from '../middleware/auth';
 import { db } from '../services/db';
 
 const router = Router();
@@ -144,7 +145,7 @@ router.post('/default', createDefaultAgent);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/', getAgents);
+router.get('/', requireAuth, getAgents);
 
 /**
  * @swagger
@@ -273,7 +274,7 @@ router.get('/templates', async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/:id', validateParams(AgentIdParamSchema), getAgentById);
+router.get('/:id', requireAuth, validateParams(AgentIdParamSchema), getAgentById);
 
 /**
  * @swagger
@@ -291,7 +292,7 @@ router.get('/:id', validateParams(AgentIdParamSchema), getAgentById);
  *       200:
  *         description: Agent activated successfully
  */
-router.patch('/:id/activate', validateParams(AgentIdParamSchema), activateAgent);
+router.patch('/:id/activate', requireAuth, validateParams(AgentIdParamSchema), activateAgent);
 
 /**
  * @swagger
@@ -309,7 +310,7 @@ router.patch('/:id/activate', validateParams(AgentIdParamSchema), activateAgent)
  *       200:
  *         description: Agent synchronized successfully
  */
-router.post('/:id/sync', validateParams(AgentIdParamSchema), syncAgent);
+router.post('/:id/sync', requireAuth, validateParams(AgentIdParamSchema), syncAgent);
 
 /**
  * @swagger
@@ -334,7 +335,7 @@ router.post('/:id/sync', validateParams(AgentIdParamSchema), syncAgent);
  *       200:
  *         description: Agent updated successfully
  */
-router.patch('/:id', validateParams(AgentIdParamSchema), async (req, res, next) => {
+router.patch('/:id', requireAuth, validateParams(AgentIdParamSchema), async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -385,7 +386,7 @@ router.patch('/:id', validateParams(AgentIdParamSchema), async (req, res, next) 
  *       200:
  *         description: Analytics retrieved successfully
  */
-router.get('/:id/analytics', validateParams(AgentIdParamSchema), async (req, res) => {
+router.get('/:id/analytics', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id } = req.params;
     const { startDate, endDate } = req.query;
@@ -434,7 +435,7 @@ router.get('/:id/analytics', validateParams(AgentIdParamSchema), async (req, res
  *       200:
  *         description: Call history retrieved successfully
  */
-router.get('/:id/calls', validateParams(AgentIdParamSchema), async (req, res) => {
+router.get('/:id/calls', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -467,7 +468,7 @@ router.get('/:id/calls', validateParams(AgentIdParamSchema), async (req, res) =>
  *       200:
  *         description: Documents retrieved successfully
  */
-router.get('/:id/rag/documents', validateParams(AgentIdParamSchema), async (req, res) => {
+router.get('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -500,7 +501,7 @@ router.get('/:id/rag/documents', validateParams(AgentIdParamSchema), async (req,
  *       200:
  *         description: Document uploaded successfully
  */
-router.post('/:id/rag/documents', validateParams(AgentIdParamSchema), async (req, res) => {
+router.post('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -543,7 +544,7 @@ router.post('/:id/rag/documents', validateParams(AgentIdParamSchema), async (req
  *       200:
  *         description: Document deleted successfully
  */
-router.delete('/:id/rag/documents/:docId', validateParams(AgentIdParamSchema), async (req, res) => {
+router.delete('/:id/rag/documents/:docId', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id, docId } = req.params;
     
