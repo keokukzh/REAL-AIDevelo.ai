@@ -82,6 +82,30 @@ if (config.isProduction) {
   app.use(helmet());
 }
 
+// Explicit OPTIONS handler BEFORE CORS - respond immediately to avoid Railway timeout
+app.options('*', (req: Request, res: Response) => {
+  const origin = req.headers.origin;
+  
+  // Check if origin is allowed
+  const isAllowed =
+    !origin ||
+    origin === 'https://aidevelo.ai' ||
+    origin.endsWith('.aidevelo.ai') ||
+    origin.endsWith('.pages.dev') ||
+    origin.endsWith('.railway.app') ||
+    origin.startsWith('http://localhost:') ||
+    origin.startsWith('http://127.0.0.1:');
+
+  if (isAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
+});
+
 // CORS Configuration - Allow all Cloudflare Pages and Railway origins
 app.use(cors({
   origin: (origin, callback) => {
