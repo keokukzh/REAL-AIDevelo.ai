@@ -39,7 +39,7 @@ export class CallLoggingService {
   static async logCall(record: Omit<CallRecord, 'id'>): Promise<CallRecord> {
     const pool = getPool();
     if (!pool) {
-      throw new AppError('Database connection not available', 503);
+      throw new AppError(503, 'Database connection not available');
     }
 
     const id = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -72,7 +72,7 @@ export class CallLoggingService {
   ): Promise<CallRecord> {
     const pool = getPool();
     if (!pool) {
-      throw new AppError('Database connection not available', 503);
+      throw new AppError(503, 'Database connection not available');
     }
 
     const fields: string[] = [];
@@ -122,7 +122,7 @@ export class CallLoggingService {
 
     const result = await pool.query(query, values);
     if (result.rows.length === 0) {
-      throw new AppError(`Call ${callId} not found`, 404);
+      throw new AppError(404, `Call ${callId} not found`);
     }
 
     return this.formatCallRecord(result.rows[0]);
@@ -134,7 +134,7 @@ export class CallLoggingService {
   static async getAgentMetrics(agentId: string, days = 7) {
     const pool = getPool();
     if (!pool) {
-      throw new AppError('Database connection not available', 503);
+      throw new AppError(503, 'Database connection not available');
     }
 
     const query = `
@@ -160,7 +160,7 @@ export class CallLoggingService {
   static async getUserCallHistory(customerId: string, limit = 100) {
     const pool = getPool();
     if (!pool) {
-      throw new AppError('Database connection not available', 503);
+      throw new AppError(503, 'Database connection not available');
     }
 
     const query = `
@@ -254,7 +254,7 @@ export class AuditLoggingService {
   static async getUserAuditLogs(userId: string, limit = 100) {
     const pool = getPool();
     if (!pool) {
-      throw new AppError('Database connection not available', 503);
+      throw new AppError(503, 'Database connection not available');
     }
 
     const query = `
