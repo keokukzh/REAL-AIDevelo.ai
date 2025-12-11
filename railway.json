@@ -10,8 +10,8 @@
     "restartPolicyMaxRetries": 10,
     "startCommand": "node dist/app.js",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 10,
-    "healthcheckInterval": 5,
-    "healthcheckStartDelay": 5
+    "healthcheckTimeout": 120,
+    "healthcheckInterval": 10,
+    "healthcheckStartDelay": 30
   }
 }
