@@ -319,125 +319,123 @@ if (require.main === module) {
   scheduleDailySync();
   scheduleStatusChecks();
   
-  httpServer.listen(config.port, async () => {
+  httpServer.listen(config.port, () => {
     console.log(`[AIDevelo Server] Running on http://localhost:${config.port}`);
     console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
     console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
     console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
     console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
-    
-    // Run migrations on startup if database is configured
-    if (config.databaseUrl) {
-      // Run migrations asynchronously (don't block server startup)
-      (async () => {
-        try {
-          // Import and run migrations directly
-          const path = require('path');
-          const fs = require('fs');
-          const { Client } = require('pg');
-          
-          // Use DATABASE_PRIVATE_URL if available (Railway private network)
-          const dbUrl = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || config.databaseUrl;
-          console.log('[Database] Using database URL:', dbUrl.replace(/:[^:@]+@/, ':****@').split('@')[1] || 'database');
-          
-          // In Docker, migrations are in /app/db/migrations
-          // In development, they're in ../../db/migrations from dist/
-          const migrationsDir = fs.existsSync('/app/db/migrations') 
-            ? '/app/db/migrations'
-            : path.join(__dirname, '../../db/migrations');
-          
-          if (!fs.existsSync(migrationsDir)) {
-            console.warn('[Database] Migrations directory not found:', migrationsDir);
-            return;
-          }
-
-          const client = new Client({ 
-            connectionString: dbUrl,
-            connectionTimeoutMillis: 30000, // 30 seconds for Railway
-            ssl: config.isProduction ? { rejectUnauthorized: false } : false,
-            keepAlive: true,
-            keepAliveInitialDelayMillis: 10000,
-          });
-          
-          console.log('[Database] Attempting to connect...');
-          
-          // Retry logic for connection
-          let retries = 3;
-          let connected = false;
-          while (retries > 0 && !connected) {
-            try {
-              await client.connect();
-              connected = true;
-              console.log('[Database] ✅ Connected successfully');
-            } catch (connectError: any) {
-              retries--;
-              if (retries > 0) {
-                console.warn(`[Database] Connection attempt failed, retrying... (${retries} attempts left)`);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
-              } else {
-                throw connectError;
-              }
-            }
-          }
-          
-          // Create migrations table
-          await client.query(`
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-              id SERIAL PRIMARY KEY,
-              name TEXT UNIQUE NOT NULL,
-              applied_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-            );
-          `);
-
-          // Read and apply migrations
-          const files = fs.readdirSync(migrationsDir)
-            .filter((f: string) => f.endsWith('.sql'))
-            .sort();
-          
-          console.log(`[Database] Found ${files.length} migration files`);
-          
-          for (const file of files) {
-            const name = file;
-            const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
-            if (res.rows.length > 0) {
-              console.log(`[Database] Skipping already-applied: ${name}`);
-              continue;
-            }
-
-            const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-            console.log(`[Database] Applying ${name}...`);
-            try {
-              await client.query('BEGIN');
-              await client.query(sql);
-              await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
-              await client.query('COMMIT');
-              console.log(`[Database] ✅ Applied ${name}`);
-            } catch (err: any) {
-              await client.query('ROLLBACK');
-              console.error(`[Database] ❌ Failed to apply ${name}:`, err.message);
-              throw err;
-            }
-          }
-
-          await client.end();
-          console.log('[Database] ✅ All migrations completed');
-        } catch (migrationError: any) {
-          console.error('[Database] ❌ Migration failed:', migrationError.message);
-          console.error('[Database] Error details:', {
-            code: migrationError.code,
-            errno: migrationError.errno,
-            syscall: migrationError.syscall,
-            hostname: migrationError.hostname,
-            port: migrationError.port,
-          });
-          // Don't exit - server can still run with in-memory storage
-        }
-      })();
-    } else {
-      console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
-      console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
-    }
+    console.log(`[AIDevelo Server] ✅ Server is READY for requests`);
   });
+
+  // Run migrations asynchronously in the background (non-blocking)
+  // This allows the server to start and respond to /health immediately
+  if (config.databaseUrl) {
+    setImmediate(async () => {
+      try {
+        // Import and run migrations directly
+        const path = require('path');
+        const fs = require('fs');
+        const { Client } = require('pg');
+        
+        // Use DATABASE_PRIVATE_URL if available (Railway private network)
+        const dbUrl = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || config.databaseUrl;
+        console.log('[Database] [Background] Using database URL:', dbUrl.replace(/:[^:@]+@/, ':****@').split('@')[1] || 'database');
+        
+        // In Docker, migrations are in /app/db/migrations
+        // In development, they're in ../../db/migrations from dist/
+        const migrationsDir = fs.existsSync('/app/db/migrations') 
+          ? '/app/db/migrations'
+          : path.join(__dirname, '../../db/migrations');
+        
+        if (!fs.existsSync(migrationsDir)) {
+          console.warn('[Database] [Background] Migrations directory not found:', migrationsDir);
+          return;
+        }
+
+        const client = new Client({ 
+          connectionString: dbUrl,
+          connectionTimeoutMillis: 60000, // 60 seconds for Railway
+          ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+          keepAlive: true,
+          keepAliveInitialDelayMillis: 10000,
+        });
+        
+        console.log('[Database] [Background] Attempting to connect...');
+        
+        // Retry logic for connection
+        let retries = 5;
+        let connected = false;
+        while (retries > 0 && !connected) {
+          try {
+            await client.connect();
+            connected = true;
+            console.log('[Database] [Background] ✅ Connected successfully');
+          } catch (connectError: any) {
+            retries--;
+            console.warn(`[Database] [Background] Connection failed (${retries} retries left):`, connectError.message);
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s before retry
+            } else {
+              throw connectError;
+            }
+          }
+        }
+        
+        // Create migrations table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            applied_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          );
+        `);
+
+        // Read and apply migrations
+        const files = fs.readdirSync(migrationsDir)
+          .filter((f: string) => f.endsWith('.sql'))
+          .sort();
+        
+        console.log(`[Database] [Background] Found ${files.length} migration files`);
+        
+        for (const file of files) {
+          const name = file;
+          const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
+          if (res.rows.length > 0) {
+            console.log(`[Database] [Background] Skipping already-applied: ${name}`);
+            continue;
+          }
+
+          const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+          console.log(`[Database] [Background] Applying ${name}...`);
+          try {
+            await client.query('BEGIN');
+            await client.query(sql);
+            await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
+            await client.query('COMMIT');
+            console.log(`[Database] [Background] ✅ Applied ${name}`);
+          } catch (err: any) {
+            await client.query('ROLLBACK');
+            console.error(`[Database] [Background] ❌ Failed to apply ${name}:`, err.message);
+            throw err;
+          }
+        }
+
+        await client.end();
+        console.log('[Database] [Background] ✅ All migrations completed successfully');
+      } catch (migrationError: any) {
+        console.error('[Database] [Background] ❌ Migration failed:', migrationError.message);
+        console.error('[Database] [Background] Error details:', {
+          code: migrationError.code,
+          message: migrationError.message,
+        });
+        // Don't exit - server can still run with in-memory storage
+      }
+    });
+  } else {
+    console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
+    console.warn('[Database] Set DATABASE_PRIVATE_URL or DATABASE_URL in Railway Variables.');
+  }
 }
 
 export default app;
