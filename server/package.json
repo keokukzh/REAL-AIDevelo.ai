@@ -8,6 +8,7 @@
     "dev": "nodemon src/app.ts",
     "wait-and-migrate": "ts-node scripts/waitAndMigrate.ts",
     "migrate": "ts-node scripts/runMigrations.ts",
+    "prebuild": "node scripts/prepare-shared.js",
     "build": "tsc",
     "docs:generate": "node -e \"const swagger = require('./dist/config/swagger'); const fs = require('fs'); fs.writeFileSync('./openapi.json', JSON.stringify(swagger.swaggerSpec, null, 2));\"",
     "docs:serve": "npm run build && npm start",
