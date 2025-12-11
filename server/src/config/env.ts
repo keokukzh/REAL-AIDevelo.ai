@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
+
+// Generate secure random secret (64 bytes = 512 bits)
+const generateSecret = () => crypto.randomBytes(64).toString('hex');
 
 // Base required env vars in any environment
 const requiredEnvVars = [
@@ -12,12 +16,11 @@ const productionRequiredEnvVars = [
   'ELEVENLABS_API_KEY',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET'
+  // JWT secrets removed - will be auto-generated if missing
 ];
 
-// Optional env vars (with defaults)
-const optionalEnvVars = {
+// Optional env vars (with defaults) - computed after validateEnv sets defaults
+const getOptionalEnvVars = () => ({
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -26,14 +29,31 @@ const optionalEnvVars = {
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
   KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
-  JWT_SECRET: process.env.JWT_SECRET || 'dev-jwt-secret',
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
-};
+  // JWT secrets: use process.env (which will have generated values from validateEnv if missing)
+  JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? generateSecret() : 'dev-jwt-secret'),
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || (process.env.NODE_ENV === 'production' ? generateSecret() : 'dev-refresh-secret'),
+});
 
 const validateEnv = () => {
   // Check for NODE_ENV (required)
   if (!process.env.NODE_ENV) {
     process.env.NODE_ENV = 'development';
+  }
+  
+  // Generate JWT secrets if missing in production
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.JWT_SECRET) {
+      const secret = generateSecret();
+      process.env.JWT_SECRET = secret;
+      console.warn('⚠️  JWT_SECRET not set - generated secure random secret (this will change on restart)');
+      console.warn('   For production, set JWT_SECRET in Railway environment variables for persistence.');
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      const secret = generateSecret();
+      process.env.JWT_REFRESH_SECRET = secret;
+      console.warn('⚠️  JWT_REFRESH_SECRET not set - generated secure random secret (this will change on restart)');
+      console.warn('   For production, set JWT_REFRESH_SECRET in Railway environment variables for persistence.');
+    }
   }
   
   // Check for ELEVENLABS_API_KEY (warning in dev, required in production)
@@ -68,8 +88,11 @@ const validateEnv = () => {
   }
 };
 
-// Validate on import
+// Validate on import (this will set JWT secrets in process.env if missing)
 validateEnv();
+
+// Get optional env vars after validation
+const optionalEnvVars = getOptionalEnvVars();
 
 const apiKey = process.env.ELEVENLABS_API_KEY || '';
 const isApiKeyValid = apiKey && !apiKey.includes('your_') && !apiKey.includes('placeholder') && apiKey !== 'PLACEHOLDER_FOR_TESTING';
