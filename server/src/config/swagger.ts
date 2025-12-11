@@ -19,7 +19,7 @@ RESTful API for managing AI Voice Agents for Swiss SMEs.
 - Swiss compliance (nDSG) focused
 
 ## Authentication
-Currently, the API does not require authentication. **This should be implemented before production deployment.**
+Currently, the API does not require authentication. **This should be implemented before production deployment.** Knowledge ingestion endpoints can be protected via \`KNOWLEDGE_API_KEY\` using the \`x-api-key\` header or a Bearer token.
 
 ## Rate Limiting
 API endpoints are rate-limited to 100 requests per 15 minutes per IP address.
@@ -63,6 +63,22 @@ For support, please contact the development team.
       {
         name: 'Health',
         description: 'Health check endpoints'
+      },
+      {
+        name: 'Knowledge',
+        description: 'Knowledge ingestion and retrieval'
+      },
+      {
+        name: 'Telephony',
+        description: 'Phone number assignment, activation, and webhooks'
+      },
+      {
+        name: 'Payments',
+        description: 'Payment and billing operations (Stripe)'
+      },
+      {
+        name: 'Voice',
+        description: 'Voice cloning and media endpoints'
       }
     ],
     components: {
@@ -337,6 +353,59 @@ For support, please contact the development team.
                 }
               }
             }
+          }
+        },
+        KnowledgeDocument: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', example: 'a3d8e9b2-5f8c-4d2d-9c2c-1f9b2a1c3d4e' },
+            agentId: { type: 'string', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000' },
+            sourceType: { type: 'string', enum: ['upload', 'url'], example: 'upload' },
+            title: { type: 'string', example: 'Pricing FAQ' },
+            url: { type: 'string', format: 'uri', nullable: true, example: 'https://example.com/faq' },
+            locale: { type: 'string', example: 'de-CH' },
+            tags: { type: 'array', items: { type: 'string' }, example: ['pricing', 'faq'] },
+            status: { type: 'string', enum: ['queued', 'processing', 'ready', 'failed'], example: 'ready' },
+            chunkCount: { type: 'integer', example: 24 },
+            error: { type: 'string', nullable: true, example: 'Failed to parse PDF' },
+            fileName: { type: 'string', example: 'pricing.pdf' },
+            fileType: { type: 'string', example: 'application/pdf' },
+            createdAt: { type: 'string', format: 'date-time', example: '2024-02-01T10:00:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', example: '2024-02-01T10:05:00Z' }
+          }
+        },
+        KnowledgeJob: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: { $ref: '#/components/schemas/KnowledgeDocument' },
+            message: { type: 'string', example: 'Upload queued for ingestion' }
+          }
+        },
+        PhoneNumber: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', example: '8c3c5f4e-2b7f-4f4f-9b4a-1a2b3c4d5e6f' },
+            providerSid: { type: 'string', example: 'PNxxxxxxxx' },
+            number: { type: 'string', example: '+41445556677' },
+            country: { type: 'string', example: 'CH' },
+            status: { type: 'string', enum: ['available', 'assigned', 'active', 'inactive'], example: 'assigned' },
+            capabilities: {
+              type: 'object',
+              properties: {
+                voice: { type: 'boolean', example: true },
+                sms: { type: 'boolean', example: false }
+              }
+            },
+            assignedAgentId: { type: 'string', format: 'uuid', nullable: true },
+            metadata: { type: 'object', additionalProperties: true, nullable: true }
+          }
+        },
+        PaymentSession: {
+          type: 'object',
+          properties: {
+            sessionId: { type: 'string', example: 'cs_test_a1B2C3D4E5' },
+            url: { type: 'string', format: 'uri', example: 'https://checkout.stripe.com/c/pay/cs_test_a1B2C3D4E5' }
           }
         }
       },

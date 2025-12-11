@@ -1,0 +1,2300 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AIDevelo.ai API",
+    "version": "1.0.0",
+    "description": "\n# AIDevelo.ai API Documentation\n\nRESTful API for managing AI Voice Agents for Swiss SMEs.\n\n## Features\n- Create and manage voice agents\n- Integrate with ElevenLabs for voice synthesis\n- Run automated tests on agents\n- Swiss compliance (nDSG) focused\n\n## Authentication\nCurrently, the API does not require authentication. **This should be implemented before production deployment.** Knowledge ingestion endpoints can be protected via `KNOWLEDGE_API_KEY` using the `x-api-key` header or a Bearer token.\n\n## Rate Limiting\nAPI endpoints are rate-limited to 100 requests per 15 minutes per IP address.\n\n## Base URL\n`http://localhost:5000`\n\n## Support\nFor support, please contact the development team.\n      ",
+    "contact": {
+      "name": "AIDevelo.ai Support",
+      "email": "support@aidevelo.ai"
+    },
+    "license": {
+      "name": "ISC",
+      "url": "https://opensource.org/licenses/ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Agents",
+      "description": "Operations for managing AI voice agents"
+    },
+    {
+      "name": "ElevenLabs",
+      "description": "Operations for ElevenLabs voice integration"
+    },
+    {
+      "name": "Tests",
+      "description": "Operations for running automated tests on agents"
+    },
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Knowledge",
+      "description": "Knowledge ingestion and retrieval"
+    },
+    {
+      "name": "Telephony",
+      "description": "Phone number assignment, activation, and webhooks"
+    },
+    {
+      "name": "Payments",
+      "description": "Payment and billing operations (Stripe)"
+    },
+    {
+      "name": "Voice",
+      "description": "Voice cloning and media endpoints"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details (validation errors, etc.)",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "Response data"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "BusinessProfile": {
+        "type": "object",
+        "required": [
+          "companyName",
+          "industry",
+          "location",
+          "contact",
+          "openingHours"
+        ],
+        "properties": {
+          "companyName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Müller Sanitär AG",
+            "description": "Company name"
+          },
+          "industry": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Handwerk / Sanitär",
+            "description": "Industry sector"
+          },
+          "website": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://www.mueller-sanitaer.ch",
+            "description": "Company website URL"
+          },
+          "location": {
+            "type": "object",
+            "required": [
+              "country",
+              "city"
+            ],
+            "properties": {
+              "country": {
+                "type": "string",
+                "enum": [
+                  "CH"
+                ],
+                "example": "CH",
+                "description": "Country code (currently only CH supported)"
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50,
+                "example": "Zürich",
+                "description": "City name"
+              }
+            }
+          },
+          "contact": {
+            "type": "object",
+            "required": [
+              "phone",
+              "email"
+            ],
+            "properties": {
+              "phone": {
+                "type": "string",
+                "pattern": "^[\\d\\s\\+\\-\\(\\)]+$",
+                "example": "+41 44 123 45 67",
+                "description": "Phone number"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "info@mueller-sanitaer.ch",
+                "description": "Email address"
+              }
+            }
+          },
+          "openingHours": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "Mon-Fri": "08:00-18:00",
+              "Sat": "09:00-12:00"
+            },
+            "description": "Opening hours by day/period"
+          }
+        }
+      },
+      "AgentConfig": {
+        "type": "object",
+        "required": [
+          "primaryLocale",
+          "fallbackLocales",
+          "elevenLabs"
+        ],
+        "properties": {
+          "primaryLocale": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[A-Z]{2}$",
+            "example": "de-CH",
+            "description": "Primary locale (language-country code)"
+          },
+          "fallbackLocales": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "example": [
+              "en-US",
+              "fr-CH"
+            ],
+            "description": "Fallback locales if primary is not available"
+          },
+          "systemPrompt": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true,
+            "example": "You are a helpful assistant...",
+            "description": "Custom system prompt (optional, will be generated if not provided)"
+          },
+          "elevenLabs": {
+            "type": "object",
+            "required": [
+              "voiceId",
+              "modelId"
+            ],
+            "properties": {
+              "voiceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50,
+                "example": "21m00Tcm4TlvDq8ikWAM",
+                "description": "ElevenLabs voice ID"
+              },
+              "modelId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50,
+                "example": "eleven_turbo_v2_5",
+                "description": "ElevenLabs model ID"
+              }
+            }
+          }
+        }
+      },
+      "VoiceAgent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Internal agent ID (UUID)"
+          },
+          "elevenLabsAgentId": {
+            "type": "string",
+            "nullable": true,
+            "example": "agent_abc123",
+            "description": "External ElevenLabs agent ID"
+          },
+          "businessProfile": {
+            "$ref": "#/components/schemas/BusinessProfile"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgentConfig"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "configuring",
+              "production_ready",
+              "live"
+            ],
+            "example": "production_ready",
+            "description": "Agent status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00Z",
+            "description": "Creation timestamp"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00Z",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "businessProfile",
+          "config",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateAgentRequest": {
+        "type": "object",
+        "required": [
+          "businessProfile",
+          "config"
+        ],
+        "properties": {
+          "businessProfile": {
+            "$ref": "#/components/schemas/BusinessProfile"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgentConfig"
+          }
+        }
+      },
+      "Voice": {
+        "type": "object",
+        "properties": {
+          "voice_id": {
+            "type": "string",
+            "example": "21m00Tcm4TlvDq8ikWAM"
+          },
+          "name": {
+            "type": "string",
+            "example": "Rachel"
+          },
+          "category": {
+            "type": "string",
+            "example": "premade"
+          }
+        }
+      },
+      "TestResult": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00Z"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 95
+          },
+          "passed": {
+            "type": "boolean",
+            "example": true
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "case": {
+                  "type": "string",
+                  "example": "Greeting"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "passed"
+                },
+                "latencyMs": {
+                  "type": "number",
+                  "example": 450
+                }
+              }
+            }
+          }
+        }
+      },
+      "KnowledgeDocument": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a3d8e9b2-5f8c-4d2d-9c2c-1f9b2a1c3d4e"
+          },
+          "agentId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "upload",
+              "url"
+            ],
+            "example": "upload"
+          },
+          "title": {
+            "type": "string",
+            "example": "Pricing FAQ"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://example.com/faq"
+          },
+          "locale": {
+            "type": "string",
+            "example": "de-CH"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "pricing",
+              "faq"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "ready",
+              "failed"
+            ],
+            "example": "ready"
+          },
+          "chunkCount": {
+            "type": "integer",
+            "example": 24
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "example": "Failed to parse PDF"
+          },
+          "fileName": {
+            "type": "string",
+            "example": "pricing.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-02-01T10:00:00Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-02-01T10:05:00Z"
+          }
+        }
+      },
+      "KnowledgeJob": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeDocument"
+          },
+          "message": {
+            "type": "string",
+            "example": "Upload queued for ingestion"
+          }
+        }
+      },
+      "PhoneNumber": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "8c3c5f4e-2b7f-4f4f-9b4a-1a2b3c4d5e6f"
+          },
+          "providerSid": {
+            "type": "string",
+            "example": "PNxxxxxxxx"
+          },
+          "number": {
+            "type": "string",
+            "example": "+41445556677"
+          },
+          "country": {
+            "type": "string",
+            "example": "CH"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "assigned",
+              "active",
+              "inactive"
+            ],
+            "example": "assigned"
+          },
+          "capabilities": {
+            "type": "object",
+            "properties": {
+              "voice": {
+                "type": "boolean",
+                "example": true
+              },
+              "sms": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          },
+          "assignedAgentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          }
+        }
+      },
+      "PaymentSession": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "example": "cs_test_a1B2C3D4E5"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://checkout.stripe.com/c/pay/cs_test_a1B2C3D4E5"
+          }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Validation error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "error": "Validation failed",
+              "details": [
+                {
+                  "path": [
+                    "businessProfile",
+                    "companyName"
+                  ],
+                  "message": "Company name is required"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "error": "Agent not found"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "error": "Internal Server Error"
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Too many requests from this IP, please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/agents": {
+      "post": {
+        "summary": "Create a new AI voice agent",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Creates a new voice agent with business profile and configuration. The agent will be registered with ElevenLabs and stored in the database.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentRequest"
+              },
+              "example": {
+                "businessProfile": {
+                  "companyName": "Müller Sanitär AG",
+                  "industry": "Handwerk / Sanitär",
+                  "website": "https://www.mueller-sanitaer.ch",
+                  "location": {
+                    "country": "CH",
+                    "city": "Zürich"
+                  },
+                  "contact": {
+                    "phone": "+41 44 123 45 67",
+                    "email": "info@mueller-sanitaer.ch"
+                  },
+                  "openingHours": {
+                    "Mon-Fri": "08:00-18:00",
+                    "Sat": "09:00-12:00"
+                  }
+                },
+                "config": {
+                  "primaryLocale": "de-CH",
+                  "fallbackLocales": [
+                    "en-US"
+                  ],
+                  "elevenLabs": {
+                    "voiceId": "21m00Tcm4TlvDq8ikWAM",
+                    "modelId": "eleven_turbo_v2_5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceAgent"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all agents",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Retrieves a list of all voice agents in the system",
+        "responses": {
+          "200": {
+            "description": "List of agents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VoiceAgent"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "id": "123e4567-e89b-12d3-a456-426614174000",
+                      "elevenLabsAgentId": "agent_abc123",
+                      "businessProfile": {
+                        "companyName": "Müller Sanitär AG",
+                        "industry": "Handwerk / Sanitär"
+                      },
+                      "config": {
+                        "primaryLocale": "de-CH"
+                      },
+                      "status": "production_ready",
+                      "createdAt": "2024-01-15T10:30:00Z",
+                      "updatedAt": "2024-01-15T10:30:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/agents/default": {
+      "post": {
+        "summary": "Create a default agent for a new user",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Auto-provisions a standard agent with default configuration. Used during user registration.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID to associate the agent with"
+                  },
+                  "userEmail": {
+                    "type": "string",
+                    "description": "User email for personalization (optional)"
+                  }
+                }
+              },
+              "example": {
+                "userId": "user_123abc",
+                "userEmail": "user@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default agent created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceAgent"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default agent already exists for this user"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/agents/templates": {
+      "get": {
+        "summary": "Get available agent templates",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Retrieves a list of all available agent templates",
+        "responses": {
+          "200": {
+            "description": "Templates retrieved successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}": {
+      "get": {
+        "summary": "Get agent by ID",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Retrieves a specific voice agent by its UUID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Agent UUID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceAgent"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid UUID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update an agent",
+        "tags": [
+          "Agents"
+        ],
+        "description": "Updates an existing agent's configuration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent updated successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/activate": {
+      "patch": {
+        "summary": "Activate an agent",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent activated successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/sync": {
+      "post": {
+        "summary": "Sync agent with ElevenLabs",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent synchronized successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/analytics": {
+      "get": {
+        "summary": "Get agent analytics",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics retrieved successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/calls": {
+      "get": {
+        "summary": "Get call history for an agent",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Call history retrieved successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/rag/documents": {
+      "get": {
+        "summary": "Get RAG documents for an agent",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a document for RAG",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document uploaded successfully"
+          }
+        }
+      }
+    },
+    "/agents/{id}/rag/documents/{docId}": {
+      "delete": {
+        "summary": "Delete a RAG document",
+        "tags": [
+          "Agents"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "docId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document deleted successfully"
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user and auto-provision a default agent",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created and default agent provisioned when applicable"
+          }
+        }
+      }
+    },
+    "/calendar/{provider}/auth": {
+      "get": {
+        "summary": "Get OAuth URL for calendar provider",
+        "tags": [
+          "Calendar"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "google",
+                "outlook"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth URL generated successfully"
+          }
+        }
+      }
+    },
+    "/calendar/{provider}/callback": {
+      "get": {
+        "summary": "Handle OAuth callback",
+        "tags": [
+          "Calendar"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar connected successfully"
+          }
+        }
+      }
+    },
+    "/elevenlabs/voices": {
+      "get": {
+        "summary": "Get available voices from ElevenLabs",
+        "tags": [
+          "ElevenLabs"
+        ],
+        "description": "Retrieves a list of available voices from ElevenLabs API, filtered for language suitability. Returns top 10 voices to avoid payload bloat.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "schema": {
+              "type": "string",
+              "default": "de",
+              "example": "de"
+            },
+            "description": "Locale code for filtering voices (currently not actively filtered, but parameter is accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of voices retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Voice"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "voice_id": "21m00Tcm4TlvDq8ikWAM",
+                      "name": "Rachel",
+                      "category": "premade"
+                    },
+                    {
+                      "voice_id": "EXAVITQu4vr4xnSDxMaL",
+                      "name": "Sarah",
+                      "category": "premade"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/elevenlabs/generate-speech": {
+      "post": {
+        "summary": "Generate speech from text using ElevenLabs TTS",
+        "tags": [
+          "ElevenLabs"
+        ],
+        "description": "Converts text to speech using the specified voice. Returns base64-encoded audio.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Text to convert to speech",
+                    "example": "Hallo! Ich bin dein neuer digitaler Zwilling."
+                  },
+                  "voiceId": {
+                    "type": "string",
+                    "description": "ElevenLabs voice ID (optional, defaults to Rachel)",
+                    "example": "21m00Tcm4TlvDq8ikWAM"
+                  },
+                  "modelId": {
+                    "type": "string",
+                    "description": "ElevenLabs model ID (optional, defaults to eleven_multilingual_v2)",
+                    "example": "eleven_multilingual_v2"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Speech generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "audioBase64": {
+                          "type": "string",
+                          "description": "Base64-encoded audio data"
+                        },
+                        "voiceId": {
+                          "type": "string"
+                        },
+                        "modelId": {
+                          "type": "string"
+                        },
+                        "textLength": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/elevenlabs/test": {
+      "get": {
+        "summary": "Test ElevenLabs API connection",
+        "tags": [
+          "ElevenLabs"
+        ],
+        "description": "Tests the connection to ElevenLabs API by validating the API key, fetching user info, and testing TTS generation",
+        "responses": {
+          "200": {
+            "description": "Connection test successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "apiKeyValid": {
+                          "type": "boolean"
+                        },
+                        "subscription": {
+                          "type": "object"
+                        },
+                        "voicesCount": {
+                          "type": "number"
+                        },
+                        "ttsTest": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/enterprise/contact": {
+      "post": {
+        "summary": "Submit enterprise contact request",
+        "tags": [
+          "Enterprise"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "company",
+                  "email",
+                  "message"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contact request submitted successfully"
+          }
+        }
+      }
+    },
+    "/knowledge/documents": {
+      "get": {
+        "summary": "List knowledge documents for an agent",
+        "tags": [
+          "Knowledge"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved"
+          }
+        }
+      }
+    },
+    "/knowledge/upload": {
+      "post": {
+        "summary": "Queue a document upload for ingestion",
+        "tags": [
+          "Knowledge"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId",
+                  "file"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "locale": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "Comma-separated tags or JSON array string"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Upload queued"
+          }
+        }
+      }
+    },
+    "/knowledge/scrape": {
+      "post": {
+        "summary": "Queue a URL scrape for ingestion",
+        "tags": [
+          "Knowledge"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId",
+                  "url"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "locale": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Scrape queued"
+          }
+        }
+      }
+    },
+    "/knowledge/jobs/{jobId}": {
+      "get": {
+        "summary": "Get knowledge ingest job status",
+        "tags": [
+          "Knowledge"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status"
+          }
+        }
+      }
+    },
+    "/onboarding/ai-assistant": {
+      "post": {
+        "summary": "Get AI assistant response for onboarding",
+        "tags": [
+          "Onboarding"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  },
+                  "currentTask": {
+                    "type": "string"
+                  },
+                  "formData": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI response generated successfully"
+          }
+        }
+      }
+    },
+    "/payments/create-session": {
+      "post": {
+        "summary": "Create a payment checkout session",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planId"
+                ],
+                "properties": {
+                  "planId": {
+                    "type": "string",
+                    "example": "business"
+                  },
+                  "customerEmail": {
+                    "type": "string",
+                    "example": "customer@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sessionId": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/session/{sessionId}": {
+      "get": {
+        "summary": "Get payment session details",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details retrieved successfully"
+          }
+        }
+      }
+    },
+    "/payments/webhook": {
+      "post": {
+        "summary": "Stripe webhook endpoint",
+        "tags": [
+          "Payments"
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully"
+          }
+        }
+      }
+    },
+    "/purchases": {
+      "post": {
+        "summary": "Create a purchase record",
+        "tags": [
+          "Purchases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planId",
+                  "planName",
+                  "customerEmail",
+                  "purchaseId"
+                ],
+                "properties": {
+                  "planId": {
+                    "type": "string"
+                  },
+                  "planName": {
+                    "type": "string"
+                  },
+                  "customerEmail": {
+                    "type": "string"
+                  },
+                  "purchaseId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Purchase created successfully"
+          }
+        }
+      }
+    },
+    "/purchases/{purchaseId}/link": {
+      "post": {
+        "summary": "Link purchase to agent",
+        "tags": [
+          "Purchases"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "purchaseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Purchase linked successfully"
+          }
+        }
+      }
+    },
+    "/purchases/agent/{agentId}": {
+      "get": {
+        "summary": "Get purchase by agent ID",
+        "tags": [
+          "Purchases"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purchase retrieved successfully"
+          }
+        }
+      }
+    },
+    "/sync/agents/{agentId}": {
+      "post": {
+        "summary": "Sync agent with ElevenLabs",
+        "tags": [
+          "Sync"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent synchronized successfully"
+          }
+        }
+      }
+    },
+    "/sync/agents": {
+      "post": {
+        "summary": "Sync all agents with ElevenLabs",
+        "tags": [
+          "Sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "All agents synchronized"
+          }
+        }
+      }
+    },
+    "/sync/webhook": {
+      "post": {
+        "summary": "Handle ElevenLabs webhook",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "event",
+                  "timestamp"
+                ],
+                "properties": {
+                  "event": {
+                    "type": "string"
+                  },
+                  "agent_id": {
+                    "type": "string"
+                  },
+                  "phone_number_id": {
+                    "type": "string"
+                  },
+                  "voice_id": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "object"
+                  },
+                  "timestamp": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully"
+          }
+        }
+      }
+    },
+    "/telephony/numbers": {
+      "get": {
+        "summary": "Get available phone numbers",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "country",
+            "schema": {
+              "type": "string",
+              "default": "CH"
+            }
+          },
+          {
+            "in": "query",
+            "name": "planId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available phone numbers retrieved successfully"
+          }
+        }
+      }
+    },
+    "/telephony/agents/{agentId}/assign": {
+      "post": {
+        "summary": "Assign phone number to agent",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumberId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phone number assigned successfully"
+          }
+        }
+      }
+    },
+    "/telephony/assign": {
+      "post": {
+        "summary": "Assign phone number to agent (body only)",
+        "tags": [
+          "Telephony"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId",
+                  "phoneNumberId"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "phoneNumberId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phone number assigned successfully"
+          }
+        }
+      }
+    },
+    "/telephony/numbers/{phoneNumberId}/settings": {
+      "patch": {
+        "summary": "Update phone number settings",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "phoneNumberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentId"
+                ],
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "greetingMessage": {
+                    "type": "string"
+                  },
+                  "voicemailEnabled": {
+                    "type": "boolean"
+                  },
+                  "callRecordingEnabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully"
+          }
+        }
+      }
+    },
+    "/telephony/numbers/{phoneNumberId}/status": {
+      "get": {
+        "summary": "Get phone number status",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "phoneNumberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone number status retrieved successfully"
+          }
+        }
+      }
+    },
+    "/telephony/agents/{agentId}/activate": {
+      "post": {
+        "summary": "Activate an assigned phone number for an agent",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone number activated"
+          }
+        }
+      }
+    },
+    "/telephony/agents/{agentId}/deactivate": {
+      "post": {
+        "summary": "Deactivate an assigned phone number for an agent",
+        "tags": [
+          "Telephony"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone number deactivated"
+          }
+        }
+      }
+    },
+    "/telephony/webhooks/provider": {
+      "post": {
+        "summary": "Provider webhook for call events/status updates",
+        "tags": [
+          "Telephony"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook accepted"
+          }
+        }
+      }
+    },
+    "/tests/{agentId}/run": {
+      "post": {
+        "summary": "Run automated test suite for an agent",
+        "tags": [
+          "Tests"
+        ],
+        "description": "Triggers an automated test suite for a specific agent. The test suite evaluates:\n- Greeting responses\n- Opening hours inquiries\n- Appointment booking flows\n\n**Note:** Currently returns mock results. Full integration with ElevenLabs test API is planned.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Agent UUID to test",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TestResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "agentId": "123e4567-e89b-12d3-a456-426614174000",
+                    "timestamp": "2024-01-15T10:30:00Z",
+                    "score": 95,
+                    "passed": true,
+                    "details": [
+                      {
+                        "case": "Greeting",
+                        "status": "passed",
+                        "latencyMs": 450
+                      },
+                      {
+                        "case": "Opening Hours Inquiry",
+                        "status": "passed",
+                        "latencyMs": 600
+                      },
+                      {
+                        "case": "Appointment Booking flow",
+                        "status": "passed",
+                        "latencyMs": 800
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid agent ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/voice/upload": {
+      "post": {
+        "summary": "Upload audio and create voice clone",
+        "tags": [
+          "Voice"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "in": "formData",
+            "name": "audio",
+            "type": "file",
+            "required": true,
+            "description": "Audio file for voice cloning"
+          },
+          {
+            "in": "formData",
+            "name": "name",
+            "type": "string",
+            "required": true,
+            "description": "Name for the voice clone"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voice clone created successfully"
+          }
+        }
+      }
+    },
+    "/voice/{voiceId}": {
+      "get": {
+        "summary": "Get voice clone details",
+        "tags": [
+          "Voice"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voiceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voice clone details retrieved successfully"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2024-01-15T10:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
