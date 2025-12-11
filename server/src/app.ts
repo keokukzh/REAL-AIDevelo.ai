@@ -82,33 +82,28 @@ if (config.isProduction) {
   app.use(helmet());
 }
 
-// CORS Configuration - Restrict to allowed origins
+// CORS Configuration - Allow all Cloudflare Pages and Railway origins
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('[CORS] Checking origin:', origin, 'Allowed:', config.allowedOrigins);
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.) in development
-    if (!origin && !config.isProduction) {
-      console.log('[CORS] Allowing request with no origin (development)');
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) {
       return callback(null, true);
     }
 
-    const isWhitelisted =
-      (origin && config.allowedOrigins.includes(origin)) ||
-      (origin && origin.endsWith('.railway.app')) ||
-      (origin && origin.endsWith('.pages.dev'));
+    // Check if origin matches allowed patterns
+    const isAllowed =
+      origin === 'https://aidevelo.ai' ||
+      origin.endsWith('.aidevelo.ai') ||
+      origin.endsWith('.pages.dev') ||
+      origin.endsWith('.railway.app') ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:');
 
-    if (isWhitelisted) {
-      console.log('[CORS] Allowing origin:', origin);
-      callback(null, true);
-    } else if (!origin) {
-      // Allow requests with no origin in development
-      console.log('[CORS] Allowing request with no origin');
+    if (isAllowed) {
       callback(null, true);
     } else {
-      // Log the rejected origin for debugging
-      console.warn(`[CORS] Rejected origin: ${origin}. Allowed origins: ${config.allowedOrigins.join(', ')}`);
-      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
+      console.warn(`[CORS] Rejected origin: ${origin}`);
+      callback(null, false); // Don't throw error, just reject
     }
   },
   credentials: true,
