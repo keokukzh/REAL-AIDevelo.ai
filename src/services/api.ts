@@ -1,23 +1,6 @@
-// Get API URL from environment or use default
-const getApiBaseUrl = (): string => {
-  // @ts-ignore - Vite environment variable
-  if (import.meta.env?.VITE_API_URL) {
-    // @ts-ignore
-    return import.meta.env.VITE_API_URL;
-  }
-  
-  // Check if we're in production (deployed on Cloudflare Pages)
-  // @ts-ignore
-  if (import.meta.env?.MODE === 'production' || window.location.hostname !== 'localhost') {
-    // Production: use Railway backend
-    return 'https://real-aideveloai-production.up.railway.app/api';
-  }
-  
-  // Development: use localhost
-  return 'http://localhost:5000/api';
-};
-
-export const API_BASE_URL = getApiBaseUrl();
+import { AxiosError, AxiosRequestConfig } from 'axios';
+import { apiClient } from './apiClient';
+import { API_BASE_URL } from './apiBase';
 
 export interface ApiError {
   success: false;
@@ -36,91 +19,30 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(endpoint: string, config: AxiosRequestConfig = {}): Promise<T> {
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    // Only log in development and for debugging
-    if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API === 'true') {
-      console.log('[API] Making request to:', url);
-    }
-    
-    // Create AbortController for timeout
-    const controller = new AbortController();
-    // Increase timeout to 60 seconds for long-running operations like agent creation
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-    
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
+    const response = await apiClient.request<T>({
+      url: endpoint,
+      ...config,
     });
-    
-    clearTimeout(timeoutId);
 
-    // Check content type before parsing JSON
-    const contentType = response.headers.get('content-type');
-    let data: unknown;
-
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        // If JSON parsing fails, create a generic error
-        throw new ApiRequestError(
-          response.status,
-          `Invalid JSON response: ${response.statusText}`,
-          { status: response.status, statusText: response.statusText }
-        );
-      }
-    } else {
-      // Non-JSON response
-      const text = await response.text();
-      data = { error: text || response.statusText };
-    }
-
-    if (!response.ok) {
-      const errorData = data as ApiError;
-      throw new ApiRequestError(
-        response.status,
-        errorData.error || `API Error: ${response.statusText}`,
-        errorData.details
-      );
-    }
-
-    return data as T;
+    return response.data;
   } catch (error) {
     if (error instanceof ApiRequestError) {
       throw error;
     }
-    
-    // Handle abort (timeout)
-    if (error instanceof Error && error.name === 'AbortError') {
+
+    if (error instanceof AxiosError) {
+      const statusCode = error.response?.status ?? 0;
+      const payload = error.response?.data as ApiError | undefined;
+
       throw new ApiRequestError(
-        0,
-        'Request timeout: Der Server antwortet nicht. Bitte versuchen Sie es später erneut.',
-        { timeout: true }
+        statusCode,
+        payload?.error || error.message || 'API Error',
+        payload?.details
       );
     }
-    
-    // Handle network errors
-    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-      // Check if it's a CORS error
-      const isCorsError = error.message.includes('CORS') || error.message.includes('Access-Control');
-      const errorMsg = isCorsError
-        ? 'CORS-Fehler: Der Server erlaubt keine Anfragen von dieser Domain. Bitte kontaktieren Sie den Support.'
-        : `Netzwerkfehler: Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung und stellen Sie sicher, dass der Server läuft: ${API_BASE_URL.replace('/api', '')}`;
-      
-      throw new ApiRequestError(
-        0,
-        errorMsg,
-        { networkError: true, url: API_BASE_URL }
-      );
-    }
-    
-    // Re-throw unknown errors
-    throw error;
+
+    throw new ApiRequestError(0, 'Unknown API error', error);
   }
 }

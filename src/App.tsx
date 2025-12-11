@@ -16,32 +16,54 @@ import { AGBPage } from './pages/AGBPage';
 import { VoiceEditPage } from './pages/VoiceEditPage';
 import { AgentDetailsPage } from './pages/AgentDetailsPage';
 import { AgentEditPage } from './pages/AgentEditPage';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <ScrollToTop />
-        <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
-          <AnimatePresence mode='wait'>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/payment-success" element={<PaymentSuccessPage />} />
-                <Route path="/enterprise" element={<EnterpriseContactPage />} />
-                <Route path="/calendar/:provider/callback" element={<CalendarCallbackPage />} />
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/voice-edit" element={<VoiceEditPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/dashboard/agents/:id" element={<AgentDetailsPage />} />
-                <Route path="/dashboard/agents/:id/edit" element={<AgentEditPage />} />
-                <Route path="/impressum" element={<ImpressumPage />} />
-                <Route path="/datenschutz" element={<DatenschutzPage />} />
-                <Route path="/agb" element={<AGBPage />} />
-              </Routes>
-          </AnimatePresence>
-        </div>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
+              <AnimatePresence mode='wait'>
+                  <Routes>
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                    <Route path="/enterprise" element={<EnterpriseContactPage />} />
+                    <Route path="/calendar/:provider/callback" element={<CalendarCallbackPage />} />
+                    <Route path="/onboarding" element={<OnboardingPage />} />
+                    <Route path="/voice-edit" element={<VoiceEditPage />} />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <DashboardPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/agents/:id" element={
+                      <ProtectedRoute>
+                        <AgentDetailsPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/agents/:id/edit" element={
+                      <ProtectedRoute>
+                        <AgentEditPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/impressum" element={<ImpressumPage />} />
+                    <Route path="/datenschutz" element={<DatenschutzPage />} />
+                    <Route path="/agb" element={<AGBPage />} />
+                  </Routes>
+              </AnimatePresence>
+            </div>
+          </BrowserRouter>
+        </AuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

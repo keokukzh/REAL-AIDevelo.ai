@@ -89,6 +89,12 @@ src/
    - Interactive Swagger UI: `http://localhost:5000/api-docs`
    - OpenAPI Spec: `http://localhost:5000/api-docs/swagger.json`
 
+### Authentication
+- Auth endpoints: `/api/auth/login`, `/api/auth/register`, `/api/auth/refresh`
+- Tokens: JWT access + refresh; store `auth_token` and `refresh_token`
+- Protected backend routes now require `Authorization: Bearer <token>`
+- Frontend uses `AuthProvider` + `ProtectedRoute` and axios interceptors for refresh
+
 ## 🎨 Design System
 
 The project uses a custom Tailwind configuration (`tailwind.config.cjs`) with:

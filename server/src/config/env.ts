@@ -11,7 +11,9 @@ const requiredEnvVars = [
 const productionRequiredEnvVars = [
   'ELEVENLABS_API_KEY',
   'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET'
+  'STRIPE_WEBHOOK_SECRET',
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET'
 ];
 
 // Optional env vars (with defaults)
@@ -24,6 +26,8 @@ const optionalEnvVars = {
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
   KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-jwt-secret',
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
 };
 
 const validateEnv = () => {
@@ -92,5 +96,7 @@ export const config = {
   redisUrl: optionalEnvVars.REDIS_URL,
   otlpExporterEndpoint: optionalEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT,
   knowledgeApiKey: optionalEnvVars.KNOWLEDGE_API_KEY,
+  jwtSecret: optionalEnvVars.JWT_SECRET,
+  jwtRefreshSecret: optionalEnvVars.JWT_REFRESH_SECRET,
 };
 

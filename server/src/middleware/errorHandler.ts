@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError, ValidationError } from '../utils/errors';
 import { config } from '../config/env';
+import { sendFailure } from '../utils/apiResponse';
 
 export const errorHandler = (
   err: Error | AppError,
@@ -20,18 +21,10 @@ export const errorHandler = (
     // For CORS errors, send proper response with CORS headers
     // This prevents 500 errors on OPTIONS requests
     if (req.method === 'OPTIONS') {
-      return res.status(403).json({
-        success: false,
-        error: 'CORS policy violation',
-        message: err.message
-      });
+      return sendFailure(res, 403, 'CORS policy violation', err.message);
     }
-    
-    return res.status(403).json({
-      success: false,
-      error: 'CORS policy violation',
-      message: err.message
-    });
+
+    return sendFailure(res, 403, 'CORS policy violation', err.message);
   }
 
   // Log error (in production, use proper logging service)
@@ -47,13 +40,12 @@ export const errorHandler = (
   // Handle known operational errors
   if (err instanceof AppError && err.isOperational) {
     const payload: any = {
-      success: false,
       error: err.message,
     };
     if ('details' in err && (err as any).details) payload.details = (err as any).details;
     if ((err as any).code) payload.code = (err as any).code;
 
-    return res.status(err.statusCode).json(payload);
+    return sendFailure(res, err.statusCode, err.message, payload.details);
   }
 
   // Handle unknown/unexpected errors
@@ -62,12 +54,9 @@ export const errorHandler = (
     ? 'Internal Server Error'
     : err.message || 'Internal Server Error';
 
-  const payload: any = {
-    success: false,
-    error: message,
-  };
-  if ((err as any).code) payload.code = (err as any).code;
-  if (!config.isProduction) payload.stack = err.stack;
+  const details: any = {};
+  if ((err as any).code) details.code = (err as any).code;
+  if (!config.isProduction) details.stack = err.stack;
 
-  res.status(statusCode).json(payload);
+  sendFailure(res, statusCode, message, Object.keys(details).length ? details : undefined);
 };

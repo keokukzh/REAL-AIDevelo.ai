@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '../components/ui/Button';
 import { apiRequest, ApiRequestError } from '../services/api';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
@@ -13,6 +14,22 @@ export const PaymentSuccessPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
 
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: ['payment-session', sessionId],
+    enabled: !!sessionId,
+    queryFn: async () =>
+      apiRequest<{
+        success: boolean;
+        data: {
+          sessionId: string;
+          status: string;
+          planId: string;
+          planName: string;
+          purchaseId: string;
+        };
+      }>(`/payments/session/${sessionId}`),
+  });
+
   useEffect(() => {
     if (!sessionId) {
       setError('Keine Session-ID gefunden');
@@ -20,41 +37,33 @@ export const PaymentSuccessPage = () => {
       return;
     }
 
-    // Fetch session details
-    const fetchSession = async () => {
-      try {
-        const response = await apiRequest<{
-          success: boolean;
-          data: {
-            sessionId: string;
-            status: string;
-            planId: string;
-            planName: string;
-            purchaseId: string;
-          };
-        }>(`/payments/session/${sessionId}`);
+    if (isLoading) {
+      setLoading(true);
+      return;
+    }
 
-        if (response.data.status === 'paid') {
-          setPurchaseId(response.data.purchaseId);
-          // Redirect to onboarding after a short delay
-          setTimeout(() => {
-            navigate(`/onboarding?purchaseId=${response.data.purchaseId}`);
-          }, 2000);
-        } else {
-          setError('Zahlung noch nicht abgeschlossen');
-        }
-      } catch (err) {
-        const errorMessage = err instanceof ApiRequestError
-          ? err.message
-          : 'Fehler beim Laden der Session-Daten';
-        setError(errorMessage);
-      } finally {
+    if (queryError) {
+      const errorMessage = queryError instanceof ApiRequestError
+        ? queryError.message
+        : 'Fehler beim Laden der Session-Daten';
+      setError(errorMessage);
+      setLoading(false);
+      return;
+    }
+
+    if (data) {
+      if (data.data.status === 'paid') {
+        setPurchaseId(data.data.purchaseId);
+        setLoading(false);
+        setTimeout(() => {
+          navigate(`/onboarding?purchaseId=${data.data.purchaseId}`);
+        }, 2000);
+      } else {
+        setError('Zahlung noch nicht abgeschlossen');
         setLoading(false);
       }
-    };
-
-    fetchSession();
-  }, [sessionId, navigate]);
+    }
+  }, [data, queryError, isLoading, navigate, sessionId]);
 
   const handleContinue = () => {
     if (purchaseId) {
@@ -106,4 +115,5 @@ export const PaymentSuccessPage = () => {
     </div>
   );
 };
+
 

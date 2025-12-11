@@ -31,3 +31,7 @@ export interface PricingPlan {
   priceNote?: string;
   ctaSubLabel?: string;
 }
+
+// Re-export shared domain and API types to provide a single import surface for the app.
+export * from '../shared/types/models';
+export * from '../shared/types/api';

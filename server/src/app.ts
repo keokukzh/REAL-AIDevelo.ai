@@ -56,6 +56,7 @@ import privacyRoutes from './routes/privacyRoutes';
 import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
 import { createServer } from 'http';
 import axios from 'axios';
+import { requireAuth } from './middleware/auth';
 
 const app = express();
 
@@ -280,17 +281,16 @@ app.get('/metrics', (req: Request, res: Response) => {
 // Routes: Register all routes under a versioned router (v1) and keep top-level /api as a compat shim
 const v1Router = express.Router();
 
-v1Router.use('/agents', agentRoutes);
+v1Router.use('/agents', requireAuth, agentRoutes);
 v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
 v1Router.use('/payments', paymentRoutes);
-v1Router.use('/purchases', purchaseRoutes);
-v1Router.use('/voice', voiceRoutes);
-v1Router.use('/telephony', telephonyRoutes);
-v1Router.use('/sync', syncRoutes);
-v1Router.use('/knowledge', knowledgeRoutes);
+v1Router.use('/purchases', requireAuth, purchaseRoutes);
+v1Router.use('/voice', requireAuth, voiceRoutes);
+v1Router.use('/telephony', requireAuth, telephonyRoutes);
+v1Router.use('/sync', requireAuth, syncRoutes);
+v1Router.use('/knowledge', requireAuth, knowledgeRoutes);
 v1Router.use('/privacy', privacyRoutes);
-v1Router.use('/knowledge', knowledgeRoutes);
 v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/calendar', calendarRoutes);

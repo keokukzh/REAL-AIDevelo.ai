@@ -34,5 +34,9 @@
   "exclude": [
     "vendor",
     "node_modules"
+  ],
+  "include": [
+    "src",
+    "shared/types"
   ]
 }
