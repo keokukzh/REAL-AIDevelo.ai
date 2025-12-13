@@ -124,30 +124,24 @@ export const updateAgentConfig = async (
         },
       });
 
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update agent config',
-        step: 'updateAgentConfig',
-        requestId,
-        backendSha: getBackendVersion(),
-        supabase: {
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint,
-        },
-      });
+      // Create error object with Supabase details for error handler
+      const errorWithSupabase = new Error('Failed to update agent config');
+      (errorWithSupabase as any).supabase = {
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+      };
+      (errorWithSupabase as any).step = 'updateAgentConfig';
+      
+      // Throw to be caught by outer catch, which will use error handler
+      throw errorWithSupabase;
     }
 
     if (!updatedConfig) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update agent config',
-        step: 'updateAgentConfig',
-        reason: 'No data returned from update',
-        requestId,
-        backendSha: getBackendVersion(),
-      });
+      const error = new Error('Failed to update agent config: No data returned from update');
+      (error as any).step = 'updateAgentConfig';
+      throw error;
     }
 
     // Validate response
