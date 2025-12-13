@@ -24,7 +24,7 @@ const router = Router();
 router.get('/:provider/auth', (req: Request, res: Response, next: NextFunction) => {
   try {
     const { provider } = req.params;
-    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/calendar/${provider}/callback`;
+    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/calendar/${provider}/callback`;
 
     if (provider === 'google') {
       const { authUrl, state } = calendarService.getGoogleAuthUrl(redirectUri);
@@ -83,7 +83,7 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
       return next(new BadRequestError('Ungültiger OAuth-State'));
     }
 
-    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/calendar/${provider}/callback`;
+    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/calendar/${provider}/callback`;
 
     let token;
     if (provider === 'google') {

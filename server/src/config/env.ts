@@ -26,20 +26,31 @@ const getOptionalEnvVars = () => ({
   // STRIPE/PAYMENT REMOVED
   // STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   // STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
-  // Database URL priority:
-  // 1. DATABASE_URL (primary - works with Supabase, Neon, Render, etc.)
-  // 2. POSTGRES_URL (fallback)
-  // Recommended: Use Supabase (free) - see MIGRATION_TO_SUPABASE.md
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:4000',
+  // LEGACY: DATABASE_URL - Old pg-pool based database connection
+  // New code should use Supabase client directly (see supabaseDb.ts)
+  // Kept for backward compatibility with legacy routes/repositories
   DATABASE_URL: process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
   SUPABASE_URL: process.env.SUPABASE_URL || '',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  // LEGACY: REDIS_URL - Not currently used, kept for future use
   REDIS_URL: process.env.REDIS_URL || '',
+  // OPTIONAL: OTEL_EXPORTER_OTLP_ENDPOINT - Observability endpoint
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
+  // OPTIONAL: KNOWLEDGE_API_KEY - Knowledge base feature
   KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
-  // JWT secrets: use process.env (which will have generated values from validateEnv if missing)
+  // LEGACY: JWT_SECRET - Old JWT-based auth (legacy routes)
+  // New routes use Supabase Auth. Kept for backward compatibility.
   JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? generateSecret() : 'dev-jwt-secret'),
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || (process.env.NODE_ENV === 'production' ? generateSecret() : 'dev-refresh-secret'),
+  // Canonical env vars (standardized naming)
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || '',
+  TOOL_SHARED_SECRET: process.env.TOOL_SHARED_SECRET || '',
+  TOKEN_ENCRYPTION_KEY: process.env.TOKEN_ENCRYPTION_KEY || '',
+  // Google OAuth (canonical naming)
+  GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '',
+  GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '',
+  GOOGLE_OAUTH_REDIRECT_URL: process.env.GOOGLE_OAUTH_REDIRECT_URL || '',
 });
 
 const validateEnv = () => {
@@ -111,9 +122,8 @@ export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [
-    'http://localhost:3000',
-    'http://localhost:4000', // Vite dev port
-    'http://localhost:5173', // Vite default port
+    'http://localhost:4000', // Vite dev port (canonical)
+    'http://localhost:5173', // Vite default port (fallback)
     'https://aidevelo.ai', // Production frontend
     'https://www.aidevelo.ai', // Production frontend with www
     'https://*.pages.dev', // Cloudflare Pages
@@ -132,5 +142,12 @@ export const config = {
   knowledgeApiKey: optionalEnvVars.KNOWLEDGE_API_KEY,
   jwtSecret: optionalEnvVars.JWT_SECRET,
   jwtRefreshSecret: optionalEnvVars.JWT_REFRESH_SECRET,
+  // Canonical env vars
+  publicBaseUrl: optionalEnvVars.PUBLIC_BASE_URL,
+  toolSharedSecret: optionalEnvVars.TOOL_SHARED_SECRET,
+  tokenEncryptionKey: optionalEnvVars.TOKEN_ENCRYPTION_KEY,
+  googleOAuthClientId: optionalEnvVars.GOOGLE_OAUTH_CLIENT_ID,
+  googleOAuthClientSecret: optionalEnvVars.GOOGLE_OAUTH_CLIENT_SECRET,
+  googleOAuthRedirectUrl: optionalEnvVars.GOOGLE_OAUTH_REDIRECT_URL,
 };
 

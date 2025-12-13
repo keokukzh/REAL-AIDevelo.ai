@@ -23,6 +23,7 @@
    ELEVENLABS_API_KEY=your-elevenlabs-key
    ELEVENLABS_AGENT_ID_DEFAULT=your-agent-id (optional)
    PORT=5000
+   FRONTEND_URL=http://localhost:4000
    ```
 
    **Frontend (.env):**

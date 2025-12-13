@@ -24,11 +24,11 @@ export const calendarService = {
     const state = `google_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     oauthStates.set(state, { provider: 'google', timestamp: Date.now() });
 
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
     
     // If OAuth is not configured, return a mock URL for testing
     if (!clientId) {
-      console.warn('[CalendarService] GOOGLE_CLIENT_ID not configured, returning mock auth URL');
+      console.warn('[CalendarService] GOOGLE_OAUTH_CLIENT_ID not configured, returning mock auth URL');
       return {
         authUrl: `${redirectUri}?code=mock_code&state=${state}`,
         state
@@ -108,8 +108,8 @@ export const calendarService = {
    * Exchange authorization code for tokens (Google)
    */
   async exchangeGoogleCode(code: string, redirectUri: string): Promise<CalendarToken> {
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '';
 
     // In production, make actual API call to Google
     // For now, return mock token

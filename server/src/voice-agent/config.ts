@@ -57,8 +57,8 @@ export const voiceAgentConfig = {
   // Calendar Configuration
   calendar: {
     google: {
-      clientId: process.env.GOOGLE_CALENDAR_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '',
+      clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
     },
     outlook: {
       clientId: process.env.OUTLOOK_CLIENT_ID || '',
