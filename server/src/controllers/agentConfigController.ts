@@ -157,11 +157,6 @@ export const updateAgentConfig = async (
       business_type: updatedConfig.business_type,
     });
 
-    res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
-    res.json({
-      success: true,
-      data: validated,
-    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
