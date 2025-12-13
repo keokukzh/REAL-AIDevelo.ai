@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
+import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
@@ -9,6 +10,7 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const { data: overview, isLoading, error } = useDashboardOverview();
+  const updateAgentConfig = useUpdateAgentConfig();
 
   // Handle 401 - redirect to login (NOT onboarding)
   // Onboarding/Wizard should be based on status flags from overview (needs_setup), not on 401
@@ -57,6 +59,7 @@ export const DashboardPage = () => {
   const calendarStatus = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
 
   const showWizard = overview.agent_config.setup_state !== 'ready';
+  const showRestartSetup = overview.agent_config.setup_state === 'ready';
 
   const handleWizardComplete = () => {
     // Wizard completion is handled by the mutation invalidating the query
@@ -108,7 +111,23 @@ export const DashboardPage = () => {
 
       {/* Agent Card */}
       <div className="bg-gray-800 rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Agent Konfiguration</h2>
+        <div className="flex items-center justify-between mb-4 gap-4">
+          <h2 className="text-xl font-bold">Agent Konfiguration</h2>
+          {showRestartSetup && (
+            <button
+              type="button"
+              className="px-4 py-2 bg-accent text-black rounded hover:bg-accent/80 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={updateAgentConfig.isPending}
+              onClick={async () => {
+                const confirmed = window.confirm('Setup wirklich erneut starten?');
+                if (!confirmed) return;
+                await updateAgentConfig.mutateAsync({ setup_state: 'needs_persona' });
+              }}
+            >
+              {updateAgentConfig.isPending ? 'Wird gestartet…' : 'Setup erneut starten'}
+            </button>
+          )}
+        </div>
         <div className="space-y-3">
           <div>
             <span className="text-gray-400">Agent Name:</span>
