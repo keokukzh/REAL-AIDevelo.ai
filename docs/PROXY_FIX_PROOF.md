@@ -1,7 +1,7 @@
 # Cloudflare Pages Function Proxy Fix - Proof Outputs
 
 **Date:** 2025-01-XX  
-**Commit:** `<commit-hash>`  
+**Commit:** `bc6e1d6`  
 **Status:** ✅ Fixed
 
 ---
@@ -127,7 +127,7 @@ res.json({
 
 ### 1. Git Commit Hash
 
-**Commit Hash:** `<commit-hash>`
+**Commit Hash:** `bc6e1d6`
 
 **Files Changed:**
 ```
@@ -250,5 +250,5 @@ x-aidevelo-backend-sha: <commit-hash-or-unknown>
 3. Test with `curl -I` to verify proxy headers
 4. Test in browser to verify no 401/500 errors
 
-**Main Commit Hash:** `<commit-hash>`
+**Main Commit Hash:** `bc6e1d6`
 
