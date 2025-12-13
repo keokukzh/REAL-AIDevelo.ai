@@ -50,10 +50,13 @@ src/
    ```
 
 2. **Set up Environment Variables:**
-   Create a `.env.local` file in the root:
+   Create a `.env.local` file in the root (see `.env.example` for reference):
    ```env
    VITE_API_URL=http://localhost:5000/api
    ```
+   
+   **WICHTIG:** Nur Variablen mit `VITE_`-Prefix sind im Client verfügbar!
+   Vite baut nur Environment-Variablen ein, die mit `VITE_` beginnen.
 
 3. **Run Development Server:**
    ```bash
@@ -115,6 +118,21 @@ See [DOCKER.md](DOCKER.md) for Docker setup and deployment instructions.
 
 ## 🚀 Deployment
 
+### Frontend Environment Variables (VITE_API_URL)
+
+**WICHTIG:** Das Frontend benötigt die Environment-Variable `VITE_API_URL`, um zu wissen, wo das Backend läuft.
+
+#### Development Setup
+
+Erstelle eine `.env.local` Datei im Root-Verzeichnis:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+#### Production Deployment
+
+Die `VITE_API_URL` **MUSS** in deinem Hosting-Service gesetzt werden, da sie während des Build-Prozesses eingebaut wird.
+
 ### Cloudflare Pages (Frontend)
 
 1. Push code to GitHub
@@ -122,10 +140,74 @@ See [DOCKER.md](DOCKER.md) for Docker setup and deployment instructions.
 3. Build settings:
    - **Build Command**: `npm run build`
    - **Build Output Directory**: `dist`
-   - **Environment Variables**: `VITE_API_URL` (your backend URL)
-4. Deploy automatically on push to `main`
+4. **Environment Variables** (KRITISCH):
+   - Gehe zu: Dashboard → Workers & Pages → Dein Projekt
+   - Settings → Environment Variables
+   - **Add variable:**
+     - Name: `VITE_API_URL`
+     - Value: `https://your-backend-domain.com/api` (z.B. `https://real-aidevelo-ai.onrender.com/api`)
+     - Environment: Production + Preview
+   - **WICHTIG:** Nach Änderung der Environment Variables muss ein neuer Deploy getriggert werden!
+5. Deploy automatically on push to `main`
 
-See [DEPLOY.md](DEPLOY.md) for detailed instructions.
+**Backend URL Format:**
+- Render: `https://your-app-name.onrender.com/api`
+- Railway: `https://your-app-name.up.railway.app/api`
+- Vercel: `https://your-app-name.vercel.app/api`
+
+### Netlify (Frontend)
+
+1. Connect repository to Netlify
+2. Build settings:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+3. **Environment Variables:**
+   - Gehe zu: Site settings → Environment variables
+   - **Add variable:**
+     - Key: `VITE_API_URL`
+     - Value: `https://your-backend-domain.com/api`
+     - Scope: Production, Deploy previews, Branch deploys (je nach Bedarf)
+   - **Redeploy** nach Änderung
+
+### Vercel (Frontend)
+
+1. Connect repository to Vercel
+2. Build settings:
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+3. **Environment Variables:**
+   - Gehe zu: Project Settings → Environment Variables
+   - **Add:**
+     - Name: `VITE_API_URL`
+     - Value: `https://your-backend-domain.com/api`
+     - Environments: Production, Preview, Development (je nach Bedarf)
+   - **Redeploy** nach Änderung
+
+### Backend Deployment
+
+Das Backend erwartet Requests mit dem `/api` Suffix. Stelle sicher, dass:
+- Die Backend-URL mit `/api` endet (z.B. `https://your-backend.com/api`)
+- Oder das Backend Requests ohne `/api` Prefix akzeptiert und entsprechend routet
+
+Siehe [DEPLOY.md](DEPLOY.md) für detaillierte Backend-Deployment-Anweisungen.
+
+### Verification nach Deployment
+
+1. **Backend Health Check:**
+   ```bash
+   curl https://your-backend.com/health
+   ```
+   Sollte `{"status":"ok","timestamp":"..."}` zurückgeben.
+
+2. **Frontend API Calls prüfen:**
+   - Öffne Browser DevTools (F12) → Network Tab
+   - Prüfe, dass API-Requests zur korrekten Backend-URL gehen
+   - Keine Requests zu `127.0.0.1` oder `localhost` in Production!
+
+3. **Console Errors:**
+   - Prüfe Browser Console auf Fehler
+   - Keine CORS-Errors oder 401-Fehler durch fehlende `VITE_API_URL`
 
 ## 🤝 Contributing
 

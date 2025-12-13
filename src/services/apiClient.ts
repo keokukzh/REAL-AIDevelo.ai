@@ -43,11 +43,31 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // #region agent log
-  if (config.url?.includes('/agents')) {
-    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'apiClient.ts:46',message:'Request interceptor - agents endpoint',data:{url:config.url,method:config.method,hasAuthHeader:!!config.headers?.Authorization,authHeaderLength:config.headers?.Authorization?.length,dataSize:JSON.stringify(config.data).length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,D'})}).catch(()=>{});
+  // Debug logging only in development mode
+  if (import.meta.env.DEV && config.url?.includes('/agents')) {
+    try {
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'apiClient.ts:46',
+          message: 'Request interceptor - agents endpoint',
+          data: {
+            url: config.url,
+            method: config.method,
+            hasAuthHeader: !!config.headers?.Authorization,
+            authHeaderLength: config.headers?.Authorization?.length,
+            dataSize: JSON.stringify(config.data).length
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          hypothesisId: 'A,D'
+        })
+      }).catch(() => {});
+    } catch (e) {
+      // Ignore debug logging errors
+    }
   }
-  // #endregion
   return config;
 });
 

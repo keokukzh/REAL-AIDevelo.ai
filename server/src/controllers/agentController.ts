@@ -15,11 +15,18 @@ const PHONE_NUMBER_LIMITS: Record<string, number> = {
   enterprise: 5, // Default for enterprise
 };
 
+// Safe logging helper - never throws, only logs in development
+const safeLogAgent = (message: string, data: any) => {
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      console.log(`[AgentController] ${message}`, data);
+    } catch (e) {
+      // Ignore logging errors - never crash on logging
+    }
+  }
+};
+
 export const createAgent = async (req: Request, res: Response, next: NextFunction) => {
-  // #region agent log
-  const fs = require('fs');
-  // #endregion
-  
   try {
     const { businessProfile, config, subscription, voiceCloning, purchaseId } = req.body;
     
@@ -32,13 +39,12 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       origin: req.headers.origin
     });
     
-    // #region agent log
-    try {
-      fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:20',message:'createAgent controller entry',data:{hasBusinessProfile:!!businessProfile,hasConfig:!!config,companyName:businessProfile?.companyName,subscriptionPlanId:subscription?.planId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
-    } catch (e) {
-      // Ignore file write errors (cloud providers may be Linux)
-    }
-    // #endregion
+    safeLogAgent('createAgent controller entry', {
+      hasBusinessProfile: !!businessProfile,
+      hasConfig: !!config,
+      companyName: businessProfile?.companyName,
+      subscriptionPlanId: subscription?.planId
+    });
     
     // 1. Generate System Prompt based on profile and recording consent
     const recordingConsent = config.recordingConsent ?? false;
@@ -81,17 +87,18 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       updatedAt: new Date()
     };
     
-    // #region agent log
-    try {
-      fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:62',message:'Before DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status,companyName:newAgent.businessProfile.companyName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
-    } catch (e) {}
-    // #endregion
+    safeLogAgent('Before DB saveAgent', {
+      agentId: newAgent.id,
+      status: newAgent.status,
+      companyName: newAgent.businessProfile.companyName
+    });
     
     db.saveAgent(newAgent);
 
-    // #region agent log
-    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:68',message:'After DB saveAgent',data:{agentId:newAgent.id,status:newAgent.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'}) + '\n');
-    // #endregion
+    safeLogAgent('After DB saveAgent', {
+      agentId: newAgent.id,
+      status: newAgent.status
+    });
 
     // 5. Link purchase to agent if purchaseId provided
     if (purchaseId) {
@@ -107,9 +114,11 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     }
 
     // 6. Return immediately with status 'creating' - async job will complete creation
-    // #region agent log
-    fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:87',message:'Sending response to client',data:{agentId:newAgent.id,status:newAgent.status,hasElevenLabsId:!!newAgent.elevenLabsAgentId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D'}) + '\n');
-    // #endregion
+    safeLogAgent('Sending response to client', {
+      agentId: newAgent.id,
+      status: newAgent.status,
+      hasElevenLabsId: !!newAgent.elevenLabsAgentId
+    });
     
     res.status(201).json({
       success: true,
@@ -119,18 +128,21 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     // 7. Run ElevenLabs agent creation asynchronously (don't block request)
     setImmediate(async () => {
       try {
-        // #region agent log
-        fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:96',message:'Before ElevenLabs API call',data:{agentId:newAgent.id,companyName:businessProfile.companyName,voiceId:finalConfig.elevenLabs.voiceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'}) + '\n');
-        // #endregion
+        safeLogAgent('Before ElevenLabs API call', {
+          agentId: newAgent.id,
+          companyName: businessProfile.companyName,
+          voiceId: finalConfig.elevenLabs.voiceId
+        });
         
         const elevenLabsAgentId = await elevenLabsService.createAgent(
           `${businessProfile.companyName} - Assistant`,
           finalConfig
         );
         
-        // #region agent log
-        fs.appendFileSync('c:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\.cursor\\debug.log', JSON.stringify({location:'agentController.ts:106',message:'After ElevenLabs API call',data:{agentId:newAgent.id,elevenLabsAgentId:elevenLabsAgentId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'}) + '\n');
-        // #endregion
+        safeLogAgent('After ElevenLabs API call', {
+          agentId: newAgent.id,
+          elevenLabsAgentId: elevenLabsAgentId
+        });
 
         // Update agent with elevenLabsAgentId and setup phone numbers
         newAgent.elevenLabsAgentId = elevenLabsAgentId;
