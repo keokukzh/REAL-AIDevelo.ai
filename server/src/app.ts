@@ -5,44 +5,65 @@ import { initializeDatabase, testConnection } from './services/database';
 setupObservability(config.otlpExporterEndpoint);
 
 // Initialize database connection with improved error handling
+// NOTE: New code uses Supabase client directly (supabaseDb.ts) - DATABASE_URL is legacy for old routes
 let dbInitialized = false;
 if (config.databaseUrl) {
   try {
-    console.log('[Startup] Initializing database connection...');
-    const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
-    console.log('[Startup] DATABASE_URL:', databaseUrl);
-    
-    // Validate connection string format
-    if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
-      console.error('[Database] ❌ Invalid DATABASE_URL format - must start with postgresql:// or postgres://');
+    // Check if DATABASE_URL points to old/invalid project (pdxdgfxhpyefqyouotat)
+    const isOldProject = config.databaseUrl.includes('pdxdgfxhpyefqyouotat');
+    if (isOldProject) {
+      console.warn('[Database] ⚠️  DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
+      console.warn('[Database] ⚠️  Skipping legacy database connection - new code uses Supabase client directly');
+      console.warn('[Database] ⚠️  Remove DATABASE_URL from Render environment variables to avoid ENOTFOUND errors');
+      dbInitialized = false;
     } else {
-      initializeDatabase();
+      console.log('[Startup] Initializing legacy database connection...');
+      const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
+      console.log('[Startup] DATABASE_URL:', databaseUrl);
       
-      // Test connection with more retries and better error reporting
-      testConnection(8).then(async (connected) => {
-        dbInitialized = connected;
-        if (connected) {
-          console.log('[Database] ✅ Connection successful and ready');
-        } else {
-          console.error('[Database] ❌ Connection test failed after retries');
-          console.error('[Database] Troubleshooting:');
-          console.error('[Database]   1. Verify DATABASE_URL is correct in environment variables');
-          console.error('[Database]   2. Ensure PostgreSQL service is running and accessible');
-          console.error('[Database]   3. Verify network connectivity and firewall rules');
-          console.error('[Database]   4. Check Supabase/Neon/Render dashboard for connection issues');
-        }
-      }).catch((err) => {
-        console.error('[Database] ❌ Connection error:', err.message);
+      // Validate connection string format
+      if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
+        console.error('[Database] ❌ Invalid DATABASE_URL format - must start with postgresql:// or postgres://');
+        console.warn('[Database] ⚠️  Skipping legacy database connection');
         dbInitialized = false;
-      });
+      } else {
+        try {
+          initializeDatabase();
+          
+          // Test connection with more retries and better error reporting
+          testConnection(8).then(async (connected) => {
+            dbInitialized = connected;
+            if (connected) {
+              console.log('[Database] ✅ Legacy connection successful and ready');
+            } else {
+              console.error('[Database] ❌ Connection test failed after retries');
+              console.error('[Database] Troubleshooting:');
+              console.error('[Database]   1. Verify DATABASE_URL is correct in environment variables');
+              console.error('[Database]   2. Ensure PostgreSQL service is running and accessible');
+              console.error('[Database]   3. Verify network connectivity and firewall rules');
+              console.error('[Database]   4. Check Supabase/Neon/Render dashboard for connection issues');
+              console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+            }
+          }).catch((err) => {
+            console.error('[Database] ❌ Connection error:', err.message);
+            console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+            dbInitialized = false;
+          });
+        } catch (initError) {
+          console.error('[Database] ❌ Failed to initialize legacy connection:', (initError as Error).message);
+          console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+          dbInitialized = false;
+        }
+      }
     }
   } catch (error) {
     console.error('[Database] ❌ Failed to initialize:', (error as Error).message);
+    console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
     dbInitialized = false;
   }
 } else {
-  console.warn('[Database] ⚠️  DATABASE_URL not set - Agent/Purchase features will not work!');
-  console.warn('[Database] Set DATABASE_URL environment variable (Supabase/Neon/Render connection string)');
+  console.log('[Database] ℹ️  DATABASE_URL not set - using Supabase client directly (recommended)');
+  console.log('[Database] ℹ️  Legacy Agent/Purchase features require DATABASE_URL, but new routes use Supabase client');
 }
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -453,8 +474,16 @@ if (require.main === module) {
 
   const runMigrations = async () => {
     if (!config.databaseUrl) {
-      console.warn('[Database] ⚠️  DATABASE_URL not set. Database features will be unavailable.');
-      console.warn('[Database] Set DATABASE_URL environment variable (Supabase/Neon/Render connection string).');
+      console.log('[Database] ℹ️  DATABASE_URL not set - skipping legacy migrations');
+      console.log('[Database] ℹ️  New code uses Supabase client directly (no migrations needed)');
+      return;
+    }
+
+    // Check if DATABASE_URL points to old/invalid project
+    if (config.databaseUrl.includes('pdxdgfxhpyefqyouotat')) {
+      console.warn('[Database] ⚠️  DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
+      console.warn('[Database] ⚠️  Skipping migrations to avoid ENOTFOUND errors');
+      console.warn('[Database] ⚠️  Remove DATABASE_URL from Render environment variables');
       return;
     }
 
