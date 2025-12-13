@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS agent_configs (
   persona_age_range TEXT,
   goals_json JSONB NOT NULL DEFAULT '[]'::JSONB,
   services_json JSONB NOT NULL DEFAULT '[]'::JSONB,
+  business_type TEXT NOT NULL DEFAULT 'unknown',
   admin_test_number TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
