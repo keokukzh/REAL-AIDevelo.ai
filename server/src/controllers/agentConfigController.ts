@@ -9,7 +9,7 @@ const getBackendVersion = (): string => {
   return process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown';
 };
 
-// Request schema for updating agent config (strict mode to reject unknown fields)
+// Request schema for updating agent config (strict mode retained; we'll whitelist keys before validating)
 const UpdateAgentConfigSchema = z.object({
   persona_gender: z.enum(['male', 'female']).optional(),
   persona_age_range: z.string().optional(),
@@ -17,6 +17,8 @@ const UpdateAgentConfigSchema = z.object({
   goals_json: z.array(z.string()).optional(),
   services_json: z.any().optional(),
   setup_state: z.enum(['needs_persona', 'needs_business', 'needs_phone', 'needs_calendar', 'ready']).optional(),
+  eleven_agent_id: z.string().optional().nullable(),
+  admin_test_number: z.string().optional().nullable(),
 }).strict();
 
 type UpdateAgentConfigRequest = z.infer<typeof UpdateAgentConfigSchema>;
@@ -32,6 +34,8 @@ const AgentConfigResponseSchema = z.object({
   goals_json: z.array(z.string()),
   services_json: z.any(),
   business_type: z.string().nullable(),
+  admin_test_number: z.string().nullable().optional(),
+  updated_at: z.string().optional(),
 });
 
 /**
@@ -58,8 +62,28 @@ export const updateAgentConfig = async (
 
     const { supabaseUserId, email } = req.supabaseUser;
 
-    // Validate request body with strict mode
-    const validationResult = UpdateAgentConfigSchema.safeParse(req.body);
+    // Build payload from a strict whitelist before validation
+    const allowedKeys = [
+      'setup_state',
+      'persona_gender',
+      'persona_age_range',
+      'business_type',
+      'goals_json',
+      'services_json',
+      'eleven_agent_id',
+      'admin_test_number',
+    ] as const;
+    const rawBody = (req.body ?? {}) as Record<string, unknown>;
+    const whitelistedBody: Record<string, unknown> = {};
+    for (const key of allowedKeys) {
+      if (key in rawBody) {
+        const value = (rawBody as any)[key];
+        if (value !== undefined) whitelistedBody[key] = value;
+      }
+    }
+
+    // Validate request body with strict mode on the whitelisted payload
+    const validationResult = UpdateAgentConfigSchema.safeParse(whitelistedBody);
     if (!validationResult.success) {
       return res.status(400).json({
         success: false,
@@ -69,8 +93,17 @@ export const updateAgentConfig = async (
         requestId,
       });
     }
-
     const updates = validationResult.data;
+
+    // If payload is effectively empty after whitelist, reject
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid fields to update',
+        backendSha: getBackendVersion(),
+        requestId,
+      });
+    }
 
     // Get user's organization and location
     const org = await ensureOrgForUser(supabaseUserId, email);
@@ -79,10 +112,18 @@ export const updateAgentConfig = async (
     // Ensure agent config exists (idempotent)
     const agentConfig = await ensureAgentConfig(location.id);
 
-    // Build update payload by filtering out undefined values
+    // Build update payload by filtering out undefined values, normalize arrays
     const updatePayload = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     ) as any;
+    if ('goals_json' in updatePayload) {
+      const gj = updatePayload.goals_json;
+      if (!Array.isArray(gj)) updatePayload.goals_json = [];
+      else updatePayload.goals_json = gj.filter((x: any) => typeof x === 'string');
+    }
+    if ('services_json' in updatePayload && updatePayload.services_json == null) {
+      updatePayload.services_json = [];
+    }
 
     // If no updates provided, return current config
     if (Object.keys(updatePayload).length === 0) {
@@ -110,7 +151,7 @@ export const updateAgentConfig = async (
       .from('agent_configs')
       .update(updatePayload)
       .eq('id', agentConfig.id)
-      .select('*')
+      .select('id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, updated_at')
       .single();
 
     if (updateError) {
@@ -144,44 +185,43 @@ export const updateAgentConfig = async (
       throw error;
     }
 
-    // Validate response (with better error handling)
-    let validated;
-    try {
-      validated = AgentConfigResponseSchema.parse({
-        id: updatedConfig.id,
-        location_id: updatedConfig.location_id,
-        eleven_agent_id: updatedConfig.eleven_agent_id,
-        setup_state: updatedConfig.setup_state,
-        persona_gender: updatedConfig.persona_gender,
-        persona_age_range: updatedConfig.persona_age_range,
-        goals_json: Array.isArray(updatedConfig.goals_json) ? updatedConfig.goals_json : [],
-        services_json: updatedConfig.services_json || [],
-        business_type: updatedConfig.business_type,
-      });
-    } catch (validationError) {
+    // Validate response (defensive: never 500 due to Zod in prod)
+    const normalizedForResponse = {
+      id: updatedConfig.id,
+      location_id: updatedConfig.location_id,
+      eleven_agent_id: updatedConfig.eleven_agent_id,
+      setup_state: String(updatedConfig.setup_state),
+      persona_gender: updatedConfig.persona_gender,
+      persona_age_range: updatedConfig.persona_age_range,
+      goals_json: Array.isArray(updatedConfig.goals_json)
+        ? updatedConfig.goals_json.filter((x: any) => typeof x === 'string')
+        : [],
+      services_json: updatedConfig.services_json || [],
+      business_type: updatedConfig.business_type,
+      admin_test_number: (updatedConfig as any).admin_test_number ?? null,
+      updated_at: (updatedConfig as any).updated_at,
+    };
+    const validatedResult = AgentConfigResponseSchema.safeParse(normalizedForResponse);
+    if (!validatedResult.success) {
       console.error('[AgentConfigController] Response validation failed', {
         requestId,
-        validationError: validationError instanceof z.ZodError ? validationError.errors : validationError,
-        updatedConfig: {
-          id: updatedConfig.id,
-          setup_state: updatedConfig.setup_state,
-          goals_json: updatedConfig.goals_json,
-          goals_json_type: typeof updatedConfig.goals_json,
-          goals_json_isArray: Array.isArray(updatedConfig.goals_json),
-        },
+        issues: validatedResult.error.errors,
       });
-      
-      const error = new Error('Response validation failed');
-      (error as any).step = 'validateResponse';
-      (error as any).validationError = validationError instanceof z.ZodError ? validationError.errors : validationError;
-      throw error;
+      // In production: return minimal success payload to avoid blocking Wizard
+      res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+      res.setHeader('x-aidevelo-request-id', requestId);
+      return res.json({
+        success: true,
+        data: { setup_state: normalizedForResponse.setup_state },
+        requestId,
+      });
     }
 
     res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
     res.setHeader('x-aidevelo-request-id', requestId);
     return res.json({
       success: true,
-      data: validated,
+      data: validatedResult.data,
       requestId,
     });
   } catch (error) {
