@@ -81,7 +81,11 @@ export const errorHandler = (
   if (isDebugMode) {
     debug.message = err.message;
     debug.name = err.name;
-    if (err.stack) debug.stack = err.stack;
+    // Only include first 10 lines of stack to avoid huge responses
+    if (err.stack) {
+      const stackLines = err.stack.split('\n');
+      debug.stack = stackLines.slice(0, 10).join('\n');
+    }
     
     // Extract Supabase error details if present
     if ((err as any).supabase) {
@@ -91,6 +95,16 @@ export const errorHandler = (
         details: (err as any).supabase.details,
         hint: (err as any).supabase.hint,
       };
+    }
+    
+    // Extract validation errors if present
+    if ((err as any).validationError) {
+      debug.validationError = (err as any).validationError;
+    }
+    
+    // Extract step if present
+    if ((err as any).step) {
+      debug.step = (err as any).step;
     }
     
     // Extract cause if present

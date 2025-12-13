@@ -174,25 +174,16 @@ export const updateAgentConfig = async (
       stack: errorStack,
     });
 
+    // Attach validation errors to error object for error handler
     if (error instanceof z.ZodError) {
-      return res.status(500).json({
-        success: false,
-        error: 'Response validation failed',
-        step: 'validateResponse',
-        issues: error.errors,
-        backendSha: getBackendVersion(),
-        requestId,
-      });
+      const validationError = new Error('Response validation failed');
+      (validationError as any).step = 'validateResponse';
+      (validationError as any).validationError = error.errors;
+      throw validationError;
     }
 
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update agent config',
-      step: 'updateAgentConfig',
-      message: errorMessage,
-      backendSha: getBackendVersion(),
-      requestId,
-    });
+    // Re-throw to let error handler process it (with debug mode support)
+    throw error;
   }
 };
 
