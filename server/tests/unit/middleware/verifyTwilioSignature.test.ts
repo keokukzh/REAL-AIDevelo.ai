@@ -5,13 +5,16 @@ import { computeTwilioSignature, verifyTwilioSignature } from '../../../src/midd
 
 describe('verifyTwilioSignature middleware', () => {
   const originalToken = process.env.TWILIO_AUTH_TOKEN;
+  const originalPublicBaseUrl = process.env.PUBLIC_BASE_URL;
 
   beforeEach(() => {
     process.env.TWILIO_AUTH_TOKEN = 'test_twilio_token';
+    process.env.PUBLIC_BASE_URL = '';
   });
 
   afterEach(() => {
     process.env.TWILIO_AUTH_TOKEN = originalToken;
+    process.env.PUBLIC_BASE_URL = originalPublicBaseUrl;
   });
 
   function makeApp() {
@@ -32,6 +35,26 @@ describe('verifyTwilioSignature middleware', () => {
       .post('/twilio')
       .set('Host', 'example.com')
       .set('X-Forwarded-Proto', 'https')
+      .set('X-Twilio-Signature', signature)
+      .type('form')
+      .send(params);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('accepts a valid signature when PUBLIC_BASE_URL is set', async () => {
+    process.env.PUBLIC_BASE_URL = 'https://public.example';
+
+    const app = makeApp();
+
+    const url = 'https://public.example/twilio';
+    const params = { Foo: 'Bar' };
+    const signature = computeTwilioSignature('test_twilio_token', url, params);
+
+    const res = await request(app)
+      .post('/twilio')
+      .set('Host', 'localhost')
       .set('X-Twilio-Signature', signature)
       .type('form')
       .send(params);

@@ -18,6 +18,11 @@ function normalizeHeaderValue(value: string | undefined): string | undefined {
 }
 
 export function getTwilioRequestUrl(req: Request): string {
+  const publicBaseUrl = process.env.PUBLIC_BASE_URL;
+  if (publicBaseUrl) {
+    return `${publicBaseUrl.replace(/\/$/, '')}${req.originalUrl}`;
+  }
+
   const forwardedProto = normalizeHeaderValue(req.header('x-forwarded-proto'));
   const forwardedHost = normalizeHeaderValue(req.header('x-forwarded-host'));
 
