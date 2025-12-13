@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { SetupWizard } from '../components/dashboard/SetupWizard';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -55,6 +56,13 @@ export const DashboardPage = () => {
       : 'Nicht verbunden';
   const calendarStatus = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
 
+  const showWizard = overview.agent_config.setup_state !== 'ready';
+
+  const handleWizardComplete = () => {
+    // Wizard completion is handled by the mutation invalidating the query
+    // The component will re-render with updated data
+  };
+
   return (
     <div className="min-h-screen bg-background text-white p-6">
       {/* Welcome Header */}
@@ -62,6 +70,11 @@ export const DashboardPage = () => {
         <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
         <p className="text-gray-400">Hier ist dein Dashboard</p>
       </div>
+
+      {/* Setup Wizard (shown when setup_state != 'ready') */}
+      {showWizard && (
+        <SetupWizard onComplete={handleWizardComplete} />
+      )}
 
       {/* Status Chips */}
       <div className="flex gap-4 mb-8">
