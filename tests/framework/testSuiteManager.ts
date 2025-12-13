@@ -25,12 +25,12 @@ export class TestSuiteManager {
   }
 
   runUnit(): TestResult {
-    this.results.unit = this.run('npm run test:unit -- --runInBand');
+    this.results.unit = this.run('npm run test:unit');
     return this.results.unit;
   }
 
   runIntegration(): TestResult {
-    this.results.integration = this.run('npm run test:integration -- --runInBand');
+    this.results.integration = this.run('npm run test:integration');
     return this.results.integration;
   }
 

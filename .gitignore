@@ -50,6 +50,10 @@ build_output.txt
 coverage/
 *.lcov
 
+# Local proof artifacts
+playwright_restart_setup_proof.png
+scripts/proof_restart_setup_playwright.mjs
+
 # Stripe CLI (binary)
 stripe-cli/
 stripe-cli.zip

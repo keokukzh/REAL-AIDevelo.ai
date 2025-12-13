@@ -49,7 +49,7 @@ A workflow is already set up in `.github/workflows/cloudflare-pages.yml`.
 ## CI/CD (GitHub Actions)
 
 The workflow `.github/workflows/ci.yml` runs on pushes to `main` and pull requests:
-- Frontend: `npm ci`, `npm run test -- --runInBand`, `npm run build`, uploads `dist/` artifact on push.
+- Frontend: `npm ci`, `npm run test -- --run`, `npm run build`, uploads `dist/` artifact on push.
 - Backend: `npm ci`, `npm run build`, `npm run docs:generate`, uploads `server/openapi.json` artifact on push.
 - Docker image: builds the root `Dockerfile`, pushes to GHCR (`ghcr.io/<owner>/aidevelo-api`) on `main`.
 - Optional deploy: if `DEPLOY_BACKEND` variable is `true` and `RAILWAY_TOKEN` secret is set, deploys to Railway using `railway up --ci --detach`.
