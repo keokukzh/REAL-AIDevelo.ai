@@ -9,15 +9,23 @@ export const getApiBaseUrl = (): string => {
       return window.location.origin + apiUrl;
     }
     // If it's already absolute (e.g., full URL), use it as-is
+    // WARNING: In production, absolute URLs bypass Pages Function proxy and may trigger CSP/CORB
+    if (import.meta.env?.DEV) {
+      console.warn('[apiBase] VITE_API_URL is absolute URL. In production, use relative "/api" to enable Pages Function proxy.');
+    }
     return apiUrl;
   }
 
   // Check if we're in production (deployed on Cloudflare Pages)
   // @ts-ignore
   if (import.meta.env?.MODE === 'production' || window.location.hostname !== 'localhost') {
-    // Production: use same-origin /api (proxied by Cloudflare Pages to Render backend)
+    // Production: use same-origin /api (proxied by Cloudflare Pages Function to Render backend)
     // This satisfies CSP connect-src 'self' requirement
-    return window.location.origin + '/api';
+    const baseUrl = window.location.origin + '/api';
+    if (import.meta.env?.DEV) {
+      console.log('[apiBase] Production mode: using same-origin API:', baseUrl);
+    }
+    return baseUrl;
   }
 
   // Development: use localhost
