@@ -1,22 +1,30 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const AuthCallbackPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        // Clear URL fragment on mount (in case hash tokens are present)
+        // This prevents querySelector crashes from #access_token=...
+        if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('code'))) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+
         // Handle both hash tokens (#access_token=...) and code flow (?code=...)
         // Supabase automatically handles hash tokens via getSession()
         // For code flow, we need to exchange the code
         
-        // Check for code parameter (PKCE flow)
+        // Check for code parameter (PKCE flow) from URL search params
+        const searchParams = new URLSearchParams(location.search);
         const code = searchParams.get('code');
+        
         if (code) {
           const { data, error: codeError } = await supabase.auth.exchangeCodeForSession(code);
           if (codeError) throw codeError;
@@ -55,14 +63,7 @@ export const AuthCallbackPage = () => {
     };
 
     handleAuthCallback();
-  }, [navigate, searchParams]);
-
-  // Clear URL fragment on mount (in case hash tokens are present)
-  useEffect(() => {
-    if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('code'))) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
-  }, []);
+  }, [navigate, location.search]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background text-white">
