@@ -83,6 +83,9 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
       proxiedHeaders.set('Content-Type', 'application/json; charset=utf-8');
     }
     
+    // Add debug header to verify proxy is active
+    proxiedHeaders.set('x-aidevelo-proxy', '1');
+    
     return new Response(responseBody, {
       status: response.status,
       statusText: response.statusText,
