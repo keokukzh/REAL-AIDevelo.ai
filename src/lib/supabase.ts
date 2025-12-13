@@ -3,18 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Check for missing environment variables
+// Check for missing environment variables (only log in dev)
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Log error but don't crash - show user-friendly message
-  console.error('❌ Missing Supabase environment variables:', {
-    VITE_SUPABASE_URL: supabaseUrl ? '✅ Set' : '❌ Missing',
-    VITE_SUPABASE_ANON_KEY: supabaseAnonKey ? '✅ Set' : '❌ Missing',
-  });
-  console.error('📝 Please set these in Cloudflare Pages → Settings → Environment Variables');
-  
-  // Show error in console
-  if (typeof window !== 'undefined') {
-    console.error('⚠️ Supabase not configured - authentication features will not work');
+  if (import.meta.env.DEV) {
+    // Log error but don't crash - show user-friendly message (dev only)
+    console.error('❌ Missing Supabase environment variables:', {
+      VITE_SUPABASE_URL: supabaseUrl ? '✅ Set' : '❌ Missing',
+      VITE_SUPABASE_ANON_KEY: supabaseAnonKey ? '✅ Set' : '❌ Missing',
+    });
+    console.error('📝 Please set these in Cloudflare Pages → Settings → Environment Variables');
   }
 }
 
@@ -33,8 +30,11 @@ if (typeof window !== 'undefined' && !supabaseUrl) {
     const projectRef = sessionKeys[0].replace('sb-', '').replace('-auth-token', '');
     // Use the project URL even if env var is missing (helps with debugging)
     finalUrl = `https://${projectRef}.supabase.co`;
-    console.warn(`[Supabase] VITE_SUPABASE_URL not set, but detected session for project: ${projectRef}. Using: ${finalUrl}`);
-    console.warn(`[Supabase] ⚠️ This is a fallback. Please set VITE_SUPABASE_URL in Cloudflare Pages environment variables.`);
+    // Only warn in dev mode
+    if (import.meta.env.DEV) {
+      console.warn(`[Supabase] VITE_SUPABASE_URL not set, but detected session for project: ${projectRef}. Using: ${finalUrl}`);
+      console.warn(`[Supabase] ⚠️ This is a fallback. Please set VITE_SUPABASE_URL in Cloudflare Pages environment variables.`);
+    }
   }
 }
 

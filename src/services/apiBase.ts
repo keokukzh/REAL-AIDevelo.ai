@@ -10,9 +10,7 @@ export const getApiBaseUrl = (): string => {
     }
     // If it's already absolute (e.g., full URL), use it as-is
     // WARNING: In production, absolute URLs bypass Pages Function proxy and may trigger CSP/CORB
-    if (import.meta.env?.DEV) {
-      console.warn('[apiBase] VITE_API_URL is absolute URL. In production, use relative "/api" to enable Pages Function proxy.');
-    }
+    // (No console log - production should be silent)
     return apiUrl;
   }
 
@@ -22,9 +20,7 @@ export const getApiBaseUrl = (): string => {
     // Production: use same-origin /api (proxied by Cloudflare Pages Function to Render backend)
     // This satisfies CSP connect-src 'self' requirement
     const baseUrl = window.location.origin + '/api';
-    if (import.meta.env?.DEV) {
-      console.log('[apiBase] Production mode: using same-origin API:', baseUrl);
-    }
+    // (No console log - production should be silent)
     return baseUrl;
   }
 

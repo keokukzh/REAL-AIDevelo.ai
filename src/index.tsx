@@ -13,28 +13,56 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 console.error = (...args: any[]) => {
+  const message = args[0]?.toString() || '';
+  
   // Suppress Web3/wallet-related warnings
   if (
-    args[0]?.toString().includes('Segmented') ||
-    args[0]?.toString().includes('GetInstance') ||
-    args[0]?.toString().includes('SignerNotReady') ||
-    args[0]?.toString().includes('NotInitialized') ||
-    args[0]?.toString().includes('wallet') ||
-    args[0]?.toString().includes('provider')
+    message.includes('Segmented') ||
+    message.includes('GetInstance') ||
+    message.includes('SignerNotReady') ||
+    message.includes('NotInitialized') ||
+    message.includes('wallet') ||
+    message.includes('provider')
   ) {
     return;
   }
+  
+  // Suppress browser extension warnings (lockdown, SES, intrinsics)
+  if (
+    message.includes('lockdown-install.js') ||
+    message.includes('lockdown-run.js') ||
+    message.includes('Removing unpermitted intrinsics') ||
+    message.includes('Removing intrinsics') ||
+    message.includes('moz-extension://')
+  ) {
+    return;
+  }
+  
   originalError.apply(console, args);
 };
 
 console.warn = (...args: any[]) => {
+  const message = args[0]?.toString() || '';
+  
   // Suppress non-critical warnings
   if (
-    args[0]?.toString().includes('Segmented') ||
-    args[0]?.toString().includes('wallet')
+    message.includes('Segmented') ||
+    message.includes('wallet')
   ) {
     return;
   }
+  
+  // Suppress browser extension warnings (lockdown, SES, intrinsics)
+  if (
+    message.includes('lockdown-install.js') ||
+    message.includes('lockdown-run.js') ||
+    message.includes('Removing unpermitted intrinsics') ||
+    message.includes('Removing intrinsics') ||
+    message.includes('moz-extension://')
+  ) {
+    return;
+  }
+  
   originalWarn.apply(console, args);
 };
 
