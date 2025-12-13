@@ -1,0 +1,36 @@
+# Build artifacts
+dist/
+server/dist/
+node_modules/
+server/node_modules/
+
+# Cloudflare
+.wrangler/
+
+# Archived documentation (legacy docs)
+docs/archive/
+
+# Legacy documentation patterns (if any remain)
+*_REPORT.md
+*_CHECKLIST*.md
+*_COMPLETE*.md
+SESSION_*.md
+QUICK_*.md
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

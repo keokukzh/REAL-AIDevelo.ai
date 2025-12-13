@@ -1,5 +1,6 @@
-import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { API_BASE_URL } from './apiBase';
+import { supabase } from '../lib/supabase';
 
 // Default timeout raised to handle slower agent provisioning calls.
 const apiClient: AxiosInstance = axios.create({
@@ -10,63 +11,16 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-const getAccessToken = () => localStorage.getItem('auth_token');
-const getRefreshToken = () => localStorage.getItem('refresh_token');
-
-const setAccessToken = (token: string) => localStorage.setItem('auth_token', token);
-
-let refreshPromise: Promise<string | null> | null = null;
-
-const refreshAccessToken = async (): Promise<string | null> => {
-  if (!refreshPromise) {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) return null;
-
-    refreshPromise = axios
-      .post(`${API_BASE_URL}/auth/refresh`, { refreshToken })
-      .then((response) => {
-        const newToken = response.data?.data?.token as string | undefined;
-        if (newToken) setAccessToken(newToken);
-        return newToken ?? null;
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-
-  return refreshPromise;
+// Get Supabase access token
+const getAccessToken = async (): Promise<string | null> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 };
 
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getAccessToken();
+apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const token = await getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
-  // Debug logging only in development mode
-  if (import.meta.env.DEV && config.url?.includes('/agents')) {
-    try {
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'apiClient.ts:46',
-          message: 'Request interceptor - agents endpoint',
-          data: {
-            url: config.url,
-            method: config.method,
-            hasAuthHeader: !!config.headers?.Authorization,
-            authHeaderLength: config.headers?.Authorization?.length,
-            dataSize: JSON.stringify(config.data).length
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'A,D'
-        })
-      }).catch(() => {});
-    } catch (e) {
-      // Ignore debug logging errors
-    }
   }
   return config;
 });
@@ -77,15 +31,22 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
+    // Handle 401: Try to refresh Supabase session
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const newToken = await refreshAccessToken();
-      if (newToken) {
+      
+      // Supabase automatically refreshes tokens, but we need to get the new session
+      const { data: { session } } = await supabase.auth.refreshSession();
+      
+      if (session?.access_token) {
         originalRequest.headers = {
           ...(originalRequest.headers || {}),
-          Authorization: `Bearer ${newToken}`,
+          Authorization: `Bearer ${session.access_token}`,
         };
         return apiClient(originalRequest);
+      } else {
+        // Session expired or invalid - redirect to login
+        await supabase.auth.signOut();
       }
     }
 

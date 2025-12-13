@@ -1,3 +1,5 @@
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+/*
 import { Router } from 'express';
 import { createPaymentSession, getPaymentSession, handleWebhook } from '../controllers/paymentController';
 import express from 'express';
@@ -77,4 +79,5 @@ router.get('/session/:sessionId', getPaymentSession);
 router.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 export default router;
+*/
 

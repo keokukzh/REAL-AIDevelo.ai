@@ -1,3 +1,5 @@
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+/*
 import { Router } from 'express';
 import { createPurchase, linkPurchaseToAgent, getPurchaseByAgentId } from '../controllers/purchaseController';
 
@@ -83,4 +85,5 @@ router.post('/:purchaseId/link', linkPurchaseToAgent);
 router.get('/agent/:agentId', getPurchaseByAgentId);
 
 export default router;
+*/
 

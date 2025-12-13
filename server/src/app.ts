@@ -56,13 +56,15 @@ import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
-import paymentRoutes from './routes/paymentRoutes';
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+// import paymentRoutes from './routes/paymentRoutes';
 import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
-import purchaseRoutes from './routes/purchaseRoutes';
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+// import purchaseRoutes from './routes/purchaseRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import telephonyRoutes from './routes/telephonyRoutes';
 import syncRoutes from './routes/syncRoutes';
@@ -107,7 +109,9 @@ app.options('*', (req: Request, res: Response) => {
     origin === 'https://aidevelo.ai' ||
     origin.endsWith('.aidevelo.ai') ||
     origin.endsWith('.pages.dev') ||
-    origin.endsWith('.railway.app') ||
+    origin === 'http://localhost:4000' || // Vite dev server
+    // RAILWAY REMOVED
+    // origin.endsWith('.railway.app') ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('http://127.0.0.1:');
 
@@ -133,10 +137,12 @@ app.use(cors({
     const isAllowed =
       origin === 'https://aidevelo.ai' ||
       origin.endsWith('.aidevelo.ai') ||
-      origin.endsWith('.pages.dev') ||
-      origin.endsWith('.cloudflare.com') ||
-      origin.startsWith('http://localhost:') ||
-      origin.startsWith('http://127.0.0.1:');
+    origin.endsWith('.pages.dev') ||
+    origin.endsWith('.cloudflare.com') ||
+    // RAILWAY REMOVED
+    // origin.endsWith('.railway.app') ||
+    origin.startsWith('http://localhost:') ||
+    origin.startsWith('http://127.0.0.1:');
 
     if (isAllowed) {
       callback(null, true);
@@ -226,7 +232,7 @@ app.get('/', (req: Request, res: Response) => {
       agents: '/api/agents',
       elevenlabs: '/api/elevenlabs',
       calendar: '/api/calendar',
-      payments: '/api/payments',
+      // payments: '/api/payments', // STRIPE/PAYMENT REMOVED
       enterprise: '/api/enterprise',
       telephony: '/api/telephony',
       onboarding: '/api/onboarding',
@@ -348,8 +354,9 @@ const v1Router = express.Router();
 v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
 v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
-v1Router.use('/payments', paymentRoutes);
-v1Router.use('/purchases', requireAuth, purchaseRoutes);
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+// v1Router.use('/payments', paymentRoutes);
+// v1Router.use('/purchases', requireAuth, purchaseRoutes);
 v1Router.use('/voice', requireAuth, voiceRoutes);
 v1Router.use('/telephony', requireAuth, telephonyRoutes);
 v1Router.use('/sync', requireAuth, syncRoutes);

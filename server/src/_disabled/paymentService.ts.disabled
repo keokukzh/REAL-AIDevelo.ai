@@ -1,3 +1,5 @@
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+/*
 import Stripe from 'stripe';
 import { config } from '../config/env';
 
@@ -166,4 +168,5 @@ export const paymentService = {
     return sessionId;
   },
 };
+*/
 

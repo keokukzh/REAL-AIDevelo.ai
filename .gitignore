@@ -55,9 +55,12 @@ stripe-cli/
 stripe-cli.zip
 
 # Environment variables
+# Ignore all actual env files (with secrets)
 .env
 .env.local
 .env.*.local
 server/.env
 server/.env.local
-.env.example
+server/.env.*.local
+
+# Note: .env.example and .env.production.example files ARE committed (they're templates without secrets)

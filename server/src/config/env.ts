@@ -14,21 +14,26 @@ const requiredEnvVars = [
 // Additional required variables for production runtime
 const productionRequiredEnvVars = [
   'ELEVENLABS_API_KEY',
-  'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET',
-  // JWT secrets removed - will be auto-generated if missing
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  // STRIPE/PAYMENT REMOVED - No longer required
+  // 'STRIPE_SECRET_KEY',
+  // 'STRIPE_WEBHOOK_SECRET',
 ];
 
 // Optional env vars (with defaults) - computed after validateEnv sets defaults
 const getOptionalEnvVars = () => ({
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+  // STRIPE/PAYMENT REMOVED
+  // STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+  // STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   // Database URL priority:
   // 1. DATABASE_URL (primary - works with Supabase, Neon, Render, etc.)
   // 2. POSTGRES_URL (fallback)
   // Recommended: Use Supabase (free) - see MIGRATION_TO_SUPABASE.md
   DATABASE_URL: process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
+  SUPABASE_URL: process.env.SUPABASE_URL || '',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   REDIS_URL: process.env.REDIS_URL || '',
   OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4319',
   KNOWLEDGE_API_KEY: process.env.KNOWLEDGE_API_KEY || '',
@@ -115,10 +120,13 @@ export const config = {
     'https://*.cloudflare.com', // Cloudflare Workers
   ],
   isProduction: process.env.NODE_ENV === 'production',
-  stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,
-  stripeWebhookSecret: optionalEnvVars.STRIPE_WEBHOOK_SECRET,
+  // STRIPE/PAYMENT REMOVED
+  // stripeSecretKey: optionalEnvVars.STRIPE_SECRET_KEY,
+  // stripeWebhookSecret: optionalEnvVars.STRIPE_WEBHOOK_SECRET,
   frontendUrl: optionalEnvVars.FRONTEND_URL,
   databaseUrl: optionalEnvVars.DATABASE_URL,
+  supabaseUrl: optionalEnvVars.SUPABASE_URL,
+  supabaseServiceRoleKey: optionalEnvVars.SUPABASE_SERVICE_ROLE_KEY,
   redisUrl: optionalEnvVars.REDIS_URL,
   otlpExporterEndpoint: optionalEnvVars.OTEL_EXPORTER_OTLP_ENDPOINT,
   knowledgeApiKey: optionalEnvVars.KNOWLEDGE_API_KEY,

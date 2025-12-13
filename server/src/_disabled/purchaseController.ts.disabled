@@ -1,3 +1,5 @@
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+/*
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
@@ -102,4 +104,5 @@ export const getPurchaseByAgentId = async (req: Request, res: Response, next: Ne
     next(new InternalServerError('Failed to retrieve purchase'));
   }
 };
+*/
 

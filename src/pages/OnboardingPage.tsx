@@ -94,30 +94,7 @@ export const OnboardingPage = () => {
             console.log('[Onboarding] Creating agent with payload:', payload);
             setSubmissionProgress('Daten werden gesendet...');
             
-            // Debug logging only in development mode
-            if (import.meta.env.DEV) {
-              try {
-                const authToken = localStorage.getItem('auth_token');
-                fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    location: 'OnboardingPage.tsx:97',
-                    message: 'Creating agent - auth state',
-                    data: {
-                      hasToken: !!authToken,
-                      tokenLength: authToken?.length,
-                      payloadSize: JSON.stringify(payload).length
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    hypothesisId: 'A'
-                  })
-                }).catch(() => {});
-              } catch (e) {
-                // Ignore debug logging errors
-              }
-            }
+            // Debug calls removed - no longer needed
             
             const response = await apiRequest<{ success: boolean; data: any }>('/agents', {
                 method: 'POST',

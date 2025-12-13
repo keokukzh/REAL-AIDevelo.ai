@@ -10,6 +10,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { EnterpriseContactPage } from './pages/EnterpriseContactPage';
 import { CalendarCallbackPage } from './pages/CalendarCallbackPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { ImpressumPage } from './pages/ImpressumPage';
 import { DatenschutzPage } from './pages/DatenschutzPage';
 import { AGBPage } from './pages/AGBPage';
@@ -37,6 +38,7 @@ function App() {
                     <Route path="/payment-success" element={<PaymentSuccessPage />} />
                     <Route path="/enterprise" element={<EnterpriseContactPage />} />
                     <Route path="/calendar/:provider/callback" element={<CalendarCallbackPage />} />
+                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/voice-edit" element={<VoiceEditPage />} />
                     <Route path="/dashboard" element={

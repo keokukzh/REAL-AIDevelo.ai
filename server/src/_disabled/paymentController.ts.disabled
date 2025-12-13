@@ -1,3 +1,5 @@
+// STRIPE/PAYMENT REMOVED - Commented out for cleanup
+/*
 import { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../services/paymentService';
 import { InternalServerError, BadRequestError } from '../utils/errors';
@@ -120,4 +122,5 @@ export const handleWebhook = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+*/
 
