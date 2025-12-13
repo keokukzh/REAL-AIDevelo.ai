@@ -24,9 +24,19 @@ export const LandingPage = () => {
     const state = location.state as { scrollTarget?: string } | null;
     if (!state?.scrollTarget) return;
 
+    // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
+    const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
+    const scrollTarget = state.scrollTarget as string;
+    
+    // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
+    if (!SAFE_ANCHOR_REGEX.test(scrollTarget)) {
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+
     const headerOffset = 80;
     const scrollToTarget = () => {
-      const target = document.querySelector(state.scrollTarget as string);
+      const target = document.querySelector(scrollTarget);
       if (target) {
         const elementPosition = target.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;

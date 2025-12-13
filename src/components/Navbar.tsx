@@ -42,6 +42,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     
+    // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
+    const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
+    if (href !== '#' && !SAFE_ANCHOR_REGEX.test(href)) {
+      // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
+      setMobileMenuOpen(false);
+      return;
+    }
+    
     // If we are not on the landing page, navigate there with the hash
     if (location.pathname !== '/') {
       navigate('/', { state: { scrollTarget: href } });

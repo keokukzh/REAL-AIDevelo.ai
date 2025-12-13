@@ -13,6 +13,13 @@ export const Footer: React.FC = () => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     
+    // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
+    const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
+    if (!SAFE_ANCHOR_REGEX.test(href)) {
+      // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
+      return;
+    }
+    
     if (location.pathname !== '/') {
         navigate(`/${href}`);
         return;
