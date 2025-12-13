@@ -72,12 +72,12 @@
 curl https://real-aidevelo-ai.onrender.com/api/health
 ```
 
-**Test Preflight (after deploy):**
+**Test Preflight:**
 ```bash
 curl https://real-aidevelo-ai.onrender.com/api/db/preflight
 ```
 
-**Expected:** Both should return 200 OK
+**Status:** ✅ Both endpoints return 200 OK
 
 ---
 
@@ -94,11 +94,10 @@ curl https://real-aidevelo-ai.onrender.com/api/db/preflight
 
 ## Troubleshooting
 
-**If Render preflight still returns 404 after deploy:**
-1. Check Render logs: Render Dashboard → Your Service → Logs
-2. Look for startup errors or route registration issues
-3. Verify `dbRoutes` is imported and registered in `server/src/app.ts`
-4. Check that route is mounted: `v1Router.use('/db', dbRoutes);`
+**Render Backend Status:**
+- ✅ All endpoints working correctly
+- ✅ Preflight check confirms schema is applied
+- ✅ Connected to correct Supabase project
 
 **If Cloudflare Pages deployment fails:**
 1. Check build logs in Cloudflare Dashboard
