@@ -66,10 +66,16 @@ export const errorHandler = (
     return sendFailure(res, err.statusCode, err.message, payload.details);
   }
 
-  // Check for gated debug mode
+  // Check for gated debug mode (header-based)
   const debugHeader = req.headers['x-aidevelo-debug'] as string;
   const toolSecret = process.env.TOOL_SHARED_SECRET;
-  const isDebugMode = debugHeader && toolSecret && debugHeader === toolSecret;
+  const isHeaderDebugMode = debugHeader && toolSecret && debugHeader === toolSecret;
+
+  // Check for DEBUG_ERRORS environment variable
+  const isEnvDebugMode = process.env.DEBUG_ERRORS === 'true';
+
+  // Debug mode is active if either header-based or env-based
+  const isDebugMode = isHeaderDebugMode || isEnvDebugMode;
 
   // Handle unknown/unexpected errors
   const statusCode = err instanceof AppError ? err.statusCode : 500;
@@ -82,10 +88,10 @@ export const errorHandler = (
   if (isDebugMode) {
     debug.message = err.message;
     debug.name = err.name;
-    // Only include first 10 lines of stack to avoid huge responses
+    // Only include first 15 lines of stack to avoid huge responses
     if (err.stack) {
       const stackLines = err.stack.split('\n');
-      debug.stack = stackLines.slice(0, 10).join('\n');
+      debug.stack = stackLines.slice(0, 15).join('\n');
     }
     
     // Extract Supabase error details if present
