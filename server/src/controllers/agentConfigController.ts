@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/supabaseAuth';
-import { supabaseAdmin, ensureOrgForUser, ensureDefaultLocation } from '../services/supabaseDb';
+import { supabaseAdmin, ensureOrgForUser, ensureDefaultLocation, ensureAgentConfig } from '../services/supabaseDb';
 import { z } from 'zod';
 import { InternalServerError } from '../utils/errors';
 
@@ -77,7 +77,6 @@ export const updateAgentConfig = async (
     const location = await ensureDefaultLocation(org.id);
 
     // Ensure agent config exists (idempotent)
-    const { ensureAgentConfig } = await import('../services/supabaseDb');
     const agentConfig = await ensureAgentConfig(location.id);
 
     // Build update payload by filtering out undefined values
