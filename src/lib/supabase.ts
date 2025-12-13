@@ -20,12 +20,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Create client with fallback to prevent crashes
 // If env vars are missing, use dummy values (auth won't work but page loads)
-const finalUrl = supabaseUrl || 'https://placeholder.supabase.co';
-const finalKey = supabaseAnonKey || 'dummy-key-placeholder';
+// BUT: If we detect a session in localStorage for a specific project, use that project's URL
+let finalUrl = supabaseUrl || 'https://placeholder.supabase.co';
+let finalKey = supabaseAnonKey || 'dummy-key-placeholder';
+
+// Check localStorage for existing session to determine correct project
+if (typeof window !== 'undefined' && !supabaseUrl) {
+  // Look for Supabase session keys in localStorage (format: sb-<project-ref>-auth-token)
+  const sessionKeys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  if (sessionKeys.length > 0) {
+    // Extract project ref from key (e.g., "sb-rckuwfcsqwwylffecwur-auth-token" -> "rckuwfcsqwwylffecwur")
+    const projectRef = sessionKeys[0].replace('sb-', '').replace('-auth-token', '');
+    // Use the project URL even if env var is missing (helps with debugging)
+    finalUrl = `https://${projectRef}.supabase.co`;
+    console.warn(`[Supabase] VITE_SUPABASE_URL not set, but detected session for project: ${projectRef}. Using: ${finalUrl}`);
+    console.warn(`[Supabase] ⚠️ This is a fallback. Please set VITE_SUPABASE_URL in Cloudflare Pages environment variables.`);
+  }
+}
 
 export const supabase = createClient(finalUrl, finalKey, {
   auth: {
-    persistSession: !!supabaseUrl && !!supabaseAnonKey,
+    persistSession: true, // Always enable persistence (even with placeholder, to read existing sessions)
     autoRefreshToken: !!supabaseUrl && !!supabaseAnonKey,
     detectSessionInUrl: !!supabaseUrl && !!supabaseAnonKey,
   },

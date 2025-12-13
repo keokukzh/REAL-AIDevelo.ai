@@ -18,12 +18,22 @@ const getAccessToken = async (): Promise<string | null> => {
 };
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const token = await getAccessToken();
-  // Only set Authorization header if token exists (prevents 401 race conditions)
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    // Remove Authorization header if no token (prevents sending stale/invalid tokens)
+  try {
+    const token = await getAccessToken();
+    // Only set Authorization header if token exists (prevents 401 race conditions)
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Remove Authorization header if no token (prevents sending stale/invalid tokens)
+      delete config.headers.Authorization;
+      // Log warning in dev mode only
+      if (import.meta.env.DEV) {
+        console.warn('[apiClient] No access token available for request:', config.url);
+      }
+    }
+  } catch (error) {
+    // If getAccessToken fails, log but don't crash
+    console.error('[apiClient] Error getting access token:', error);
     delete config.headers.Authorization;
   }
   return config;
