@@ -227,15 +227,21 @@ export async function ensureAgentConfig(
   services_json: any;
   business_type: string | null;
 }> {
-  // Check if agent config exists
+  // Check if agent config exists (use maybeSingle to avoid error if not found)
   const { data: existingConfig, error: findError } = await supabaseAdmin
     .from('agent_configs')
     .select('*')
     .eq('location_id', locationId)
-    .single();
+    .maybeSingle();
 
+  // If config exists and no error, return it
   if (existingConfig && !findError) {
     return existingConfig;
+  }
+
+  // If there was an error that's NOT "not found", throw it
+  if (findError && findError.code !== 'PGRST116') {
+    throw new Error(`Failed to check agent config: ${findError.message || 'Unknown error'}`);
   }
 
   // Agent config doesn't exist - create it
@@ -256,8 +262,25 @@ export async function ensureAgentConfig(
     .select('*')
     .single();
 
-  if (createError || !newConfig) {
-    throw new Error(`Failed to create agent config: ${createError?.message || 'Unknown error'}`);
+  if (createError) {
+    // Check if it's a unique constraint violation (race condition)
+    if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
+      // Race condition: another request created the config, fetch it
+      const { data: existingConfigAfterRace, error: fetchError } = await supabaseAdmin
+        .from('agent_configs')
+        .select('*')
+        .eq('location_id', locationId)
+        .maybeSingle();
+      
+      if (existingConfigAfterRace && !fetchError) {
+        return existingConfigAfterRace;
+      }
+    }
+    throw new Error(`Failed to create agent config: ${createError.message || 'Unknown error'}`);
+  }
+
+  if (!newConfig) {
+    throw new Error('Failed to create agent config: No data returned');
   }
 
   return newConfig;
