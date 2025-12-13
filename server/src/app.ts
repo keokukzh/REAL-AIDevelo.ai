@@ -55,6 +55,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import dbRoutes from './routes/dbRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
 // STRIPE/PAYMENT REMOVED - Commented out for cleanup
@@ -373,6 +374,7 @@ app.get('/metrics', (req: Request, res: Response) => {
 // Routes: Register all routes under a versioned router (v1) and keep top-level /api as a compat shim
 const v1Router = express.Router();
 
+v1Router.use('/db', dbRoutes); // NO AUTH - Public preflight endpoint
 v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
 v1Router.use('/dashboard', dashboardRoutes); // Auth applied per-route
 v1Router.use('/elevenlabs', elevenLabsRoutes);

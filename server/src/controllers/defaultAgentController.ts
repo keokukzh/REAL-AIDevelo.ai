@@ -7,6 +7,7 @@ import {
   ensureAgentConfig,
   supabaseAdmin,
 } from '../services/supabaseDb';
+import { checkDbPreflight } from '../services/dbPreflight';
 import { InternalServerError } from '../utils/errors';
 import { z } from 'zod';
 
@@ -70,6 +71,16 @@ export const createDefaultAgent = async (
   next: NextFunction
 ) => {
   try {
+    // Fail-fast: Check schema preflight
+    const preflight = await checkDbPreflight();
+    if (!preflight.ok) {
+      return res.status(500).json({
+        error: 'Supabase schema not applied',
+        message: `Missing tables: ${preflight.missing.join(', ')}. Run server/db/schema.sql in Supabase SQL editor.`,
+        missing: preflight.missing,
+      });
+    }
+
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
     }
@@ -176,6 +187,16 @@ export const getDashboardOverview = async (
   next: NextFunction
 ) => {
   try {
+    // Fail-fast: Check schema preflight
+    const preflight = await checkDbPreflight();
+    if (!preflight.ok) {
+      return res.status(500).json({
+        error: 'Supabase schema not applied',
+        message: `Missing tables: ${preflight.missing.join(', ')}. Run server/db/schema.sql in Supabase SQL editor.`,
+        missing: preflight.missing,
+      });
+    }
+
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
     }
