@@ -169,11 +169,43 @@ export const createDefaultAgent = async (
       data: validated,
     });
   } catch (error) {
-    console.error('[DefaultAgentController] Error creating default agent:', error);
-    if (error instanceof z.ZodError) {
-      return next(new InternalServerError(`Response validation failed: ${error.message}`));
+    // Generate request ID for tracking
+    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Determine which step failed
+    let failedStep = 'unknown';
+    if (error instanceof Error) {
+      if (error.message.includes('ensureUserRow') || error.message.includes('create organization') || error.message.includes('create user')) {
+        failedStep = 'ensureUserRow';
+      } else if (error.message.includes('ensureOrgForUser') || error.message.includes('Organization not found')) {
+        failedStep = 'ensureOrgForUser';
+      } else if (error.message.includes('ensureDefaultLocation') || error.message.includes('create location')) {
+        failedStep = 'ensureDefaultLocation';
+      } else if (error.message.includes('ensureAgentConfig') || error.message.includes('create agent config')) {
+        failedStep = 'ensureAgentConfig';
+      }
     }
-    next(new InternalServerError('Failed to create default agent'));
+    
+    console.error('[DefaultAgentController] Error creating default agent:', {
+      requestId,
+      step: failedStep,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    if (error instanceof z.ZodError) {
+      return res.status(500).json({
+        error: 'Response validation failed',
+        step: failedStep,
+        requestId,
+      });
+    }
+    
+    return res.status(500).json({
+      error: 'Failed to create default agent',
+      step: failedStep,
+      requestId,
+    });
   }
 };
 
