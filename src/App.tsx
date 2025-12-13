@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ScrollToTop } from './components/layout/ScrollToTop';
@@ -22,7 +22,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+// Conditionally import ReactQueryDevtools only in development (it uses eval internally)
+const ReactQueryDevtools = import.meta.env.DEV
+  ? React.lazy(() => import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })))
+  : null;
 
 function App() {
   return (
@@ -66,7 +70,11 @@ function App() {
             </div>
           </BrowserRouter>
         </AuthProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {ReactQueryDevtools && (
+          <Suspense fallback={null}>
+            <ReactQueryDevtools initialIsOpen={false} />
+          </Suspense>
+        )}
       </QueryClientProvider>
     </ErrorBoundary>
   );
