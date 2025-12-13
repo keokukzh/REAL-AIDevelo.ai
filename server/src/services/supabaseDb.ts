@@ -37,14 +37,54 @@ export async function ensureUserRow(
   }
 
   // User doesn't exist - create org first, then user
-  const { data: org, error: orgError } = await supabaseAdmin
-    .from('organizations')
-    .insert({ name: name || 'Default Org' })
-    .select('id')
-    .single();
+  // Handle race condition: if org/user creation fails due to unique constraint, retry fetching
+  let org;
+  try {
+    const { data: newOrg, error: orgError } = await supabaseAdmin
+      .from('organizations')
+      .insert({ name: name || 'Default Org' })
+      .select('id')
+      .single();
 
-  if (orgError || !org) {
-    throw new Error(`Failed to create organization: ${orgError?.message || 'Unknown error'}`);
+    if (orgError) {
+      // Check if it's a unique constraint violation (race condition - another request created org)
+      // In this case, we should retry fetching the user
+      if (orgError.code === '23505' || orgError.message?.includes('duplicate') || orgError.message?.includes('unique')) {
+        // Race condition: another request created the org, retry fetching user
+        const { data: retryUser, error: retryError } = await supabaseAdmin
+          .from('users')
+          .select('id, org_id, supabase_user_id, email')
+          .eq('supabase_user_id', authUserId)
+          .maybeSingle();
+        
+        if (retryUser && !retryError) {
+          return retryUser;
+        }
+      }
+      throw new Error(`Failed to create organization: ${orgError.message || 'Unknown error'}`);
+    }
+
+    if (!newOrg) {
+      throw new Error('Failed to create organization: No data returned');
+    }
+
+    org = newOrg;
+  } catch (error) {
+    // If org creation failed and it's not a race condition, throw
+    if (error instanceof Error && !error.message.includes('retry')) {
+      throw error;
+    }
+    // Otherwise, retry fetching user (race condition handled above)
+    const { data: retryUser, error: retryError } = await supabaseAdmin
+      .from('users')
+      .select('id, org_id, supabase_user_id, email')
+      .eq('supabase_user_id', authUserId)
+      .maybeSingle();
+    
+    if (retryUser && !retryError) {
+      return retryUser;
+    }
+    throw error;
   }
 
   // Create user linked to org
@@ -58,8 +98,25 @@ export async function ensureUserRow(
     .select('id, org_id, supabase_user_id, email')
     .single();
 
-  if (userError || !newUser) {
-    throw new Error(`Failed to create user: ${userError?.message || 'Unknown error'}`);
+  if (userError) {
+    // Check if it's a unique constraint violation (race condition - another request created user)
+    if (userError.code === '23505' || userError.message?.includes('duplicate') || userError.message?.includes('unique')) {
+      // Race condition: another request created the user, fetch it
+      const { data: existingUser, error: fetchError } = await supabaseAdmin
+        .from('users')
+        .select('id, org_id, supabase_user_id, email')
+        .eq('supabase_user_id', authUserId)
+        .maybeSingle();
+      
+      if (existingUser && !fetchError) {
+        return existingUser;
+      }
+    }
+    throw new Error(`Failed to create user: ${userError.message || 'Unknown error'}`);
+  }
+
+  if (!newUser) {
+    throw new Error('Failed to create user: No data returned');
   }
 
   return newUser;
@@ -68,9 +125,11 @@ export async function ensureUserRow(
 /**
  * Ensure organization exists for user
  * Idempotent: returns user's org if exists, creates new if not
+ * Handles race conditions: if user doesn't exist, create user+org via ensureUserRow
  */
 export async function ensureOrgForUser(
-  authUserId: string
+  authUserId: string,
+  email?: string
 ): Promise<{ id: string; name: string }> {
   // Get user first
   const { data: user, error: userError } = await supabaseAdmin
@@ -79,8 +138,22 @@ export async function ensureOrgForUser(
     .eq('supabase_user_id', authUserId)
     .maybeSingle();
 
+  // If user doesn't exist, create user+org via ensureUserRow (handles race conditions)
   if (userError || !user) {
-    throw new Error(`User not found: ${userError?.message || 'Unknown error'}`);
+    // This might be a race condition - try to create user+org
+    const newUser = await ensureUserRow(authUserId, email);
+    // Now get the org
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from('organizations')
+      .select('id, name')
+      .eq('id', newUser.org_id)
+      .maybeSingle();
+
+    if (orgError || !org) {
+      throw new Error(`Organization not found after user creation: ${orgError?.message || 'Unknown error'}`);
+    }
+
+    return org;
   }
 
   // Get org

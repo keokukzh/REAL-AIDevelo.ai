@@ -1,5 +1,7 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/apiClient';
+import { supabase } from '../lib/supabase';
 
 export interface DashboardOverview {
   user: {
@@ -43,6 +45,32 @@ export interface DashboardOverview {
 }
 
 export const useDashboardOverview = () => {
+  // Check if session exists before enabling the query
+  const [hasSession, setHasSession] = React.useState(false);
+  const [isChecking, setIsChecking] = React.useState(true);
+
+  React.useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setHasSession(!!session?.access_token);
+      } catch (error) {
+        console.error('[useDashboardOverview] Error checking session:', error);
+        setHasSession(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(!!session?.access_token);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return useQuery<DashboardOverview, Error>({
     queryKey: ['dashboard', 'overview'],
     queryFn: async () => {
@@ -64,6 +92,7 @@ export const useDashboardOverview = () => {
         throw error;
       }
     },
+    enabled: !isChecking && hasSession, // Only enable when session is confirmed
     retry: (failureCount, error: any) => {
       // Don't retry on 401 (unauthorized)
       if (error?.status === 401) {

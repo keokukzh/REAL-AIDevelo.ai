@@ -91,8 +91,8 @@ export const createDefaultAgent = async (
     // Step 1: Ensure user row exists
     const user = await ensureUserRow(supabaseUserId, email);
 
-    // Step 2: Ensure organization exists
-    const org = await ensureOrgForUser(supabaseUserId);
+    // Step 2: Ensure organization exists (pass email for race condition handling)
+    const org = await ensureOrgForUser(supabaseUserId, email);
 
     // Step 3: Ensure default location exists
     const location = await ensureDefaultLocation(org.id, locationName);
@@ -205,7 +205,7 @@ export const getDashboardOverview = async (
 
     // Reuse the same ensure logic as POST /api/agent/default
     const user = await ensureUserRow(supabaseUserId, email);
-    const org = await ensureOrgForUser(supabaseUserId);
+    const org = await ensureOrgForUser(supabaseUserId, email);
     const location = await ensureDefaultLocation(org.id);
     const agentConfig = await ensureAgentConfig(location.id);
 
@@ -300,11 +300,45 @@ export const getDashboardOverview = async (
       data: validated,
     });
   } catch (error) {
-    console.error('[DefaultAgentController] Error getting dashboard overview:', error);
-    if (error instanceof z.ZodError) {
-      return next(new InternalServerError(`Response validation failed: ${error.message}`));
+    // Generate request ID for tracking
+    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Determine which step failed
+    let failedStep = 'unknown';
+    if (error instanceof Error) {
+      if (error.message.includes('ensureUserRow') || error.message.includes('create organization') || error.message.includes('create user')) {
+        failedStep = 'ensureUserRow';
+      } else if (error.message.includes('ensureOrgForUser') || error.message.includes('Organization not found')) {
+        failedStep = 'ensureOrgForUser';
+      } else if (error.message.includes('ensureDefaultLocation') || error.message.includes('create location')) {
+        failedStep = 'ensureDefaultLocation';
+      } else if (error.message.includes('ensureAgentConfig') || error.message.includes('create agent config')) {
+        failedStep = 'ensureAgentConfig';
+      } else if (error.message.includes('recent calls') || error.message.includes('call_logs')) {
+        failedStep = 'loadRecentCalls';
+      }
     }
-    next(new InternalServerError('Failed to get dashboard overview'));
+    
+    console.error('[DefaultAgentController] Error getting dashboard overview:', {
+      requestId,
+      step: failedStep,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    if (error instanceof z.ZodError) {
+      return res.status(500).json({
+        error: 'Response validation failed',
+        step: failedStep,
+        requestId,
+      });
+    }
+    
+    return res.status(500).json({
+      error: 'Failed to get dashboard overview',
+      step: failedStep,
+      requestId,
+    });
   }
 };
 
