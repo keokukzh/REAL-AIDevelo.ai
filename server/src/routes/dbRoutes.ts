@@ -17,6 +17,7 @@ router.get('/preflight', async (req: Request, res: Response) => {
     res.status(500).json({
       ok: false,
       missing: ['unknown_error'],
+      warnings: ['Preflight check failed'],
       projectUrl: 'error',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',
