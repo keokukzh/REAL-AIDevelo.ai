@@ -251,18 +251,133 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
 export function setupWebSocketServer(httpServer: HTTPServer): void {
   // WebSocket server for traditional call sessions
   const wss = new WebSocketServer({
-    server: httpServer,
-    path: '/api/voice-agent/call-session',
+    noServer: true,
   });
 
   // WebSocket server for ElevenLabs conversational API
   const elevenLabsWss = new WebSocketServer({
-    server: httpServer,
-    path: '/api/voice-agent/elevenlabs-stream',
+    noServer: true,
+  });
+
+  // WebSocket server for Twilio Media Streams
+  const twilioStreamWss = new WebSocketServer({
+    noServer: true,
+    verifyClient: (info, cb) => {
+      try {
+        const expectedToken = process.env.TWILIO_STREAM_TOKEN;
+        if (!expectedToken) {
+          cb(false, 500, 'TWILIO_STREAM_TOKEN not configured');
+          return;
+        }
+
+        const reqUrl = info.req.url || '';
+        const query = reqUrl.includes('?') ? reqUrl.slice(reqUrl.indexOf('?') + 1) : '';
+        const params = new URLSearchParams(query);
+        const token = params.get('token');
+
+        if (!token || token !== expectedToken) {
+          cb(false, 401, 'Unauthorized');
+          return;
+        }
+
+        cb(true);
+      } catch (error: any) {
+        console.error(`[TwilioStream] verifyClient error: ${error?.message || error}`);
+        cb(false, 400, 'Bad Request');
+      }
+    },
+  });
+
+  httpServer.on('upgrade', (req, socket, head) => {
+    const pathname = (req.url || '').split('?')[0];
+
+    if (pathname === '/api/voice-agent/call-session') {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req);
+      });
+      return;
+    }
+
+    if (pathname === '/api/voice-agent/elevenlabs-stream') {
+      elevenLabsWss.handleUpgrade(req, socket, head, (ws) => {
+        elevenLabsWss.emit('connection', ws, req);
+      });
+      return;
+    }
+
+    if (pathname === '/ws/twilio/stream') {
+      twilioStreamWss.handleUpgrade(req, socket, head, (ws) => {
+        twilioStreamWss.emit('connection', ws, req);
+      });
+      return;
+    }
+
+    socket.destroy();
   });
 
   const activePipelines = new Map<string, VoicePipelineHandler>();
   const activeElevenLabsClients = new Map<string, ElevenLabsStreamingClient>();
+
+  // Handle Twilio Media Streams
+  twilioStreamWss.on('connection', (ws: WebSocket, req: any) => {
+    let streamSid: string | undefined;
+    try {
+      const reqUrl = typeof req?.url === 'string' ? req.url : '';
+      const query = reqUrl.includes('?') ? reqUrl.slice(reqUrl.indexOf('?') + 1) : '';
+      const params = new URLSearchParams(query);
+      streamSid = params.get('StreamSid') || undefined;
+    } catch {
+      streamSid = undefined;
+    }
+
+    let frames = 0;
+    let bytes = 0;
+
+    console.log(`[TwilioStream] connected${streamSid ? ` streamSid=${streamSid}` : ''}`);
+
+    ws.on('message', (data: any) => {
+      try {
+        const text = typeof data === 'string' ? data : (data as Buffer).toString('utf8');
+        const message = JSON.parse(text);
+
+        const event = message?.event;
+        if (event === 'start') {
+          const startStreamSid = message?.start?.streamSid;
+          const callSid = message?.start?.callSid;
+          console.log(`[TwilioStream] start streamSid=${startStreamSid || 'unknown'} callSid=${callSid || 'unknown'}`);
+          return;
+        }
+
+        if (event === 'media') {
+          const payload = message?.media?.payload;
+          if (typeof payload === 'string' && payload.length > 0) {
+            const audio = Buffer.from(payload, 'base64');
+            frames += 1;
+            bytes += audio.length;
+            if (frames === 1 || frames % 50 === 0) {
+              console.log(`[TwilioStream] media frames=${frames} bytes=${bytes}`);
+            }
+          }
+          return;
+        }
+
+        if (event === 'stop') {
+          const stopStreamSid = message?.stop?.streamSid;
+          console.log(`[TwilioStream] stop streamSid=${stopStreamSid || 'unknown'} frames=${frames} bytes=${bytes}`);
+          ws.close();
+          return;
+        }
+
+        console.log(`[TwilioStream] unknown event=${String(event)}`);
+      } catch (error: any) {
+        console.error(`[TwilioStream] error processing message: ${error?.message || error}`);
+      }
+    });
+
+    ws.on('close', () => {
+      console.log(`[TwilioStream] closed frames=${frames} bytes=${bytes}`);
+    });
+  });
 
   // Handle traditional call sessions
   wss.on('connection', async (ws: WebSocket, req: any) => {

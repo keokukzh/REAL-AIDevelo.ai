@@ -13,11 +13,25 @@ function buildTwiML(xmlBody: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${xmlBody}\n</Response>`;
 }
 
-export function handleInboundVoice(req: Request, res: Response): void {
-  // Minimal default: acknowledge and hang up.
-  const sayText = 'Vielen Dank. Bitte bleiben Sie kurz dran.';
+function getWebSocketBaseUrl(req: Request): string {
+  const publicBaseUrl = process.env.PUBLIC_BASE_URL;
+  const base = (publicBaseUrl || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  return base.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+}
 
-  const twiml = buildTwiML(`  <Say language="de-CH">${escapeXml(sayText)}</Say>\n  <Hangup/>`);
+export function handleInboundVoice(req: Request, res: Response): void {
+  const streamToken = process.env.TWILIO_STREAM_TOKEN;
+  if (!streamToken) {
+    res.status(500).json({ success: false, error: 'TWILIO_STREAM_TOKEN not configured' });
+    return;
+  }
+
+  const wsBaseUrl = getWebSocketBaseUrl(req);
+  const streamUrl = `${wsBaseUrl}/ws/twilio/stream?token=${encodeURIComponent(streamToken)}`;
+
+  const twiml = buildTwiML(
+    `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" />\n  </Connect>`
+  );
 
   res
     .status(200)

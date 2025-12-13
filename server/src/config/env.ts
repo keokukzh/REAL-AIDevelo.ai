@@ -19,6 +19,7 @@ const productionRequiredEnvVars = [
   // STRIPE/PAYMENT REMOVED - No longer required
   // 'STRIPE_SECRET_KEY',
   // 'STRIPE_WEBHOOK_SECRET',
+  'TWILIO_STREAM_TOKEN',
 ];
 
 // Optional env vars (with defaults) - computed after validateEnv sets defaults
@@ -33,6 +34,7 @@ const getOptionalEnvVars = () => ({
   DATABASE_URL: process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
   SUPABASE_URL: process.env.SUPABASE_URL || '',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  TWILIO_STREAM_TOKEN: process.env.TWILIO_STREAM_TOKEN || '',
   // LEGACY: REDIS_URL - Not currently used, kept for future use
   REDIS_URL: process.env.REDIS_URL || '',
   // OPTIONAL: OTEL_EXPORTER_OTLP_ENDPOINT - Observability endpoint
@@ -149,5 +151,6 @@ export const config = {
   googleOAuthClientId: optionalEnvVars.GOOGLE_OAUTH_CLIENT_ID,
   googleOAuthClientSecret: optionalEnvVars.GOOGLE_OAUTH_CLIENT_SECRET,
   googleOAuthRedirectUrl: optionalEnvVars.GOOGLE_OAUTH_REDIRECT_URL,
+  twilioStreamToken: optionalEnvVars.TWILIO_STREAM_TOKEN,
 };
 
