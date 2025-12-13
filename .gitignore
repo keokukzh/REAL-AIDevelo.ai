@@ -63,4 +63,8 @@ server/.env
 server/.env.local
 server/.env.*.local
 
-# Note: .env.example and .env.production.example files ARE committed (they're templates without secrets)
+# Explicitly allow example templates (committed, no secrets)
+!.env.example
+!.env.production.example
+!server/.env.example
+!server/.env.production.example
