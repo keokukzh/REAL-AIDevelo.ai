@@ -59,11 +59,11 @@ export const OnboardingAIAssistant: React.FC<OnboardingAIAssistantProps> = ({
     try {
       const response = await apiRequest<{ success: boolean; data: { message: string } }>('/onboarding/ai-assistant', {
         method: 'POST',
-        body: JSON.stringify({
+        data: {
           message: input,
           currentTask,
           formData,
-        }),
+        },
       });
 
       const assistantMessage: Message = {
@@ -129,14 +129,14 @@ export const OnboardingAIAssistant: React.FC<OnboardingAIAssistantProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-1 h-auto"
           >
             {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => setIsOpen(false)}
             className="p-1 h-auto"
           >

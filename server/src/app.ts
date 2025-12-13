@@ -54,6 +54,7 @@ import swaggerUi from 'swagger-ui-express';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
 // STRIPE/PAYMENT REMOVED - Commented out for cleanup
@@ -99,24 +100,45 @@ if (config.isProduction) {
   app.use(helmet());
 }
 
+// Helper function to check if origin is allowed (shared between OPTIONS and CORS middleware)
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) {
+    return true; // Allow requests with no origin (mobile apps, Postman, server-to-server)
+  }
+
+  // Production origins
+  if (
+    origin === 'https://aidevelo.ai' ||
+    origin.endsWith('.aidevelo.ai') ||
+    origin.endsWith('.pages.dev')
+  ) {
+    return true;
+  }
+
+  // Development origins (only in non-production)
+  if (process.env.NODE_ENV !== 'production') {
+    if (
+      origin === 'http://localhost:4000' ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:')
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 // Explicit OPTIONS handler BEFORE CORS - respond immediately to avoid timeout
 app.options('*', (req: Request, res: Response) => {
   const origin = req.headers.origin;
   
-  // Check if origin is allowed
-  const isAllowed =
-    !origin ||
-    origin === 'https://aidevelo.ai' ||
-    origin.endsWith('.aidevelo.ai') ||
-    origin.endsWith('.pages.dev') ||
-    origin === 'http://localhost:4000' || // Vite dev server
-    // RAILWAY REMOVED
-    // origin.endsWith('.railway.app') ||
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('http://127.0.0.1:');
+  // Use same origin check as CORS middleware
+  const isAllowed = isOriginAllowed(origin);
 
   if (isAllowed && origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin'); // Important for cache correctness
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -128,21 +150,7 @@ app.options('*', (req: Request, res: Response) => {
 // CORS Configuration - Allow Cloudflare Pages and production domains
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, server-to-server)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Check if origin matches allowed patterns
-    const isAllowed =
-      origin === 'https://aidevelo.ai' ||
-      origin.endsWith('.aidevelo.ai') ||
-    origin.endsWith('.pages.dev') ||
-    origin.endsWith('.cloudflare.com') ||
-    // RAILWAY REMOVED
-    // origin.endsWith('.railway.app') ||
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('http://127.0.0.1:');
+    const isAllowed = isOriginAllowed(origin);
 
     if (isAllowed) {
       callback(null, true);
@@ -155,8 +163,16 @@ app.use(cors({
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 }));
+
+// Ensure Vary: Origin header is set for CORS responses (cache correctness)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Vary', 'Origin');
+  }
+  next();
+});
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -266,9 +282,15 @@ app.get('/', (req: Request, res: Response) => {
  */
 app.get('/health', (req: Request, res: Response) => {
   // Simple liveness check — responds immediately without any database/external calls
-  // This is what Railway uses to verify the container is alive
+  // Used by Render for health checks
   res.setHeader('Content-Type', 'application/json');
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ ok: true, timestamp: new Date().toISOString() });
+});
+
+// API health endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
 // Readiness check — validate connectivity to required upstream systems (best-effort)
@@ -352,6 +374,7 @@ app.get('/metrics', (req: Request, res: Response) => {
 const v1Router = express.Router();
 
 v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
+v1Router.use('/dashboard', dashboardRoutes); // Auth applied per-route
 v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
 // STRIPE/PAYMENT REMOVED - Commented out for cleanup

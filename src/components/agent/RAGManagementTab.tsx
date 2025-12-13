@@ -95,7 +95,7 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
 
       const res = await apiRequest<{ data: RAGDocument }>(`/agents/${agentId}/rag/documents`, {
         method: 'POST',
-        body: formData,
+        data: formData,
       });
 
       setDocuments((prev) => [...prev, res.data]);
@@ -221,9 +221,9 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
           <label htmlFor="file-upload">
             <Button
               variant="outline"
-              as="span"
               disabled={uploading}
               className="cursor-pointer"
+              type="button"
             >
               {uploading ? 'Wird hochgeladen...' : 'Datei auswählen'}
             </Button>

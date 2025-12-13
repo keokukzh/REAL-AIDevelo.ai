@@ -267,7 +267,7 @@ export const AgentDetailsPage = () => {
                                 try {
                                     await apiRequest(`/agents/${id}`, {
                                         method: 'PATCH',
-                                        body: JSON.stringify(updates),
+                                        data: updates,
                                     });
                                     await fetchAgent();
                                 } catch (error) {

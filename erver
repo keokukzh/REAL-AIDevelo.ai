@@ -1,0 +1,27 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/src/app.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/src/config/env.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/src/routes/agentRoutes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/src/voice-agent/voice/handlers.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/ProtectedRoute.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/contexts/AuthContext.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/AuthCallbackPage.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/DashboardPage.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/OnboardingPage.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/services/apiClient.ts', LF will be replaced by CRLF the next time Git touches it
+ package-lock.json                     |   2 [32m+[m[31m-[m
+ server/db/schema.sql                  |   1 [32m+[m
+ server/package.json                   |   1 [32m+[m
+ server/src/app.ts                     |  26 [32m+[m[31m-[m
+ server/src/middleware/supabaseAuth.ts |   1 [32m+[m
+ server/src/routes/agentRoutes.ts      |   7 [32m+[m[31m-[m
+ src/App.tsx                           |   2 [32m+[m
+ src/components/ProtectedRoute.tsx     |   2 [32m+[m[31m-[m
+ src/lib/supabase.ts                   |   1 [32m+[m
+ src/pages/AuthCallbackPage.tsx        |   6 [32m+[m[31m-[m
+ src/pages/DashboardPage.tsx           | 601 [32m++++++++[m[31m--------------------------[m
+ 11 files changed, 173 insertions(+), 477 deletions(-)

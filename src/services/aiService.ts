@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/genai';
+// import { GoogleGenerativeAI } from '@google/genai'; // Not used yet
 
 // Mock service for now
 export const aiService = {

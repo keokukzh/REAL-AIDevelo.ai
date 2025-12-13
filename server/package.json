@@ -13,6 +13,7 @@
     "docs:generate": "node -e \"const swagger = require('./dist/config/swagger'); const fs = require('fs'); fs.writeFileSync('./openapi.json', JSON.stringify(swagger.swaggerSpec, null, 2));\"",
     "docs:serve": "npm run build && npm start",
     "test:elevenlabs": "ts-node scripts/testElevenLabs.ts",
+    "smoke": "node scripts/smoke.js",
     "test": "vitest --config vitest.config.ts",
     "test:unit": "vitest --config vitest.config.ts run tests/unit",
     "test:integration": "vitest --config vitest.config.ts run tests/integration",

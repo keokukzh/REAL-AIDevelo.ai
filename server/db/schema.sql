@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS agent_configs (
   setup_state TEXT NOT NULL DEFAULT 'needs_persona',
   persona_gender TEXT,
   persona_age_range TEXT,
-  goals_json JSONB NOT NULL DEFAULT '{}'::JSONB,
+  goals_json JSONB NOT NULL DEFAULT '[]'::JSONB,
   services_json JSONB NOT NULL DEFAULT '[]'::JSONB,
   admin_test_number TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -135,4 +135,5 @@ CREATE INDEX IF NOT EXISTS idx_call_logs_location ON call_logs(location_id);
 CREATE INDEX IF NOT EXISTS idx_call_logs_started_at ON call_logs(started_at);
 CREATE INDEX IF NOT EXISTS idx_google_calendar_integrations_location ON google_calendar_integrations(location_id);
 CREATE INDEX IF NOT EXISTS idx_porting_requests_location ON porting_requests(location_id);
+
 

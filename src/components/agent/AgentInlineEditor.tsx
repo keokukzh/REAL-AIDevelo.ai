@@ -116,7 +116,7 @@ export const AgentInlineEditor: React.FC<AgentInlineEditorProps> = ({
 
       const response = await apiRequest<{ data: Agent }>(`/agents/${agent.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(updates),
+        data: updates,
       });
 
       onSave(response.data);

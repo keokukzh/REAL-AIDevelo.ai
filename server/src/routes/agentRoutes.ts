@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { createAgent, getAgents, getAgentById, activateAgent, syncAgent, createDefaultAgent } from '../controllers/agentController';
+import { createAgent, getAgents, getAgentById, activateAgent, syncAgent } from '../controllers/agentController';
+import { createDefaultAgent } from '../controllers/defaultAgentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
 import { requireAuth } from '../middleware/auth';
+import { verifySupabaseAuth } from '../middleware/supabaseAuth';
 import { db } from '../services/db';
 
 const router = Router();
@@ -114,7 +116,8 @@ router.post('/', (req, res, next) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/default', createDefaultAgent);
+// New Supabase-based default agent endpoint (idempotent)
+router.post('/default', verifySupabaseAuth, createDefaultAgent);
 
 /**
  * @swagger

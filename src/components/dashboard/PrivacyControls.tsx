@@ -22,9 +22,12 @@ export function PrivacyControls({ userId, userEmail }: PrivacyControlsProps) {
       setError(null);
       setSuccess(null);
 
-      const response = await apiRequest('POST', '/privacy/export-data', {
-        userId,
-        email: userEmail,
+      const response = await apiRequest<{ data: any }>('/privacy/export-data', {
+        method: 'POST',
+        data: {
+          userId,
+          email: userEmail,
+        },
       });
 
       // Create download link
@@ -59,10 +62,13 @@ export function PrivacyControls({ userId, userEmail }: PrivacyControlsProps) {
       setError(null);
       setSuccess(null);
 
-      await apiRequest('POST', '/privacy/delete-data', {
-        userId,
-        email: userEmail,
-        confirmDeletion: true,
+      await apiRequest('/privacy/delete-data', {
+        method: 'POST',
+        data: {
+          userId,
+          email: userEmail,
+          confirmDeletion: true,
+        },
       });
 
       setSuccess('Your data has been permanently deleted.');
@@ -86,8 +92,10 @@ export function PrivacyControls({ userId, userEmail }: PrivacyControlsProps) {
       setLoading(true);
       setError(null);
 
-      const response = await apiRequest('GET', `/privacy/audit-log?userId=${userId}`);
-      setAuditLogs(response.data.logs || []);
+      const response = await apiRequest<{ data: { logs: any[] } }>(`/privacy/audit-log?userId=${userId}`, {
+        method: 'GET',
+      });
+      setAuditLogs(response.data?.logs || []);
       setShowAuditLogs(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load audit logs';

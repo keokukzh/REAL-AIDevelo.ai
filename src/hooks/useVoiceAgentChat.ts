@@ -59,11 +59,11 @@ export function useVoiceAgentChat(options: UseVoiceAgentChatOptions) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
+          data: {
             customerId: options.customerId,
             query,
             sessionId: options.sessionId,
-          }),
+          },
         });
 
         if (response.success && response.data) {

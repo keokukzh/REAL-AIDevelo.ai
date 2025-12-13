@@ -44,7 +44,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
     try {
       await apiRequest('/enterprise/contact', {
         method: 'POST',
-        body: JSON.stringify(formData),
+        data: formData,
       });
 
       setSuccess(true);

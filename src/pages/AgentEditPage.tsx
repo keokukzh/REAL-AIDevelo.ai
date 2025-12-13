@@ -199,7 +199,7 @@ export const AgentEditPage: React.FC = () => {
     try {
       await apiRequest(`/agents/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify(updates),
+        data: updates,
       });
       await fetchAgent();
     } catch (err) {
@@ -253,7 +253,7 @@ export const AgentEditPage: React.FC = () => {
     try {
       await apiRequest(`/telephony/assign`, {
         method: 'POST',
-        body: JSON.stringify({ agentId: id, phoneNumberId }),
+        data: { agentId: id, phoneNumberId },
       });
       await Promise.all([fetchAgent(), fetchNumbers()]);
     } catch (err) {

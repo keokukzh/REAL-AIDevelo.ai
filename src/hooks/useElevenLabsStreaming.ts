@@ -30,11 +30,14 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   // Get WebSocket token from backend
   const getStreamToken = useCallback(async () => {
     try {
-      const response = await apiRequest('POST', '/voice-agent/elevenlabs-stream-token', {
-        customerId: config.customerId,
-        agentId: config.agentId,
-        voiceId: config.voiceId,
-        duration: config.duration || 3600,
+      const response = await apiRequest<{ data: { token: string } }>('/voice-agent/elevenlabs-stream-token', {
+        method: 'POST',
+        data: {
+          customerId: config.customerId,
+          agentId: config.agentId,
+          voiceId: config.voiceId,
+          duration: config.duration || 3600,
+        },
       });
       return response.data.token;
     } catch (err) {

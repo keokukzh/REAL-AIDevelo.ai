@@ -5,6 +5,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
@@ -39,6 +40,7 @@ function App() {
                     <Route path="/enterprise" element={<EnterpriseContactPage />} />
                     <Route path="/calendar/:provider/callback" element={<CalendarCallbackPage />} />
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                    <Route path="/login" element={<LoginPage />} />
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/voice-edit" element={<VoiceEditPage />} />
                     <Route path="/dashboard" element={

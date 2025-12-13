@@ -40,7 +40,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password?: string) => {
+    if (!password) {
+      throw new Error('Password is required for login');
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

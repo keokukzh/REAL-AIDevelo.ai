@@ -16,12 +16,12 @@ export const AuthCallbackPage = () => {
           // Successfully authenticated - redirect to dashboard
           navigate('/dashboard', { replace: true });
         } else {
-          // No session - redirect to onboarding
-          navigate('/onboarding', { replace: true });
+          // No session - redirect to login
+          navigate('/login', { replace: true });
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        navigate('/onboarding', { replace: true });
+        navigate('/login', { replace: true });
       }
     };
 

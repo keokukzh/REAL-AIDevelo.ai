@@ -107,10 +107,10 @@ export const VoiceEditPage = () => {
                 '/elevenlabs/generate-speech',
                 {
                     method: 'POST',
-                    body: JSON.stringify({
+                    data: {
                         text: testText,
                         voiceId: finalVoiceId,
-                    }),
+                    },
                 }
             );
 

@@ -1,487 +1,164 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { apiRequest, ApiRequestError } from '../services/api';
-import { motion } from 'framer-motion';
-import { Button } from '../components/ui/Button';
-import { useToast, ToastContainer, toast } from '../components/ui/Toast';
-import { KPIOverview, DashboardStats } from '../components/dashboard/KPIOverview';
-import { AgentCard, AgentCardData } from '../components/dashboard/AgentCard';
-import { DashboardToolbar } from '../components/dashboard/DashboardToolbar';
-import { VoiceAgentStreamingUI } from '../components/dashboard/VoiceAgentStreamingUI';
-import { PrivacyControls } from '../components/dashboard/PrivacyControls';
-import { RefreshCw, Inbox, Phone, Settings } from 'lucide-react';
-
-interface Agent {
-  id: string;
-  elevenLabsAgentId?: string;
-  businessProfile: {
-    companyName: string;
-    industry?: string;
-  };
-  config: {
-    primaryLocale: string;
-  };
-  subscription?: {
-    planId: string;
-    planName: string;
-  };
-  telephony?: {
-    phoneNumber?: string;
-    phoneNumberId?: string;
-    status: 'unassigned' | 'assigned' | 'active' | 'inactive';
-  };
-  status: 'draft' | 'configuring' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live';
-  lastTestResult?: {
-    score: number;
-    passed: boolean;
-    timestamp: string;
-  };
-  metrics?: {
-    callsToday?: number;
-    successRate?: number;
-    avgDuration?: number;
-  };
-}
-
-type ViewMode = 'grid' | 'list';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDashboardOverview } from '../hooks/useDashboardOverview';
+import { useAuthContext } from '../contexts/AuthContext';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { toasts, removeToast } = useToast();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [hasAttemptedDefaultProvision, setHasAttemptedDefaultProvision] = useState(false);
-  const [isProvisioningDefault, setIsProvisioningDefault] = useState(false);
-  
-  // View and filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<{
-    status?: string;
-    industry?: string;
-    language?: string;
-  }>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  
-  // Modal states
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [selectedAgentForVoice, setSelectedAgentForVoice] = useState<string | null>(null);
+  const { user, logout } = useAuthContext();
+  const { data: overview, isLoading, error } = useDashboardOverview();
 
-  const getUserIdentity = () => {
-    let userId = localStorage.getItem('aidevelo-user-id');
-    if (!userId) {
-      userId = `guest-${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)}`;
-      localStorage.setItem('aidevelo-user-id', userId);
+  // Handle 401 - redirect to login (NOT onboarding)
+  // Onboarding/Wizard should be based on status flags from overview (needs_setup), not on 401
+  React.useEffect(() => {
+    if (error && 'status' in error && error.status === 401) {
+      logout();
+      navigate('/login', { replace: true });
     }
+  }, [error, logout, navigate]);
 
-    const userEmail = localStorage.getItem('aidevelo-user-email') || undefined;
-
-    return { userId, userEmail };
-  };
-
-  const ensureDefaultAgent = async () => {
-    if (hasAttemptedDefaultProvision || isProvisioningDefault) {
-      return null;
-    }
-
-    const { userId, userEmail } = getUserIdentity();
-    setHasAttemptedDefaultProvision(true);
-    setIsProvisioningDefault(true);
-
-    try {
-      const res = await apiRequest<{ success: boolean; data: Agent }>('/agents/default', {
-        method: 'POST',
-        data: { userId, userEmail },
-      });
-
-      return res.data;
-    } catch (error) {
-      if (error instanceof ApiRequestError) {
-        if (error.statusCode === 409) {
-          // Agent already exists - this is fine
-          return null;
-        }
-      }
-      console.error('[Dashboard] Default agent provisioning failed:', error);
-      setHasAttemptedDefaultProvision(false);
-      return null;
-    } finally {
-      setIsProvisioningDefault(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAgents();
-  }, []);
-
-  const fetchAgents = async (showRefreshIndicator = false) => {
-    if (showRefreshIndicator) setRefreshing(true);
-    
-    try {
-      // Immer zuerst Default-Agent sicherstellen (nur beim ersten Load)
-      if (!hasAttemptedDefaultProvision) {
-        await ensureDefaultAgent();
-      }
-
-      // Dann Agents laden
-      const res = await apiRequest<{ data: Agent[] }>('/agents');
-      const agentData = res.data;
-
-      setAgents(agentData);
-    } catch (error) {
-      if (error instanceof ApiRequestError) {
-        console.error('Failed to fetch agents:', error);
-      }
-    } finally {
-      setLoading(false);
-      if (showRefreshIndicator) setRefreshing(false);
-    }
-  };
-
-  // Calculate dashboard stats
-  const dashboardStats: DashboardStats = useMemo(() => {
-    const activeAgents = agents.filter(a => a.status === 'active' || a.status === 'live').length;
-    const totalAgents = agents.length;
-    const callsToday = agents.reduce((sum, a) => sum + (a.metrics?.callsToday || 0), 0);
-    const successRate = agents.length > 0
-      ? Math.round(agents.reduce((sum, a) => sum + (a.metrics?.successRate || 0), 0) / agents.length)
-      : 0;
-    const missedCalls = 0; // Would need backend data
-
-    return {
-      activeAgents,
-      totalAgents,
-      callsToday,
-      successRate,
-      missedCalls,
-    };
-  }, [agents]);
-
-  // Convert agents to card data format
-  const agentCards: AgentCardData[] = useMemo(() => {
-    return agents.map((agent): AgentCardData => {
-      // Map agent status to AgentCardData status
-      // Backend supports: 'draft' | 'configuring' | 'creating' | 'creation_failed' | 'production_ready' | 'inactive' | 'pending_activation' | 'active' | 'live'
-      // Card component supports: 'draft' | 'active' | 'inactive' | 'pending_activation'
-      let cardStatus: AgentCardData['status'];
-      
-      if (agent.status === 'live' || agent.status === 'active' || agent.status === 'production_ready') {
-        cardStatus = 'active';
-      } else if (agent.status === 'inactive') {
-        cardStatus = 'inactive';
-      } else if (agent.status === 'pending_activation' || agent.status === 'configuring' || agent.status === 'creating') {
-        cardStatus = 'pending_activation';
-      } else {
-        // 'draft' or 'creation_failed' -> 'draft'
-        cardStatus = 'draft';
-      }
-
-      return {
-        id: agent.id,
-        name: agent.businessProfile.companyName,
-        industry: agent.businessProfile.industry || 'Allgemein',
-        status: cardStatus,
-        phoneNumber: agent.telephony?.phoneNumber,
-        callsToday: agent.metrics?.callsToday,
-        successRate: agent.metrics?.successRate,
-        isDefaultAgent: (agent as any).metadata?.isDefaultAgent,
-      };
-    });
-  }, [agents]);
-
-  // Filter agents based on search and filters
-  const filteredAgents = useMemo(() => {
-    let filtered = [...agentCards];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(a =>
-        a.name.toLowerCase().includes(query) ||
-        a.industry.toLowerCase().includes(query) ||
-        a.phoneNumber?.toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
-    if (filters.status) {
-      filtered = filtered.filter(a => a.status === filters.status);
-    }
-
-    // Industry filter
-    if (filters.industry) {
-      filtered = filtered.filter(a => a.industry === filters.industry);
-    }
-
-    // Sort by: Default agents first, then by name
-    filtered.sort((a, b) => {
-      if (a.isDefaultAgent && !b.isDefaultAgent) return -1;
-      if (!a.isDefaultAgent && b.isDefaultAgent) return 1;
-      return a.name.localeCompare(b.name);
-    });
-
-    return filtered;
-  }, [agentCards, searchQuery, filters]);
-
-  const handleTestAgent = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent?.elevenLabsAgentId) {
-      console.warn('Agent has no ElevenLabs ID');
-      return;
-    }
-    window.open(`https://elevenlabs.io/app/talk-to?agent_id=${agent.elevenLabsAgentId}`, '_blank');
-  };
-
-  const handleToggleStatus = async (agentId: string, newStatus: 'active' | 'inactive') => {
-    try {
-      const endpoint = newStatus === 'active' ? 'activate' : 'deactivate';
-      const res = await apiRequest<{ success: boolean; data: Agent }>(`/agents/${agentId}/${endpoint}`, {
-        method: 'PATCH',
-      });
-      
-      setAgents(prev => prev.map(a => 
-        a.id === agentId 
-          ? { ...a, status: res.data.status } 
-          : a
-      ));
-    } catch (error) {
-      console.error(`Failed to ${newStatus === 'active' ? 'activate' : 'deactivate'} agent:`, error);
-    }
-  };
-
-  const renderAgents = () => {
-    if (loading || isProvisioningDefault) {
-      return (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center p-12 bg-white/5 rounded-2xl border border-white/10"
-        >
-          <RefreshCw className="animate-spin text-accent mb-4" size={40} />
-          <p className="text-gray-400">
-            {isProvisioningDefault ? 'Ihr Agent wird vorbereitet...' : 'Lade Dashboard...'}
-          </p>
-        </motion.div>
-      );
-    }
-
-    if (filteredAgents.length === 0) {
-
-      return (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center p-12 bg-white/5 rounded-2xl border border-white/10"
-        >
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center">
-              <Inbox size={40} className="text-accent" />
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">
-            {searchQuery || Object.values(filters).some(Boolean) 
-              ? 'Keine Agents gefunden' 
-              : 'Noch keine Agents erstellt'}
-          </h3>
-          <p className="text-gray-400 mb-6">
-            {searchQuery || Object.values(filters).some(Boolean)
-              ? 'Versuchen Sie, Ihre Suchbegriffe oder Filter anzupassen.'
-              : 'Erstellen Sie Ihren ersten Agent, um loszulegen.'}
-          </p>
-          {searchQuery || Object.values(filters).some(Boolean) ? (
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchQuery('');
-                setFilters({});
-              }}
-            >
-              Filter zurücksetzen
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={() => navigate('/onboarding')}>
-              Ersten Agent erstellen
-            </Button>
-          )}
-        </motion.div>
-      );
-    }
-
+  if (isLoading) {
     return (
-      <div className={viewMode === 'grid' 
-        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-        : 'space-y-4'
-      }>
-        {filteredAgents.map(agent => (
-          <AgentCard
-            key={agent.id}
-            agent={agent}
-            viewMode={viewMode}
-            onTest={handleTestAgent}
-            onToggleStatus={handleToggleStatus}
-          />
-        ))}
+      <div className="flex min-h-screen items-center justify-center bg-background text-white">
+        <LoadingSpinner />
       </div>
     );
-  };
+  }
+
+  if (error || !overview) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Fehler beim Laden</h2>
+          <p className="text-gray-400 mb-4">
+            {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-accent text-black rounded hover:bg-accent/80"
+          >
+            Seite neu laden
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = user?.email || overview.user.email || 'Benutzer';
+  const agentStatus = overview.status.agent === 'ready' ? 'Bereit' : 'Einrichtung nötig';
+  const phoneStatus =
+    overview.status.phone === 'connected'
+      ? 'Verbunden'
+      : overview.status.phone === 'needs_compliance'
+      ? 'Compliance nötig'
+      : 'Nicht verbunden';
+  const calendarStatus = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
 
   return (
-    <div className="min-h-screen bg-background text-white">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      
-      <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50 relative">
-        <div className="flex-1"></div>
-        <div className="flex-1 flex justify-center">
-          <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
-            <img 
-              src="/logo-studio-white.png" 
-              alt="AIDevelo Studio" 
-              className="h-8 w-auto object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const fallback = target.parentElement?.querySelector('.logo-fallback-text');
-                if (fallback) {
-                  (fallback as HTMLElement).style.display = 'block';
-                }
-              }}
-            />
-            <span className="logo-fallback-text hidden font-display font-bold text-xl">
-              AIDevelo Studio
-            </span>
-          </Link>
+    <div className="min-h-screen bg-background text-white p-6">
+      {/* Welcome Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
+        <p className="text-gray-400">Hier ist dein Dashboard</p>
+      </div>
+
+      {/* Status Chips */}
+      <div className="flex gap-4 mb-8">
+        <div className="px-4 py-2 bg-gray-800 rounded-lg">
+          <span className="text-sm text-gray-400">Agent:</span>
+          <span className={`ml-2 ${overview.status.agent === 'ready' ? 'text-green-400' : 'text-yellow-400'}`}>
+            {agentStatus}
+          </span>
         </div>
-        <div className="flex-1 flex justify-end gap-3">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowVoiceModal(true)}
-            className="text-sm flex items-center gap-2"
-            title="Start a voice call with an agent"
+        <div className="px-4 py-2 bg-gray-800 rounded-lg">
+          <span className="text-sm text-gray-400">Telefon:</span>
+          <span
+            className={`ml-2 ${
+              overview.status.phone === 'connected'
+                ? 'text-green-400'
+                : overview.status.phone === 'needs_compliance'
+                ? 'text-yellow-400'
+                : 'text-gray-400'
+            }`}
           >
-            <Phone size={16} />
-            Voice Call
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowPrivacyModal(true)}
-            className="text-sm flex items-center gap-2"
-            title="Manage privacy and data"
-          >
-            <Settings size={16} />
-            Privacy
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => fetchAgents(true)} 
-            disabled={refreshing}
-            className="text-sm flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            Aktualisieren
-          </Button>
+            {phoneStatus}
+          </span>
         </div>
-      </header>
-
-      <main className="container mx-auto p-6 md:p-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold font-display mb-2">Dashboard</h1>
-          <p className="text-gray-400">Verwalten und überwachen Sie Ihre Telefon-Agents</p>
+        <div className="px-4 py-2 bg-gray-800 rounded-lg">
+          <span className="text-sm text-gray-400">Kalender:</span>
+          <span className={`ml-2 ${overview.status.calendar === 'connected' ? 'text-green-400' : 'text-gray-400'}`}>
+            {calendarStatus}
+          </span>
         </div>
+      </div>
 
-        {/* KPI Overview */}
-        <KPIOverview stats={dashboardStats} loading={loading} />
-
-        {/* Toolbar */}
-        <DashboardToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          filters={filters}
-          onFilterChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-          onCreateNew={() => navigate('/onboarding')}
-        />
-
-        {/* Agent List/Grid */}
-        {renderAgents()}
-      </main>
-
-      {/* Voice Call Modal */}
-      {showVoiceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto p-6 border border-white/10">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Voice Call</h2>
-              <button
-                onClick={() => setShowVoiceModal(false)}
-                className="text-gray-400 hover:text-white text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-            {agents.length === 0 ? (
-              <p className="text-gray-400">No agents available. Create one first.</p>
-            ) : (
-              <div>
-                {!selectedAgentForVoice ? (
-                  <div className="space-y-3">
-                    <p className="text-gray-300 mb-4">Select an agent to start a voice call:</p>
-                    {agents.map(agent => (
-                      <button
-                        key={agent.id}
-                        onClick={() => setSelectedAgentForVoice(agent.id)}
-                        className="w-full text-left p-4 border border-white/10 rounded-lg hover:bg-white/5 transition"
-                      >
-                        <p className="font-semibold">{agent.businessProfile.companyName}</p>
-                        <p className="text-sm text-gray-400">
-                          {agent.businessProfile.industry || 'General'} • Voice: Adam
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setSelectedAgentForVoice(null)}
-                      className="text-sm text-accent hover:text-accent/80 mb-4"
-                    >
-                      ← Back to agents
-                    </button>
-                    <VoiceAgentStreamingUI
-                      customerId={getUserIdentity().userId}
-                      agentId={selectedAgentForVoice}
-                      voiceId="pNInz6obpgDQGcFmaJgB"
-                      onClose={() => setShowVoiceModal(false)}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+      {/* Agent Card */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4">Agent Konfiguration</h2>
+        <div className="space-y-3">
+          <div>
+            <span className="text-gray-400">Agent Name:</span>
+            <span className="ml-2">AIDevelo Receptionist</span>
           </div>
-        </div>
-      )}
-
-      {/* Privacy Controls Modal */}
-      {showPrivacyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 border border-white/10">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Privacy & Data Controls</h2>
-              <button
-                onClick={() => setShowPrivacyModal(false)}
-                className="text-gray-400 hover:text-white text-2xl leading-none"
-              >
-                ×
-              </button>
+          {overview.agent_config.persona_gender && (
+            <div>
+              <span className="text-gray-400">Persona:</span>
+              <span className="ml-2">
+                {overview.agent_config.persona_gender === 'female' ? 'Weiblich' : 'Männlich'}
+                {overview.agent_config.persona_age_range && `, ${overview.agent_config.persona_age_range} Jahre`}
+              </span>
             </div>
-            <PrivacyControls 
-              userId={getUserIdentity().userId}
-              userEmail={getUserIdentity().userEmail || 'unknown@example.com'}
-            />
+          )}
+          {overview.agent_config.eleven_agent_id && (
+            <div>
+              <span className="text-gray-400">ElevenLabs Agent ID:</span>
+              <span className="ml-2 font-mono text-sm">{overview.agent_config.eleven_agent_id}</span>
+            </div>
+          )}
+          {overview.agent_config.business_type && (
+            <div>
+              <span className="text-gray-400">Business Type:</span>
+              <span className="ml-2">{overview.agent_config.business_type}</span>
+            </div>
+          )}
+          {Array.isArray(overview.agent_config.goals_json) && overview.agent_config.goals_json.length > 0 && (
+            <div>
+              <span className="text-gray-400">Ziele:</span>
+              <ul className="ml-4 list-disc">
+                {overview.agent_config.goals_json.map((goal: string, idx: number) => (
+                  <li key={idx}>{goal}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Calls */}
+      {overview.recent_calls.length > 0 && (
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Letzte Anrufe</h2>
+          <div className="space-y-2">
+            {overview.recent_calls.map((call) => (
+              <div key={call.id} className="flex justify-between items-center py-2 border-b border-gray-700">
+                <div>
+                  <span className="text-sm text-gray-400">
+                    {call.direction === 'inbound' ? 'Eingehend' : 'Ausgehend'}
+                  </span>
+                  <span className="ml-2">
+                    {call.from_e164 || 'Unbekannt'} → {call.to_e164 || 'Unbekannt'}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-400">
+                  {new Date(call.started_at).toLocaleString('de-CH')}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
     </div>
   );
 };
+

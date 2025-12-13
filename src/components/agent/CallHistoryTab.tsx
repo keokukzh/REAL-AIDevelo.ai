@@ -144,7 +144,7 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
     {
       key: 'startTime',
       header: 'Zeitpunkt',
-      render: (call: CallHistory) => (
+      accessor: (call: CallHistory) => (
         <div className="flex items-center gap-2">
           <Clock size={14} className="text-gray-400" />
           <span>{formatDate(call.startTime)}</span>
@@ -154,7 +154,7 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
     {
       key: 'callerNumber',
       header: 'Anrufer',
-      render: (call: CallHistory) => (
+      accessor: (call: CallHistory) => (
         <div className="flex items-center gap-2">
           <Phone size={14} className="text-gray-400" />
           <span>{call.callerNumber || 'Unbekannt'}</span>
@@ -164,12 +164,12 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
     {
       key: 'duration',
       header: 'Dauer',
-      render: (call: CallHistory) => formatDuration(call.duration),
+      accessor: (call: CallHistory) => formatDuration(call.duration),
     },
     {
       key: 'status',
       header: 'Status',
-      render: (call: CallHistory) => (
+      accessor: (call: CallHistory) => (
         <div className="flex items-center gap-2">
           {getStatusIcon(call.status)}
           <span>{getStatusLabel(call.status)}</span>
@@ -179,11 +179,14 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
     {
       key: 'actions',
       header: 'Aktionen',
-      render: (call: CallHistory) => (
+      accessor: (call: CallHistory) => (
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => setSelectedCall(call)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedCall(call);
+            }}
             className="p-2"
           >
             <Eye size={14} />
@@ -191,7 +194,10 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
           {call.audioUrl && (
             <Button
               variant="outline"
-              onClick={() => window.open(call.audioUrl, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(call.audioUrl, '_blank');
+              }}
               className="p-2"
             >
               <Play size={14} />
@@ -260,7 +266,6 @@ export const CallHistoryTab: React.FC<CallHistoryTabProps> = ({ agentId }) => {
           <DataTable
             data={filteredCalls}
             columns={columns}
-            keyExtractor={(call) => call.id}
             onRowClick={(call) => setSelectedCall(call)}
           />
         )}

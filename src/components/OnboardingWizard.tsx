@@ -143,9 +143,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               transition={{ duration: 0.2 }}
             >
               {React.cloneElement(steps[currentStep]?.component as React.ReactElement, {
-                formData,
-                updateFormData,
-              })}
+                formData: formData as any,
+                updateFormData: updateFormData as any,
+              } as any)}
             </motion.div>
           </AnimatePresence>
         </div>
