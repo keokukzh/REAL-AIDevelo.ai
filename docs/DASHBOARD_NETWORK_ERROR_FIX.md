@@ -172,3 +172,120 @@ npm run dev
 ---
 
 **Status:** Backend-Server muss neu gestartet werden. Prüfe Logs nach Start.
+
+---
+
+## Sofort-Lösung (Schritt-für-Schritt)
+
+### 1. Backend-Server neu starten
+
+```powershell
+# Stoppe alle Node-Prozesse (vorsichtig!)
+Get-Process | Where-Object {$_.ProcessName -eq "node"} | Stop-Process -Force
+
+# Gehe ins Server-Verzeichnis
+cd server
+
+# Starte Backend neu
+npm run dev
+```
+
+**Warte auf diese Logs:**
+```
+[AIDevelo Server] Running on http://0.0.0.0:5000
+[AIDevelo Server] ✅ Server is READY for requests
+```
+
+### 2. Prüfe Backend-Health-Endpoint
+
+**In neuem Terminal:**
+```powershell
+curl http://localhost:5000/api/health
+```
+
+**Erwartung:** `{"ok":true,...}`
+
+### 3. Prüfe Browser Console
+
+**Öffne Browser DevTools (F12) → Console Tab**
+
+**Führe aus:**
+```javascript
+console.log('API URL:', import.meta.env.VITE_API_URL);
+```
+
+**Erwartung:** `API URL: http://localhost:5000/api`
+
+### 4. Prüfe Network Tab
+
+**Browser DevTools → Network Tab**
+
+1. Lade Dashboard neu (`Ctrl + Shift + R`)
+2. Suche nach Request zu `/api/dashboard/overview`
+3. Prüfe:
+   - **Request URL:** `http://localhost:5000/api/dashboard/overview`
+   - **Request Headers:** Enthält `Authorization: Bearer ...`?
+   - **Response Status:** 200 OK oder Fehler?
+
+### 5. Prüfe Backend-Logs
+
+**Im Backend-Terminal prüfe:**
+- Kommt Request an? → `GET /api/dashboard/overview`
+- Gibt es Auth-Fehler? → `[SupabaseAuth] ...`
+- Gibt es CORS-Fehler? → `[CORS] Rejected origin: ...`
+- Gibt es Schema-Fehler? → `Missing tables: ...`
+
+---
+
+## Häufige Fehler & Lösungen
+
+### Fehler 1: "Connection unexpectedly terminated"
+
+**Ursache:** Backend-Server läuft nicht richtig oder crashed beim Start.
+
+**Lösung:**
+1. Prüfe Backend-Logs auf Fehler
+2. Prüfe `server/.env` → Sind alle Variablen gesetzt?
+3. Starte Backend neu
+
+### Fehler 2: "CORS policy violation"
+
+**Ursache:** Frontend-Origin ist nicht in `allowedOrigins`.
+
+**Lösung:**
+1. Prüfe Backend-Logs → Welche Origin wird rejected?
+2. Prüfe `server/src/config/env.ts` → Ist `http://localhost:4000` in `allowedOrigins`?
+3. Falls nicht: Füge hinzu oder setze `ALLOWED_ORIGINS` in `server/.env`
+
+### Fehler 3: "Missing or invalid authorization header"
+
+**Ursache:** Auth-Token fehlt oder ist ungültig.
+
+**Lösung:**
+1. Prüfe Browser Console → Ist Supabase Session vorhanden?
+2. Prüfe Network Tab → Enthält Request `Authorization` Header?
+3. Falls nicht: Logout → Login erneut
+
+### Fehler 4: "Supabase schema not applied"
+
+**Ursache:** Backend kann Tabellen nicht finden.
+
+**Lösung:**
+1. Prüfe Backend-Logs → Welche Tabellen fehlen?
+2. Führe `server/db/schema.sql` in Supabase SQL Editor aus
+3. Prüfe: `GET /api/db/preflight` → Sollte `{"ok":true}` zurückgeben
+
+---
+
+## Test-Checkliste
+
+- [ ] Backend läuft (`npm run dev` in `server/`)
+- [ ] Backend-Logs zeigen "Server is READY"
+- [ ] `curl http://localhost:5000/api/health` → 200 OK
+- [ ] Frontend läuft (`npm run dev` im Root)
+- [ ] Browser Console zeigt korrekte `VITE_API_URL`
+- [ ] Network Tab zeigt Request zu `/api/dashboard/overview`
+- [ ] Request Headers enthalten `Authorization: Bearer ...`
+- [ ] Backend-Logs zeigen Request ankommt
+- [ ] Backend-Logs zeigen keine Fehler
+- [ ] Dashboard lädt erfolgreich
