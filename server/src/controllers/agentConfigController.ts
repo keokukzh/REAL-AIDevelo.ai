@@ -136,16 +136,20 @@ export const updateAgentConfig = async (
       data: validated,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error('[AgentConfigController] Error updating agent config:', {
       requestId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
+      error: errorMessage,
+      stack: errorStack,
     });
 
     if (error instanceof z.ZodError) {
       return res.status(500).json({
         success: false,
         error: 'Response validation failed',
+        details: error.errors,
         backendSha: getBackendVersion(),
         requestId,
       });
@@ -154,6 +158,7 @@ export const updateAgentConfig = async (
     return res.status(500).json({
       success: false,
       error: 'Failed to update agent config',
+      message: errorMessage,
       backendSha: getBackendVersion(),
       requestId,
     });
