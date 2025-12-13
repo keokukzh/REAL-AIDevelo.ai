@@ -211,6 +211,7 @@ export const AgentInlineEditor: React.FC<AgentInlineEditorProps> = ({
                 type="email"
                 value={formData.businessProfile.contact.email}
                 onChange={(e) => handleChange('businessProfile.contact.email', e.target.value)}
+                autoComplete="email"
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
               />
             </div>
@@ -221,6 +222,7 @@ export const AgentInlineEditor: React.FC<AgentInlineEditorProps> = ({
                 type="tel"
                 value={formData.businessProfile.contact.phone || ''}
                 onChange={(e) => handleChange('businessProfile.contact.phone', e.target.value)}
+                autoComplete="tel"
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
                 placeholder="+41 44 123 45 67"
               />

@@ -104,6 +104,7 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
           type="email"
           value={formData.email}
           onChange={handleChange('email')}
+          autoComplete="email"
           className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none"
           placeholder="max@muster.ch"
         />
