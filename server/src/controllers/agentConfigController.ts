@@ -144,18 +144,38 @@ export const updateAgentConfig = async (
       throw error;
     }
 
-    // Validate response
-    const validated = AgentConfigResponseSchema.parse({
-      id: updatedConfig.id,
-      location_id: updatedConfig.location_id,
-      eleven_agent_id: updatedConfig.eleven_agent_id,
-      setup_state: updatedConfig.setup_state,
-      persona_gender: updatedConfig.persona_gender,
-      persona_age_range: updatedConfig.persona_age_range,
-      goals_json: Array.isArray(updatedConfig.goals_json) ? updatedConfig.goals_json : [],
-      services_json: updatedConfig.services_json || [],
-      business_type: updatedConfig.business_type,
-    });
+    // Validate response (with better error handling)
+    let validated;
+    try {
+      validated = AgentConfigResponseSchema.parse({
+        id: updatedConfig.id,
+        location_id: updatedConfig.location_id,
+        eleven_agent_id: updatedConfig.eleven_agent_id,
+        setup_state: updatedConfig.setup_state,
+        persona_gender: updatedConfig.persona_gender,
+        persona_age_range: updatedConfig.persona_age_range,
+        goals_json: Array.isArray(updatedConfig.goals_json) ? updatedConfig.goals_json : [],
+        services_json: updatedConfig.services_json || [],
+        business_type: updatedConfig.business_type,
+      });
+    } catch (validationError) {
+      console.error('[AgentConfigController] Response validation failed', {
+        requestId,
+        validationError: validationError instanceof z.ZodError ? validationError.errors : validationError,
+        updatedConfig: {
+          id: updatedConfig.id,
+          setup_state: updatedConfig.setup_state,
+          goals_json: updatedConfig.goals_json,
+          goals_json_type: typeof updatedConfig.goals_json,
+          goals_json_isArray: Array.isArray(updatedConfig.goals_json),
+        },
+      });
+      
+      const error = new Error('Response validation failed');
+      (error as any).step = 'validateResponse';
+      (error as any).validationError = validationError instanceof z.ZodError ? validationError.errors : validationError;
+      throw error;
+    }
 
     res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
     res.setHeader('x-aidevelo-request-id', requestId);
