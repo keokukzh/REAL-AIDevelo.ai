@@ -56,6 +56,7 @@ import { swaggerSpec } from './config/swagger';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import dbRoutes from './routes/dbRoutes';
+import debugRoutes from './routes/debugRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
 // STRIPE/PAYMENT REMOVED - Commented out for cleanup
@@ -398,6 +399,7 @@ app.get('/metrics', (req: Request, res: Response) => {
 const v1Router = express.Router();
 
 v1Router.use('/db', dbRoutes); // NO AUTH - Public preflight endpoint
+v1Router.use('/debug', debugRoutes); // NO AUTH - Debug endpoint for env verification
 v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
 v1Router.use('/dashboard', dashboardRoutes); // Auth applied per-route
 v1Router.use('/elevenlabs', elevenLabsRoutes);
