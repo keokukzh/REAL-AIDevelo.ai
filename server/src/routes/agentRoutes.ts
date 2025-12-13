@@ -283,7 +283,8 @@ router.get('/templates', async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/:id', requireAuth, validateParams(AgentIdParamSchema), getAgentById);
+// Public access for onboarding status polling (no auth token during onboarding flow)
+router.get('/:id', validateParams(AgentIdParamSchema), getAgentById);
 
 /**
  * @swagger

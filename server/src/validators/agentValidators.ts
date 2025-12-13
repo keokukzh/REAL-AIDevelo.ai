@@ -6,9 +6,8 @@ import { z } from 'zod';
 
 export const BusinessProfileSchema = z.object({
   companyName: z.string()
-    .min(1, 'Company name is required')
     .max(100, 'Company name must be less than 100 characters')
-    .trim(),
+    .transform((val) => val?.trim() || 'Unnamed Agent'),
   industry: z.string()
     .min(1, 'Industry is required')
     .max(50, 'Industry must be less than 50 characters'),
@@ -30,11 +29,15 @@ export const BusinessProfileSchema = z.object({
       z.string().length(0),
       z.undefined()
     ]).optional(),
-    // Email can be optional/blank during quick onboarding to avoid hard-stop validation
-    email: z.union([
-      z.string().email('Invalid email address'),
-      z.string().length(0)
-    ]).optional()
+    // Email can be blank; when provided and non-empty it must be valid
+    email: z.preprocess(
+      (val) => typeof val === 'string' ? val.trim() : val,
+      z.union([
+        z.string().email('Invalid email address'),
+        z.string().length(0),
+        z.undefined()
+      ])
+    ).optional()
   }),
   openingHours: z.record(z.string(), z.string()).optional()
 });

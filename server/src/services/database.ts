@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, PoolConfig } from 'pg';
 import dns from 'dns';
 import { config } from '../config/env';
 
@@ -78,7 +78,13 @@ export function initializeDatabase(): Pool {
     }
     
     // Optimized pool settings for cloud providers (force IPv4 to avoid ENETUNREACH on IPv6-only DNS responses)
-    pool = new Pool({
+    const poolConfig: PoolConfig & {
+      lookup?: (
+        hostname: string,
+        options: dns.LookupOneOptions,
+        callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
+      ) => void;
+    } = {
       connectionString: config.databaseUrl,
       ssl: sslConfig,
       max: 10, // Optimized for cloud providers (better connection management)
@@ -91,10 +97,12 @@ export function initializeDatabase(): Pool {
       keepAliveInitialDelayMillis: 0, // Start keepalive immediately
       allowExitOnIdle: false, // Don't close pool when idle
       // Force IPv4 to avoid ENETUNREACH when IPv6 is not available in the runtime
-      lookup: (hostname, options, callback) => {
+      lookup: (hostname: string, options: dns.LookupOneOptions, callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
         dns.lookup(hostname, { ...options, family: 4, verbatim: false }, callback);
       },
-    });
+    };
+
+    pool = new Pool(poolConfig);
 
     // Enhanced error handling
     pool.on('error', (err: Error) => {
