@@ -294,6 +294,7 @@ export const OnboardingPage = () => {
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            autoComplete="email"
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none"
                             placeholder="info@firma.ch"
                         />

@@ -203,6 +203,22 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 
+// Ensure Content-Type is set for JSON responses (prevents CORB issues)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Store original json method
+  const originalJson = res.json.bind(res);
+  
+  // Override json to always set Content-Type
+  res.json = function(body: any) {
+    if (!res.getHeader('Content-Type')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+    return originalJson(body);
+  };
+  
+  next();
+});
+
 // Request logging middleware (after body parser)
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Skip logging for health checks to reduce noise
@@ -547,9 +563,24 @@ if (require.main === module) {
       console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
       console.log(`[AIDevelo Server] ✅ Server is READY for requests`);
     });
+
+    // Error handling for httpServer
+    httpServer.on('error', (err: NodeJS.ErrnoException) => {
+      console.error('[AIDevelo Server] ❌ Server error:', err.message);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[AIDevelo Server] Port ${config.port} is already in use`);
+      }
+    });
+
+    httpServer.on('request', (req, res) => {
+      console.log(`[AIDevelo Server] ${req.method} ${req.url}`);
+    });
   };
 
-  void start();
+  start().catch((err) => {
+    console.error('[AIDevelo Server] ❌ Failed to start server:', err);
+    process.exit(1);
+  });
 }
 
 export default app;

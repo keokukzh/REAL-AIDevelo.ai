@@ -588,6 +588,7 @@ const BusinessTab: React.FC<{
             type="email"
             value={form.email}
             onChange={(e) => onChange((prev) => ({ ...prev, email: e.target.value }))}
+            autoComplete="email"
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
           />
         </div>
@@ -595,8 +596,10 @@ const BusinessTab: React.FC<{
           <label className="block text-sm text-gray-400 mb-1" htmlFor="phone">Telefon</label>
           <input
             id="phone"
+            type="tel"
             value={form.phone}
             onChange={(e) => onChange((prev) => ({ ...prev, phone: e.target.value }))}
+            autoComplete="tel"
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
             placeholder="+41 44 123 45 67"
           />

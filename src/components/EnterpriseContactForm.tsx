@@ -103,6 +103,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             required
             value={formData.name}
             onChange={(e) => { setError(null); setFormData({ ...formData, name: e.target.value }); }}
+            autoComplete="name"
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="Max Mustermann"
           />
@@ -132,6 +133,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             required
             value={formData.email}
             onChange={(e) => { setError(null); setFormData({ ...formData, email: e.target.value }); }}
+            autoComplete="email"
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="max@muster.ch"
           />
@@ -144,6 +146,7 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
             type="tel"
             value={formData.phone}
             onChange={(e) => { setError(null); setFormData({ ...formData, phone: e.target.value }); }}
+            autoComplete="tel"
             className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-accent outline-none"
             placeholder="+41 44 123 45 67"
           />
