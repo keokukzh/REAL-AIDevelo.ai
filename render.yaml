@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: aidevelo-api
+    env: node
+    buildCommand: cd server && npm ci && npm run build
+    startCommand: cd server && npm start
+    rootDir: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Required (set in Render dashboard):
+      # SUPABASE_URL
+      # SUPABASE_SERVICE_ROLE_KEY
+      # ELEVENLABS_API_KEY
+      # Optional:
+      # FRONTEND_URL
+      # PUBLIC_BASE_URL
+      # ELEVENLABS_AGENT_ID_DEFAULT
+      # TWILIO_ACCOUNT_SID
+      # TWILIO_AUTH_TOKEN
+      # GOOGLE_OAUTH_CLIENT_ID
+      # GOOGLE_OAUTH_CLIENT_SECRET
+      # GOOGLE_OAUTH_REDIRECT_URL
+      # TOOL_SHARED_SECRET
+      # TOKEN_ENCRYPTION_KEY
+
