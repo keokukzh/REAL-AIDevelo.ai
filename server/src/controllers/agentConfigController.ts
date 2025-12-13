@@ -9,7 +9,7 @@ const getBackendVersion = (): string => {
   return process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown';
 };
 
-// Request schema for updating agent config
+// Request schema for updating agent config (strict mode to reject unknown fields)
 const UpdateAgentConfigSchema = z.object({
   persona_gender: z.enum(['male', 'female']).optional(),
   persona_age_range: z.string().optional(),
@@ -17,7 +17,7 @@ const UpdateAgentConfigSchema = z.object({
   goals_json: z.array(z.string()).optional(),
   services_json: z.any().optional(),
   setup_state: z.enum(['needs_persona', 'needs_business', 'needs_phone', 'needs_calendar', 'ready']).optional(),
-});
+}).strict();
 
 type UpdateAgentConfigRequest = z.infer<typeof UpdateAgentConfigSchema>;
 
@@ -58,13 +58,13 @@ export const updateAgentConfig = async (
 
     const { supabaseUserId, email } = req.supabaseUser;
 
-    // Validate request body
+    // Validate request body with strict mode
     const validationResult = UpdateAgentConfigSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
-        details: validationResult.error.errors,
+        issues: validationResult.error.errors,
         backendSha: getBackendVersion(),
         requestId,
       });
@@ -76,45 +76,79 @@ export const updateAgentConfig = async (
     const org = await ensureOrgForUser(supabaseUserId, email);
     const location = await ensureDefaultLocation(org.id);
 
-    // Find agent config for this location
-    const { data: existingConfig, error: findError } = await supabaseAdmin
-      .from('agent_configs')
-      .select('*')
-      .eq('location_id', location.id)
-      .maybeSingle();
+    // Ensure agent config exists (idempotent)
+    const { ensureAgentConfig } = await import('../services/supabaseDb');
+    const agentConfig = await ensureAgentConfig(location.id);
 
-    if (findError && findError.code !== 'PGRST116') {
-      throw new Error(`Failed to find agent config: ${findError.message || 'Unknown error'}`);
-    }
+    // Build update payload by filtering out undefined values
+    const updatePayload = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    ) as any;
 
-    if (!existingConfig) {
-      return res.status(404).json({
-        success: false,
-        error: 'Agent config not found',
-        backendSha: getBackendVersion(),
-        requestId,
+    // If no updates provided, return current config
+    if (Object.keys(updatePayload).length === 0) {
+      const validated = AgentConfigResponseSchema.parse({
+        id: agentConfig.id,
+        location_id: agentConfig.location_id,
+        eleven_agent_id: agentConfig.eleven_agent_id,
+        setup_state: agentConfig.setup_state,
+        persona_gender: agentConfig.persona_gender,
+        persona_age_range: agentConfig.persona_age_range,
+        goals_json: Array.isArray(agentConfig.goals_json) ? agentConfig.goals_json : [],
+        services_json: agentConfig.services_json || [],
+        business_type: agentConfig.business_type,
+      });
+
+      res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+      return res.json({
+        success: true,
+        data: validated,
       });
     }
-
-    // Prepare update payload (only include fields that were provided)
-    const updatePayload: any = {};
-    if (updates.persona_gender !== undefined) updatePayload.persona_gender = updates.persona_gender;
-    if (updates.persona_age_range !== undefined) updatePayload.persona_age_range = updates.persona_age_range;
-    if (updates.business_type !== undefined) updatePayload.business_type = updates.business_type;
-    if (updates.goals_json !== undefined) updatePayload.goals_json = updates.goals_json;
-    if (updates.services_json !== undefined) updatePayload.services_json = updates.services_json;
-    if (updates.setup_state !== undefined) updatePayload.setup_state = updates.setup_state;
 
     // Update agent config
     const { data: updatedConfig, error: updateError } = await supabaseAdmin
       .from('agent_configs')
       .update(updatePayload)
-      .eq('id', existingConfig.id)
+      .eq('id', agentConfig.id)
       .select('*')
       .single();
 
-    if (updateError || !updatedConfig) {
-      throw new Error(`Failed to update agent config: ${updateError?.message || 'Unknown error'}`);
+    if (updateError) {
+      console.error('[AgentConfigController] Supabase update error:', {
+        requestId,
+        supabaseError: {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        },
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update agent config',
+        step: 'updateAgentConfig',
+        requestId,
+        backendSha: getBackendVersion(),
+        supabase: {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        },
+      });
+    }
+
+    if (!updatedConfig) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update agent config',
+        step: 'updateAgentConfig',
+        reason: 'No data returned from update',
+        requestId,
+        backendSha: getBackendVersion(),
+      });
     }
 
     // Validate response
@@ -149,7 +183,8 @@ export const updateAgentConfig = async (
       return res.status(500).json({
         success: false,
         error: 'Response validation failed',
-        details: error.errors,
+        step: 'validateResponse',
+        issues: error.errors,
         backendSha: getBackendVersion(),
         requestId,
       });
@@ -158,6 +193,7 @@ export const updateAgentConfig = async (
     return res.status(500).json({
       success: false,
       error: 'Failed to update agent config',
+      step: 'updateAgentConfig',
       message: errorMessage,
       backendSha: getBackendVersion(),
       requestId,
