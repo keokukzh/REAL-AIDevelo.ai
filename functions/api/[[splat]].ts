@@ -36,6 +36,9 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
   // Forward request to Render backend
   const forwardedHeaders = new Headers();
   
+  // Check if Authorization header is present (for debug header)
+  const hasAuth = request.headers.has('Authorization');
+  
   // Copy relevant headers (exclude Host and other Cloudflare-specific headers)
   const headersToForward = [
     'Authorization',
@@ -51,6 +54,11 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
       forwardedHeaders.set(headerName, value);
     }
   }
+  
+  // Do NOT forward these headers (let fetch set them):
+  // - Host (will be set by fetch to target origin)
+  // - cf-* (Cloudflare-specific, not needed upstream)
+  // - x-forwarded-* (we're not a traditional proxy, fetch handles this)
   
   // Prepare fetch options
   const fetchOptions: RequestInit = {
@@ -83,8 +91,9 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
       proxiedHeaders.set('Content-Type', 'application/json; charset=utf-8');
     }
     
-    // Add debug header to verify proxy is active
+    // Add debug headers to verify proxy is active
     proxiedHeaders.set('x-aidevelo-proxy', '1');
+    proxiedHeaders.set('x-aidevelo-auth-present', hasAuth ? '1' : '0');
     
     return new Response(responseBody, {
       status: response.status,

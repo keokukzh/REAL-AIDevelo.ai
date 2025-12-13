@@ -11,6 +11,11 @@ import { checkDbPreflight } from '../services/dbPreflight';
 import { InternalServerError } from '../utils/errors';
 import { z } from 'zod';
 
+// Get backend version from environment (Render sets RENDER_GIT_COMMIT)
+const getBackendVersion = (): string => {
+  return process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown';
+};
+
 // Response schemas
 const DefaultAgentResponseSchema = z.object({
   user: z.object({
@@ -326,6 +331,9 @@ export const getDashboardOverview = async (
 
     // Validate response with Zod
     const validated = DashboardOverviewResponseSchema.parse(response);
+
+    // Add backend version header (no secrets)
+    res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
 
     res.json({
       success: true,

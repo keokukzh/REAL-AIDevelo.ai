@@ -305,7 +305,14 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // API health endpoint
+// Get backend version from environment (Render sets RENDER_GIT_COMMIT)
+const getBackendVersion = (): string => {
+  return process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown';
+};
+
 app.get('/api/health', (req: Request, res: Response) => {
+  // Add backend version header (no secrets)
+  res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
   res.setHeader('Content-Type', 'application/json');
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });

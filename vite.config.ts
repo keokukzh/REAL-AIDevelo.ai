@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
             },
           },
         },
+        // Ensure public files (including _routes.json) are copied to dist
+        copyPublicDir: true,
       },
       // Removed API key definitions - API keys should NEVER be exposed in client bundle
       // All external API calls should go through the backend
