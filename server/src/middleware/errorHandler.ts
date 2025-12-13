@@ -22,16 +22,17 @@ export const errorHandler = (
   res.setHeader('x-aidevelo-request-id', requestId);
   res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
 
-  // Always log errors for debugging
+  // Always log errors for debugging (STRICT: first 15 lines of stack)
+  const stackLines = err.stack ? err.stack.split('\n').slice(0, 15).join('\n') : 'No stack';
   console.error('[ErrorHandler] Error caught', {
     requestId,
-    message: err.message,
-    name: err.name,
-    statusCode: err instanceof AppError ? err.statusCode : 500,
-    path: req.path,
     method: req.method,
+    path: req.path,
+    name: err.name,
+    message: err.message,
+    statusCode: err instanceof AppError ? err.statusCode : 500,
     origin: req.headers.origin,
-    stack: err.stack
+    stack: stackLines,
   });
   
   // Handle CORS errors specifically

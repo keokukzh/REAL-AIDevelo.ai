@@ -187,11 +187,19 @@ export const updateAgentConfig = async (
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const stackLines = errorStack ? errorStack.split('\n').slice(0, 15).join('\n') : 'No stack';
     
     console.error('[AgentConfigController] Error updating agent config:', {
       requestId,
-      error: errorMessage,
-      stack: errorStack,
+      method: 'PATCH',
+      path: '/api/dashboard/agent/config',
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage,
+      stack: stackLines,
+      errorType: typeof error,
+      hasSupabase: !!(error as any).supabase,
+      hasValidation: !!(error as any).validationError,
+      hasStep: !!(error as any).step,
     });
 
     // Attach validation errors to error object for error handler
