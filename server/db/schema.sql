@@ -62,14 +62,16 @@ CREATE TABLE IF NOT EXISTS phone_numbers (
 -- Google Calendar Integrations (one per location)
 CREATE TABLE IF NOT EXISTS google_calendar_integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  location_id UUID NOT NULL UNIQUE REFERENCES locations(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL DEFAULT 'google',
   calendar_id TEXT NOT NULL DEFAULT 'primary',
   connected_email TEXT,
   refresh_token_encrypted TEXT NOT NULL,
   access_token TEXT,
   expiry_ts TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(location_id, provider)
 );
 
 -- Call Logs
@@ -135,6 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_phone_numbers_e164 ON phone_numbers(e164);
 CREATE INDEX IF NOT EXISTS idx_call_logs_location ON call_logs(location_id);
 CREATE INDEX IF NOT EXISTS idx_call_logs_started_at ON call_logs(started_at);
 CREATE INDEX IF NOT EXISTS idx_google_calendar_integrations_location ON google_calendar_integrations(location_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_google_calendar_integrations_location_provider ON google_calendar_integrations(location_id, provider);
 CREATE INDEX IF NOT EXISTS idx_porting_requests_location ON porting_requests(location_id);
 
 -- Composite indexes for common query patterns
