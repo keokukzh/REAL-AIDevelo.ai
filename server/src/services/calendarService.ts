@@ -90,19 +90,54 @@ export const calendarService = {
 
   /**
    * Validate OAuth state
+   * State format: {provider}_{timestamp}_{random}
+   * Example: google_1765748660180_e1aym4
    */
   validateState(state: string): { provider: 'google' | 'outlook' } | null {
+    // First try in-memory store (for immediate validation)
     const stateData = oauthStates.get(state);
-    if (!stateData) return null;
+    if (stateData) {
+      // Clean up old states (older than 10 minutes)
+      if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
+        oauthStates.delete(state);
+        return null;
+      }
+      oauthStates.delete(state); // Use once
+      return { provider: stateData.provider };
+    }
 
-    // Clean up old states (older than 10 minutes)
-    if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
-      oauthStates.delete(state);
+    // Fallback: Validate state format directly (for cases where server restarted)
+    // State format: {provider}_{timestamp}_{random}
+    const parts = state.split('_');
+    if (parts.length < 3) {
       return null;
     }
 
-    oauthStates.delete(state); // Use once
-    return { provider: stateData.provider };
+    const provider = parts[0] as 'google' | 'outlook';
+    if (provider !== 'google' && provider !== 'outlook') {
+      return null;
+    }
+
+    const timestamp = parseInt(parts[1], 10);
+    if (isNaN(timestamp)) {
+      return null;
+    }
+
+    // Check if state is not too old (max 15 minutes to account for user delay)
+    const age = Date.now() - timestamp;
+    if (age > 15 * 60 * 1000) {
+      console.warn(`[CalendarService] State expired: ${age}ms old`);
+      return null;
+    }
+
+    // Check if state is from the future (shouldn't happen, but validate)
+    if (age < -60000) {
+      console.warn(`[CalendarService] State from future: ${age}ms`);
+      return null;
+    }
+
+    // State is valid
+    return { provider };
   },
 
   /**
