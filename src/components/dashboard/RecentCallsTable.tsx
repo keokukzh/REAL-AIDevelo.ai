@@ -13,9 +13,10 @@ interface Call {
 
 interface RecentCallsTableProps {
   calls: Call[];
+  onCallClick?: (call: Call) => void;
 }
 
-export const RecentCallsTable: React.FC<RecentCallsTableProps> = ({ calls }) => {
+export const RecentCallsTable: React.FC<RecentCallsTableProps> = ({ calls, onCallClick }) => {
   const formatDuration = (seconds: number | null): string => {
     if (!seconds) return '-';
     const mins = Math.floor(seconds / 60);
@@ -55,7 +56,13 @@ export const RecentCallsTable: React.FC<RecentCallsTableProps> = ({ calls }) => 
           </thead>
           <tbody>
             {calls.map((call) => (
-              <tr key={call.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors">
+              <tr 
+                key={call.id} 
+                className={`border-b border-gray-700/50 transition-colors ${
+                  onCallClick ? 'hover:bg-gray-700/30 cursor-pointer' : ''
+                }`}
+                onClick={() => onCallClick?.(call)}
+              >
                 <td className="py-3 px-4">
                   <span className={`px-2 py-1 rounded text-xs ${
                     call.direction === 'inbound'

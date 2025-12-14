@@ -9,7 +9,11 @@ import { StatusCard } from '../components/dashboard/StatusCard';
 import { SystemHealth } from '../components/dashboard/SystemHealth';
 import { QuickActions } from '../components/dashboard/QuickActions';
 import { RecentCallsTable } from '../components/dashboard/RecentCallsTable';
+import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
+import { AgentTestModal } from '../components/dashboard/AgentTestModal';
+import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
 import { apiClient } from '../services/apiClient';
+import { toast } from '../components/ui/Toast';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -17,6 +21,10 @@ export const DashboardPage = () => {
   const { data: overview, isLoading, error } = useDashboardOverview();
   const updateAgentConfig = useUpdateAgentConfig();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [selectedCall, setSelectedCall] = useState<any | null>(null);
+  const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
+  const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
+  const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -73,10 +81,9 @@ export const DashboardPage = () => {
     }
   };
 
-  // Handle phone connection (placeholder)
+  // Handle phone connection
   const handleConnectPhone = () => {
-    // Phone connection flow - to be implemented in future iteration
-    alert('Telefon-Verbindung wird noch implementiert.');
+    setIsPhoneConnectionOpen(true);
   };
 
   // Handle webhook status check
@@ -84,24 +91,21 @@ export const DashboardPage = () => {
     const webhookUrl = `${globalThis.location.origin}/api/twilio/voice/inbound`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(webhookUrl).then(() => {
-        // Show success message (could be improved with toast notification)
-        const message = `Webhook URL kopiert:\n${webhookUrl}`;
-        alert(message);
+        toast.success(`Webhook URL kopiert: ${webhookUrl}`);
       }).catch((err) => {
         console.warn('[DashboardPage] Failed to copy to clipboard:', err);
-        // Fallback: show URL in alert
-        alert(`Webhook URL:\n${webhookUrl}\n\n(Bitte manuell kopieren)`);
+        // Fallback: show URL in toast with error
+        toast.error(`Webhook URL konnte nicht kopiert werden. Bitte manuell kopieren: ${webhookUrl}`);
       });
     } else {
       // Fallback for browsers without clipboard API
-      alert(`Webhook URL:\n${webhookUrl}\n\n(Bitte manuell kopieren)`);
+      toast.info(`Webhook URL: ${webhookUrl}\n\n(Bitte manuell kopieren)`);
     }
   };
 
   // Handle test agent
   const handleTestAgent = () => {
-    // Test agent flow - to be implemented in future iteration
-    alert('Agent-Test wird noch implementiert.');
+    setIsAgentTestOpen(true);
   };
 
   // Scroll to calls section
@@ -110,6 +114,12 @@ export const DashboardPage = () => {
     if (callsSection) {
       callsSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  // Handle call click
+  const handleCallClick = (call: any) => {
+    setSelectedCall(call);
+    setIsCallDetailsOpen(true);
   };
 
   if (isLoading) {
@@ -386,8 +396,38 @@ export const DashboardPage = () => {
 
       {/* Recent Calls Table */}
       <div id="recent-calls" className="mb-8">
-        <RecentCallsTable calls={overview.recent_calls} />
+        <RecentCallsTable calls={overview.recent_calls} onCallClick={handleCallClick} />
       </div>
+
+      {/* Call Details Modal */}
+      <CallDetailsModal
+        isOpen={isCallDetailsOpen}
+        onClose={() => {
+          setIsCallDetailsOpen(false);
+          setSelectedCall(null);
+        }}
+        call={selectedCall}
+      />
+
+      {/* Agent Test Modal */}
+      <AgentTestModal
+        isOpen={isAgentTestOpen}
+        onClose={() => setIsAgentTestOpen(false)}
+        agentConfigId={overview.agent_config.id}
+        locationId={overview.location.id}
+        elevenAgentId={overview.agent_config.eleven_agent_id}
+      />
+
+      {/* Phone Connection Modal */}
+      <PhoneConnectionModal
+        isOpen={isPhoneConnectionOpen}
+        onClose={() => setIsPhoneConnectionOpen(false)}
+        agentConfigId={overview.agent_config.id}
+        locationId={overview.location.id}
+        onSuccess={() => {
+          // Dashboard will automatically refresh via query invalidation
+        }}
+      />
     </div>
   );
 };

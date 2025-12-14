@@ -22,22 +22,35 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/react-query';
+import { ToastContainer, useToast } from './components/ui/Toast';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 const ReactQueryDevtools = import.meta.env.DEV
   ? React.lazy(() => import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })))
   : null;
 
+// Toast Provider Component
+const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { toasts, removeToast } = useToast();
+  return (
+    <>
+      {children}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </>
+  );
+};
+
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
-              <AnimatePresence mode='wait'>
-                  <Routes>
+          <ToastProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
+                <AnimatePresence mode='wait'>
+                    <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/payment-success" element={<PaymentSuccessPage />} />
@@ -65,10 +78,11 @@ function App() {
                     <Route path="/impressum" element={<ImpressumPage />} />
                     <Route path="/datenschutz" element={<DatenschutzPage />} />
                     <Route path="/agb" element={<AGBPage />} />
-                  </Routes>
-              </AnimatePresence>
-            </div>
-          </BrowserRouter>
+                    </Routes>
+                </AnimatePresence>
+              </div>
+            </BrowserRouter>
+          </ToastProvider>
         </AuthProvider>
         {ReactQueryDevtools && (
           <Suspense fallback={null}>
