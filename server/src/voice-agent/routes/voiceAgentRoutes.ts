@@ -15,6 +15,7 @@ import { resolveLocationId } from '../../utils/locationIdResolver';
 import { BadRequestError } from '../../utils/errors';
 import { voiceAgentConfig } from '../config';
 import { twilioMediaStreamService, TwilioStreamMessage } from '../../services/twilioMediaStreamService';
+import { elevenLabsBridgeService } from '../../services/elevenLabsBridgeService';
 
 const router = Router();
 
@@ -456,7 +457,28 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       try {
         const text = typeof data === 'string' ? data : (data as Buffer).toString('utf8');
         const message: TwilioStreamMessage = JSON.parse(text);
+        
+        // Handle message in service
         twilioMediaStreamService.handleMessage(session, message);
+        
+        // Bridge integration
+        if (message.event === 'start' && message.start) {
+          // Store phone number from start event if available (for locationId resolution)
+          // Note: Twilio start event doesn't include phone numbers, but we can get from call_logs
+          // Create bridge to ElevenLabs when stream starts
+          elevenLabsBridgeService.createBridge(callSid, session).catch((error) => {
+            console.error(`[TwilioMediaStream] Failed to create bridge callSid=${callSid}:`, error);
+          });
+        } else if (message.event === 'media' && message.media?.payload && message.media.track === 'inbound') {
+          // Forward inbound audio to ElevenLabs bridge
+          const bridge = elevenLabsBridgeService.getBridge(callSid);
+          if (bridge) {
+            elevenLabsBridgeService.handleTwilioAudio(bridge, message.media.payload);
+          }
+        } else if (message.event === 'stop') {
+          // Close bridge when stream stops
+          elevenLabsBridgeService.closeBridge(callSid, 'Twilio stream stopped');
+        }
       } catch (error: any) {
         console.error(`[TwilioMediaStream] Error processing message callSid=${callSid}:`, error?.message || error);
       }

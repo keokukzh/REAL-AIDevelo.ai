@@ -8,6 +8,7 @@ export interface TwilioMediaStreamSession {
   startTime: Date;
   frameCount: number;
   byteCount: number;
+  phoneNumber?: string; // To/From number for locationId resolution
   tracks?: {
     inbound?: { codec?: string; sampleRate?: number };
     outbound?: { codec?: string; sampleRate?: number };
@@ -99,14 +100,15 @@ export class TwilioMediaStreamService {
         break;
 
       case 'media':
-        if (message.media?.payload) {
+        if (message.media?.payload && message.media.track === 'inbound') {
           const audio = Buffer.from(message.media.payload, 'base64');
           session.frameCount += 1;
           session.byteCount += audio.length;
           if (session.frameCount === 1 || session.frameCount % 50 === 0) {
             console.log(`[TwilioMediaStream] media callSid=${session.callSid} frames=${session.frameCount} bytes=${session.byteCount} track=${message.media.track || 'unknown'}`);
           }
-          // TODO: Forward to ElevenLabs bridge (Step 4)
+          // Forward to ElevenLabs bridge (only inbound audio)
+          // Bridge will be created on 'start' event
         }
         break;
 
