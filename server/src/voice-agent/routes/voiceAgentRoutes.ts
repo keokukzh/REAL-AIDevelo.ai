@@ -7,7 +7,7 @@ import { documentIngestionService } from '../rag/ingest';
 import { sessionStore } from '../voice/session';
 import { VoicePipelineHandler } from '../voice/handlers';
 import { ElevenLabsStreamingClient } from '../voice/elevenLabsStreaming';
-import { toolRegistry } from '../tools/toolRegistry';
+import { createToolRegistry } from '../tools/toolRegistry';
 import { db } from '../../services/db';
 import { VoiceAgent } from '../../models/types';
 
@@ -36,6 +36,11 @@ router.post('/query', async (req: Request, res: Response) => {
     // Query RAG
     const ragResult = await ragQueryService.query(customerId, query);
 
+    // Create tool registry with locationId (fallback to empty string for legacy routes)
+    // TODO: Get locationId from agent or request context
+    const locationId = (agent as any)?.locationId || '';
+    const toolRegistry = createToolRegistry(locationId);
+
     // Build prompt context
     const promptContext = ragQueryService.buildPromptContext(
       customerId,
@@ -51,7 +56,7 @@ router.post('/query', async (req: Request, res: Response) => {
     // Get LLM response
     const response = await chatService.chatComplete(query, {
       context: promptContext,
-      tools: toolRegistry.getToolDefinitions().map((def) => ({
+      tools: toolRegistry.getToolDefinitions().map((def: any) => ({
         name: def.name,
         description: def.description,
         parameters: def.parameters,

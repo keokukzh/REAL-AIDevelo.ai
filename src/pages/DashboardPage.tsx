@@ -16,11 +16,13 @@ import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal';
 import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
-  const { data: overview, isLoading, error } = useDashboardOverview();
+  const { data: overview, isLoading, error, refetch } = useDashboardOverview();
+  const queryClient = useQueryClient();
   const updateAgentConfig = useUpdateAgentConfig();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [selectedCall, setSelectedCall] = useState<any | null>(null);
@@ -44,6 +46,29 @@ export const DashboardPage = () => {
     }
   }, [overview]);
 
+  // Handle calendar OAuth postMessage events
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Security: Only accept messages from our frontend URL
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+      if (event.origin !== frontendUrl && !event.origin.includes(window.location.hostname)) {
+        return;
+      }
+
+      if (event.data?.type === 'calendar-oauth-success') {
+        toast.success('Kalender erfolgreich verbunden');
+        // Refetch dashboard overview
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        refetch();
+      } else if (event.data?.type === 'calendar-oauth-error') {
+        toast.error(event.data.message || 'Fehler beim Verbinden des Kalenders');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryClient, refetch]);
+
   // Handle calendar OAuth connection
   const handleConnectCalendar = async () => {
     try {
@@ -56,7 +81,7 @@ export const DashboardPage = () => {
         
         if (isMockUrl) {
           // For testing: show info message
-          alert('OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.');
+          toast.warning('OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.');
           return;
         }
 
@@ -72,7 +97,7 @@ export const DashboardPage = () => {
         );
         
         if (!authWindow) {
-          alert('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
+          toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
         }
       } else {
         throw new Error('Keine Auth-URL erhalten');
@@ -80,7 +105,26 @@ export const DashboardPage = () => {
     } catch (error: any) {
       console.error('[DashboardPage] Error connecting calendar:', error);
       const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
-      alert(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
+      toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
+    }
+  };
+
+  // Handle calendar disconnect
+  const handleDisconnectCalendar = async () => {
+    try {
+      const response = await apiClient.delete('/calendar/google/disconnect');
+      if (response.data?.success) {
+        toast.success('Kalender erfolgreich getrennt');
+        // Refetch dashboard overview
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        refetch();
+      } else {
+        throw new Error('Disconnect fehlgeschlagen');
+      }
+    } catch (error: any) {
+      console.error('[DashboardPage] Error disconnecting calendar:', error);
+      const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
+      toast.error(`Fehler beim Trennen des Kalenders: ${errorMsg}`);
     }
   };
 
@@ -340,14 +384,23 @@ export const DashboardPage = () => {
           status={calendarStatus}
           statusText={calendarStatusText}
           actions={
-            <button
-              type="button"
-              className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-              onClick={handleConnectCalendar}
-              disabled={overview.status.calendar === 'connected'}
-            >
-              {overview.status.calendar === 'connected' ? 'Verbunden' : 'Kalender verbinden'}
-            </button>
+            overview.status.calendar === 'connected' ? (
+              <button
+                type="button"
+                className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                onClick={handleDisconnectCalendar}
+              >
+                Trennen
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+                onClick={handleConnectCalendar}
+              >
+                Kalender verbinden
+              </button>
+            )
           }
         >
           <div className="space-y-2 text-sm">

@@ -1,5 +1,6 @@
 import { voiceAgentConfig } from '../config';
 import axios from 'axios';
+import { calendarService } from '../../services/calendarService';
 
 /**
  * Calendar Tool
@@ -21,6 +22,12 @@ export interface CalendarAvailability {
 }
 
 export class CalendarTool {
+  private locationId: string;
+
+  constructor(locationId: string) {
+    this.locationId = locationId;
+  }
+
   /**
    * Check availability in calendar
    */
@@ -29,31 +36,51 @@ export class CalendarTool {
     end: Date,
     calendarType: 'google' | 'outlook' = 'google'
   ): Promise<CalendarAvailability[]> {
-    // Placeholder implementation
-    // In production, this would:
-    // 1. Authenticate with OAuth2
-    // 2. Query calendar API
-    // 3. Return availability slots
+    try {
+      // Refresh token if needed
+      const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
 
-    if (calendarType === 'google') {
-      // Google Calendar API integration would go here
-      // For now, return mock data
-      return [
-        {
-          start: new Date(start),
-          end: new Date(end),
-          available: true,
-        },
-      ];
-    } else {
-      // Outlook Calendar API integration would go here
-      return [
-        {
-          start: new Date(start),
-          end: new Date(end),
-          available: true,
-        },
-      ];
+      if (calendarType === 'google') {
+        // Google Calendar freebusy API
+        const response = await axios.post(
+          'https://www.googleapis.com/calendar/v3/freeBusy',
+          {
+            timeMin: start.toISOString(),
+            timeMax: end.toISOString(),
+            items: [{ id: 'primary' }],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        // Parse busy times and return availability
+        const busy = response.data.calendars?.primary?.busy || [];
+        // Simplified: return available if no busy times
+        return [
+          {
+            start: new Date(start),
+            end: new Date(end),
+            available: busy.length === 0,
+          },
+        ];
+      } else {
+        // Outlook Calendar API integration would go here
+        return [
+          {
+            start: new Date(start),
+            end: new Date(end),
+            available: true,
+          },
+        ];
+      }
+    } catch (error: any) {
+      if (error.message?.includes('Calendar not connected')) {
+        throw new Error('Kalender ist nicht verbunden. Bitte verbinden Sie zuerst Ihren Kalender.');
+      }
+      throw error;
     }
   }
 
@@ -64,23 +91,45 @@ export class CalendarTool {
     event: CalendarEvent,
     calendarType: 'google' | 'outlook' = 'google'
   ): Promise<{ success: boolean; eventId?: string; error?: string }> {
-    // Placeholder implementation
-    // In production, this would:
-    // 1. Authenticate with OAuth2
-    // 2. Create event via calendar API
-    // 3. Return event ID
-
     try {
+      // Refresh token if needed
+      const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
+
       if (calendarType === 'google') {
-        // Google Calendar API call would go here
-        // const response = await googleCalendarClient.events.insert({...})
-        return { success: true, eventId: 'mock-event-id' };
+        // Google Calendar events.insert API
+        const response = await axios.post(
+          'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+          {
+            summary: event.title,
+            description: event.description || '',
+            start: {
+              dateTime: event.start.toISOString(),
+              timeZone: 'Europe/Zurich',
+            },
+            end: {
+              dateTime: event.end.toISOString(),
+              timeZone: 'Europe/Zurich',
+            },
+            attendees: event.attendees?.map(email => ({ email })) || [],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        return { success: true, eventId: response.data.id };
       } else {
         // Outlook Calendar API call would go here
         return { success: true, eventId: 'mock-event-id' };
       }
     } catch (error: any) {
-      return { success: false, error: error.message };
+      if (error.message?.includes('Calendar not connected')) {
+        return { success: false, error: 'Kalender ist nicht verbunden. Bitte verbinden Sie zuerst Ihren Kalender.' };
+      }
+      return { success: false, error: error.message || 'Unbekannter Fehler' };
     }
   }
 
@@ -141,6 +190,11 @@ export class CalendarTool {
   }
 }
 
-export const calendarTool = new CalendarTool();
+// Note: calendarTool instance should be created with locationId
+// This export is kept for backward compatibility but should be replaced
+// with location-specific instances in voice agent context
+export function createCalendarTool(locationId: string): CalendarTool {
+  return new CalendarTool(locationId);
+}
 
 

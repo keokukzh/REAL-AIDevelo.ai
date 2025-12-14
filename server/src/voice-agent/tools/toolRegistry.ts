@@ -1,5 +1,5 @@
 import { ToolCall } from '../types';
-import { calendarTool, CalendarTool } from './calendarTool';
+import { createCalendarTool, CalendarTool } from './calendarTool';
 import { crmTool, CRMTool } from './crmTool';
 import { notificationTool, NotificationTool } from './notificationTool';
 
@@ -17,8 +17,10 @@ export interface ToolDefinition {
 export class ToolRegistry {
   private tools: Map<string, (args: any) => Promise<any>> = new Map();
   private definitions: ToolDefinition[] = [];
+  private locationId: string;
 
-  constructor() {
+  constructor(locationId: string) {
+    this.locationId = locationId;
     this.registerTools();
   }
 
@@ -26,17 +28,19 @@ export class ToolRegistry {
    * Register all available tools
    */
   private registerTools(): void {
-    // Calendar tool
+    // Calendar tool (requires locationId for token access)
+    const calendarTool = createCalendarTool(this.locationId);
     this.register(
       'calendar',
       CalendarTool.getToolDefinition(),
       async (args: any) => {
-        const { action, start, end, title, description, attendees } = args;
+        const { action, start, end, title, description, attendees, calendarType = 'google' } = args;
 
         if (action === 'check_availability') {
           return await calendarTool.checkAvailability(
             new Date(start),
-            new Date(end)
+            new Date(end),
+            calendarType
           );
         } else if (action === 'create_event') {
           return await calendarTool.createEvent({
@@ -45,11 +49,12 @@ export class ToolRegistry {
             end: new Date(end),
             description,
             attendees,
-          });
+          }, calendarType);
         } else if (action === 'list_events') {
           return await calendarTool.listEvents(
             new Date(start),
-            new Date(end)
+            new Date(end),
+            calendarType
           );
         }
       }
@@ -121,6 +126,11 @@ export class ToolRegistry {
   }
 }
 
-export const toolRegistry = new ToolRegistry();
+// Note: toolRegistry should be created with locationId
+// This export is kept for backward compatibility but should be replaced
+// with location-specific instances in voice agent context
+export function createToolRegistry(locationId: string): ToolRegistry {
+  return new ToolRegistry(locationId);
+}
 
 
