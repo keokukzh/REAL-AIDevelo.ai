@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { runAutomatedTest } from '../controllers/testController';
 import { validateParams } from '../middleware/validateRequest';
+import { verifySupabaseAuth } from '../middleware/supabaseAuth';
 import { z } from 'zod';
 
 const router = Router();
@@ -21,7 +22,7 @@ const AgentIdParamSchema = z.object({
  *       - Opening hours inquiries
  *       - Appointment booking flows
  *       
- *       **Note:** Currently returns mock results. Full integration with ElevenLabs test API is planned.
+ *       **Note:** Returns test configuration. Actual testing is performed via VoiceAgentStreamingUI in the frontend.
  *     parameters:
  *       - in: path
  *         name: agentId
@@ -72,6 +73,6 @@ const AgentIdParamSchema = z.object({
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/:agentId/run', validateParams(AgentIdParamSchema), runAutomatedTest);
+router.post('/:agentId/run', verifySupabaseAuth, validateParams(AgentIdParamSchema), runAutomatedTest);
 
 export default router;

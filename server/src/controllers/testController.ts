@@ -1,41 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotFoundError, InternalServerError } from '../utils/errors';
-import { db } from '../services/db';
-// import { elevenLabsService } from '../services/elevenLabsService'; // Future integration
+import { AgentService } from '../services/agentService';
 
 /**
  * Trigger an Automated Test Suite for an Agent
- * This would ideally:
- * 1. Start a conversation config with ElevenLabs
- * 2. Send audio/text inputs
- * 3. Evaluate responses against expected intents
+ * This endpoint validates the agent exists and returns test configuration.
+ * Actual testing is done via the frontend using VoiceAgentStreamingUI with ElevenLabs.
  */
 export const runAutomatedTest = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { agentId } = req.params;
         
-        // Verify agent exists
-        const agent = db.getAgent(agentId);
-        if (!agent) {
-            return next(new NotFoundError('Agent'));
-        }
+        // Verify agent config exists in Supabase
+        const agentConfig = await AgentService.verifyAgentExists(agentId);
 
-        // Mock Test Execution (in production, this would call ElevenLabs test API)
-        // Logging removed - use proper logging service in production
-
-        // Simulated Delay
-        await new Promise(r => setTimeout(r, 2000));
-
-        // Mock Results
+        // Return test configuration for frontend
+        // The frontend will use VoiceAgentStreamingUI to actually run the test
         const results = {
-            agentId,
+            agentId: agentConfig.id,
+            locationId: agentConfig.location_id,
+            elevenAgentId: agentConfig.eleven_agent_id,
             timestamp: new Date().toISOString(),
-            score: 95,
-            passed: true,
-            details: [
-                { case: "Greeting", status: "passed", latencyMs: 450 },
-                { case: "Opening Hours Inquiry", status: "passed", latencyMs: 600 },
-                { case: "Appointment Booking flow", status: "passed", latencyMs: 800 }
+            testAvailable: !!agentConfig.eleven_agent_id,
+            message: agentConfig.eleven_agent_id 
+                ? 'Agent is ready for testing via VoiceAgentStreamingUI'
+                : 'Agent requires ElevenLabs Agent ID configuration before testing',
+            // Test cases that can be validated
+            testCases: [
+                { case: "Greeting", description: "Agent responds to greeting" },
+                { case: "Opening Hours Inquiry", description: "Agent provides business hours" },
+                { case: "Appointment Booking flow", description: "Agent handles appointment requests" }
             ]
         };
 
@@ -44,6 +38,10 @@ export const runAutomatedTest = async (req: Request, res: Response, next: NextFu
             data: results
         });
     } catch (error) {
+        if (error instanceof NotFoundError) {
+            return next(error);
+        }
+        console.error('[TestController] Error running automated test:', error);
         next(new InternalServerError('Failed to run automated test'));
     }
 };

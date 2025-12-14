@@ -1,11 +1,12 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { createAgent, getAgents, getAgentById, activateAgent, syncAgent } from '../controllers/agentController';
 import { createDefaultAgent } from '../controllers/defaultAgentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
 import { requireAuth } from '../middleware/auth';
 import { verifySupabaseAuth } from '../middleware/supabaseAuth';
-import { db } from '../services/db';
+import { AgentService } from '../services/agentService';
+import { db } from '../services/db'; // Legacy - TODO: Migrate to Supabase
 
 const router = Router();
 
@@ -324,6 +325,121 @@ router.patch('/:id/activate', requireAuth, validateParams(AgentIdParamSchema), a
  *         description: Agent synchronized successfully
  */
 router.post('/:id/sync', requireAuth, validateParams(AgentIdParamSchema), syncAgent);
+
+/**
+ * @swagger
+ * /agents/{id}/test:
+ *   post:
+ *     summary: Test an agent (get streaming token for testing)
+ *     tags: [Agents]
+ *     description: Returns a streaming token and configuration for testing the agent via voice interface
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerId:
+ *                 type: string
+ *                 description: Optional customer ID for testing (defaults to test-{timestamp})
+ *               duration:
+ *                 type: number
+ *                 description: Test duration in seconds (defaults to 3600)
+ *     responses:
+ *       200:
+ *         description: Test configuration retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     agentId:
+ *                       type: string
+ *                     customerId:
+ *                       type: string
+ *                     voiceId:
+ *                       type: string
+ *                     streamingToken:
+ *                       type: string
+ *                     websocketUrl:
+ *                       type: string
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/:id/test', requireAuth, validateParams(AgentIdParamSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { customerId, duration } = req.body;
+    
+    // Get agent config from Supabase
+    const agentConfig = await AgentService.getAgentConfigById(id);
+
+    if (!agentConfig.eleven_agent_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Agent has no ElevenLabs Agent ID configured',
+      });
+    }
+
+    // Get streaming token from voice-agent route
+    const testCustomerId = customerId || `test-${Date.now()}`;
+    const testDuration = duration || 3600;
+
+    // Forward request to voice-agent streaming token endpoint
+    const axios = require('axios');
+    const { config: appConfig } = require('../config/env');
+    const baseUrl = appConfig.publicBaseUrl || 'http://localhost:5000';
+    
+    try {
+      // Get token from voice-agent service
+      const tokenResponse = await axios.post(`${baseUrl}/api/voice-agent/elevenlabs-stream-token`, {
+        customerId: testCustomerId,
+        agentId: agentConfig.eleven_agent_id,
+        voiceId: null, // Voice ID is managed by ElevenLabs agent
+        duration: testDuration,
+      }, {
+        headers: {
+          'Authorization': req.headers.authorization || '',
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          agentId: id,
+          customerId: testCustomerId,
+          elevenAgentId: agentConfig.eleven_agent_id,
+          streamingToken: tokenResponse.data.data.token,
+          websocketUrl: 'wss://api.elevenlabs.io/v1/convai',
+          testDuration: testDuration,
+        },
+      });
+    } catch (error: any) {
+      console.error('[AgentRoutes] Failed to get streaming token:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to generate streaming token for testing',
+        details: error.message,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * @swagger

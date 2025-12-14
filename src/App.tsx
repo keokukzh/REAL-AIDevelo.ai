@@ -3,26 +3,28 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LandingPage } from './pages/LandingPage';
-import { OnboardingPage } from './pages/OnboardingPage';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
-import { EnterpriseContactPage } from './pages/EnterpriseContactPage';
-import { CalendarCallbackPage } from './pages/CalendarCallbackPage';
-import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { ImpressumPage } from './pages/ImpressumPage';
-import { DatenschutzPage } from './pages/DatenschutzPage';
-import { AGBPage } from './pages/AGBPage';
-import { VoiceEditPage } from './pages/VoiceEditPage';
-import { AgentDetailsPage } from './pages/AgentDetailsPage';
-import { AgentEditPage } from './pages/AgentEditPage';
+// Lazy load pages for code splitting
+const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const OnboardingPage = React.lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
+const PaymentSuccessPage = React.lazy(() => import('./pages/PaymentSuccessPage').then(m => ({ default: m.PaymentSuccessPage })));
+const EnterpriseContactPage = React.lazy(() => import('./pages/EnterpriseContactPage').then(m => ({ default: m.EnterpriseContactPage })));
+const CalendarCallbackPage = React.lazy(() => import('./pages/CalendarCallbackPage').then(m => ({ default: m.CalendarCallbackPage })));
+const AuthCallbackPage = React.lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
+const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage').then(m => ({ default: m.ImpressumPage })));
+const DatenschutzPage = React.lazy(() => import('./pages/DatenschutzPage').then(m => ({ default: m.DatenschutzPage })));
+const AGBPage = React.lazy(() => import('./pages/AGBPage').then(m => ({ default: m.AGBPage })));
+const VoiceEditPage = React.lazy(() => import('./pages/VoiceEditPage').then(m => ({ default: m.VoiceEditPage })));
+const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').then(m => ({ default: m.AgentDetailsPage })));
+const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/react-query';
 import { ToastContainer, useToast } from './components/ui/Toast';
+import { LoadingSpinner } from './components/LoadingSpinner';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 const ReactQueryDevtools = import.meta.env.DEV
@@ -51,33 +53,87 @@ function App() {
               <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
                 <AnimatePresence mode='wait'>
                     <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/payment-success" element={<PaymentSuccessPage />} />
-                    <Route path="/enterprise" element={<EnterpriseContactPage />} />
-                    <Route path="/calendar/:provider/callback" element={<CalendarCallbackPage />} />
-                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/onboarding" element={<OnboardingPage />} />
-                    <Route path="/voice-edit" element={<VoiceEditPage />} />
+                    <Route path="/" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <LandingPage />
+                      </Suspense>
+                    } />
+                    <Route path="/checkout" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <CheckoutPage />
+                      </Suspense>
+                    } />
+                    <Route path="/payment-success" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <PaymentSuccessPage />
+                      </Suspense>
+                    } />
+                    <Route path="/enterprise" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <EnterpriseContactPage />
+                      </Suspense>
+                    } />
+                    <Route path="/calendar/:provider/callback" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <CalendarCallbackPage />
+                      </Suspense>
+                    } />
+                    <Route path="/auth/callback" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <AuthCallbackPage />
+                      </Suspense>
+                    } />
+                    <Route path="/login" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <LoginPage />
+                      </Suspense>
+                    } />
+                    <Route path="/onboarding" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <OnboardingPage />
+                      </Suspense>
+                    } />
+                    <Route path="/voice-edit" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <VoiceEditPage />
+                      </Suspense>
+                    } />
                     <Route path="/dashboard" element={
                       <ProtectedRoute>
-                        <DashboardPage />
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <DashboardPage />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/agents/:id" element={
                       <ProtectedRoute>
-                        <AgentDetailsPage />
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <AgentDetailsPage />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/agents/:id/edit" element={
                       <ProtectedRoute>
-                        <AgentEditPage />
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <AgentEditPage />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
-                    <Route path="/impressum" element={<ImpressumPage />} />
-                    <Route path="/datenschutz" element={<DatenschutzPage />} />
-                    <Route path="/agb" element={<AGBPage />} />
+                    <Route path="/impressum" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <ImpressumPage />
+                      </Suspense>
+                    } />
+                    <Route path="/datenschutz" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <DatenschutzPage />
+                      </Suspense>
+                    } />
+                    <Route path="/agb" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <AGBPage />
+                      </Suspense>
+                    } />
                     </Routes>
                 </AnimatePresence>
               </div>

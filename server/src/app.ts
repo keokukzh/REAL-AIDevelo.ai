@@ -67,28 +67,28 @@ if (config.databaseUrl) {
 }
 
 import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
+import {
+  corsMiddleware,
+  optionsHandler,
+  helmetMiddleware,
+  rateLimitMiddleware,
+  varyOriginMiddleware,
+} from './middleware/security';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import dbRoutes from './routes/dbRoutes';
 import debugRoutes from './routes/debugRoutes';
 import elevenLabsRoutes from './routes/elevenLabsRoutes';
 import testRoutes from './routes/testRoutes';
-// STRIPE/PAYMENT REMOVED - Commented out for cleanup
-// import paymentRoutes from './routes/paymentRoutes';
 import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
-// STRIPE/PAYMENT REMOVED - Commented out for cleanup
-// import purchaseRoutes from './routes/purchaseRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import telephonyRoutes from './routes/telephonyRoutes';
 import syncRoutes from './routes/syncRoutes';
@@ -105,120 +105,16 @@ const app = express();
 // Security: don't reveal server stack
 app.disable('x-powered-by');
 
-// Security Middleware — stricter defaults in production
+// Security Middleware — consolidated from security.ts
 if (config.isProduction) {
   app.set('trust proxy', 1); // behind load balancer / proxy
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:'],
-        connectSrc: ["'self'", 'https:']
-      }
-    },
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
-  }));
-} else {
-  app.use(helmet());
 }
 
-// Helper function to check if origin is allowed (shared between OPTIONS and CORS middleware)
-const isOriginAllowed = (origin: string | undefined): boolean => {
-  if (!origin) {
-    return true; // Allow requests with no origin (mobile apps, Postman, server-to-server)
-  }
-
-  // Production origins
-  if (
-    origin === 'https://aidevelo.ai' ||
-    origin.endsWith('.aidevelo.ai') ||
-    origin.endsWith('.pages.dev')
-  ) {
-    return true;
-  }
-
-  // Development origins (only in non-production)
-  if (process.env.NODE_ENV !== 'production') {
-    if (
-      origin === 'http://localhost:4000' ||
-      origin.startsWith('http://localhost:') ||
-      origin.startsWith('http://127.0.0.1:')
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-// Explicit OPTIONS handler BEFORE CORS - respond immediately to avoid timeout
-app.options('*', (req: Request, res: Response) => {
-  const origin = req.headers.origin;
-  
-  // Use same origin check as CORS middleware
-  const isAllowed = isOriginAllowed(origin);
-
-  if (isAllowed && origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin'); // Important for cache correctness
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-  res.status(200).end();
-});
-
-// CORS Configuration - Allow Cloudflare Pages and production domains
-app.use(cors({
-  origin: (origin, callback) => {
-    const isAllowed = isOriginAllowed(origin);
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Rejected origin: ${origin}`);
-      callback(null, false); // Don't throw error, just reject
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
-
-// Ensure Vary: Origin header is set for CORS responses (cache correctness)
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const origin = req.headers.origin;
-  if (origin && isOriginAllowed(origin)) {
-    res.setHeader('Vary', 'Origin');
-  }
-  next();
-});
-
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Apply rate limiting to API routes (except health check and OPTIONS preflight).
-// Keep the option to extend to a redis-backed store later for distributed deployments.
-app.use((req, res, next) => {
-  // Skip rate limiting for OPTIONS (CORS preflight) and health checks
-  if (req.method === 'OPTIONS' || req.path === '/health') {
-    return next();
-  }
-  if (req.path.startsWith('/api/') && req.path !== '/api') {
-    return limiter(req, res, next);
-  }
-  next();
-});
+app.use(helmetMiddleware);
+app.options('*', optionsHandler);
+app.use(corsMiddleware);
+app.use(varyOriginMiddleware);
+app.use(rateLimitMiddleware);
 
 // Logging
 app.use(morgan(config.isProduction ? 'combined' : 'dev'));
@@ -288,7 +184,6 @@ app.get('/', (req: Request, res: Response) => {
       agents: '/api/agents',
       elevenlabs: '/api/elevenlabs',
       calendar: '/api/calendar',
-      // payments: '/api/payments', // STRIPE/PAYMENT REMOVED
       enterprise: '/api/enterprise',
       telephony: '/api/telephony',
       onboarding: '/api/onboarding',
@@ -428,9 +323,6 @@ v1Router.use('/agents', agentRoutes); // Auth applied per-route in agentRoutes
 v1Router.use('/dashboard', dashboardRoutes); // Auth applied per-route
 v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
-// STRIPE/PAYMENT REMOVED - Commented out for cleanup
-// v1Router.use('/payments', paymentRoutes);
-// v1Router.use('/purchases', requireAuth, purchaseRoutes);
 v1Router.use('/voice', requireAuth, voiceRoutes);
 v1Router.use('/telephony', requireAuth, telephonyRoutes);
 v1Router.use('/sync', requireAuth, syncRoutes);
