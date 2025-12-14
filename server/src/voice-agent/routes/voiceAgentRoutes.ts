@@ -10,6 +10,8 @@ import { ElevenLabsStreamingClient } from '../voice/elevenLabsStreaming';
 import { createToolRegistry } from '../tools/toolRegistry';
 import { db } from '../../services/db';
 import { VoiceAgent } from '../../models/types';
+import { resolveLocationId } from '../../utils/locationIdResolver';
+import { BadRequestError } from '../../utils/errors';
 
 const router = Router();
 
@@ -36,9 +38,25 @@ router.post('/query', async (req: Request, res: Response) => {
     // Query RAG
     const ragResult = await ragQueryService.query(customerId, query);
 
-    // Create tool registry with locationId (fallback to empty string for legacy routes)
-    // TODO: Get locationId from agent or request context
-    const locationId = (agent as any)?.locationId || '';
+    // Resolve locationId from request context
+    let locationId: string;
+    let locationSource: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId: (req as any).supabaseUser?.supabaseUserId,
+        email: (req as any).supabaseUser?.email,
+      });
+      locationId = resolution.locationId;
+      locationSource = resolution.source;
+      console.log(`[VoiceAgentRoutes] Resolved locationId=${locationId} from source=${locationSource}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
     const toolRegistry = createToolRegistry(locationId);
 
     // Build prompt context

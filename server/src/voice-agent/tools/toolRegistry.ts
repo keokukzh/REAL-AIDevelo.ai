@@ -34,28 +34,24 @@ export class ToolRegistry {
       'calendar',
       CalendarTool.getToolDefinition(),
       async (args: any) => {
-        const { action, start, end, title, description, attendees, calendarType = 'google' } = args;
+        const { action, calendarType = 'google' } = args;
 
         if (action === 'check_availability') {
-          return await calendarTool.checkAvailability(
-            new Date(start),
-            new Date(end),
-            calendarType
-          );
+          return await calendarTool.checkAvailability(args, calendarType);
+        } else if (action === 'create_appointment') {
+          return await calendarTool.createAppointment(args, calendarType);
         } else if (action === 'create_event') {
-          return await calendarTool.createEvent({
-            title,
-            start: new Date(start),
-            end: new Date(end),
-            description,
-            attendees,
+          // Legacy support - use createAppointment internally
+          return await calendarTool.createAppointment({
+            summary: args.summary || args.title,
+            start: args.start,
+            end: args.end,
+            description: args.description,
+            attendees: args.attendees?.map((a: any) => typeof a === 'string' ? { email: a } : a) || [],
+            timezone: args.timezone,
           }, calendarType);
-        } else if (action === 'list_events') {
-          return await calendarTool.listEvents(
-            new Date(start),
-            new Date(end),
-            calendarType
-          );
+        } else {
+          throw new Error(`Unknown calendar action: ${action}`);
         }
       }
     );

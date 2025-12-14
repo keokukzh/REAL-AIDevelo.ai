@@ -274,13 +274,14 @@ export const getDashboardOverview = async (
     // Load calendar status and provider
     const { data: calendarData } = await supabaseAdmin
       .from('google_calendar_integrations')
-      .select('id, connected_email')
+      .select('id, provider, connected_email')
       .eq('location_id', location.id)
+      .eq('provider', 'google')
       .limit(1)
       .maybeSingle();
 
     const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
-    const calendarProvider = calendarData ? 'google' : null; // Currently only Google is supported
+    const calendarProvider = calendarData?.provider || null;
 
     // Determine agent status
     const agentStatus: 'ready' | 'needs_setup' =

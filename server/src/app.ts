@@ -91,6 +91,7 @@ import testRoutes from './routes/testRoutes';
 import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import devCalendarRoutes from './routes/devCalendarRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
 import voiceRoutes from './routes/voiceRoutes';
@@ -388,6 +389,9 @@ v1Router.use('/twilio', twilioRoutes);
 v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/calendar', calendarRoutes);
+if (process.env.NODE_ENV !== 'production') {
+  v1Router.use('/dev/calendar', devCalendarRoutes); // Dev-only endpoints
+}
 v1Router.use('/onboarding', onboardingAIAssistantRoutes);
 v1Router.use('/voice-agent', voiceAgentRoutes);
 
