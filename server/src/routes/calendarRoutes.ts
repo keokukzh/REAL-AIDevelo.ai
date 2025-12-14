@@ -24,7 +24,13 @@ const router = Router();
 router.get('/:provider/auth', (req: Request, res: Response, next: NextFunction) => {
   try {
     const { provider } = req.params;
-    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/calendar/${provider}/callback`;
+    // Use PUBLIC_BASE_URL (backend URL) for OAuth redirect, not FRONTEND_URL
+    // Google will redirect back to the backend callback endpoint
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || 
+                         (process.env.NODE_ENV === 'production' 
+                           ? 'https://real-aidevelo-ai.onrender.com'
+                           : 'http://localhost:5000');
+    const redirectUri = `${publicBaseUrl}/api/calendar/${provider}/callback`;
 
     if (provider === 'google') {
       const { authUrl, state } = calendarService.getGoogleAuthUrl(redirectUri);
@@ -83,7 +89,12 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
       return next(new BadRequestError('Ungültiger OAuth-State'));
     }
 
-    const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/calendar/${provider}/callback`;
+    // Use the same redirect URI that was used in the auth request
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || 
+                         (process.env.NODE_ENV === 'production' 
+                           ? 'https://real-aidevelo-ai.onrender.com'
+                           : 'http://localhost:5000');
+    const redirectUri = `${publicBaseUrl}/api/calendar/${provider}/callback`;
 
     let token;
     if (provider === 'google') {

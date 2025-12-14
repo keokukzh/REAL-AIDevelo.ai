@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { config } from '../config/env';
 
 export interface CalendarAuthResponse {
@@ -111,16 +112,36 @@ export const calendarService = {
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
     const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '';
 
-    // In production, make actual API call to Google
-    // For now, return mock token
-    const mockToken: CalendarToken = {
-      accessToken: `google_token_${Date.now()}`,
-      refreshToken: `google_refresh_${Date.now()}`,
-      expiresAt: Date.now() + 3600 * 1000, // 1 hour
-      provider: 'google',
-    };
+    if (!clientId || !clientSecret) {
+      throw new Error('GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be set');
+    }
 
-    return mockToken;
+    // Make actual API call to Google to exchange code for tokens
+    try {
+      const response = await axios.post('https://oauth2.googleapis.com/token', {
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      const token: CalendarToken = {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+        expiresAt: Date.now() + (response.data.expires_in * 1000),
+        provider: 'google',
+      };
+
+      return token;
+    } catch (error: any) {
+      console.error('[CalendarService] Error exchanging Google code:', error.response?.data || error.message);
+      throw new Error(`Failed to exchange Google authorization code: ${error.response?.data?.error_description || error.message}`);
+    }
   },
 
   /**
