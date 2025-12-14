@@ -88,7 +88,7 @@ export const timeoutMiddleware = (
 
       // Override res.end to clear timeout when response is sent
       const originalEnd = res.end.bind(res);
-      res.end = function(chunk?: unknown, encoding?: BufferEncoding, cb?: () => void) {
+      (res as any).end = function(chunk?: any, encoding?: BufferEncoding | (() => void), cb?: () => void) {
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
@@ -108,11 +108,18 @@ export const timeoutMiddleware = (
           }
         }
 
-        if (typeof chunk === 'string' && encoding) {
+        // Handle Express res.end() overloads
+        if (typeof encoding === 'function') {
+          // res.end(cb) or res.end(chunk, cb)
+          return originalEnd(chunk, encoding);
+        } else if (encoding && typeof chunk === 'string') {
+          // res.end(chunk, encoding, cb)
           return originalEnd(chunk, encoding, cb);
         } else if (chunk) {
+          // res.end(chunk, cb)
           return originalEnd(chunk, cb);
         } else {
+          // res.end(cb)
           return originalEnd(cb);
         }
       };

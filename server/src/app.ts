@@ -169,14 +169,22 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   
   // Override res.end to log completion
   const originalEnd = res.end.bind(res);
-  res.end = function(chunk?: unknown, encoding?: BufferEncoding, cb?: () => void) {
+  (res as any).end = function(chunk?: any, encoding?: BufferEncoding | (() => void), cb?: () => void) {
     const duration = Date.now() - startTime;
     StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
-    if (typeof chunk === 'string' && encoding) {
+    
+    // Handle Express res.end() overloads
+    if (typeof encoding === 'function') {
+      // res.end(cb) or res.end(chunk, cb)
+      return originalEnd(chunk, encoding);
+    } else if (encoding && typeof chunk === 'string') {
+      // res.end(chunk, encoding, cb)
       return originalEnd(chunk, encoding, cb);
     } else if (chunk) {
+      // res.end(chunk, cb)
       return originalEnd(chunk, cb);
     } else {
+      // res.end(cb)
       return originalEnd(cb);
     }
   };
