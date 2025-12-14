@@ -1,5 +1,6 @@
 import { VoiceAgent, Purchase, User, PhoneNumber } from '../models/types';
 import { PostgresDatabase } from './postgresDb';
+import { config } from '../config/env';
 
 class HybridDatabase {
   private agents: Map<string, VoiceAgent> = new Map();
@@ -10,10 +11,16 @@ class HybridDatabase {
   private cacheWarmed = false;
 
   constructor() {
-    // Best-effort cache warm-up from Postgres
-    this.warmCache().catch((err) => {
-      console.warn('[DB] Failed to warm cache from Postgres (continuing with in-memory):', err);
-    });
+    // Only warm cache if DATABASE_URL is set (legacy feature)
+    if (config.databaseUrl) {
+      // Best-effort cache warm-up from Postgres
+      this.warmCache().catch((err) => {
+        console.warn('[DB] Failed to warm cache from Postgres (continuing with in-memory):', err);
+      });
+    } else {
+      console.log('[DB] DATABASE_URL not set - skipping cache warm-up (using in-memory only)');
+      this.cacheWarmed = true; // Mark as warmed to avoid retries
+    }
   }
 
   private async warmCache() {
