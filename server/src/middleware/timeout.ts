@@ -86,30 +86,36 @@ export const timeoutMiddleware = (
     }
   }, timeout);
 
-  // Override res.end to clear timeout when response is sent
-  const originalEnd = res.end.bind(res);
-  res.end = function(chunk?: unknown, encoding?: unknown) {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
+      // Override res.end to clear timeout when response is sent
+      const originalEnd = res.end.bind(res);
+      res.end = function(chunk?: unknown, encoding?: BufferEncoding, cb?: () => void) {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
 
-    // Log request duration if it was close to timeout
-    if (!isTimedOut) {
-      const duration = Date.now() - (req as any).startTime;
-      if (duration > timeout * 0.8) {
-        console.warn('[TimeoutMiddleware] Slow request detected', {
-          method: req.method,
-          path: req.path,
-          duration,
-          timeout,
-          requestId: req.headers['x-request-id'],
-        });
-      }
-    }
+        // Log request duration if it was close to timeout
+        if (!isTimedOut) {
+          const duration = Date.now() - (req as any).startTime;
+          if (duration > timeout * 0.8) {
+            console.warn('[TimeoutMiddleware] Slow request detected', {
+              method: req.method,
+              path: req.path,
+              duration,
+              timeout,
+              requestId: req.headers['x-request-id'],
+            });
+          }
+        }
 
-    return originalEnd(chunk, encoding);
-  };
+        if (typeof chunk === 'string' && encoding) {
+          return originalEnd(chunk, encoding, cb);
+        } else if (chunk) {
+          return originalEnd(chunk, cb);
+        } else {
+          return originalEnd(cb);
+        }
+      };
 
   // Store start time for duration tracking
   (req as any).startTime = Date.now();

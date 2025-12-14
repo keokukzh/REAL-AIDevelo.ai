@@ -121,14 +121,16 @@ app.use(varyOriginMiddleware);
 app.use(rateLimitMiddleware);
 
 // Compression (for JSON responses)
-app.use(compression({ filter: (req, res) => {
-  // Only compress JSON responses
-  if (req.headers['accept']?.includes('application/json') || 
-      res.getHeader('content-type')?.toString().includes('application/json')) {
-    return compression.filter(req, res);
+app.use(compression({ 
+  filter: (req: Request, res: Response) => {
+    // Only compress JSON responses
+    if (req.headers['accept']?.includes('application/json') || 
+        res.getHeader('content-type')?.toString().includes('application/json')) {
+      return compression.filter(req, res);
+    }
+    return false;
   }
-  return false;
-}}));
+}));
 
 // Request timeout middleware
 app.use(timeoutMiddleware);
@@ -167,10 +169,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   
   // Override res.end to log completion
   const originalEnd = res.end.bind(res);
-  res.end = function(chunk?: unknown, encoding?: unknown) {
+  res.end = function(chunk?: unknown, encoding?: BufferEncoding, cb?: () => void) {
     const duration = Date.now() - startTime;
     StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
-    return originalEnd(chunk, encoding);
+    if (typeof chunk === 'string' && encoding) {
+      return originalEnd(chunk, encoding, cb);
+    } else if (chunk) {
+      return originalEnd(chunk, cb);
+    } else {
+      return originalEnd(cb);
+    }
   };
   
   next();
