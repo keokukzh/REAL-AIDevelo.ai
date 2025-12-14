@@ -229,7 +229,8 @@ export class ElevenLabsBridgeService {
       return;
     }
 
-    console.log(`[ElevenLabsBridge] Closing bridge callSid=${callSid} reason=${reason || 'unknown'} bytesIn=${bridge.bytesIn} bytesOut=${bridge.bytesOut}`);
+    const duration = Date.now() - bridge.startTime.getTime();
+    console.log(`[ElevenLabsBridge] Closing bridge callSid=${callSid} reason=${reason || 'unknown'} duration=${Math.round(duration / 1000)}s bytesIn=${bridge.bytesIn} bytesOut=${bridge.bytesOut}`);
 
     if (bridge.elevenLabsClient) {
       try {

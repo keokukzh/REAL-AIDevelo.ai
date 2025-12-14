@@ -9,6 +9,9 @@ export interface TwilioMediaStreamSession {
   frameCount: number;
   byteCount: number;
   phoneNumber?: string; // To/From number for locationId resolution
+  audioQueue: Buffer[]; // Queue for audio frames (backpressure protection)
+  maxQueueSize: number; // Maximum queue size before dropping frames
+  cleanupTimer?: NodeJS.Timeout; // Timer for automatic cleanup
   tracks?: {
     inbound?: { codec?: string; sampleRate?: number };
     outbound?: { codec?: string; sampleRate?: number };
@@ -58,23 +61,62 @@ export class TwilioMediaStreamService {
       startTime: new Date(),
       frameCount: 0,
       byteCount: 0,
+      audioQueue: [],
+      maxQueueSize: 100, // Max 100 frames in queue (protect memory)
+      cleanupTimer: undefined,
     };
 
     this.sessions.set(callSid, session);
 
+    // Set cleanup timer (max 1 hour per call)
+    session.cleanupTimer = setTimeout(() => {
+      console.warn(`[TwilioMediaStream] Session timeout callSid=${callSid}, forcing cleanup`);
+      this.cleanupSession(callSid, 'Timeout');
+    }, 60 * 60 * 1000); // 1 hour
+
     // Handle WebSocket close
     ws.on('close', () => {
       console.log(`[TwilioMediaStream] Session closed callSid=${callSid} frames=${session.frameCount} bytes=${session.byteCount}`);
-      this.sessions.delete(callSid);
+      this.cleanupSession(callSid, 'WebSocket closed');
     });
 
     // Handle WebSocket errors
     ws.on('error', (error) => {
       console.error(`[TwilioMediaStream] WebSocket error callSid=${callSid}:`, error);
+      this.cleanupSession(callSid, `WebSocket error: ${error.message || 'Unknown'}`);
     });
 
     console.log(`[TwilioMediaStream] Session created callSid=${callSid}`);
     return session;
+  }
+
+  /**
+   * Cleanup session (remove from map, clear timer, close bridge)
+   */
+  cleanupSession(callSid: string, reason: string): void {
+    const session = this.sessions.get(callSid);
+    if (!session) {
+      return;
+    }
+
+    // Clear cleanup timer
+    if (session.cleanupTimer) {
+      clearTimeout(session.cleanupTimer);
+      session.cleanupTimer = undefined;
+    }
+
+    // Clear audio queue
+    session.audioQueue = [];
+
+    // Close WebSocket if still open
+    if (session.ws.readyState === WebSocket.OPEN) {
+      session.ws.close();
+    }
+
+    // Remove from sessions map
+    this.sessions.delete(callSid);
+
+    console.log(`[TwilioMediaStream] Session cleaned up callSid=${callSid} reason=${reason}`);
   }
 
   /**
@@ -104,8 +146,19 @@ export class TwilioMediaStreamService {
           const audio = Buffer.from(message.media.payload, 'base64');
           session.frameCount += 1;
           session.byteCount += audio.length;
+
+          // Backpressure: Drop frames if queue is too large
+          if (session.audioQueue.length >= session.maxQueueSize) {
+            // Drop oldest frame
+            const dropped = session.audioQueue.shift();
+            console.warn(`[TwilioMediaStream] Dropped frame callSid=${session.callSid} queueSize=${session.audioQueue.length} (backpressure)`);
+          }
+
+          // Add to queue (will be processed by bridge)
+          session.audioQueue.push(audio);
+
           if (session.frameCount === 1 || session.frameCount % 50 === 0) {
-            console.log(`[TwilioMediaStream] media callSid=${session.callSid} frames=${session.frameCount} bytes=${session.byteCount} track=${message.media.track || 'unknown'}`);
+            console.log(`[TwilioMediaStream] media callSid=${session.callSid} frames=${session.frameCount} bytes=${session.byteCount} queueSize=${session.audioQueue.length} track=${message.media.track || 'unknown'}`);
           }
           // Forward to ElevenLabs bridge (only inbound audio)
           // Bridge will be created on 'start' event
@@ -115,8 +168,7 @@ export class TwilioMediaStreamService {
       case 'stop':
         if (message.stop) {
           console.log(`[TwilioMediaStream] stop streamSid=${message.stop.streamSid || session.streamSid} callSid=${session.callSid} frames=${session.frameCount} bytes=${session.byteCount}`);
-          session.ws.close();
-          this.sessions.delete(session.callSid);
+          this.cleanupSession(session.callSid, 'Twilio stop event');
         }
         break;
 
@@ -153,11 +205,8 @@ export class TwilioMediaStreamService {
    * Cleanup all sessions (for graceful shutdown)
    */
   cleanup(): void {
-    for (const [callSid, session] of this.sessions.entries()) {
-      if (session.ws.readyState === WebSocket.OPEN) {
-        session.ws.close();
-      }
-      this.sessions.delete(callSid);
+    for (const [callSid] of this.sessions.entries()) {
+      this.cleanupSession(callSid, 'Service shutdown');
     }
     console.log('[TwilioMediaStream] All sessions cleaned up');
   }
