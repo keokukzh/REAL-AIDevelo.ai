@@ -41,7 +41,17 @@ export const LoginPage = () => {
         navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
-      setError(err.message || 'Anmeldung fehlgeschlagen');
+      // Extract user-friendly error message
+      let errorMessage = 'Anmeldung fehlgeschlagen';
+      if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.error?.message) {
+        errorMessage = err.error.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      setError(errorMessage);
+      console.error('[LoginPage] Login error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,6 +97,11 @@ export const LoginPage = () => {
         {error && (
           <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
             {error}
+            {error.includes('Invalid API key') && (
+              <div className="mt-2 text-xs text-red-300">
+                Hinweis: Bitte überprüfe die Supabase-Konfiguration in den Environment-Variablen.
+              </div>
+            )}
           </div>
         )}
 
