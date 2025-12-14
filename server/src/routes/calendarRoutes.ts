@@ -30,19 +30,35 @@ router.get('/:provider/auth', (req: Request, res: Response, next: NextFunction) 
                          (process.env.NODE_ENV === 'production' 
                            ? 'https://real-aidevelo-ai.onrender.com'
                            : 'http://localhost:5000');
-    const redirectUri = `${publicBaseUrl}/api/calendar/${provider}/callback`;
+    // Remove trailing slash if present
+    const baseUrl = publicBaseUrl.replace(/\/$/, '');
+    const redirectUri = `${baseUrl}/api/calendar/${provider}/callback`;
+
+    // Log for debugging
+    console.log('[CalendarRoutes] OAuth redirect URI:', redirectUri);
+    console.log('[CalendarRoutes] PUBLIC_BASE_URL:', process.env.PUBLIC_BASE_URL || 'not set');
+    console.log('[CalendarRoutes] NODE_ENV:', process.env.NODE_ENV);
 
     if (provider === 'google') {
       const { authUrl, state } = calendarService.getGoogleAuthUrl(redirectUri);
       res.json({
         success: true,
-        data: { authUrl, state },
+        data: { 
+          authUrl, 
+          state,
+          // Include redirect URI in response for debugging
+          redirectUri,
+        },
       });
     } else if (provider === 'outlook') {
       const { authUrl, state } = calendarService.getOutlookAuthUrl(redirectUri);
       res.json({
         success: true,
-        data: { authUrl, state },
+        data: { 
+          authUrl, 
+          state,
+          redirectUri,
+        },
       });
     } else {
       return next(new BadRequestError('Ungültiger Provider. Unterstützt: google, outlook'));
@@ -94,7 +110,9 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
                          (process.env.NODE_ENV === 'production' 
                            ? 'https://real-aidevelo-ai.onrender.com'
                            : 'http://localhost:5000');
-    const redirectUri = `${publicBaseUrl}/api/calendar/${provider}/callback`;
+    // Remove trailing slash if present
+    const baseUrl = publicBaseUrl.replace(/\/$/, '');
+    const redirectUri = `${baseUrl}/api/calendar/${provider}/callback`;
 
     let token;
     if (provider === 'google') {
