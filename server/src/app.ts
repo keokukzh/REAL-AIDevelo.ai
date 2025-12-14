@@ -529,10 +529,6 @@ if (require.main === module) {
         console.error(`[AIDevelo Server] Port ${config.port} is already in use`);
       }
     });
-
-    httpServer.on('request', (req, res) => {
-      console.log(`[AIDevelo Server] ${req.method} ${req.url}`);
-    });
   };
 
   start().catch((err) => {
