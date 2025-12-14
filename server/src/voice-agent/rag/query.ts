@@ -9,15 +9,15 @@ import { buildMessages, PromptContext } from './promptTemplates';
 
 export class RAGQueryService {
   /**
-   * Query RAG system for a customer
+   * Query RAG system for a location
    */
   async query(
-    customerId: string,
+    locationId: string,
     query: string,
     limit: number = 5
   ): Promise<RAGQueryResult> {
     // Retrieve similar chunks
-    const chunks = await vectorStore.search(customerId, query, limit);
+    const chunks = await vectorStore.search(locationId, query, limit);
 
     return {
       chunks: chunks.map((chunk) => ({
@@ -26,7 +26,7 @@ export class RAGQueryService {
         metadata: chunk.metadata,
       })),
       query,
-      customerId,
+      customerId: locationId, // Keep customerId in result for backward compatibility
     };
   }
 
@@ -35,13 +35,13 @@ export class RAGQueryService {
    * In production, could use a reranking model
    */
   async queryWithRerank(
-    customerId: string,
+    locationId: string,
     query: string,
     initialLimit: number = 10,
     finalLimit: number = 5
   ): Promise<RAGQueryResult> {
     // Get more results initially
-    const initialResults = await this.query(customerId, query, initialLimit);
+    const initialResults = await this.query(locationId, query, initialLimit);
 
     // Simple reranking: sort by score (already sorted, but we could add more logic)
     const reranked = initialResults.chunks
@@ -51,7 +51,7 @@ export class RAGQueryService {
     return {
       chunks: reranked,
       query,
-      customerId,
+      customerId: locationId, // Keep customerId in result for backward compatibility
     };
   }
 
@@ -59,7 +59,7 @@ export class RAGQueryService {
    * Build prompt context from query
    */
   buildPromptContext(
-    customerId: string,
+    customerId: string, // Keep parameter name for backward compatibility
     userInput: string,
     ragResult: RAGQueryResult,
     additionalContext?: Partial<PromptContext>

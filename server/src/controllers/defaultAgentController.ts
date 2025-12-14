@@ -65,6 +65,7 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
   phone_number: z.string().nullable().optional(),
   phone_number_sid: z.string().nullable().optional(),
   calendar_provider: z.string().nullable().optional(),
+  calendar_connected_email: z.string().nullable().optional(),
   last_activity: z.string().nullable().optional(),
 });
 
@@ -346,6 +347,7 @@ export const getDashboardOverview = async (
       phone_number: phoneNumber,
       phone_number_sid: phoneData?.twilio_number_sid || null,
       calendar_provider: calendarProvider,
+      calendar_connected_email: calendarData?.connected_email || null,
       last_activity: lastActivity,
     };
 

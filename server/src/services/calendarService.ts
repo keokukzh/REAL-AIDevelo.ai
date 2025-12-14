@@ -204,9 +204,15 @@ export const calendarService = {
 
       console.log(`[CalendarService] Stored token for locationId=${locationId}, provider=${token.provider}, expiry_ts=${expiryTs}`);
     } catch (error) {
-      // If encryption fails or DB unavailable, fall back to in-memory
-      if (!process.env.TOKEN_ENCRYPTION_KEY || error instanceof Error && error.message.includes('TOKEN_ENCRYPTION_KEY')) {
-        console.warn('[CalendarService] TOKEN_ENCRYPTION_KEY missing, falling back to in-memory tokens');
+      // In production, never use fallback - fail hard
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[CalendarService] FATAL: Cannot store token in production without TOKEN_ENCRYPTION_KEY');
+        throw new Error('Token encryption required in production. TOKEN_ENCRYPTION_KEY must be set.');
+      }
+      
+      // In development, fall back to in-memory only if encryption key missing
+      if (!process.env.TOKEN_ENCRYPTION_KEY || (error instanceof Error && error.message.includes('TOKEN_ENCRYPTION_KEY'))) {
+        console.warn('[CalendarService] TOKEN_ENCRYPTION_KEY missing, falling back to in-memory tokens (dev only)');
         fallbackMode = true;
         calendarTokensFallback.set(locationId, token);
       } else {

@@ -188,6 +188,14 @@ export async function ensureDefaultLocation(
     .maybeSingle();
 
   if (existingLocation && !findError) {
+    // Ensure Qdrant collection exists for existing location (idempotent)
+    try {
+      const { vectorStore } = await import('../voice-agent/rag/vectorStore');
+      await vectorStore.ensureCollection(existingLocation.id);
+    } catch (error) {
+      // Log warning but don't fail if Qdrant is unavailable
+      console.warn(`[SupabaseDb] Failed to ensure Qdrant collection for existing locationId=${existingLocation.id}:`, error);
+    }
     return existingLocation;
   }
 
@@ -205,6 +213,16 @@ export async function ensureDefaultLocation(
 
   if (createError || !newLocation) {
     throw new Error(`Failed to create location: ${createError?.message || 'Unknown error'}`);
+  }
+
+  // Ensure Qdrant collection exists for this location
+  try {
+    const { vectorStore } = await import('../voice-agent/rag/vectorStore');
+    await vectorStore.ensureCollection(newLocation.id);
+    console.log(`[SupabaseDb] Ensured Qdrant collection for locationId=${newLocation.id}`);
+  } catch (error) {
+    // Log warning but don't fail location creation if Qdrant is unavailable
+    console.warn(`[SupabaseDb] Failed to ensure Qdrant collection for locationId=${newLocation.id}:`, error);
   }
 
   return newLocation;

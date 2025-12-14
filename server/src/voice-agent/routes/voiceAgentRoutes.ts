@@ -35,9 +35,6 @@ router.post('/query', async (req: Request, res: Response) => {
       a.businessProfile.contact.email === customerId || a.id === customerId
     );
 
-    // Query RAG
-    const ragResult = await ragQueryService.query(customerId, query);
-
     // Resolve locationId from request context
     let locationId: string;
     let locationSource: string;
@@ -56,6 +53,9 @@ router.post('/query', async (req: Request, res: Response) => {
         message: error.message || 'Unable to resolve locationId',
       });
     }
+
+    // Query RAG using locationId
+    const ragResult = await ragQueryService.query(locationId, query);
 
     const toolRegistry = createToolRegistry(locationId);
 

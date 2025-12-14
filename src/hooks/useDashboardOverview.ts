@@ -45,6 +45,7 @@ export interface DashboardOverview {
   phone_number?: string | null;
   phone_number_sid?: string | null;
   calendar_provider?: string | null;
+  calendar_connected_email?: string | null;
   last_activity?: string | null;
   _backendSha?: string; // Internal field for UI display
 }

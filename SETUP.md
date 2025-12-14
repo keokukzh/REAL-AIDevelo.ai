@@ -92,15 +92,26 @@ ELEVENLABS_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ELEVENLABS_AGENT_ID_DEFAULT=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # ElevenLabs -> Tool Webhooks absichern
-TOOL_SHARED_SECRET=change-me-to-a-long-random-string
+TOOL_SHARED_SECRET=change-me-to-a-long-random-secret
+
+# Qdrant Vector Database (for RAG)
+# Local: http://localhost:6333, Production: your Qdrant Cloud URL
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=your_qdrant_api_key  # Optional for local, required for Qdrant Cloud
 
 # Google OAuth (Calendar)
 GOOGLE_OAUTH_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxx
-GOOGLE_OAUTH_REDIRECT_URL=${PUBLIC_BASE_URL}/api/integrations/google/callback
+GOOGLE_OAUTH_REDIRECT_URL=${PUBLIC_BASE_URL}/api/calendar/google/callback
 
-# Refresh Token Encryption (32+ chars)
+# Refresh Token Encryption (REQUIRED IN PRODUCTION)
+# Generate: openssl rand -base64 32
+# Must be 32 bytes (base64: 44 chars, hex: 64 chars, or UTF8 string that hashes to 32 bytes)
 TOKEN_ENCRYPTION_KEY=change-me-to-a-32plus-char-random-secret
+
+# Frontend URL (REQUIRED IN PRODUCTION for OAuth postMessage security)
+# Used as targetOrigin in OAuth callback postMessage
+FRONTEND_URL=http://localhost:4000
 
 # CORS (deine Web-URL)
 WEB_ORIGIN=http://localhost:5173
@@ -116,6 +127,13 @@ WEB_ORIGIN=http://localhost:5173
 - ⚠️ **NIEMALS** Twilio, ElevenLabs oder Google Secrets ins Frontend
 - ✅ Frontend verwendet nur `VITE_SUPABASE_ANON_KEY` (sicher für Browser)
 - ✅ Alle Secrets gehören ins Backend (`server/.env`)
+
+**Production Requirements:**
+- ⚠️ **TOKEN_ENCRYPTION_KEY** ist **PFLICHT** in Production - Server startet nicht ohne gültigen Key
+- ⚠️ **FRONTEND_URL** ist **PFLICHT** in Production - OAuth Callback benötigt diese für sichere postMessage
+- ⚠️ **Google OAuth Callback URL** muss in Google Cloud Console konfiguriert sein:
+  - Format: `${PUBLIC_BASE_URL}/api/calendar/google/callback`
+  - Beispiel: `https://your-backend.onrender.com/api/calendar/google/callback`
 
 ## API-Endpunkte
 

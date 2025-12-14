@@ -87,6 +87,10 @@ const validateEnv = () => {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const isApiKeyPlaceholder = !apiKey || apiKey === '' || apiKey.includes('your_') || apiKey.includes('placeholder') || apiKey === 'PLACEHOLDER_FOR_TESTING';
 
+  // Check for TOKEN_ENCRYPTION_KEY (required in production)
+  const tokenEncryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
+  const isTokenKeyMissing = !tokenEncryptionKey || tokenEncryptionKey === '' || tokenEncryptionKey.includes('placeholder') || tokenEncryptionKey.includes('change-me');
+
   if (process.env.NODE_ENV === 'production') {
     // In production we require the important secrets to be set — fail fast if missing
     const missing = productionRequiredEnvVars.filter(v => !process.env[v] || process.env[v] === '' || (process.env[v] || '').includes('placeholder'));
@@ -94,6 +98,17 @@ const validateEnv = () => {
       console.error('\n🚨 Missing required environment variables for production:', missing.join(', '));
       console.error('   The server will exit. Please configure these in your production environment (do not commit them in git).\n');
       process.exit(1);
+    }
+
+    // Validate TOKEN_ENCRYPTION_KEY in production
+    if (isTokenKeyMissing) {
+      console.error('\n🚨 FATAL: TOKEN_ENCRYPTION_KEY is missing or invalid in production');
+      console.error('   Calendar token encryption requires a valid 32-byte key.');
+      console.error('   Generate a key: openssl rand -base64 32');
+      console.error('   The server will exit. Set TOKEN_ENCRYPTION_KEY in your production environment.\n');
+      process.exit(1);
+    } else {
+      console.log('✅ Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
     }
 
     // If API key exists and looks ok, log confirmation
@@ -111,6 +126,15 @@ const validateEnv = () => {
       if (!apiKey || apiKey === '') process.env.ELEVENLABS_API_KEY = 'PLACEHOLDER_FOR_TESTING';
     } else {
       console.log('✅ ElevenLabs API key configured');
+    }
+
+    // In development, warn about TOKEN_ENCRYPTION_KEY but don't fail
+    if (isTokenKeyMissing) {
+      console.warn('\n⚠️  WARNING: TOKEN_ENCRYPTION_KEY not set or using placeholder.');
+      console.warn('   Calendar token encryption will fall back to in-memory storage (not persisted).');
+      console.warn('   For production, set TOKEN_ENCRYPTION_KEY (32 bytes: openssl rand -base64 32).\n');
+    } else {
+      console.log('✅ Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
     }
   }
 };

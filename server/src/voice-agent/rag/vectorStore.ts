@@ -4,7 +4,7 @@ import { voiceAgentConfig } from '../config';
 
 /**
  * Vector Store Service
- * Manages Qdrant collections per customer and handles embeddings
+ * Manages Qdrant collections per location and handles embeddings
  */
 export class VectorStore {
   private qdrantClient: QdrantClient;
@@ -27,10 +27,11 @@ export class VectorStore {
   }
 
   /**
-   * Get or create collection for a customer
+   * Get or create collection for a location
+   * Collection name: location_<locationId>
    */
-  async ensureCollection(customerId: string): Promise<void> {
-    const collectionName = `customer_${customerId}`;
+  async ensureCollection(locationId: string): Promise<void> {
+    const collectionName = `location_${locationId}`;
 
     try {
       // Check if collection exists
@@ -47,10 +48,13 @@ export class VectorStore {
             distance: 'Cosine',
           },
         });
+        console.log(`[VectorStore] Created collection: ${collectionName}`);
+      } else {
+        console.log(`[VectorStore] Collection already exists: ${collectionName}`);
       }
     } catch (error) {
       throw new Error(
-        `Failed to ensure collection for customer ${customerId}: ${error}`
+        `Failed to ensure collection for location ${locationId}: ${error}`
       );
     }
   }
@@ -101,15 +105,15 @@ export class VectorStore {
    * Store document chunks in vector store
    */
   async storeChunks(
-    customerId: string,
+    locationId: string,
     chunks: Array<{
       id: string;
       text: string;
       metadata?: Record<string, any>;
     }>
   ): Promise<void> {
-    await this.ensureCollection(customerId);
-    const collectionName = `customer_${customerId}`;
+    await this.ensureCollection(locationId);
+    const collectionName = `location_${locationId}`;
 
     // Generate embeddings for all chunks
     const points = await Promise.all(
@@ -141,12 +145,12 @@ export class VectorStore {
    * Search for similar chunks
    */
   async search(
-    customerId: string,
+    locationId: string,
     query: string,
     limit: number = 5
   ): Promise<Array<{ text: string; score: number; metadata?: Record<string, any> }>> {
-    await this.ensureCollection(customerId);
-    const collectionName = `customer_${customerId}`;
+    await this.ensureCollection(locationId);
+    const collectionName = `location_${locationId}`;
 
     const queryEmbedding = await this.generateEmbedding(query);
 
@@ -163,14 +167,16 @@ export class VectorStore {
   }
 
   /**
-   * Delete all chunks for a customer
+   * Delete all chunks for a location
    */
-  async deleteCustomerData(customerId: string): Promise<void> {
-    const collectionName = `customer_${customerId}`;
+  async deleteLocationData(locationId: string): Promise<void> {
+    const collectionName = `location_${locationId}`;
     try {
       await this.qdrantClient.deleteCollection(collectionName);
+      console.log(`[VectorStore] Deleted collection: ${collectionName}`);
     } catch (error) {
       // Collection might not exist, ignore
+      console.warn(`[VectorStore] Failed to delete collection ${collectionName}: ${error}`);
     }
   }
 }

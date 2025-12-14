@@ -13,6 +13,8 @@ import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
 import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal';
+import { AvailabilityModal } from '../components/dashboard/AvailabilityModal';
+import { CreateAppointmentModal } from '../components/dashboard/CreateAppointmentModal';
 import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
@@ -30,6 +32,9 @@ export const DashboardPage = () => {
   const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
   const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
   const [isWebhookStatusOpen, setIsWebhookStatusOpen] = useState(false);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(undefined);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -385,13 +390,29 @@ export const DashboardPage = () => {
           statusText={calendarStatusText}
           actions={
             overview.status.calendar === 'connected' ? (
-              <button
-                type="button"
-                className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                onClick={handleDisconnectCalendar}
-              >
-                Trennen
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+                  onClick={() => setIsAvailabilityModalOpen(true)}
+                >
+                  Verfügbarkeit prüfen
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+                  onClick={() => setIsCreateAppointmentModalOpen(true)}
+                >
+                  Termin erstellen
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                  onClick={handleDisconnectCalendar}
+                >
+                  Trennen
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
@@ -404,11 +425,21 @@ export const DashboardPage = () => {
           }
         >
           <div className="space-y-2 text-sm">
-            {overview.calendar_provider ? (
-              <div>
-                <span className="text-gray-400">Provider:</span>
-                <span className="ml-2 capitalize">{overview.calendar_provider}</span>
-              </div>
+            {overview.status.calendar === 'connected' ? (
+              <>
+                {overview.calendar_provider && (
+                  <div>
+                    <span className="text-gray-400">Provider:</span>
+                    <span className="ml-2 capitalize">{overview.calendar_provider}</span>
+                  </div>
+                )}
+                {overview.calendar_connected_email && (
+                  <div>
+                    <span className="text-gray-400">E-Mail:</span>
+                    <span className="ml-2">{overview.calendar_connected_email}</span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-gray-500 text-xs">Nicht verbunden</div>
             )}
@@ -506,6 +537,29 @@ export const DashboardPage = () => {
       <WebhookStatusModal
         isOpen={isWebhookStatusOpen}
         onClose={() => setIsWebhookStatusOpen(false)}
+      />
+
+      {/* Availability Modal */}
+      <AvailabilityModal
+        isOpen={isAvailabilityModalOpen}
+        onClose={() => setIsAvailabilityModalOpen(false)}
+        locationId={overview.location.id}
+        onCreateAppointment={(slot) => {
+          setSelectedSlot(slot);
+          setIsAvailabilityModalOpen(false);
+          setIsCreateAppointmentModalOpen(true);
+        }}
+      />
+
+      {/* Create Appointment Modal */}
+      <CreateAppointmentModal
+        isOpen={isCreateAppointmentModalOpen}
+        onClose={() => {
+          setIsCreateAppointmentModalOpen(false);
+          setSelectedSlot(undefined);
+        }}
+        locationId={overview.location.id}
+        initialSlot={selectedSlot}
       />
       </div>
     </div>

@@ -4,6 +4,8 @@ import { BadRequestError, InternalServerError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { ensureDefaultLocation, ensureOrgForUser, ensureUserRow } from '../services/supabaseDb';
 import { createSignedState, verifySignedState } from '../utils/oauthState';
+import { resolveLocationId } from '../utils/locationIdResolver';
+import { createCalendarTool } from '../voice-agent/tools/calendarTool';
 
 const router = Router();
 
@@ -152,8 +154,19 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
 
     console.log(`[CalendarRoutes] Stored token for locationId=${stateData.locationId}, provider=${provider}`);
 
-    // Get frontend URL for redirect
-    const frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    // Get frontend URL for postMessage targetOrigin
+    // In production, FRONTEND_URL must be set; in dev, allow fallback
+    let frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[CalendarRoutes] FATAL: FRONTEND_URL missing in production');
+        return next(new InternalServerError('FRONTEND_URL must be set in production'));
+      } else {
+        // Dev fallback: use '*' for postMessage (less secure but allows testing)
+        console.warn('[CalendarRoutes] FRONTEND_URL not set, using "*" as postMessage targetOrigin (dev only)');
+        frontendUrl = '*';
+      }
+    }
     
     // Return HTML that posts message to parent window
     res.send(`
@@ -168,10 +181,10 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
               window.opener.postMessage({
                 type: 'calendar-oauth-success',
                 provider: '${provider}'
-              }, '${frontendUrl}');
+              }, ${frontendUrl === '*' ? "'*'" : `'${frontendUrl}'`});
               window.close();
             } else {
-              window.location.href = '${frontendUrl}/dashboard';
+              window.location.href = '${frontendUrl === '*' ? window.location.origin : frontendUrl}/dashboard';
             }
           </script>
           <p>Kalender erfolgreich verbunden. Sie können dieses Fenster schließen.</p>
@@ -180,7 +193,15 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
     `);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-    const frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    let frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[CalendarRoutes] FATAL: FRONTEND_URL missing in production');
+        return next(new InternalServerError('FRONTEND_URL must be set in production'));
+      } else {
+        frontendUrl = '*';
+      }
+    }
     
     res.send(`
       <!DOCTYPE html>
@@ -194,10 +215,10 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
               window.opener.postMessage({
                 type: 'calendar-oauth-error',
                 message: '${errorMessage.replace(/'/g, "\\'")}'
-              }, '${frontendUrl}');
+              }, ${frontendUrl === '*' ? "'*'" : `'${frontendUrl}'`});
               window.close();
             } else {
-              window.location.href = '${frontendUrl}/dashboard?error=calendar_connection_failed';
+              window.location.href = '${frontendUrl === '*' ? window.location.origin : frontendUrl}/dashboard?error=calendar_connection_failed';
             }
           </script>
           <p>Fehler beim Verbinden des Kalenders: ${errorMessage}</p>
@@ -258,6 +279,106 @@ router.delete('/:provider/disconnect', async (req: AuthenticatedRequest, res: Re
   } catch (error) {
     console.error('[CalendarRoutes] Error disconnecting calendar:', error);
     next(new InternalServerError('Fehler beim Trennen des Kalenders'));
+  }
+});
+
+/**
+ * POST /api/calendar/google/check-availability
+ * Admin endpoint to check calendar availability (auth required)
+ */
+router.post('/google/check-availability', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[CalendarRoutes] Admin check-availability: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Create calendar tool
+    const calendarTool = createCalendarTool(locationId);
+
+    // Call check_availability
+    const result = await calendarTool.checkAvailability(req.body, 'google');
+
+    res.json({
+      success: result.success,
+      data: result.data,
+      error: result.error,
+    });
+  } catch (error: any) {
+    console.error('[CalendarRoutes] Error in admin check-availability:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+});
+
+/**
+ * POST /api/calendar/google/create-appointment
+ * Admin endpoint to create appointment (auth required)
+ */
+router.post('/google/create-appointment', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[CalendarRoutes] Admin create-appointment: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Validate required fields
+    if (!req.body.summary || !req.body.start || !req.body.end) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: summary, start, end',
+      });
+    }
+
+    // Create calendar tool
+    const calendarTool = createCalendarTool(locationId);
+
+    // Call create_appointment
+    const result = await calendarTool.createAppointment(req.body, 'google');
+
+    res.json({
+      success: result.success,
+      data: result.data,
+      error: result.error,
+    });
+  } catch (error: any) {
+    console.error('[CalendarRoutes] Error in admin create-appointment:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
   }
 });
 

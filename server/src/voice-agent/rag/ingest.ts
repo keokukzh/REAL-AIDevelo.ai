@@ -16,10 +16,10 @@ interface DocumentInput {
 
 export class DocumentIngestionService {
   /**
-   * Ingest documents for a customer
+   * Ingest documents for a location
    */
   async ingestDocuments(
-    customerId: string,
+    locationId: string,
     documents: DocumentInput[]
   ): Promise<{ indexed: number; documentIds: string[] }> {
     const documentIds: string[] = [];
@@ -45,7 +45,7 @@ export class DocumentIngestionService {
       }));
 
       // Store in vector DB
-      await vectorStore.storeChunks(customerId, chunkedData);
+      await vectorStore.storeChunks(locationId, chunkedData);
 
       documentIds.push(documentId);
       totalChunks += chunks.length;
@@ -61,10 +61,10 @@ export class DocumentIngestionService {
    * Ingest a single document
    */
   async ingestDocument(
-    customerId: string,
+    locationId: string,
     document: DocumentInput
   ): Promise<{ indexed: number; documentId: string }> {
-    const result = await this.ingestDocuments(customerId, [document]);
+    const result = await this.ingestDocuments(locationId, [document]);
     return {
       indexed: result.indexed,
       documentId: result.documentIds[0],
@@ -72,10 +72,10 @@ export class DocumentIngestionService {
   }
 
   /**
-   * Delete all documents for a customer
+   * Delete all documents for a location
    */
-  async deleteCustomerDocuments(customerId: string): Promise<void> {
-    await vectorStore.deleteCustomerData(customerId);
+  async deleteLocationDocuments(locationId: string): Promise<void> {
+    await vectorStore.deleteLocationData(locationId);
   }
 }
 
