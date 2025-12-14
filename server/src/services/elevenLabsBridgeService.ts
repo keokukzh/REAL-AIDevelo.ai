@@ -169,9 +169,20 @@ export class ElevenLabsBridgeService {
   }
 
   /**
-   * Handle ElevenLabs audio input (from Twilio)
+   * Handle ElevenLabs audio input (from Twilio) - public method using callSid
    */
-  handleTwilioAudio(bridge: BridgeSession, base64MuLaw: string): void {
+  handleTwilioAudioByCallSid(callSid: string, base64MuLaw: string): void {
+    const bridge = this.bridges.get(callSid);
+    if (!bridge) {
+      return; // Bridge not created yet or already closed
+    }
+    this.handleTwilioAudio(bridge, base64MuLaw);
+  }
+
+  /**
+   * Handle ElevenLabs audio input (from Twilio) - internal method
+   */
+  private handleTwilioAudio(bridge: BridgeSession, base64MuLaw: string): void {
     if (!bridge.elevenLabsClient || !bridge.elevenLabsClient.isReady()) {
       return;
     }

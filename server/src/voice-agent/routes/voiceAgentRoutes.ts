@@ -471,10 +471,7 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
           });
         } else if (message.event === 'media' && message.media?.payload && message.media.track === 'inbound') {
           // Forward inbound audio to ElevenLabs bridge
-          const bridge = elevenLabsBridgeService.getBridge(callSid);
-          if (bridge) {
-            elevenLabsBridgeService.handleTwilioAudio(bridge, message.media.payload);
-          }
+          elevenLabsBridgeService.handleTwilioAudioByCallSid(callSid, message.media.payload);
         } else if (message.event === 'stop') {
           // Close bridge when stream stops
           elevenLabsBridgeService.closeBridge(callSid, 'Twilio stream stopped');
