@@ -179,6 +179,47 @@ export class VectorStore {
       console.warn(`[VectorStore] Failed to delete collection ${collectionName}: ${error}`);
     }
   }
+
+  /**
+   * Delete all chunks for a specific document within a location
+   */
+  async deleteDocument(locationId: string, documentId: string): Promise<number> {
+    const collectionName = `location_${locationId}`;
+    
+    try {
+      // Use scroll to find all points with matching documentId
+      const scrollResult = await this.qdrantClient.scroll(collectionName, {
+        filter: {
+          must: [
+            {
+              key: 'documentId',
+              match: { value: documentId },
+            },
+          ],
+        },
+        limit: 10000, // Adjust if needed
+      });
+
+      const pointIds = scrollResult.points.map((p) => p.id);
+
+      if (pointIds.length === 0) {
+        console.log(`[VectorStore] No chunks found for documentId=${documentId} in collection=${collectionName}`);
+        return 0;
+      }
+
+      // Delete points by IDs
+      await this.qdrantClient.delete(collectionName, {
+        wait: true,
+        points: pointIds,
+      });
+
+      console.log(`[VectorStore] Deleted ${pointIds.length} chunks for documentId=${documentId} in collection=${collectionName}`);
+      return pointIds.length;
+    } catch (error) {
+      console.error(`[VectorStore] Failed to delete document ${documentId} from collection ${collectionName}:`, error);
+      throw new Error(`Failed to delete document chunks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 export const vectorStore = new VectorStore();

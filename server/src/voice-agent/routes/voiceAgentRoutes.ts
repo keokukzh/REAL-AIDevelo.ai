@@ -114,21 +114,32 @@ router.post('/query', async (req: Request, res: Response) => {
 
 /**
  * POST /api/voice-agent/ingest
- * Document ingestion endpoint
+ * Document ingestion endpoint (LEGACY - use /api/rag/documents instead)
+ * 
+ * @deprecated Use /api/rag/documents for new integrations
+ * Supports both customerId (legacy) and locationId (new)
  */
 router.post('/ingest', async (req: Request, res: Response) => {
   try {
-    const { customerId, documents } = req.body;
+    const { customerId, locationId, documents } = req.body;
 
-    if (!customerId || !documents || !Array.isArray(documents)) {
+    // Support both customerId (legacy) and locationId (new)
+    const targetLocationId = locationId || customerId;
+
+    if (!targetLocationId || !documents || !Array.isArray(documents)) {
       return res.status(400).json({
         success: false,
-        error: 'customerId and documents array are required',
+        error: 'locationId (or customerId for legacy) and documents array are required',
       });
     }
 
+    // Log deprecation warning if customerId is used
+    if (customerId && !locationId) {
+      console.warn('[VoiceAgentRoutes] /ingest endpoint: customerId is deprecated, use locationId instead');
+    }
+
     const result = await documentIngestionService.ingestDocuments(
-      customerId,
+      targetLocationId, // Use locationId (or customerId as fallback)
       documents
     );
 
