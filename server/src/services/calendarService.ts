@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { config } from '../config/env';
+import { supabaseAdmin } from './supabaseDb';
+import { encrypt, decrypt } from '../utils/tokenEncryption';
 
 export interface CalendarAuthResponse {
   authUrl: string;
@@ -13,17 +15,29 @@ export interface CalendarToken {
   provider: 'google' | 'outlook';
 }
 
-// In-memory storage for OAuth states and tokens (in production, use database)
-const oauthStates = new Map<string, { provider: 'google' | 'outlook'; timestamp: number }>();
-const calendarTokens = new Map<string, CalendarToken>();
+interface TokenRow {
+  id: string;
+  location_id: string;
+  provider: string;
+  access_token: string | null;
+  refresh_token_encrypted: string | null;
+  expiry_ts: string | null;
+  connected_email: string | null;
+}
+
+// In-memory fallback storage (only used if TOKEN_ENCRYPTION_KEY missing or DB unreachable)
+const calendarTokensFallback = new Map<string, CalendarToken>();
+let fallbackMode = false;
 
 export const calendarService = {
   /**
    * Generate Google Calendar OAuth URL
    */
-  getGoogleAuthUrl(redirectUri: string): CalendarAuthResponse {
-    const state = `google_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    oauthStates.set(state, { provider: 'google', timestamp: Date.now() });
+  getGoogleAuthUrl(redirectUri: string, locationId: string): CalendarAuthResponse {
+    // Note: State will be created in routes using createSignedState()
+    // This method is kept for backward compatibility but locationId is required
+    const { createSignedState } = require('../utils/oauthState');
+    const state = createSignedState({ locationId, provider: 'google' });
 
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
     
@@ -57,9 +71,11 @@ export const calendarService = {
   /**
    * Generate Outlook/365 OAuth URL
    */
-  getOutlookAuthUrl(redirectUri: string): CalendarAuthResponse {
-    const state = `outlook_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    oauthStates.set(state, { provider: 'outlook', timestamp: Date.now() });
+  getOutlookAuthUrl(redirectUri: string, locationId: string): CalendarAuthResponse {
+    // Note: State will be created in routes using createSignedState()
+    // This method is kept for backward compatibility but locationId is required
+    const { createSignedState } = require('../utils/oauthState');
+    const state = createSignedState({ locationId, provider: 'outlook' });
 
     const clientId = process.env.OUTLOOK_CLIENT_ID || '';
     
@@ -88,57 +104,6 @@ export const calendarService = {
     return { authUrl, state };
   },
 
-  /**
-   * Validate OAuth state
-   * State format: {provider}_{timestamp}_{random}
-   * Example: google_1765748660180_e1aym4
-   */
-  validateState(state: string): { provider: 'google' | 'outlook' } | null {
-    // First try in-memory store (for immediate validation)
-    const stateData = oauthStates.get(state);
-    if (stateData) {
-      // Clean up old states (older than 10 minutes)
-      if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
-        oauthStates.delete(state);
-        return null;
-      }
-      oauthStates.delete(state); // Use once
-      return { provider: stateData.provider };
-    }
-
-    // Fallback: Validate state format directly (for cases where server restarted)
-    // State format: {provider}_{timestamp}_{random}
-    const parts = state.split('_');
-    if (parts.length < 3) {
-      return null;
-    }
-
-    const provider = parts[0] as 'google' | 'outlook';
-    if (provider !== 'google' && provider !== 'outlook') {
-      return null;
-    }
-
-    const timestamp = parseInt(parts[1], 10);
-    if (isNaN(timestamp)) {
-      return null;
-    }
-
-    // Check if state is not too old (max 15 minutes to account for user delay)
-    const age = Date.now() - timestamp;
-    if (age > 15 * 60 * 1000) {
-      console.warn(`[CalendarService] State expired: ${age}ms old`);
-      return null;
-    }
-
-    // Check if state is from the future (shouldn't happen, but validate)
-    if (age < -60000) {
-      console.warn(`[CalendarService] State from future: ${age}ms`);
-      return null;
-    }
-
-    // State is valid
-    return { provider };
-  },
 
   /**
    * Exchange authorization code for tokens (Google)
@@ -199,17 +164,218 @@ export const calendarService = {
   },
 
   /**
-   * Store calendar token
+   * Store calendar token in database
+   * Encrypts refresh_token and stores in google_calendar_integrations table
    */
-  storeToken(userId: string, token: CalendarToken): void {
-    calendarTokens.set(userId, token);
+  async storeToken(locationId: string, token: CalendarToken): Promise<void> {
+    if (fallbackMode) {
+      console.warn('[CalendarService] Falling back to in-memory tokens (DB unavailable or TOKEN_ENCRYPTION_KEY missing)');
+      calendarTokensFallback.set(locationId, token);
+      return;
+    }
+
+    try {
+      if (!token.refreshToken) {
+        throw new Error('refreshToken is required for storage');
+      }
+
+      const encryptedRefreshToken = encrypt(token.refreshToken);
+      const expiryTs = new Date(token.expiresAt).toISOString();
+
+      const { error } = await supabaseAdmin
+        .from('google_calendar_integrations')
+        .upsert(
+          {
+            location_id: locationId,
+            provider: token.provider,
+            access_token: token.accessToken,
+            refresh_token_encrypted: encryptedRefreshToken,
+            expiry_ts: expiryTs,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'location_id,provider',
+          }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`[CalendarService] Stored token for locationId=${locationId}, provider=${token.provider}, expiry_ts=${expiryTs}`);
+    } catch (error) {
+      // If encryption fails or DB unavailable, fall back to in-memory
+      if (!process.env.TOKEN_ENCRYPTION_KEY || error instanceof Error && error.message.includes('TOKEN_ENCRYPTION_KEY')) {
+        console.warn('[CalendarService] TOKEN_ENCRYPTION_KEY missing, falling back to in-memory tokens');
+        fallbackMode = true;
+        calendarTokensFallback.set(locationId, token);
+      } else {
+        console.error('[CalendarService] Error storing token:', error);
+        throw error;
+      }
+    }
   },
 
   /**
-   * Get calendar token
+   * Get token row from database
    */
-  getToken(userId: string): CalendarToken | undefined {
-    return calendarTokens.get(userId);
+  async getTokenRow(locationId: string, provider: 'google' | 'outlook' = 'google'): Promise<TokenRow | null> {
+    if (fallbackMode) {
+      const token = calendarTokensFallback.get(locationId);
+      if (!token || token.provider !== provider) {
+        return null;
+      }
+      // Return mock row structure for fallback
+      return {
+        id: 'fallback',
+        location_id: locationId,
+        provider,
+        access_token: token.accessToken,
+        refresh_token_encrypted: token.refreshToken || null,
+        expiry_ts: new Date(token.expiresAt).toISOString(),
+        connected_email: null,
+      };
+    }
+
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('google_calendar_integrations')
+        .select('id, location_id, provider, access_token, refresh_token_encrypted, expiry_ts, connected_email')
+        .eq('location_id', locationId)
+        .eq('provider', provider)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[CalendarService] Error getting token row:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Refresh access token if needed (expires within 5 minutes)
+   * Returns refreshed token or throws if not connected
+   */
+  async refreshTokenIfNeeded(locationId: string, provider: 'google' | 'outlook' = 'google'): Promise<string> {
+    const row = await this.getTokenRow(locationId, provider);
+
+    if (!row || !row.access_token) {
+      throw new Error(`Calendar not connected for locationId=${locationId}, provider=${provider}`);
+    }
+
+    if (!row.refresh_token_encrypted) {
+      throw new Error(`Refresh token missing for locationId=${locationId}, provider=${provider}`);
+    }
+
+    const expiryTs = row.expiry_ts ? new Date(row.expiry_ts).getTime() : 0;
+    const now = Date.now();
+    const fiveMinutesMs = 5 * 60 * 1000;
+
+    // Check if token expires within 5 minutes
+    if (expiryTs > now + fiveMinutesMs) {
+      console.log(`[CalendarService] Token still valid for locationId=${locationId}, provider=${provider}, expires in ${Math.round((expiryTs - now) / 1000)}s`);
+      return row.access_token;
+    }
+
+    // Token expired or expires soon, refresh it
+    console.log(`[CalendarService] Refreshing token for locationId=${locationId}, provider=${provider}`);
+
+    if (provider === 'google') {
+      return await this.refreshGoogleToken(locationId, row.refresh_token_encrypted);
+    } else {
+      throw new Error(`Token refresh not implemented for provider: ${provider}`);
+    }
+  },
+
+  /**
+   * Refresh Google access token using refresh_token
+   */
+  async refreshGoogleToken(locationId: string, encryptedRefreshToken: string): Promise<string> {
+    let refreshToken: string;
+    
+    try {
+      refreshToken = decrypt(encryptedRefreshToken);
+    } catch (error) {
+      throw new Error(`Failed to decrypt refresh token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '';
+
+    if (!clientId || !clientSecret) {
+      throw new Error('GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be set');
+    }
+
+    try {
+      const response = await axios.post('https://oauth2.googleapis.com/token', {
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'refresh_token',
+      }, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      const newAccessToken = response.data.access_token;
+      const expiresIn = response.data.expires_in || 3600; // Default 1 hour
+      const newExpiresAt = Date.now() + (expiresIn * 1000);
+      const newExpiryTs = new Date(newExpiresAt).toISOString();
+
+      // Update database with new access token
+      const { error } = await supabaseAdmin
+        .from('google_calendar_integrations')
+        .update({
+          access_token: newAccessToken,
+          expiry_ts: newExpiryTs,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('location_id', locationId)
+        .eq('provider', 'google');
+
+      if (error) {
+        console.error('[CalendarService] Error updating refreshed token:', error);
+        // Still return the new token even if DB update fails
+      }
+
+      console.log(`[CalendarService] Refreshed token for locationId=${locationId}, provider=google, refreshed=true, new_expiry_ts=${newExpiryTs}`);
+      return newAccessToken;
+    } catch (error: any) {
+      console.error('[CalendarService] Error refreshing Google token:', error.response?.data || error.message);
+      throw new Error(`Failed to refresh Google token: ${error.response?.data?.error_description || error.message}`);
+    }
+  },
+
+  /**
+   * Get calendar token (legacy method, kept for backward compatibility)
+   * @deprecated Use getTokenRow() instead
+   */
+  async getToken(locationId: string): Promise<CalendarToken | undefined> {
+    const row = await this.getTokenRow(locationId);
+    if (!row || !row.access_token) {
+      return undefined;
+    }
+
+    let refreshToken: string | undefined;
+    if (row.refresh_token_encrypted) {
+      try {
+        refreshToken = decrypt(row.refresh_token_encrypted);
+      } catch (error) {
+        console.error('[CalendarService] Error decrypting refresh token:', error);
+      }
+    }
+
+    return {
+      accessToken: row.access_token,
+      refreshToken,
+      expiresAt: row.expiry_ts ? new Date(row.expiry_ts).getTime() : 0,
+      provider: row.provider as 'google' | 'outlook',
+    };
   },
 };
 
