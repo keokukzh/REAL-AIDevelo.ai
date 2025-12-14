@@ -60,31 +60,12 @@ export const connectPhoneNumber = async (
       return next(new BadRequestError('phoneNumberSid and phoneNumber are required'));
     }
 
-    const { supabaseUserId } = req.supabaseUser;
+    const { supabaseUserId, email } = req.supabaseUser;
 
-    // Get user's location
-    const { data: userData } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('supabase_user_id', supabaseUserId)
-      .single();
-
-    if (!userData) {
-      return next(new InternalServerError('User not found'));
-    }
-
-    // Get user's organization (via org_id from user table)
-    const { data: orgData } = await supabaseAdmin
-      .from('organizations')
-      .select('id')
-      .eq('id', userData.org_id)
-      .single();
-
-    if (!orgData) {
-      return next(new InternalServerError('Organization not found'));
-    }
-
-    const location = await ensureDefaultLocation(orgData.id);
+    // Get user's location (consistent pattern with other endpoints)
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
 
     // Check if phone number already exists for this location
     const { data: existingPhone } = await supabaseAdmin
