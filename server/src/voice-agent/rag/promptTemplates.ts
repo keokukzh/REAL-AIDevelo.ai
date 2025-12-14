@@ -10,6 +10,7 @@ export interface PromptContext {
   companyName?: string;
   industry?: string;
   ragContext?: RAGQueryResult;
+  ragContextText?: string; // New: formatted RAG context from contextBuilder
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   tools?: Array<{ name: string; description: string }>;
 }
@@ -18,7 +19,7 @@ export interface PromptContext {
  * Build system prompt with RAG context
  */
 export function buildSystemPrompt(context: PromptContext): string {
-  const { companyName, industry, ragContext, tools } = context;
+  const { companyName, industry, ragContextText, tools } = context;
 
   let prompt = `Du bist ein professioneller, höflicher Assistent für ${companyName || 'ein Schweizer Unternehmen'}`;
   
@@ -28,10 +29,13 @@ export function buildSystemPrompt(context: PromptContext): string {
   
   prompt += `.\n\n`;
 
-  // Add RAG context if available
-  if (ragContext && ragContext.chunks.length > 0) {
+  // Add RAG context if available (new format from contextBuilder)
+  if (ragContextText && ragContextText.length > 0) {
+    prompt += `${ragContextText}\n\n`;
+  } else if (context.ragContext && context.ragContext.chunks.length > 0) {
+    // Fallback to old format for backward compatibility
     prompt += `Relevante Informationen:\n`;
-    ragContext.chunks.forEach((chunk, index) => {
+    context.ragContext.chunks.forEach((chunk, index) => {
       prompt += `${index + 1}. ${chunk.text}\n`;
     });
     prompt += `\n`;

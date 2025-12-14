@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import { voiceAgentConfig } from '../config';
 import { chatService } from '../llm/chat';
 import { ragQueryService } from '../rag/query';
+import { ragContextBuilder } from '../rag/contextBuilder';
 
 /**
  * ElevenLabs Conversational API Client
@@ -163,19 +164,44 @@ export class ElevenLabsStreamingClient {
    */
   private async processUserInput(userInput: string): Promise<void> {
     try {
-      // Query RAG for context
-      const ragResult = await ragQueryService.query(
-        this.config.customerId,
-        userInput
-      );
+      // Query RAG for context (if enabled)
+      let ragContextText = '';
+      let ragResultCount = 0;
+      let ragInjectedChars = 0;
+
+      if (voiceAgentConfig.rag.enabled && this.config.customerId) {
+        try {
+          const ragContext = await ragContextBuilder.buildRagContext({
+            locationId: this.config.customerId, // customerId is used as locationId here
+            query: userInput,
+            maxChunks: voiceAgentConfig.rag.maxChunks,
+            maxChars: voiceAgentConfig.rag.maxChars,
+            maxCharsPerChunk: voiceAgentConfig.rag.maxCharsPerChunk,
+          });
+
+          ragContextText = ragContext.contextText;
+          ragResultCount = ragContext.resultCount;
+          ragInjectedChars = ragContext.injectedChars;
+
+          console.log(`[RAG] query="${userInput.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${this.config.customerId}`);
+        } catch (error: any) {
+          console.error('[RAG] failed, continuing without context:', error.message);
+          // Graceful fallback: continue without RAG context
+        }
+      }
 
       // Build prompt context
       const promptContext = ragQueryService.buildPromptContext(
         this.config.customerId,
         userInput,
-        ragResult,
+        { chunks: [], query: userInput, customerId: this.config.customerId },
         {}
       );
+
+      // Inject RAG context text if available
+      if (ragContextText) {
+        promptContext.ragContextText = ragContextText;
+      }
 
       // Get LLM response
       const response = await chatService.chatComplete(userInput, {

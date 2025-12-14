@@ -81,13 +81,22 @@ const validateEnv = () => {
       console.warn('⚠️  JWT_REFRESH_SECRET not set - generated secure random secret (this will change on restart)');
       console.warn('   For production, set JWT_REFRESH_SECRET in environment variables for persistence.');
     }
+    // Generate TOKEN_ENCRYPTION_KEY if missing in production (32 bytes base64 encoded)
+    if (!process.env.TOKEN_ENCRYPTION_KEY || process.env.TOKEN_ENCRYPTION_KEY === '' || process.env.TOKEN_ENCRYPTION_KEY.includes('placeholder') || process.env.TOKEN_ENCRYPTION_KEY.includes('change-me')) {
+      const key = crypto.randomBytes(32).toString('base64');
+      process.env.TOKEN_ENCRYPTION_KEY = key;
+      console.warn('⚠️  TOKEN_ENCRYPTION_KEY not set - generated secure random key (this will change on restart)');
+      console.warn('   For production, set TOKEN_ENCRYPTION_KEY in environment variables for persistence.');
+      console.warn('   Generate a key: openssl rand -base64 32');
+      console.warn('   ⚠️  WARNING: Encrypted calendar tokens will not be decryptable after restart if key changes.\n');
+    }
   }
   
   // Check for ELEVENLABS_API_KEY (warning in dev, required in production)
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const isApiKeyPlaceholder = !apiKey || apiKey === '' || apiKey.includes('your_') || apiKey.includes('placeholder') || apiKey === 'PLACEHOLDER_FOR_TESTING';
 
-  // Check for TOKEN_ENCRYPTION_KEY (required in production)
+  // Check for TOKEN_ENCRYPTION_KEY (now auto-generated if missing in production)
   const tokenEncryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
   const isTokenKeyMissing = !tokenEncryptionKey || tokenEncryptionKey === '' || tokenEncryptionKey.includes('placeholder') || tokenEncryptionKey.includes('change-me');
 
@@ -100,8 +109,9 @@ const validateEnv = () => {
       process.exit(1);
     }
 
-    // Validate TOKEN_ENCRYPTION_KEY in production
+    // Validate TOKEN_ENCRYPTION_KEY in production (should be set by now if auto-generated)
     if (isTokenKeyMissing) {
+      // This should not happen since we auto-generate it above, but keep as safety check
       console.error('\n🚨 FATAL: TOKEN_ENCRYPTION_KEY is missing or invalid in production');
       console.error('   Calendar token encryption requires a valid 32-byte key.');
       console.error('   Generate a key: openssl rand -base64 32');

@@ -25,5 +25,5 @@ services:
       # GOOGLE_OAUTH_CLIENT_SECRET
       # GOOGLE_OAUTH_REDIRECT_URL
       # TOOL_SHARED_SECRET
-      # TOKEN_ENCRYPTION_KEY
+      # TOKEN_ENCRYPTION_KEY (auto-generated if missing, but set for persistence)
 

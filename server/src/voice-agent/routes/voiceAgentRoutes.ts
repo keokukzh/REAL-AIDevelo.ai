@@ -3,6 +3,7 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { chatService } from '../llm/chat';
 import { ragQueryService } from '../rag/query';
+import { ragContextBuilder } from '../rag/contextBuilder';
 import { documentIngestionService } from '../rag/ingest';
 import { sessionStore } from '../voice/session';
 import { VoicePipelineHandler } from '../voice/handlers';
@@ -12,6 +13,7 @@ import { db } from '../../services/db';
 import { VoiceAgent } from '../../models/types';
 import { resolveLocationId } from '../../utils/locationIdResolver';
 import { BadRequestError } from '../../utils/errors';
+import { voiceAgentConfig } from '../config';
 
 const router = Router();
 
@@ -54,8 +56,31 @@ router.post('/query', async (req: Request, res: Response) => {
       });
     }
 
-    // Query RAG using locationId
-    const ragResult = await ragQueryService.query(locationId, query);
+    // Query RAG using locationId (if enabled)
+    let ragContextText = '';
+    let ragResultCount = 0;
+    let ragInjectedChars = 0;
+
+    if (voiceAgentConfig.rag.enabled && locationId) {
+      try {
+        const ragContext = await ragContextBuilder.buildRagContext({
+          locationId,
+          query,
+          maxChunks: voiceAgentConfig.rag.maxChunks,
+          maxChars: voiceAgentConfig.rag.maxChars,
+          maxCharsPerChunk: voiceAgentConfig.rag.maxCharsPerChunk,
+        });
+
+        ragContextText = ragContext.contextText;
+        ragResultCount = ragContext.resultCount;
+        ragInjectedChars = ragContext.injectedChars;
+
+        console.log(`[RAG] query="${query.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${locationId}`);
+      } catch (error: any) {
+        console.error('[RAG] failed, continuing without context:', error.message);
+        // Graceful fallback: continue without RAG context
+      }
+    }
 
     const toolRegistry = createToolRegistry(locationId);
 
@@ -63,13 +88,18 @@ router.post('/query', async (req: Request, res: Response) => {
     const promptContext = ragQueryService.buildPromptContext(
       customerId,
       query,
-      ragResult,
+      { chunks: [], query, customerId: locationId }, // Empty RAG result for backward compatibility
       {
         companyName: agent?.businessProfile.companyName,
         industry: agent?.businessProfile.industry,
         tools: toolRegistry.getToolDefinitions(),
       }
     );
+
+    // Inject RAG context text if available
+    if (ragContextText) {
+      promptContext.ragContextText = ragContextText;
+    }
 
     // Get LLM response
     const response = await chatService.chatComplete(query, {
@@ -101,7 +131,9 @@ router.post('/query', async (req: Request, res: Response) => {
       data: {
         response: response.content,
         toolCalls: response.toolCalls,
-        ragContext: ragResult.chunks.map((c) => c.text),
+        ragContext: ragContextText ? [ragContextText] : [],
+        ragResultCount,
+        ragInjectedChars,
       },
     });
   } catch (error: any) {

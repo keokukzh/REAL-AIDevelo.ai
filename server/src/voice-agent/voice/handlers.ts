@@ -1,5 +1,6 @@
 import { chatService } from '../llm/chat';
 import { ragQueryService } from '../rag/query';
+import { ragContextBuilder } from '../rag/contextBuilder';
 import { sessionStore } from './session';
 // OPENAI REALTIME EXPERIMENT REMOVED - We use ElevenLabs register-call approach only
 // import { OpenAIRealtimeClient, RealtimeCallbacks } from './openaiRealtime';
@@ -96,11 +97,31 @@ export class VoicePipelineHandler {
       timestamp: new Date(),
     });
 
-    // Query RAG
-    const ragResult = await ragQueryService.query(
-      this.options.customerId,
-      transcript
-    );
+    // Query RAG (if enabled)
+    let ragContextText = '';
+    let ragResultCount = 0;
+    let ragInjectedChars = 0;
+
+    if (voiceAgentConfig.rag.enabled && this.options.customerId) {
+      try {
+        const ragContext = await ragContextBuilder.buildRagContext({
+          locationId: this.options.customerId, // customerId is used as locationId here
+          query: transcript,
+          maxChunks: voiceAgentConfig.rag.maxChunks,
+          maxChars: voiceAgentConfig.rag.maxChars,
+          maxCharsPerChunk: voiceAgentConfig.rag.maxCharsPerChunk,
+        });
+
+        ragContextText = ragContext.contextText;
+        ragResultCount = ragContext.resultCount;
+        ragInjectedChars = ragContext.injectedChars;
+
+        console.log(`[RAG] query="${transcript.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${this.options.customerId}`);
+      } catch (error: any) {
+        console.error('[RAG] failed, continuing without context:', error.message);
+        // Graceful fallback: continue without RAG context
+      }
+    }
 
     // Build prompt context
     const conversationHistory = this.session.context?.conversationHistory
@@ -110,13 +131,18 @@ export class VoicePipelineHandler {
     const promptContext = ragQueryService.buildPromptContext(
       this.options.customerId,
       transcript,
-      ragResult,
+      { chunks: [], query: transcript, customerId: this.options.customerId },
       {
         companyName: this.options.companyName,
         industry: this.options.industry,
         conversationHistory,
       }
     );
+
+    // Inject RAG context text if available
+    if (ragContextText) {
+      promptContext.ragContextText = ragContextText;
+    }
 
     // Get LLM response
     const response = await chatService.chatComplete(transcript, {

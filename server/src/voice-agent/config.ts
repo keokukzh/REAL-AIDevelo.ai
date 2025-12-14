@@ -86,6 +86,14 @@ export const voiceAgentConfig = {
     nodeEnv: process.env.NODE_ENV || 'development',
     isProduction: process.env.NODE_ENV === 'production',
   },
+
+  // RAG Configuration
+  rag: {
+    enabled: process.env.ENABLE_RAG !== 'false', // Default true, can be disabled with ENABLE_RAG=false
+    maxChunks: parseInt(process.env.RAG_MAX_CHUNKS || '5', 10),
+    maxChars: parseInt(process.env.RAG_MAX_CHARS || '2500', 10),
+    maxCharsPerChunk: parseInt(process.env.RAG_MAX_CHARS_PER_CHUNK || '500', 10),
+  },
 };
 
 
