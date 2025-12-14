@@ -14,6 +14,7 @@ import { VoiceAgent } from '../../models/types';
 import { resolveLocationId } from '../../utils/locationIdResolver';
 import { BadRequestError } from '../../utils/errors';
 import { voiceAgentConfig } from '../config';
+import { twilioMediaStreamService, TwilioStreamMessage } from '../../services/twilioMediaStreamService';
 
 const router = Router();
 
@@ -325,7 +326,7 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
     noServer: true,
   });
 
-  // WebSocket server for Twilio Media Streams
+  // WebSocket server for Twilio Media Streams (legacy /ws/twilio/stream)
   const twilioStreamWss = new WebSocketServer({
     noServer: true,
     verifyClient: (info, cb) => {
@@ -349,6 +350,41 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
         cb(true);
       } catch (error: any) {
         console.error(`[TwilioStream] verifyClient error: ${error?.message || error}`);
+        cb(false, 400, 'Bad Request');
+      }
+    },
+  });
+
+  // WebSocket server for Twilio Media Streams (/api/twilio/media-stream)
+  const twilioMediaStreamWss = new WebSocketServer({
+    noServer: true,
+    verifyClient: (info, cb) => {
+      try {
+        const expectedToken = process.env.TWILIO_STREAM_TOKEN;
+        if (!expectedToken) {
+          cb(false, 500, 'TWILIO_STREAM_TOKEN not configured');
+          return;
+        }
+
+        const reqUrl = info.req.url || '';
+        const query = reqUrl.includes('?') ? reqUrl.slice(reqUrl.indexOf('?') + 1) : '';
+        const params = new URLSearchParams(query);
+        const token = params.get('token');
+        const callSid = params.get('callSid');
+
+        if (!token || token !== expectedToken) {
+          cb(false, 401, 'Unauthorized');
+          return;
+        }
+
+        if (!callSid) {
+          cb(false, 400, 'callSid parameter required');
+          return;
+        }
+
+        cb(true);
+      } catch (error: any) {
+        console.error(`[TwilioMediaStream] verifyClient error: ${error?.message || error}`);
         cb(false, 400, 'Bad Request');
       }
     },
@@ -378,13 +414,56 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       return;
     }
 
+    if (pathname === '/api/twilio/media-stream') {
+      twilioMediaStreamWss.handleUpgrade(req, socket, head, (ws) => {
+        twilioMediaStreamWss.emit('connection', ws, req);
+      });
+      return;
+    }
+
     socket.destroy();
   });
 
   const activePipelines = new Map<string, VoicePipelineHandler>();
   const activeElevenLabsClients = new Map<string, ElevenLabsStreamingClient>();
 
-  // Handle Twilio Media Streams
+  // Handle Twilio Media Streams (/api/twilio/media-stream)
+  twilioMediaStreamWss.on('connection', (ws: WebSocket, req: any) => {
+    // Extract callSid from query parameters
+    let callSid: string | undefined;
+    try {
+      const reqUrl = typeof req?.url === 'string' ? req.url : '';
+      const query = reqUrl.includes('?') ? reqUrl.slice(reqUrl.indexOf('?') + 1) : '';
+      const params = new URLSearchParams(query);
+      callSid = params.get('callSid') || undefined;
+    } catch (error) {
+      console.error('[TwilioMediaStream] Error parsing callSid:', error);
+      ws.close(400, 'Invalid callSid');
+      return;
+    }
+
+    if (!callSid) {
+      console.error('[TwilioMediaStream] Missing callSid parameter');
+      ws.close(400, 'callSid parameter required');
+      return;
+    }
+
+    // Create session
+    const session = twilioMediaStreamService.createSession(callSid, ws);
+
+    // Handle messages
+    ws.on('message', (data: any) => {
+      try {
+        const text = typeof data === 'string' ? data : (data as Buffer).toString('utf8');
+        const message: TwilioStreamMessage = JSON.parse(text);
+        twilioMediaStreamService.handleMessage(session, message);
+      } catch (error: any) {
+        console.error(`[TwilioMediaStream] Error processing message callSid=${callSid}:`, error?.message || error);
+      }
+    });
+  });
+
+  // Handle Twilio Media Streams (legacy /ws/twilio/stream)
   twilioStreamWss.on('connection', (ws: WebSocket, req: any) => {
     let streamSid: string | undefined;
     try {
