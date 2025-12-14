@@ -131,3 +131,4 @@ http://localhost:4000/dashboard
 2. ⏳ Browser-Test: `http://localhost:5000/api/health`
 3. ⏳ Dashboard-Test: `http://localhost:4000/dashboard`
 4. ⏳ Backend-Logs prüfen für Dashboard-Request
+

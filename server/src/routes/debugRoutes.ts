@@ -2,6 +2,11 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
+// Get backend version from environment (Render sets RENDER_GIT_COMMIT)
+const getBackendVersion = (): string => {
+  return process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown';
+};
+
 /**
  * GET /api/debug/env
  * Returns safe environment info (no secrets) for debugging
@@ -29,6 +34,9 @@ router.get('/env', (req: Request, res: Response) => {
       supabaseHost = 'invalid-url';
     }
   }
+  
+  // Add backend version header (no secrets)
+  res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
   
   res.json({
     supabase: {

@@ -169,6 +169,9 @@ export const createDefaultAgent = async (
     // Validate response with Zod
     const validated = DefaultAgentResponseSchema.parse(response);
 
+    // Add backend version header (no secrets)
+    res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+
     res.json({
       success: true,
       data: validated,

@@ -323,6 +323,8 @@ app.get('/', (req: Request, res: Response) => {
 app.get('/health', (req: Request, res: Response) => {
   // Simple liveness check — responds immediately without any database/external calls
   // Used by Render for health checks
+  // Add backend version header (no secrets)
+  res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
   res.setHeader('Content-Type', 'application/json');
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
