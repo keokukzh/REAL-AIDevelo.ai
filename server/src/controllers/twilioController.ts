@@ -21,23 +21,43 @@ function getWebSocketBaseUrl(req: Request): string {
 }
 
 export function handleInboundVoice(req: Request, res: Response): void {
-  const streamToken = process.env.TWILIO_STREAM_TOKEN;
-  if (!streamToken) {
-    res.status(500).json({ success: false, error: 'TWILIO_STREAM_TOKEN not configured' });
-    return;
+  const callSid = req.body.CallSid || 'unknown';
+  const enableMediaStreams = process.env.ENABLE_MEDIA_STREAMS === 'true';
+
+  // Feature Flag: Use Media Streams if enabled, otherwise fallback to TwiML without stream
+  if (enableMediaStreams) {
+    const streamToken = process.env.TWILIO_STREAM_TOKEN;
+    if (!streamToken) {
+      console.error(`[TwilioController] ENABLE_MEDIA_STREAMS=true but TWILIO_STREAM_TOKEN not configured, falling back`);
+      // Fallback to simple TwiML
+      const fallbackTwiml = buildTwiML(
+        `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
+      );
+      res.status(200).type('text/xml').send(fallbackTwiml);
+      return;
+    }
+
+    const wsBaseUrl = getWebSocketBaseUrl(req);
+    const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(callSid)}&token=${encodeURIComponent(streamToken)}`;
+
+    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=true streamUrl=${streamUrl}`);
+
+    const twiml = buildTwiML(
+      `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" track="both_tracks" />\n  </Connect>`
+    );
+
+    res
+      .status(200)
+      .type('text/xml')
+      .send(twiml);
+  } else {
+    // Fallback: Simple TwiML without Media Streams
+    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=false, using fallback TwiML`);
+    const fallbackTwiml = buildTwiML(
+      `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
+    );
+    res.status(200).type('text/xml').send(fallbackTwiml);
   }
-
-  const wsBaseUrl = getWebSocketBaseUrl(req);
-  const streamUrl = `${wsBaseUrl}/ws/twilio/stream?token=${encodeURIComponent(streamToken)}`;
-
-  const twiml = buildTwiML(
-    `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" />\n  </Connect>`
-  );
-
-  res
-    .status(200)
-    .type('text/xml')
-    .send(twiml);
 }
 
 async function persistCallEvent(callSid: string, req: Request): Promise<void> {

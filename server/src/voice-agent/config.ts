@@ -94,6 +94,11 @@ export const voiceAgentConfig = {
     maxChars: parseInt(process.env.RAG_MAX_CHARS || '2500', 10),
     maxCharsPerChunk: parseInt(process.env.RAG_MAX_CHARS_PER_CHUNK || '500', 10),
   },
+
+  // Media Streams Configuration
+  mediaStreams: {
+    enabled: process.env.ENABLE_MEDIA_STREAMS === 'true', // Default false, must be explicitly enabled
+  },
 };
 
 
