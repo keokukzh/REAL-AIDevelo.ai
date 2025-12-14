@@ -128,6 +128,9 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
     const userId = 'temp_user'; // Would come from session
     calendarService.storeToken(userId, token);
 
+    // Get frontend URL for redirect
+    const frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    
     // Return HTML that posts message to parent window
     res.send(`
       <!DOCTYPE html>
@@ -141,10 +144,10 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
               window.opener.postMessage({
                 type: 'calendar-oauth-success',
                 provider: '${provider}'
-              }, window.location.origin);
+              }, '${frontendUrl}');
               window.close();
             } else {
-              window.location.href = '/onboarding';
+              window.location.href = '${frontendUrl}/dashboard';
             }
           </script>
           <p>Kalender erfolgreich verbunden. Sie können dieses Fenster schließen.</p>
@@ -153,6 +156,8 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
     `);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -164,11 +169,11 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
             if (window.opener) {
               window.opener.postMessage({
                 type: 'calendar-oauth-error',
-                message: '${errorMessage}'
-              }, window.location.origin);
+                message: '${errorMessage.replace(/'/g, "\\'")}'
+              }, '${frontendUrl}');
               window.close();
             } else {
-              window.location.href = '/onboarding?error=calendar_connection_failed';
+              window.location.href = '${frontendUrl}/dashboard?error=calendar_connection_failed';
             }
           </script>
           <p>Fehler beim Verbinden des Kalenders: ${errorMessage}</p>
