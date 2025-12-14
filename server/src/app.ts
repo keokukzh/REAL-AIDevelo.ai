@@ -426,6 +426,25 @@ if (require.main === module) {
   // Setup WebSocket server for voice agent
   setupWebSocketServer(httpServer);
 
+  // Graceful shutdown: cleanup Media Streams sessions and bridges
+  process.on('SIGTERM', () => {
+    console.log('[Server] SIGTERM received, cleaning up...');
+    const { twilioMediaStreamService } = require('./services/twilioMediaStreamService');
+    const { elevenLabsBridgeService } = require('./services/elevenLabsBridgeService');
+    twilioMediaStreamService.cleanup();
+    elevenLabsBridgeService.cleanup();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', () => {
+    console.log('[Server] SIGINT received, cleaning up...');
+    const { twilioMediaStreamService } = require('./services/twilioMediaStreamService');
+    const { elevenLabsBridgeService } = require('./services/elevenLabsBridgeService');
+    twilioMediaStreamService.cleanup();
+    elevenLabsBridgeService.cleanup();
+    process.exit(0);
+  });
+
   // Register and start background jobs
   const { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } = require('./jobs/syncJobs');
   registerSyncJobs();
