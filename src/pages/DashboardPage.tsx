@@ -12,6 +12,7 @@ import { RecentCallsTable } from '../components/dashboard/RecentCallsTable';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
+import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal';
 import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
@@ -26,6 +27,7 @@ export const DashboardPage = () => {
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
   const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
   const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
+  const [isWebhookStatusOpen, setIsWebhookStatusOpen] = useState(false);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -87,37 +89,9 @@ export const DashboardPage = () => {
     setIsPhoneConnectionOpen(true);
   };
 
-  // Handle webhook status check
-  const handleCheckWebhook = async () => {
-    if (!overview?.phone_number_sid) {
-      toast.warning('Bitte verbinde zuerst eine Telefonnummer');
-      return;
-    }
-
-    try {
-      const phoneResponse = await apiClient.get<{ success: boolean; data: any }>(
-        '/phone/webhook-status',
-        {
-          params: {
-            phoneNumberSid: overview.phone_number_sid,
-          },
-        }
-      );
-
-      if (phoneResponse.data?.success) {
-        const { current, expected, isConfigured } = phoneResponse.data.data;
-        if (isConfigured) {
-          toast.success('Webhooks sind korrekt konfiguriert');
-        } else {
-          const message = `Webhooks nicht konfiguriert.\n\nErwartet:\nVoice: ${expected.voiceUrl}\nStatus: ${expected.statusCallback}\n\nAktuell:\nVoice: ${current.voiceUrl || 'Nicht gesetzt'}\nStatus: ${current.statusCallback || 'Nicht gesetzt'}`;
-          toast.warning(message);
-        }
-      }
-    } catch (err: any) {
-      console.error('[DashboardPage] Error checking webhook status:', err);
-      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Prüfen des Webhook-Status';
-      toast.error(errorMsg);
-    }
+  // Handle webhook status check - open modal
+  const handleCheckWebhook = () => {
+    setIsWebhookStatusOpen(true);
   };
 
   // Handle test agent
@@ -125,17 +99,27 @@ export const DashboardPage = () => {
     setIsAgentTestOpen(true);
   };
 
-  // Scroll to calls section
+  // Navigate to calls page
   const handleViewCalls = () => {
-    const callsSection = document.getElementById('recent-calls');
-    if (callsSection) {
-      callsSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    navigate('/calls');
   };
 
   // Handle call click
   const handleCallClick = (call: any) => {
-    setSelectedCall(call);
+    // Map to CallLog format
+    const callLog: any = {
+      id: call.id,
+      callSid: call.callSid || call.id,
+      direction: call.direction,
+      from_e164: call.from_e164,
+      to_e164: call.to_e164,
+      started_at: call.started_at,
+      ended_at: call.ended_at,
+      duration_sec: call.duration_sec,
+      outcome: call.outcome,
+      notes: call.notes || {},
+    };
+    setSelectedCall(callLog);
     setIsCallDetailsOpen(true);
   };
 
@@ -418,7 +402,21 @@ export const DashboardPage = () => {
 
       {/* Recent Calls Table */}
       <div id="recent-calls" className="mb-8">
-        <RecentCallsTable calls={overview.recent_calls} onCallClick={handleCallClick} />
+        <RecentCallsTable 
+          calls={overview.recent_calls.map((call) => ({
+            id: call.id,
+            callSid: call.callSid || '',
+            direction: call.direction,
+            from_e164: call.from_e164,
+            to_e164: call.to_e164,
+            started_at: call.started_at,
+            ended_at: call.ended_at,
+            duration_sec: call.duration_sec,
+            outcome: call.outcome,
+            notes: call.notes || {},
+          }))} 
+          onCallClick={handleCallClick} 
+        />
       </div>
 
       {/* Call Details Modal */}
@@ -449,6 +447,12 @@ export const DashboardPage = () => {
         onSuccess={() => {
           // Dashboard will automatically refresh via query invalidation
         }}
+      />
+
+      {/* Webhook Status Modal */}
+      <WebhookStatusModal
+        isOpen={isWebhookStatusOpen}
+        onClose={() => setIsWebhookStatusOpen(false)}
       />
       </div>
     </div>

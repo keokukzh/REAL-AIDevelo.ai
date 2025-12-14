@@ -1,12 +1,12 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { twilioService } from '../services/twilioService';
-import { supabaseAdmin, ensureDefaultLocation } from '../services/supabaseDb';
+import { supabaseAdmin, ensureDefaultLocation, ensureUserRow, ensureOrgForUser } from '../services/supabaseDb';
 import { BadRequestError, InternalServerError } from '../utils/errors';
 
 /**
  * GET /api/calls/recent
- * Fetch latest calls
+ * Fetch latest calls (backward compatibility)
  */
 export const getRecentCalls = async (
   req: AuthenticatedRequest,
@@ -21,27 +21,9 @@ export const getRecentCalls = async (
     const { supabaseUserId } = req.supabaseUser;
 
     // Get user's location
-    const { data: userData } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('supabase_user_id', supabaseUserId)
-      .single();
-
-    if (!userData) {
-      return next(new InternalServerError('User not found'));
-    }
-
-    const { data: orgData } = await supabaseAdmin
-      .from('organizations')
-      .select('id')
-      .eq('owner_user_id', userData.id)
-      .single();
-
-    if (!orgData) {
-      return next(new InternalServerError('Organization not found'));
-    }
-
-    const location = await ensureDefaultLocation(orgData.id);
+    await ensureUserRow(supabaseUserId, req.supabaseUser.email);
+    const org = await ensureOrgForUser(supabaseUserId, req.supabaseUser.email);
+    const location = await ensureDefaultLocation(org.id);
 
     const { limit = '10' } = req.query;
     const limitNum = Number.parseInt(limit as string, 10) || 10;
@@ -73,6 +55,181 @@ export const getRecentCalls = async (
         outcome: call.outcome || null,
         notes: call.notes_json || {},
       })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/calls
+ * Fetch calls with pagination and filters
+ */
+export const getCalls = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Get user's location
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // Parse query parameters
+    const limit = Math.min(Number.parseInt(req.query.limit as string, 10) || 20, 100);
+    const offset = Number.parseInt(req.query.offset as string, 10) || 0;
+    const direction = req.query.direction as string | undefined;
+    const status = req.query.status as string | undefined;
+    const dateFrom = req.query.dateFrom as string | undefined;
+    const dateTo = req.query.dateTo as string | undefined;
+    const search = req.query.search as string | undefined;
+
+    // Build query
+    let query = supabaseAdmin
+      .from('call_logs')
+      .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json', { count: 'exact' })
+      .eq('location_id', location.id);
+
+    // Apply filters
+    if (direction && (direction === 'inbound' || direction === 'outbound')) {
+      query = query.eq('direction', direction);
+    }
+
+    if (status) {
+      query = query.eq('outcome', status);
+    }
+
+    if (dateFrom) {
+      query = query.gte('started_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('started_at', dateTo);
+    }
+
+    if (search) {
+      // Search in call_sid or phone numbers
+      query = query.or(`call_sid.ilike.%${search}%,from_e164.ilike.%${search}%,to_e164.ilike.%${search}%`);
+    }
+
+    // Apply pagination and ordering
+    query = query.order('started_at', { ascending: false }).range(offset, offset + limit - 1);
+
+    const { data: calls, error: callsError, count } = await query;
+
+    if (callsError) {
+      console.error('[CallsController] Error loading calls:', callsError);
+      return next(new InternalServerError('Failed to load calls'));
+    }
+
+    console.log('[CallsController] Calls loaded', {
+      org_id: org.id,
+      location_id: location.id,
+      total: count || 0,
+      limit,
+      offset,
+      filters: { direction, status, dateFrom, dateTo, search },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        items: (calls || []).map((call) => ({
+          id: call.id,
+          callSid: call.call_sid,
+          direction: call.direction,
+          from_e164: call.from_e164 || null,
+          to_e164: call.to_e164 || null,
+          started_at: call.started_at,
+          ended_at: call.ended_at || null,
+          duration_sec: call.duration_sec || null,
+          outcome: call.outcome || null,
+          notes: call.notes_json || {},
+        })),
+        total: count || 0,
+        limit,
+        offset,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/calls/by-sid/:callSid
+ * Get call details by Call SID
+ */
+export const getCallBySid = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { callSid } = req.params;
+
+    if (!callSid) {
+      return next(new BadRequestError('callSid parameter is required'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Get user's location
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // Load call by SID (must belong to user's location)
+    const { data: call, error: callError } = await supabaseAdmin
+      .from('call_logs')
+      .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json')
+      .eq('location_id', location.id)
+      .eq('call_sid', callSid)
+      .maybeSingle();
+
+    if (callError) {
+      console.error('[CallsController] Error loading call:', callError);
+      return next(new InternalServerError('Failed to load call'));
+    }
+
+    if (!call) {
+      return res.status(404).json({
+        success: false,
+        error: 'Call not found',
+      });
+    }
+
+    console.log('[CallsController] Call details loaded', {
+      org_id: org.id,
+      location_id: location.id,
+      call_sid: callSid,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        id: call.id,
+        callSid: call.call_sid,
+        direction: call.direction,
+        from_e164: call.from_e164 || null,
+        to_e164: call.to_e164 || null,
+        started_at: call.started_at,
+        ended_at: call.ended_at || null,
+        duration_sec: call.duration_sec || null,
+        outcome: call.outcome || null,
+        notes: call.notes_json || {},
+      },
     });
   } catch (error) {
     next(error);

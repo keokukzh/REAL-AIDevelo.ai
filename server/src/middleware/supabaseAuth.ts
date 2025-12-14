@@ -36,6 +36,11 @@ export const verifySupabaseAuth = async (
   res: Response,
   next: NextFunction
 ) => {
+  // If user is already set (e.g., by dev bypass auth), skip token verification
+  if (req.supabaseUser) {
+    return next();
+  }
+
   // Generate request ID for tracking
   const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   

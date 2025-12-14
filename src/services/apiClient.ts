@@ -19,6 +19,16 @@ const getAccessToken = async (): Promise<string | null> => {
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
+    // Dev bypass: Don't require token if dev bypass is enabled
+    const devBypassEnabled = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+    
+    if (devBypassEnabled) {
+      // In dev bypass mode, backend will use dev bypass auth middleware
+      // We can send a dummy token or no token at all
+      config.headers.Authorization = 'Bearer dev-bypass-token';
+      return config;
+    }
+
     const token = await getAccessToken();
     // Only set Authorization header if token exists (prevents 401 race conditions)
     if (token) {

@@ -91,11 +91,11 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         throw new Error('Ausgewählte Nummer nicht gefunden');
       }
 
-      // Use the new connect endpoint
+      // Use the connect endpoint
       const response = await apiClient.post<{ success: boolean; message?: string }>(
         '/phone/connect',
         {
-          phoneNumberSid: selectedNumberId,
+          phoneNumberSid: selectedNumber.providerSid || selectedNumberId,
           phoneNumber: selectedNumber.number,
         }
       );

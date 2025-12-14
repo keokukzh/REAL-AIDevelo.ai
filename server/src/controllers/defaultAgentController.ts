@@ -8,7 +8,8 @@ import {
   supabaseAdmin,
 } from '../services/supabaseDb';
 import { checkDbPreflight } from '../services/dbPreflight';
-import { InternalServerError } from '../utils/errors';
+import { InternalServerError, BadRequestError } from '../utils/errors';
+import { twilioService } from '../services/twilioService';
 import { z } from 'zod';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
@@ -397,6 +398,102 @@ export const getDashboardOverview = async (
       step: failedStep,
       requestId,
     });
+  }
+};
+
+/**
+ * POST /api/agent/test-call
+ * Initiate a test call for the agent
+ */
+export const testAgentCall = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { to } = req.body;
+
+    if (!to || typeof to !== 'string') {
+      return next(new BadRequestError('to phone number is required'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Get user's location (same pattern as dashboard overview)
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+    await ensureAgentConfig(location.id);
+
+    // Get the connected phone number for this location
+    const { data: phoneData } = await supabaseAdmin
+      .from('phone_numbers')
+      .select('e164, twilio_number_sid')
+      .eq('location_id', location.id)
+      .eq('status', 'connected')
+      .limit(1)
+      .maybeSingle();
+
+    if (!phoneData?.e164) {
+      return next(new BadRequestError('No connected phone number found. Please connect a phone number first.'));
+    }
+
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
+    if (!publicBaseUrl) {
+      return next(new InternalServerError('PUBLIC_BASE_URL not configured'));
+    }
+
+    const voiceUrl = `${publicBaseUrl}/api/twilio/voice/inbound`;
+
+    // Make the call via Twilio
+    const callResult = await twilioService.makeCall(phoneData.e164, to, voiceUrl);
+
+    // Create a call log entry
+    const { error: insertError } = await supabaseAdmin.from('call_logs').insert({
+      location_id: location.id,
+      call_sid: callResult.sid,
+      direction: 'outbound',
+      from_e164: phoneData.e164,
+      to_e164: to,
+      started_at: new Date().toISOString(),
+      outcome: callResult.status,
+      notes_json: {
+        testCall: true,
+        initiatedBy: email || 'unknown',
+        agentTest: true,
+      },
+    });
+
+    if (insertError) {
+      console.error('[DefaultAgentController] Error inserting call log:', insertError);
+      // Don't fail the request if logging fails, but log it
+    }
+
+    console.log('[DefaultAgentController] Test call initiated', {
+      org_id: org.id,
+      location_id: location.id,
+      call_sid: callResult.sid,
+      from: phoneData.e164,
+      to,
+      status: callResult.status,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        callSid: callResult.sid,
+        status: callResult.status,
+        from: callResult.from,
+        to: callResult.to,
+      },
+    });
+  } catch (error) {
+    console.error('[DefaultAgentController] Error initiating test call:', error);
+    next(error);
   }
 };
 

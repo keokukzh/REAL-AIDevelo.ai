@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { VoiceAgentStreamingUI } from './VoiceAgentStreamingUI';
-import { AlertCircle, Phone, Info, Loader } from 'lucide-react';
+import { AlertCircle, Phone, Info, Loader, CheckCircle, XCircle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { toast } from '../ui/Toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AgentTestModalProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ interface AgentTestModalProps {
   locationId?: string;
   elevenAgentId?: string | null;
 }
+
+type CallStatus = 'idle' | 'initiated' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer';
 
 export const AgentTestModal: React.FC<AgentTestModalProps> = ({ 
   isOpen, 
@@ -23,6 +26,9 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   const [testMode, setTestMode] = useState<'info' | 'streaming'>('info');
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
   const [isMakingCall, setIsMakingCall] = useState(false);
+  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
+  const [callSid, setCallSid] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Check if we have the required data for streaming
   const canStream = !!locationId && !!agentConfigId;
@@ -33,6 +39,16 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
     }
   };
 
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setCallStatus('idle');
+      setCallSid(null);
+      setTestPhoneNumber('');
+      setTestMode('info');
+    }
+  }, [isOpen]);
+
   const handleMakeTestCall = async () => {
     if (!testPhoneNumber.trim()) {
       toast.warning('Bitte gib eine Telefonnummer ein');
@@ -40,23 +56,44 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
     }
 
     setIsMakingCall(true);
+    setCallStatus('initiated');
+    setCallSid(null);
+
     try {
       const response = await apiClient.post<{ success: boolean; data: { callSid: string; status: string } }>(
-        '/calls/test',
+        '/agent/test-call',
         {
           to: testPhoneNumber.trim(),
         }
       );
 
       if (response.data?.success) {
-        toast.success(`Testanruf gestartet! Call SID: ${response.data.data.callSid}`);
-        setTestPhoneNumber('');
+        const { callSid, status } = response.data.data;
+        setCallSid(callSid);
+        
+        // Map Twilio status to our CallStatus
+        const mappedStatus: CallStatus = 
+          status === 'queued' || status === 'initiated' ? 'initiated' :
+          status === 'ringing' ? 'ringing' :
+          status === 'in-progress' ? 'in-progress' :
+          status === 'completed' ? 'completed' :
+          status === 'busy' ? 'busy' :
+          status === 'no-answer' ? 'no-answer' :
+          status === 'failed' || status === 'canceled' ? 'failed' :
+          'initiated';
+        
+        setCallStatus(mappedStatus);
+        toast.success(`Testanruf gestartet! Call SID: ${callSid}`);
+        
+        // Invalidate dashboard query to refresh call logs
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       } else {
         throw new Error('Testanruf fehlgeschlagen');
       }
     } catch (err: any) {
       console.error('[AgentTestModal] Error making test call:', err);
       const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Starten des Testanrufs';
+      setCallStatus('failed');
       toast.error(errorMsg);
     } finally {
       setIsMakingCall(false);
@@ -123,11 +160,11 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                       onChange={(e) => setTestPhoneNumber(e.target.value)}
                       placeholder="+41791234567"
                       className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent"
-                      disabled={isMakingCall}
+                      disabled={isMakingCall || callStatus !== 'idle'}
                     />
                     <button
                       onClick={handleMakeTestCall}
-                      disabled={isMakingCall || !testPhoneNumber.trim()}
+                      disabled={isMakingCall || !testPhoneNumber.trim() || callStatus !== 'idle'}
                       className="px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {isMakingCall ? (
@@ -143,6 +180,35 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                       )}
                     </button>
                   </div>
+                  
+                  {/* Call Status Display */}
+                  {callStatus !== 'idle' && (
+                    <div className="mt-3 space-y-2">
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded text-sm ${
+                        callStatus === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                        'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      }`}>
+                        {callStatus === 'completed' && <CheckCircle size={16} />}
+                        {callStatus === 'failed' && <XCircle size={16} />}
+                        {(callStatus === 'initiated' || callStatus === 'ringing' || callStatus === 'in-progress') && <Loader className="animate-spin" size={16} />}
+                        <span className="font-medium">
+                          {callStatus === 'initiated' && 'Anruf wird initiiert...'}
+                          {callStatus === 'ringing' && 'Telefon klingelt...'}
+                          {callStatus === 'in-progress' && 'Anruf läuft...'}
+                          {callStatus === 'completed' && 'Anruf erfolgreich abgeschlossen'}
+                          {callStatus === 'failed' && 'Anruf fehlgeschlagen'}
+                          {callStatus === 'busy' && 'Telefonnummer ist besetzt'}
+                          {callStatus === 'no-answer' && 'Keine Antwort'}
+                        </span>
+                      </div>
+                      {callSid && (
+                        <div className="text-xs text-gray-400 font-mono">
+                          Call SID: {callSid}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Streaming Test (Alternative) */}

@@ -105,6 +105,8 @@ import { attachApiVersionHeader, deprecationWarningMiddleware } from './middlewa
 import { createServer } from 'http';
 import axios from 'axios';
 import { requireAuth } from './middleware/auth';
+import { devBypassAuth } from './middleware/devBypassAuth';
+import { verifySupabaseAuth } from './middleware/supabaseAuth';
 
 const app = express();
 
@@ -355,6 +357,16 @@ app.get('/metrics', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Auth Middleware: Use dev bypass in dev, otherwise Supabase auth
+// Dev bypass MUST be before routes to intercept all /api requests
+if (process.env.DEV_BYPASS_AUTH === 'true' && process.env.NODE_ENV !== 'production') {
+  console.log('⚠️  [DevBypassAuth] Dev bypass auth ENABLED - skipping Supabase token verification');
+  app.use('/api', devBypassAuth);
+} else {
+  // Normal Supabase auth - applied per-route via verifySupabaseAuth middleware
+  // (Routes will use verifySupabaseAuth individually)
+}
 
 // Routes: Register all routes under a versioned router (v1) and keep top-level /api as a compat shim
 const v1Router = express.Router();

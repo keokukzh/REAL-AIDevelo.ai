@@ -19,12 +19,14 @@ const AGBPage = React.lazy(() => import('./pages/AGBPage').then(m => ({ default:
 const VoiceEditPage = React.lazy(() => import('./pages/VoiceEditPage').then(m => ({ default: m.VoiceEditPage })));
 const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').then(m => ({ default: m.AgentDetailsPage })));
 const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
+const CallsPage = React.lazy(() => import('./pages/CallsPage').then(m => ({ default: m.CallsPage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/react-query';
 import { ToastContainer, useToast } from './components/ui/Toast';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { DevQuickLogin } from './components/auth/DevQuickLogin';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 const ReactQueryDevtools = import.meta.env.DEV
@@ -50,6 +52,7 @@ function App() {
           <ToastProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <DevQuickLogin />
               <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
                 <AnimatePresence mode='wait'>
                     <Routes>
@@ -116,6 +119,13 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <AgentEditPage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/calls" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <CallsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />

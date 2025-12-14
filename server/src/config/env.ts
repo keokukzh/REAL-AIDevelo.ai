@@ -29,6 +29,10 @@ const getOptionalEnvVars = () => ({
   // STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   // STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:4000',
+  // Dev bypass auth (only in development/test, NEVER in production)
+  DEV_BYPASS_AUTH: process.env.DEV_BYPASS_AUTH || 'false',
+  DEV_SEED_USER_EMAIL: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',
+  DEV_SEED_USER_ID: process.env.DEV_SEED_USER_ID || '00000000-0000-0000-0000-000000000001',
   // LEGACY: DATABASE_URL - Old pg-pool based database connection
   // New code should use Supabase client directly (see supabaseDb.ts)
   // Kept for backward compatibility with legacy routes/repositories
@@ -155,5 +159,9 @@ export const config = {
   googleOAuthRedirectUrl: optionalEnvVars.GOOGLE_OAUTH_REDIRECT_URL,
   twilioAuthToken: optionalEnvVars.TWILIO_AUTH_TOKEN,
   twilioStreamToken: optionalEnvVars.TWILIO_STREAM_TOKEN,
+  // Dev bypass auth (only in development/test)
+  devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
+  devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',
+  devSeedUserId: process.env.DEV_SEED_USER_ID || '00000000-0000-0000-0000-000000000001',
 };
 

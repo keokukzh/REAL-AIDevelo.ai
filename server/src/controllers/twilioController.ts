@@ -95,13 +95,34 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
 
   if (existingCall) {
     // Update existing call log
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('call_logs')
       .update(callData)
       .eq('id', existingCall.id);
+
+    if (updateError) {
+      console.error('[TwilioController] Error updating call log:', updateError);
+    } else {
+      console.log('[TwilioController] Call log updated', {
+        call_sid: callSid,
+        call_status: callStatus,
+        updated_fields: Object.keys(callData),
+        location_id: phoneData.location_id,
+      });
+    }
   } else {
     // Create new call log
-    await supabaseAdmin.from('call_logs').insert(callData);
+    const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
+
+    if (insertError) {
+      console.error('[TwilioController] Error creating call log:', insertError);
+    } else {
+      console.log('[TwilioController] Call log created', {
+        call_sid: callSid,
+        call_status: callStatus,
+        location_id: phoneData.location_id,
+      });
+    }
   }
 }
 

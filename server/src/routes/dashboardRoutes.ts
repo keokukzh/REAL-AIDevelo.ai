@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDashboardOverview } from '../controllers/defaultAgentController';
+import { getDashboardOverview, testAgentCall } from '../controllers/defaultAgentController';
 import { updateAgentConfig } from '../controllers/agentConfigController';
 import { verifySupabaseAuth } from '../middleware/supabaseAuth';
 
@@ -16,6 +16,12 @@ router.get('/overview', verifySupabaseAuth, getDashboardOverview);
  * Updates agent config for the authenticated user's location
  */
 router.patch('/agent/config', verifySupabaseAuth, updateAgentConfig);
+
+/**
+ * POST /api/agent/test-call
+ * Initiate a test call for the agent
+ */
+router.post('/agent/test-call', verifySupabaseAuth, testAgentCall);
 
 export default router;
 
