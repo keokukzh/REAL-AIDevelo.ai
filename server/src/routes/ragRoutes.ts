@@ -4,6 +4,7 @@ import { verifySupabaseAuth } from '../middleware/supabaseAuth';
 import {
   uploadDocument,
   listDocuments,
+  getDocument,
   deleteDocument,
   reEmbedDocument,
 } from '../controllers/ragController';
@@ -50,6 +51,12 @@ router.post('/documents', verifySupabaseAuth, upload.single('file'), uploadDocum
  * List documents for authenticated user's location
  */
 router.get('/documents', verifySupabaseAuth, listDocuments);
+
+/**
+ * GET /api/rag/documents/:id
+ * Get document details including raw_text
+ */
+router.get('/documents/:id', verifySupabaseAuth, getDocument);
 
 /**
  * DELETE /api/rag/documents/:id

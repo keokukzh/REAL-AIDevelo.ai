@@ -205,6 +205,67 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
 };
 
 /**
+ * GET /api/rag/documents/:id
+ * Get document details including raw_text
+ */
+export const getDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+    const documentId = req.params.id;
+
+    if (!documentId) {
+      return next(new BadRequestError('Document ID is required'));
+    }
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[RAGController] Get document: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Query document with raw_text
+    const { data: document, error } = await supabaseAdmin
+      .from('rag_documents')
+      .select('id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, raw_text, created_at, updated_at')
+      .eq('id', documentId)
+      .eq('location_id', locationId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[RAGController] Error fetching document:', error);
+      return next(new InternalServerError(`Failed to fetch document: ${error.message || 'Unknown error'}`));
+    }
+
+    if (!document) {
+      return next(new NotFoundError('Document not found or does not belong to your location'));
+    }
+
+    res.json({
+      success: true,
+      data: document,
+    });
+  } catch (error: any) {
+    console.error('[RAGController] Error in getDocument:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+};
+
+/**
  * DELETE /api/rag/documents/:id
  * Delete document and its chunks
  */

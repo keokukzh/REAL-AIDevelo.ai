@@ -20,6 +20,7 @@ const VoiceEditPage = React.lazy(() => import('./pages/VoiceEditPage').then(m =>
 const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').then(m => ({ default: m.AgentDetailsPage })));
 const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
 const CallsPage = React.lazy(() => import('./pages/CallsPage').then(m => ({ default: m.CallsPage })));
+const KnowledgeBasePage = React.lazy(() => import('./pages/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -126,6 +127,13 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <CallsPage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/knowledge-base" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <KnowledgeBasePage />
                         </Suspense>
                       </ProtectedRoute>
                     } />

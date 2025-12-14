@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Phone, Calendar, PhoneCall, Settings } from 'lucide-react';
+import { LayoutDashboard, Phone, Calendar, PhoneCall, Settings, BookOpen } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -12,7 +12,8 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
   { label: 'Telefon', path: '/dashboard/phone', icon: <Phone size={20} /> },
   { label: 'Kalender', path: '/dashboard/calendar', icon: <Calendar size={20} /> },
-  { label: 'Calls/Logs', path: '/dashboard/calls', icon: <PhoneCall size={20} /> },
+  { label: 'Calls/Logs', path: '/calls', icon: <PhoneCall size={20} /> },
+  { label: 'Knowledge Base', path: '/knowledge-base', icon: <BookOpen size={20} /> },
   { label: 'Einstellungen', path: '/dashboard/settings', icon: <Settings size={20} /> },
 ];
 
@@ -23,6 +24,9 @@ export const SideNav: React.FC = () => {
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return location.pathname === '/dashboard';
+    }
+    if (path === '/knowledge-base') {
+      return location.pathname === '/knowledge-base';
     }
     return location.pathname.startsWith(path);
   };
