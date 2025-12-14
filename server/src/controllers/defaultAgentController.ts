@@ -61,6 +61,9 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
       outcome: z.string().nullable(),
     })
   ),
+  phone_number: z.string().nullable().optional(),
+  calendar_provider: z.string().nullable().optional(),
+  last_activity: z.string().nullable().optional(),
 });
 
 type DefaultAgentResponse = z.infer<typeof DefaultAgentResponseSchema>;
@@ -249,10 +252,10 @@ export const getDashboardOverview = async (
     const location = await ensureDefaultLocation(org.id);
     const agentConfig = await ensureAgentConfig(location.id);
 
-    // Load phone status
+    // Load phone status and number
     const { data: phoneData } = await supabaseAdmin
       .from('phone_numbers')
-      .select('status')
+      .select('status, e164, customer_public_number')
       .eq('location_id', location.id)
       .limit(1)
       .maybeSingle();
@@ -264,16 +267,18 @@ export const getDashboardOverview = async (
     } else if (phoneStatus === 'compliance_needed') {
       phoneStatusEnum = 'needs_compliance';
     }
+    const phoneNumber = phoneData?.e164 || phoneData?.customer_public_number || null;
 
-    // Load calendar status
+    // Load calendar status and provider
     const { data: calendarData } = await supabaseAdmin
       .from('google_calendar_integrations')
-      .select('id')
+      .select('id, connected_email')
       .eq('location_id', location.id)
       .limit(1)
       .maybeSingle();
 
     const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
+    const calendarProvider = calendarData ? 'google' : null; // Currently only Google is supported
 
     // Determine agent status
     const agentStatus: 'ready' | 'needs_setup' =
@@ -290,6 +295,11 @@ export const getDashboardOverview = async (
     if (callsError) {
       console.error('[DefaultAgentController] Error loading recent calls:', callsError);
     }
+
+    // Calculate last activity (most recent call timestamp)
+    const lastActivity = recentCalls && recentCalls.length > 0 
+      ? recentCalls[0].started_at 
+      : null;
 
     const response: DashboardOverviewResponse = {
       user: {
@@ -330,6 +340,9 @@ export const getDashboardOverview = async (
         duration_sec: call.duration_sec || null,
         outcome: call.outcome || null,
       })),
+      phone_number: phoneNumber,
+      calendar_provider: calendarProvider,
+      last_activity: lastActivity,
     };
 
     // Validate response with Zod

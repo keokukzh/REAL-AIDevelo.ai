@@ -42,6 +42,10 @@ export interface DashboardOverview {
     duration_sec: number | null;
     outcome: string | null;
   }>;
+  phone_number?: string | null;
+  calendar_provider?: string | null;
+  last_activity?: string | null;
+  _backendSha?: string; // Internal field for UI display
 }
 
 export const useDashboardOverview = () => {
@@ -81,7 +85,14 @@ export const useDashboardOverview = () => {
         if (!response.data?.success || !response.data.data) {
           throw new Error('Failed to load dashboard overview');
         }
-        return response.data.data;
+        // Extract backend SHA from response headers (axios lowercases header names)
+        const backendSha = response.headers['x-aidevelo-backend-sha'] || 
+                          response.headers['X-Aidevelo-Backend-Sha'] || 
+                          'unknown';
+        return {
+          ...response.data.data,
+          _backendSha: typeof backendSha === 'string' ? backendSha : 'unknown',
+        };
       } catch (error: any) {
         // Preserve status code for 401 handling
         if (error.response?.status) {

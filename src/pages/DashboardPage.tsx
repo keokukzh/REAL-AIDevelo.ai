@@ -1,25 +1,95 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
+import { StatusCard } from '../components/dashboard/StatusCard';
+import { SystemHealth } from '../components/dashboard/SystemHealth';
+import { QuickActions } from '../components/dashboard/QuickActions';
+import { RecentCallsTable } from '../components/dashboard/RecentCallsTable';
+import { apiClient } from '../services/apiClient';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const { data: overview, isLoading, error } = useDashboardOverview();
   const updateAgentConfig = useUpdateAgentConfig();
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   // Handle 401 - redirect to login (NOT onboarding)
-  // Onboarding/Wizard should be based on status flags from overview (needs_setup), not on 401
   React.useEffect(() => {
     if (error && 'status' in error && error.status === 401) {
       logout();
       navigate('/login', { replace: true });
     }
   }, [error, logout, navigate]);
+
+  // Update last refresh time when data updates
+  React.useEffect(() => {
+    if (overview) {
+      setLastRefresh(new Date());
+    }
+  }, [overview]);
+
+  // Handle calendar OAuth connection
+  const handleConnectCalendar = async () => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
+        '/calendar/google/auth'
+      );
+      if (response.data?.success && response.data.data?.authUrl) {
+        // Open OAuth window
+        const width = 600;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        globalThis.open(
+          response.data.data.authUrl,
+          'Calendar OAuth',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+      }
+    } catch (error) {
+      console.error('[DashboardPage] Error connecting calendar:', error);
+      alert('Fehler beim Verbinden des Kalenders. Bitte versuche es erneut.');
+    }
+  };
+
+  // Handle phone connection (placeholder)
+  const handleConnectPhone = () => {
+    // Phone connection flow - to be implemented in future iteration
+    alert('Telefon-Verbindung wird noch implementiert.');
+  };
+
+  // Handle webhook status check
+  const handleCheckWebhook = () => {
+    const webhookUrl = `${globalThis.location.origin}/api/twilio/voice/inbound`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(webhookUrl).then(() => {
+        alert(`Webhook URL kopiert: ${webhookUrl}`);
+      }).catch(() => {
+        alert(`Webhook URL: ${webhookUrl}`);
+      });
+    } else {
+      alert(`Webhook URL: ${webhookUrl}`);
+    }
+  };
+
+  // Handle test agent
+  const handleTestAgent = () => {
+    // Test agent flow - to be implemented in future iteration
+    alert('Agent-Test wird noch implementiert.');
+  };
+
+  // Scroll to calls section
+  const handleViewCalls = () => {
+    const callsSection = document.getElementById('recent-calls');
+    if (callsSection) {
+      callsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -49,148 +119,238 @@ export const DashboardPage = () => {
   }
 
   const userName = user?.email || overview.user.email || 'Benutzer';
-  const agentStatus = overview.status.agent === 'ready' ? 'Bereit' : 'Einrichtung nötig';
-  const phoneStatus =
-    overview.status.phone === 'connected'
-      ? 'Verbunden'
-      : overview.status.phone === 'needs_compliance'
-      ? 'Compliance nötig'
-      : 'Nicht verbunden';
-  const calendarStatus = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
+  const isAgentActive = overview.agent_config.setup_state === 'ready';
+  const showWizard = !isAgentActive;
+  const showRestartSetup = isAgentActive;
 
-  const showWizard = overview.agent_config.setup_state !== 'ready';
-  const showRestartSetup = overview.agent_config.setup_state === 'ready';
+  // Determine status for each card
+  const agentStatus = isAgentActive ? 'active' : 'warning';
+  const agentStatusText = isAgentActive ? 'Agent: Aktiv' : 'Agent: Einrichtung nötig';
 
-  const handleWizardComplete = () => {
-    // Wizard completion is handled by the mutation invalidating the query
-    // The component will re-render with updated data
-  };
+  const phoneStatus = overview.status.phone === 'connected' 
+    ? 'active' 
+    : overview.status.phone === 'needs_compliance'
+    ? 'warning'
+    : 'inactive';
+  const phoneStatusText = overview.status.phone === 'connected'
+    ? 'Verbunden'
+    : overview.status.phone === 'needs_compliance'
+    ? 'Compliance nötig'
+    : 'Nicht verbunden';
+
+  const calendarStatus = overview.status.calendar === 'connected' ? 'active' : 'inactive';
+  const calendarStatusText = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
+
+  const callsStatus = overview.recent_calls.length > 0 ? 'active' : 'inactive';
+  const callsStatusText = overview.last_activity
+    ? `Letzte Aktivität: ${new Date(overview.last_activity).toLocaleString('de-CH', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`
+    : 'Keine Calls';
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background text-white p-6 max-w-7xl mx-auto">
       {/* Welcome Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
-        <p className="text-gray-400">Hier ist dein Dashboard</p>
+        <p className="text-gray-400">Hier ist dein Operations Dashboard</p>
+      </div>
+
+      {/* System Health */}
+      <div className="mb-6">
+        <SystemHealth 
+          backendSha={overview._backendSha} 
+          lastRefresh={lastRefresh || undefined}
+        />
       </div>
 
       {/* Setup Wizard (shown when setup_state != 'ready') */}
       {showWizard && (
-        <SetupWizard onComplete={handleWizardComplete} />
+        <div className="mb-8">
+          <SetupWizard onComplete={() => {}} />
+        </div>
       )}
 
-      {/* Status Chips */}
-      <div className="flex gap-4 mb-8">
-        <div className="px-4 py-2 bg-gray-800 rounded-lg">
-          <span className="text-sm text-gray-400">Agent:</span>
-          <span className={`ml-2 ${overview.status.agent === 'ready' ? 'text-green-400' : 'text-yellow-400'}`}>
-            {agentStatus}
-          </span>
-        </div>
-        <div className="px-4 py-2 bg-gray-800 rounded-lg">
-          <span className="text-sm text-gray-400">Telefon:</span>
-          <span
-            className={`ml-2 ${
-              overview.status.phone === 'connected'
-                ? 'text-green-400'
-                : overview.status.phone === 'needs_compliance'
-                ? 'text-yellow-400'
-                : 'text-gray-400'
-            }`}
-          >
-            {phoneStatus}
-          </span>
-        </div>
-        <div className="px-4 py-2 bg-gray-800 rounded-lg">
-          <span className="text-sm text-gray-400">Kalender:</span>
-          <span className={`ml-2 ${overview.status.calendar === 'connected' ? 'text-green-400' : 'text-gray-400'}`}>
-            {calendarStatus}
-          </span>
-        </div>
-      </div>
+      {/* Status Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Agent Card */}
+        <StatusCard
+          title="Agent"
+          status={agentStatus}
+          statusText={agentStatusText}
+          actions={
+            <>
+              {showRestartSetup && (
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={updateAgentConfig.isPending}
+              onClick={() => {
+                const confirmed = globalThis.confirm('Setup wirklich erneut starten?');
+                if (!confirmed) return;
+                updateAgentConfig.mutateAsync({ setup_state: 'needs_persona' }).catch((err) => {
+                  console.error('[DashboardPage] Error restarting setup:', err);
+                });
+              }}
+                >
+                  {updateAgentConfig.isPending ? 'Wird gestartet…' : 'Setup erneut starten'}
+                </button>
+              )}
+              <button
+                type="button"
+                className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
+                onClick={handleTestAgent}
+              >
+                Agent testen
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="text-gray-400">Name:</span>
+              <span className="ml-2">AIDevelo Receptionist</span>
+            </div>
+            {overview.agent_config.persona_gender && (
+              <div>
+                <span className="text-gray-400">Persona:</span>
+                <span className="ml-2">
+                  {overview.agent_config.persona_gender === 'female' ? 'Weiblich' : 'Männlich'}
+                  {overview.agent_config.persona_age_range && `, ${overview.agent_config.persona_age_range} Jahre`}
+                </span>
+              </div>
+            )}
+            {overview.agent_config.business_type && (
+              <div>
+                <span className="text-gray-400">Business:</span>
+                <span className="ml-2 capitalize">{overview.agent_config.business_type}</span>
+              </div>
+            )}
+            {Array.isArray(overview.agent_config.goals_json) && overview.agent_config.goals_json.length > 0 && (
+              <div>
+                <span className="text-gray-400">Ziele:</span>
+                <ul className="ml-4 list-disc text-xs">
+                  {overview.agent_config.goals_json.slice(0, 2).map((goal: string, idx: number) => (
+                    <li key={`goal-${goal}-${idx}`}>{goal}</li>
+                  ))}
+                  {overview.agent_config.goals_json.length > 2 && (
+                    <li className="text-gray-500">+{overview.agent_config.goals_json.length - 2} weitere</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        </StatusCard>
 
-      {/* Agent Card */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-8">
-        <div className="flex items-center justify-between mb-4 gap-4">
-          <h2 className="text-xl font-bold">Agent Konfiguration</h2>
-          {showRestartSetup && (
+        {/* Phone/Twilio Card */}
+        <StatusCard
+          title="Telefon"
+          status={phoneStatus}
+          statusText={phoneStatusText}
+          actions={
+            <>
+              <button
+                type="button"
+                className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+                onClick={handleConnectPhone}
+              >
+                Telefon verbinden
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
+                onClick={handleCheckWebhook}
+              >
+                Webhook Status
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-2 text-sm">
+            {overview.phone_number ? (
+              <div>
+                <span className="text-gray-400">Nummer:</span>
+                <span className="ml-2 font-mono">{overview.phone_number}</span>
+              </div>
+            ) : (
+              <div className="text-gray-500 text-xs">Keine Nummer zugewiesen</div>
+            )}
+          </div>
+        </StatusCard>
+
+        {/* Calendar Card */}
+        <StatusCard
+          title="Kalender"
+          status={calendarStatus}
+          statusText={calendarStatusText}
+          actions={
             <button
               type="button"
-              className="px-4 py-2 bg-accent text-black rounded hover:bg-accent/80 disabled:opacity-60 disabled:cursor-not-allowed"
-              disabled={updateAgentConfig.isPending}
-              onClick={async () => {
-                const confirmed = window.confirm('Setup wirklich erneut starten?');
-                if (!confirmed) return;
-                await updateAgentConfig.mutateAsync({ setup_state: 'needs_persona' });
-              }}
+              className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+              onClick={handleConnectCalendar}
+              disabled={overview.status.calendar === 'connected'}
             >
-              {updateAgentConfig.isPending ? 'Wird gestartet…' : 'Setup erneut starten'}
+              {overview.status.calendar === 'connected' ? 'Verbunden' : 'Kalender verbinden'}
             </button>
-          )}
-        </div>
-        <div className="space-y-3">
-          <div>
-            <span className="text-gray-400">Agent Name:</span>
-            <span className="ml-2">AIDevelo Receptionist</span>
+          }
+        >
+          <div className="space-y-2 text-sm">
+            {overview.calendar_provider ? (
+              <div>
+                <span className="text-gray-400">Provider:</span>
+                <span className="ml-2 capitalize">{overview.calendar_provider}</span>
+              </div>
+            ) : (
+              <div className="text-gray-500 text-xs">Nicht verbunden</div>
+            )}
           </div>
-          {overview.agent_config.persona_gender && (
+        </StatusCard>
+
+        {/* Calls/Logs Card */}
+        <StatusCard
+          title="Calls/Logs"
+          status={callsStatus}
+          statusText={callsStatusText}
+          actions={
+            <button
+              type="button"
+              className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
+              onClick={handleViewCalls}
+            >
+              Calls ansehen
+            </button>
+          }
+        >
+          <div className="space-y-2 text-sm">
             <div>
-              <span className="text-gray-400">Persona:</span>
-              <span className="ml-2">
-                {overview.agent_config.persona_gender === 'female' ? 'Weiblich' : 'Männlich'}
-                {overview.agent_config.persona_age_range && `, ${overview.agent_config.persona_age_range} Jahre`}
-              </span>
+              <span className="text-gray-400">Anrufe:</span>
+              <span className="ml-2">{overview.recent_calls.length}</span>
             </div>
-          )}
-          {overview.agent_config.eleven_agent_id && (
-            <div>
-              <span className="text-gray-400">ElevenLabs Agent ID:</span>
-              <span className="ml-2 font-mono text-sm">{overview.agent_config.eleven_agent_id}</span>
-            </div>
-          )}
-          {overview.agent_config.business_type && (
-            <div>
-              <span className="text-gray-400">Business Type:</span>
-              <span className="ml-2">{overview.agent_config.business_type}</span>
-            </div>
-          )}
-          {Array.isArray(overview.agent_config.goals_json) && overview.agent_config.goals_json.length > 0 && (
-            <div>
-              <span className="text-gray-400">Ziele:</span>
-              <ul className="ml-4 list-disc">
-                {overview.agent_config.goals_json.map((goal: string, idx: number) => (
-                  <li key={idx}>{goal}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+          </div>
+        </StatusCard>
       </div>
 
-      {/* Recent Calls */}
-      {overview.recent_calls.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Letzte Anrufe</h2>
-          <div className="space-y-2">
-            {overview.recent_calls.map((call) => (
-              <div key={call.id} className="flex justify-between items-center py-2 border-b border-gray-700">
-                <div>
-                  <span className="text-sm text-gray-400">
-                    {call.direction === 'inbound' ? 'Eingehend' : 'Ausgehend'}
-                  </span>
-                  <span className="ml-2">
-                    {call.from_e164 || 'Unbekannt'} → {call.to_e164 || 'Unbekannt'}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-400">
-                  {new Date(call.started_at).toLocaleString('de-CH')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+        <QuickActions
+          actions={[
+            { label: 'Telefon verbinden', onClick: handleConnectPhone },
+            { label: 'Kalender verbinden', onClick: handleConnectCalendar, disabled: overview.status.calendar === 'connected' },
+            { label: 'Webhook Status prüfen', onClick: handleCheckWebhook },
+            { label: 'Letzte Calls ansehen', onClick: handleViewCalls },
+            { label: 'Agent testen', onClick: handleTestAgent },
+          ]}
+        />
+      </div>
+
+      {/* Recent Calls Table */}
+      <div id="recent-calls" className="mb-8">
+        <RecentCallsTable calls={overview.recent_calls} />
+      </div>
     </div>
   );
 };
-
