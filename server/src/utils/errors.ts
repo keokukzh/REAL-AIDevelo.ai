@@ -21,31 +21,31 @@ export class AppError extends Error {
 
 export class ValidationError extends AppError {
   constructor(message: string, public readonly details?: unknown) {
-    super(400, message);
+    super(422, message, true, 'VALIDATION_ERROR');
   }
 }
 
 export class BadRequestError extends AppError {
   constructor(message: string, public readonly details?: unknown) {
-    super(400, message);
+    super(400, message, true, 'BAD_REQUEST');
   }
 }
 
 export class NotFoundError extends AppError {
   constructor(resource: string) {
-    super(404, `${resource} not found`);
+    super(404, `${resource} not found`, true, 'NOT_FOUND');
   }
 }
 
 export class UnauthorizedError extends AppError {
   constructor(message = 'Unauthorized') {
-    super(401, message);
+    super(401, message, true, 'UNAUTHORIZED');
   }
 }
 
 export class ForbiddenError extends AppError {
   constructor(message = 'Forbidden') {
-    super(403, message);
+    super(403, message, true, 'FORBIDDEN');
   }
 }
 

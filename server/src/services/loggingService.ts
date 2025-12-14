@@ -1,5 +1,7 @@
 import { getPool } from './database';
 import { AppError } from '../utils/errors';
+import { Request } from 'express';
+import { config } from '../config/env';
 
 export interface CallRecord {
   id: string;
@@ -280,5 +282,163 @@ export class AuditLoggingService {
       ipAddress: row.ip_address,
       userAgent: row.user_agent,
     };
+  }
+}
+
+/**
+ * Structured Logging Service
+ * Provides JSON-formatted logging with request correlation
+ */
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export interface LogContext {
+  requestId?: string;
+  userId?: string;
+  orgId?: string;
+  locationId?: string;
+  method?: string;
+  path?: string;
+  ip?: string;
+  userAgent?: string;
+  [key: string]: unknown;
+}
+
+export class StructuredLoggingService {
+  /**
+   * Get request ID from request or generate new one
+   */
+  static getRequestId(req?: Request): string {
+    if (req) {
+      return (req.headers['x-request-id'] as string) || 
+        `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
+    return `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  /**
+   * Extract context from request
+   */
+  static extractContext(req?: Request): LogContext {
+    const context: LogContext = {};
+    
+    if (req) {
+      context.requestId = this.getRequestId(req);
+      context.method = req.method;
+      context.path = req.path;
+      context.ip = req.ip || req.socket.remoteAddress;
+      context.userAgent = req.headers['user-agent'];
+      
+      // Extract auth context if available
+      if ((req as any).auth) {
+        context.userId = (req as any).auth.userId;
+        context.orgId = (req as any).auth.orgId;
+        context.locationId = (req as any).auth.locationId;
+      }
+    }
+    
+    return context;
+  }
+
+  /**
+   * Format log entry as JSON
+   */
+  private static formatLog(
+    level: LogLevel,
+    message: string,
+    context: LogContext,
+    error?: Error
+  ): string {
+    const logEntry: any = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...context,
+    };
+
+    if (error) {
+      logEntry.error = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 10).join('\n'), // First 10 lines
+      };
+      
+      // Extract additional error properties
+      if ((error as any).code) logEntry.error.code = (error as any).code;
+      if ((error as any).statusCode) logEntry.error.statusCode = (error as any).statusCode;
+      if ((error as any).supabase) logEntry.error.supabase = (error as any).supabase;
+    }
+
+    return JSON.stringify(logEntry);
+  }
+
+  /**
+   * Log debug message
+   */
+  static debug(message: string, context: LogContext = {}, req?: Request): void {
+    const fullContext = { ...this.extractContext(req), ...context };
+    if (config.nodeEnv === 'development' || process.env.DEBUG_LOGS === 'true') {
+      console.debug(this.formatLog('debug', message, fullContext));
+    }
+  }
+
+  /**
+   * Log info message
+   */
+  static info(message: string, context: LogContext = {}, req?: Request): void {
+    const fullContext = { ...this.extractContext(req), ...context };
+    console.log(this.formatLog('info', message, fullContext));
+  }
+
+  /**
+   * Log warning message
+   */
+  static warn(message: string, context: LogContext = {}, req?: Request): void {
+    const fullContext = { ...this.extractContext(req), ...context };
+    console.warn(this.formatLog('warn', message, fullContext));
+  }
+
+  /**
+   * Log error message
+   */
+  static error(
+    message: string,
+    error?: Error,
+    context: LogContext = {},
+    req?: Request
+  ): void {
+    const fullContext = { ...this.extractContext(req), ...context };
+    console.error(this.formatLog('error', message, fullContext, error));
+  }
+
+  /**
+   * Log request start
+   */
+  static logRequest(req: Request): void {
+    const context = this.extractContext(req);
+    this.info(`Request started: ${req.method} ${req.path}`, context, req);
+  }
+
+  /**
+   * Log request completion
+   */
+  static logRequestComplete(
+    req: Request,
+    statusCode: number,
+    durationMs: number
+  ): void {
+    const context = {
+      ...this.extractContext(req),
+      statusCode,
+      durationMs,
+    };
+    
+    const level = statusCode >= 400 ? 'warn' : 'info';
+    const message = `Request completed: ${req.method} ${req.path} - ${statusCode} (${durationMs}ms)`;
+    
+    if (level === 'warn') {
+      this.warn(message, context, req);
+    } else {
+      this.info(message, context, req);
+    }
   }
 }

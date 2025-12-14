@@ -68,6 +68,7 @@ if (config.databaseUrl) {
 
 import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
+import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
@@ -78,6 +79,9 @@ import {
   rateLimitMiddleware,
   varyOriginMiddleware,
 } from './middleware/security';
+import { timeoutMiddleware } from './middleware/timeout';
+import { cacheMiddleware } from './middleware/cache';
+import { StructuredLoggingService } from './services/loggingService';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import dbRoutes from './routes/dbRoutes';
@@ -116,8 +120,27 @@ app.use(corsMiddleware);
 app.use(varyOriginMiddleware);
 app.use(rateLimitMiddleware);
 
+// Compression (for JSON responses)
+app.use(compression({ filter: (req, res) => {
+  // Only compress JSON responses
+  if (req.headers['accept']?.includes('application/json') || 
+      res.getHeader('content-type')?.toString().includes('application/json')) {
+    return compression.filter(req, res);
+  }
+  return false;
+}}));
+
+// Request timeout middleware
+app.use(timeoutMiddleware);
+
 // Logging
 app.use(morgan(config.isProduction ? 'combined' : 'dev'));
+
+// Structured request logging
+app.use((req: Request, res: Response, next: NextFunction) => {
+  StructuredLoggingService.logRequest(req);
+  next();
+});
 
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit payload size
@@ -138,20 +161,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Request logging middleware (after body parser)
+// Response logging middleware (after body parser)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  // Skip logging for health checks to reduce noise
-  if (req.path === '/health') {
-    return next();
-  }
-  console.log('[Request]', {
-    method: req.method,
-    path: req.path,
-    url: req.url,
-    origin: req.headers.origin,
-    contentType: req.headers['content-type'],
-    bodySize: req.body ? JSON.stringify(req.body).length : 0
-  });
+  const startTime = Date.now();
+  
+  // Override res.end to log completion
+  const originalEnd = res.end.bind(res);
+  res.end = function(chunk?: unknown, encoding?: unknown) {
+    const duration = Date.now() - startTime;
+    StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
+    return originalEnd(chunk, encoding);
+  };
+  
   next();
 });
 
@@ -161,6 +182,9 @@ if (config.isProduction) {
   const publicPath = path.join(__dirname, '../public');
   app.use(express.static(publicPath));
 }
+
+// HTTP Response Cache Middleware (for public GET endpoints)
+app.use(cacheMiddleware);
 
 // API Documentation (Swagger UI)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
