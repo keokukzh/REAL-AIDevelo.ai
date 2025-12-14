@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.href = '/';
+    globalThis.location.href = '/';
   };
 
   render() {
@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 Zur Startseite
               </Button>
               <Button 
-                onClick={() => window.location.reload()} 
+                onClick={() => globalThis.location.reload()} 
                 variant="outline"
               >
                 Seite neu laden

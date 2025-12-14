@@ -40,20 +40,36 @@ export const DashboardPage = () => {
         '/calendar/google/auth'
       );
       if (response.data?.success && response.data.data?.authUrl) {
+        // Check if this is a mock URL (for testing without OAuth configured)
+        const isMockUrl = response.data.data.authUrl.includes('/calendar/') && response.data.data.authUrl.includes('code=mock_code');
+        
+        if (isMockUrl) {
+          // For testing: show info message
+          alert('OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.');
+          return;
+        }
+
         // Open OAuth window
         const width = 600;
         const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        globalThis.open(
+        const left = globalThis.screen.width / 2 - width / 2;
+        const top = globalThis.screen.height / 2 - height / 2;
+        const authWindow = globalThis.open(
           response.data.data.authUrl,
           'Calendar OAuth',
           `width=${width},height=${height},left=${left},top=${top}`
         );
+        
+        if (!authWindow) {
+          alert('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
+        }
+      } else {
+        throw new Error('Keine Auth-URL erhalten');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DashboardPage] Error connecting calendar:', error);
-      alert('Fehler beim Verbinden des Kalenders. Bitte versuche es erneut.');
+      const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
+      alert(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
     }
   };
 
@@ -66,14 +82,19 @@ export const DashboardPage = () => {
   // Handle webhook status check
   const handleCheckWebhook = () => {
     const webhookUrl = `${globalThis.location.origin}/api/twilio/voice/inbound`;
-    if (navigator.clipboard) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(webhookUrl).then(() => {
-        alert(`Webhook URL kopiert: ${webhookUrl}`);
-      }).catch(() => {
-        alert(`Webhook URL: ${webhookUrl}`);
+        // Show success message (could be improved with toast notification)
+        const message = `Webhook URL kopiert:\n${webhookUrl}`;
+        alert(message);
+      }).catch((err) => {
+        console.warn('[DashboardPage] Failed to copy to clipboard:', err);
+        // Fallback: show URL in alert
+        alert(`Webhook URL:\n${webhookUrl}\n\n(Bitte manuell kopieren)`);
       });
     } else {
-      alert(`Webhook URL: ${webhookUrl}`);
+      // Fallback for browsers without clipboard API
+      alert(`Webhook URL:\n${webhookUrl}\n\n(Bitte manuell kopieren)`);
     }
   };
 
@@ -108,7 +129,7 @@ export const DashboardPage = () => {
             {error instanceof Error ? error.message : 'Unbekannter Fehler'}
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.location.reload()}
             className="px-4 py-2 bg-accent text-black rounded hover:bg-accent/80"
           >
             Seite neu laden
@@ -227,6 +248,22 @@ export const DashboardPage = () => {
               <div>
                 <span className="text-gray-400">Business:</span>
                 <span className="ml-2 capitalize">{overview.agent_config.business_type}</span>
+              </div>
+            )}
+            {Array.isArray(overview.agent_config.services_json) && overview.agent_config.services_json.length > 0 && (
+              <div>
+                <span className="text-gray-400">Services:</span>
+                <ul className="ml-4 list-disc text-xs">
+                  {overview.agent_config.services_json.slice(0, 2).map((service: any, idx: number) => (
+                    <li key={`service-${service.name || idx}-${idx}`}>
+                      {service.name || 'Unbenannt'}
+                      {service.durationMin && ` (${service.durationMin} Min)`}
+                    </li>
+                  ))}
+                  {overview.agent_config.services_json.length > 2 && (
+                    <li className="text-gray-500">+{overview.agent_config.services_json.length - 2} weitere</li>
+                  )}
+                </ul>
               </div>
             )}
             {Array.isArray(overview.agent_config.goals_json) && overview.agent_config.goals_json.length > 0 && (
