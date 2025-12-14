@@ -43,6 +43,7 @@ export interface DashboardOverview {
     outcome: string | null;
   }>;
   phone_number?: string | null;
+  phone_number_sid?: string | null;
   calendar_provider?: string | null;
   last_activity?: string | null;
   _backendSha?: string; // Internal field for UI display

@@ -95,6 +95,8 @@ import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import telephonyRoutes from './routes/telephonyRoutes';
+import phoneRoutes from './routes/phoneRoutes';
+import callsRoutes from './routes/callsRoutes';
 import syncRoutes from './routes/syncRoutes';
 import knowledgeRoutes from './routes/knowledgeRoutes';
 import privacyRoutes from './routes/privacyRoutes';
@@ -365,6 +367,8 @@ v1Router.use('/elevenlabs', elevenLabsRoutes);
 v1Router.use('/tests', testRoutes);
 v1Router.use('/voice', requireAuth, voiceRoutes);
 v1Router.use('/telephony', requireAuth, telephonyRoutes);
+v1Router.use('/phone', phoneRoutes); // Auth applied per-route
+v1Router.use('/calls', callsRoutes); // Auth applied per-route
 v1Router.use('/sync', requireAuth, syncRoutes);
 v1Router.use('/knowledge', requireAuth, knowledgeRoutes);
 v1Router.use('/privacy', privacyRoutes);

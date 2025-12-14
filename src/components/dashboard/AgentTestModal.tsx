@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { VoiceAgentStreamingUI } from './VoiceAgentStreamingUI';
-import { AlertCircle, Phone, Info } from 'lucide-react';
+import { AlertCircle, Phone, Info, Loader } from 'lucide-react';
+import { apiClient } from '../../services/apiClient';
+import { toast } from '../ui/Toast';
 
 interface AgentTestModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   elevenAgentId 
 }) => {
   const [testMode, setTestMode] = useState<'info' | 'streaming'>('info');
+  const [testPhoneNumber, setTestPhoneNumber] = useState('');
+  const [isMakingCall, setIsMakingCall] = useState(false);
 
   // Check if we have the required data for streaming
   const canStream = !!locationId && !!agentConfigId;
@@ -29,8 +33,39 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
     }
   };
 
+  const handleMakeTestCall = async () => {
+    if (!testPhoneNumber.trim()) {
+      toast.warning('Bitte gib eine Telefonnummer ein');
+      return;
+    }
+
+    setIsMakingCall(true);
+    try {
+      const response = await apiClient.post<{ success: boolean; data: { callSid: string; status: string } }>(
+        '/calls/test',
+        {
+          to: testPhoneNumber.trim(),
+        }
+      );
+
+      if (response.data?.success) {
+        toast.success(`Testanruf gestartet! Call SID: ${response.data.data.callSid}`);
+        setTestPhoneNumber('');
+      } else {
+        throw new Error('Testanruf fehlgeschlagen');
+      }
+    } catch (err: any) {
+      console.error('[AgentTestModal] Error making test call:', err);
+      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Starten des Testanrufs';
+      toast.error(errorMsg);
+    } finally {
+      setIsMakingCall(false);
+    }
+  };
+
   const handleClose = () => {
     setTestMode('info');
+    setTestPhoneNumber('');
     onClose();
   };
 
@@ -75,12 +110,53 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                   Starte einen Testanruf mit dem Voice Agent. Du kannst mit dem Agent sprechen 
                   und die Antworten in Echtzeit hören.
                 </p>
-                <button
-                  onClick={handleStartTest}
-                  className="w-full px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors"
-                >
-                  Testanruf starten
-                </button>
+                
+                {/* Test Call via Twilio */}
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Telefonnummer für Testanruf (E.164 Format, z.B. +41791234567)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={testPhoneNumber}
+                      onChange={(e) => setTestPhoneNumber(e.target.value)}
+                      placeholder="+41791234567"
+                      className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                      disabled={isMakingCall}
+                    />
+                    <button
+                      onClick={handleMakeTestCall}
+                      disabled={isMakingCall || !testPhoneNumber.trim()}
+                      className="px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isMakingCall ? (
+                        <>
+                          <Loader className="animate-spin" size={16} />
+                          Wird angerufen...
+                        </>
+                      ) : (
+                        <>
+                          <Phone size={16} />
+                          Anrufen
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Streaming Test (Alternative) */}
+                <div className="pt-4 border-t border-gray-700">
+                  <p className="text-xs text-gray-400 mb-3">
+                    Oder teste den Agent direkt im Browser:
+                  </p>
+                  <button
+                    onClick={handleStartTest}
+                    className="w-full px-4 py-2 bg-gray-700 text-white rounded font-medium hover:bg-gray-600 transition-colors"
+                  >
+                    Browser-Test starten
+                  </button>
+                </div>
               </div>
             </div>
           )}

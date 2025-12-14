@@ -62,6 +62,7 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
     })
   ),
   phone_number: z.string().nullable().optional(),
+  phone_number_sid: z.string().nullable().optional(),
   calendar_provider: z.string().nullable().optional(),
   last_activity: z.string().nullable().optional(),
 });
@@ -255,7 +256,7 @@ export const getDashboardOverview = async (
     // Load phone status and number
     const { data: phoneData } = await supabaseAdmin
       .from('phone_numbers')
-      .select('status, e164, customer_public_number')
+      .select('status, e164, customer_public_number, twilio_number_sid')
       .eq('location_id', location.id)
       .limit(1)
       .maybeSingle();
@@ -341,6 +342,7 @@ export const getDashboardOverview = async (
         outcome: call.outcome || null,
       })),
       phone_number: phoneNumber,
+      phone_number_sid: phoneData?.twilio_number_sid || null,
       calendar_provider: calendarProvider,
       last_activity: lastActivity,
     };

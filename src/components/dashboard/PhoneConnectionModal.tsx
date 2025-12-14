@@ -58,7 +58,7 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
     setError(null);
     try {
       const response = await apiClient.get<{ success: boolean; data: PhoneNumber[] }>(
-        '/telephony/numbers?country=CH'
+        '/phone/numbers?country=CH'
       );
       if (response.data?.success && Array.isArray(response.data.data)) {
         setAvailableNumbers(response.data.data);
@@ -85,17 +85,23 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
     setError(null);
 
     try {
-      // Use the assign endpoint with body payload
-      const response = await apiClient.post<{ success: boolean; data: any }>(
-        '/telephony/assign',
+      // Find the selected number to get the phone number string
+      const selectedNumber = availableNumbers.find(n => n.id === selectedNumberId);
+      if (!selectedNumber) {
+        throw new Error('Ausgewählte Nummer nicht gefunden');
+      }
+
+      // Use the new connect endpoint
+      const response = await apiClient.post<{ success: boolean; message?: string }>(
+        '/phone/connect',
         {
-          agentId: agentConfigId,
-          phoneNumberId: selectedNumberId,
+          phoneNumberSid: selectedNumberId,
+          phoneNumber: selectedNumber.number,
         }
       );
 
       if (response.data?.success) {
-        toast.success('Telefonnummer erfolgreich zugewiesen');
+        toast.success('Telefonnummer erfolgreich verbunden');
         
         // Invalidate dashboard query to refresh data
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
@@ -108,11 +114,11 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
           onClose();
         }, 1000);
       } else {
-        throw new Error('Zuweisung fehlgeschlagen');
+        throw new Error('Verbindung fehlgeschlagen');
       }
     } catch (err: any) {
-      console.error('[PhoneConnectionModal] Error assigning number:', err);
-      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Zuweisen der Telefonnummer';
+      console.error('[PhoneConnectionModal] Error connecting number:', err);
+      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Verbinden der Telefonnummer';
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {

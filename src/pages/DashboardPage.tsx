@@ -12,6 +12,7 @@ import { RecentCallsTable } from '../components/dashboard/RecentCallsTable';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
+import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
 
@@ -87,19 +88,35 @@ export const DashboardPage = () => {
   };
 
   // Handle webhook status check
-  const handleCheckWebhook = () => {
-    const webhookUrl = `${globalThis.location.origin}/api/twilio/voice/inbound`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(webhookUrl).then(() => {
-        toast.success(`Webhook URL kopiert: ${webhookUrl}`);
-      }).catch((err) => {
-        console.warn('[DashboardPage] Failed to copy to clipboard:', err);
-        // Fallback: show URL in toast with error
-        toast.error(`Webhook URL konnte nicht kopiert werden. Bitte manuell kopieren: ${webhookUrl}`);
-      });
-    } else {
-      // Fallback for browsers without clipboard API
-      toast.info(`Webhook URL: ${webhookUrl}\n\n(Bitte manuell kopieren)`);
+  const handleCheckWebhook = async () => {
+    if (!overview?.phone_number_sid) {
+      toast.warning('Bitte verbinde zuerst eine Telefonnummer');
+      return;
+    }
+
+    try {
+      const phoneResponse = await apiClient.get<{ success: boolean; data: any }>(
+        '/phone/webhook-status',
+        {
+          params: {
+            phoneNumberSid: overview.phone_number_sid,
+          },
+        }
+      );
+
+      if (phoneResponse.data?.success) {
+        const { current, expected, isConfigured } = phoneResponse.data.data;
+        if (isConfigured) {
+          toast.success('Webhooks sind korrekt konfiguriert');
+        } else {
+          const message = `Webhooks nicht konfiguriert.\n\nErwartet:\nVoice: ${expected.voiceUrl}\nStatus: ${expected.statusCallback}\n\nAktuell:\nVoice: ${current.voiceUrl || 'Nicht gesetzt'}\nStatus: ${current.statusCallback || 'Nicht gesetzt'}`;
+          toast.warning(message);
+        }
+      }
+    } catch (err: any) {
+      console.error('[DashboardPage] Error checking webhook status:', err);
+      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Prüfen des Webhook-Status';
+      toast.error(errorMsg);
     }
   };
 
@@ -183,12 +200,17 @@ export const DashboardPage = () => {
     : 'Keine Calls';
 
   return (
-    <div className="min-h-screen bg-background text-white p-6 max-w-7xl mx-auto">
-      {/* Welcome Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
-        <p className="text-gray-400">Hier ist dein Operations Dashboard</p>
-      </div>
+    <div className="min-h-screen bg-background text-white flex">
+      {/* Side Navigation */}
+      <SideNav />
+
+      {/* Main Content */}
+      <div className="flex-1 p-6 max-w-7xl mx-auto">
+        {/* Welcome Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
+          <p className="text-gray-400">Hier ist dein Operations Dashboard</p>
+        </div>
 
       {/* System Health */}
       <div className="mb-6">
@@ -428,6 +450,7 @@ export const DashboardPage = () => {
           // Dashboard will automatically refresh via query invalidation
         }}
       />
+      </div>
     </div>
   );
 };
