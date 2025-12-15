@@ -39,7 +39,7 @@ export function mapCallsToChartData(calls: DashboardOverview['recent_calls']): C
     return hours;
   }
 
-  // Group calls by hour (last 24 hours)
+  // Group calls by actual hour of day (last 24 hours)
   const now = new Date();
   const hourMap = new Map<string, number>();
   
@@ -49,14 +49,17 @@ export function mapCallsToChartData(calls: DashboardOverview['recent_calls']): C
     hourMap.set(`${hour}:00`, 0);
   }
 
-  // Count calls per hour
+  // Count calls per hour using actual hour of day from timestamp
   calls.forEach(call => {
     if (call.started_at) {
       const callDate = new Date(call.started_at);
       const hoursAgo = Math.floor((now.getTime() - callDate.getTime()) / (1000 * 60 * 60));
       
+      // Only include calls from the last 24 hours
       if (hoursAgo >= 0 && hoursAgo < 24) {
-        const hour = String(23 - hoursAgo).padStart(2, '0');
+        // Use actual hour of day from the call's timestamp (0-23)
+        const hourOfDay = callDate.getHours();
+        const hour = String(hourOfDay).padStart(2, '0');
         const key = `${hour}:00`;
         hourMap.set(key, (hourMap.get(key) || 0) + 1);
       }
