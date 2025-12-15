@@ -59,6 +59,15 @@ const getOptionalEnvVars = () => ({
   GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '',
   GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '',
   GOOGLE_OAUTH_REDIRECT_URL: process.env.GOOGLE_OAUTH_REDIRECT_URL || '',
+  // SMTP Email (for scheduled reports)
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: process.env.SMTP_PORT || '587',
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  SMTP_FROM: process.env.SMTP_FROM || '',
+  // Scheduled Reports
+  ENABLE_SCHEDULED_REPORTS: process.env.ENABLE_SCHEDULED_REPORTS || 'false',
+  CRON_SECRET: process.env.CRON_SECRET || '',
 });
 
 const validateEnv = () => {
@@ -193,6 +202,15 @@ export const config = {
   googleOAuthRedirectUrl: optionalEnvVars.GOOGLE_OAUTH_REDIRECT_URL,
   twilioAuthToken: optionalEnvVars.TWILIO_AUTH_TOKEN,
   twilioStreamToken: optionalEnvVars.TWILIO_STREAM_TOKEN,
+  // SMTP Email
+  smtpHost: optionalEnvVars.SMTP_HOST,
+  smtpPort: optionalEnvVars.SMTP_PORT,
+  smtpUser: optionalEnvVars.SMTP_USER,
+  smtpPass: optionalEnvVars.SMTP_PASS,
+  smtpFrom: optionalEnvVars.SMTP_FROM,
+  // Scheduled Reports
+  enableScheduledReports: optionalEnvVars.ENABLE_SCHEDULED_REPORTS === 'true',
+  cronSecret: optionalEnvVars.CRON_SECRET,
   // Dev bypass auth (only in development/test)
   devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
   devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',
