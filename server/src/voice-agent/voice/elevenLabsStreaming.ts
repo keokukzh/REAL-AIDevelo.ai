@@ -17,6 +17,18 @@ export interface ElevenLabsStreamCallbacks {
   onClose?: () => void;
   onOpen?: () => void;
   onConversationInitiated?: (conversationId: string) => void;
+  onRagQuery?: (stats: {
+    query: string;
+    resultsCount: number;
+    injectedChars: number;
+    topSources: Array<{
+      documentId: string;
+      chunkIndex: number;
+      score: number;
+      title?: string;
+      fileName?: string;
+    }>;
+  }) => void;
 }
 
 export interface ConversationConfig {
@@ -188,6 +200,14 @@ export class ElevenLabsStreamingClient {
           ragInjectedChars = ragContext.injectedChars;
 
           console.log(`[RAG] query="${userInput.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${this.config.customerId}`);
+
+          // Notify bridge service about RAG query stats
+          this.callbacks.onRagQuery?.({
+            query: userInput,
+            resultsCount: ragResultCount,
+            injectedChars: ragInjectedChars,
+            topSources: ragContext.topSources,
+          });
         } catch (error: any) {
           console.error('[RAG] failed, continuing without context:', error.message);
           // Graceful fallback: continue without RAG context

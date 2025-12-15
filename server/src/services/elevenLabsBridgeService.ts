@@ -34,6 +34,13 @@ export interface BridgeSession {
       results: number;
       injectedChars: number;
     };
+    topSources?: Array<{
+      documentId: string;
+      chunkIndex: number;
+      score: number;
+      title?: string;
+      fileName?: string;
+    }>;
   };
 }
 
@@ -140,6 +147,7 @@ export class ElevenLabsBridgeService {
         totalQueries: 0,
         totalResults: 0,
         totalInjectedChars: 0,
+        topSources: [],
       },
     };
 
@@ -195,6 +203,26 @@ export class ElevenLabsBridgeService {
         onConversationInitiated: (conversationId: string) => {
           bridge.elevenConversationId = conversationId;
           console.log(`[ElevenLabsBridge] Conversation initiated callSid=${bridge.callSid} conversationId=${conversationId}`);
+        },
+        onRagQuery: (stats) => {
+          if (bridge.ragStats.enabled) {
+            bridge.ragStats.totalQueries += 1;
+            bridge.ragStats.totalResults += stats.resultsCount;
+            bridge.ragStats.totalInjectedChars += stats.injectedChars;
+            bridge.ragStats.lastQuery = {
+              query: stats.query,
+              results: stats.resultsCount,
+              injectedChars: stats.injectedChars,
+            };
+            // Update topSources (keep max 5, sorted by score descending)
+            if (stats.topSources && stats.topSources.length > 0) {
+              const combined = [...(bridge.ragStats.topSources || []), ...stats.topSources];
+              bridge.ragStats.topSources = combined
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5);
+            }
+            console.log(`[ElevenLabsBridge] RAG query callSid=${bridge.callSid} results=${stats.resultsCount} injectedChars=${stats.injectedChars} totalQueries=${bridge.ragStats.totalQueries}`);
+          }
         },
       };
 
@@ -317,6 +345,7 @@ export class ElevenLabsBridgeService {
           totalResults: bridge.ragStats.totalResults,
           totalInjectedChars: bridge.ragStats.totalInjectedChars,
           lastQuery: bridge.ragStats.lastQuery,
+          topSources: bridge.ragStats.topSources && bridge.ragStats.topSources.length > 0 ? bridge.ragStats.topSources : undefined,
         } : { enabled: false },
       };
 
@@ -328,7 +357,10 @@ export class ElevenLabsBridgeService {
       if (updateError) {
         console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, updateError);
       } else {
-        console.log(`[ElevenLabsBridge] Transcript persisted callSid=${bridge.callSid} transcriptLength=${mergedTranscript.length} segments=${finalSegmentsCount} ragQueries=${bridge.ragStats.totalQueries}`);
+        const ragInfo = bridge.ragStats.enabled
+          ? `rag.totalQueries=${bridge.ragStats.totalQueries} rag.totalResults=${bridge.ragStats.totalResults} rag.totalInjectedChars=${bridge.ragStats.totalInjectedChars}`
+          : 'rag.enabled=false';
+        console.log(`[ElevenLabsBridge] Transcript persisted callSid=${bridge.callSid} transcriptLength=${mergedTranscript.length} segments=${finalSegmentsCount} ${ragInfo}`);
       }
     } catch (error: any) {
       console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, error.message);

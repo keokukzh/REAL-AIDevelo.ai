@@ -11,6 +11,13 @@ export interface RAGContextResult {
   }>;
   resultCount: number;
   injectedChars: number;
+  topSources: Array<{
+    documentId: string;
+    chunkIndex: number;
+    score: number;
+    title?: string;
+    fileName?: string;
+  }>;
 }
 
 export interface BuildRAGContextOptions {
@@ -50,6 +57,7 @@ export class RAGContextBuilder {
           sources: [],
           resultCount: 0,
           injectedChars: 0,
+          topSources: [],
         };
       }
 
@@ -98,11 +106,18 @@ export class RAGContextBuilder {
         contextText = guardrailPrefix + contextText;
       }
 
+      // Extract top 5 sources for stats (sorted by score descending)
+      const topSources = sources
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
       return {
         contextText: contextText.trim(),
         sources,
         resultCount: sources.length,
         injectedChars: contextText.length,
+        topSources,
       };
     } catch (error) {
       // Graceful fallback: return empty context on error
@@ -112,6 +127,7 @@ export class RAGContextBuilder {
         sources: [],
         resultCount: 0,
         injectedChars: 0,
+        topSources: [],
       };
     }
   }
