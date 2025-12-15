@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
-import { StatusCard } from '../components/dashboard/StatusCard';
-import { SystemHealth } from '../components/dashboard/SystemHealth';
-import { QuickActions } from '../components/dashboard/QuickActions';
-import { RecentCallsTable } from '../components/dashboard/RecentCallsTable';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
@@ -19,13 +14,21 @@ import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { Card } from '../components/newDashboard/ui/Card';
+import { Button } from '../components/newDashboard/ui/Button';
+import { StatCard } from '../components/newDashboard/StatCard';
+import { StatusBadge } from '../components/newDashboard/StatusBadge';
+import { QuickActionButton } from '../components/newDashboard/QuickActionButton';
+import { HealthItem } from '../components/newDashboard/HealthItem';
+import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
   const queryClient = useQueryClient();
-  const updateAgentConfig = useUpdateAgentConfig();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [selectedCall, setSelectedCall] = useState<any | null>(null);
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
@@ -55,8 +58,8 @@ export const DashboardPage = () => {
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Security: Only accept messages from our frontend URL
-      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
-      if (event.origin !== frontendUrl && !event.origin.includes(window.location.hostname)) {
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || globalThis.location.origin;
+      if (event.origin !== frontendUrl && !event.origin.includes(globalThis.location.hostname)) {
         return;
       }
 
@@ -174,7 +177,7 @@ export const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <LoadingSpinner />
       </div>
     );
@@ -182,18 +185,15 @@ export const DashboardPage = () => {
 
   if (error || !overview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Fehler beim Laden</h2>
-          <p className="text-gray-400 mb-4">
+          <h2 className="text-2xl font-bold mb-4 text-slate-900">Fehler beim Laden</h2>
+          <p className="text-slate-500 mb-4">
             {error instanceof Error ? error.message : 'Unbekannter Fehler'}
           </p>
-          <button
-            onClick={() => globalThis.location.reload()}
-            className="px-4 py-2 bg-accent text-black rounded hover:bg-accent/80"
-          >
+          <Button onClick={() => globalThis.location.reload()}>
             Seite neu laden
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -202,308 +202,390 @@ export const DashboardPage = () => {
   const userName = user?.email || overview.user.email || 'Benutzer';
   const isAgentActive = overview.agent_config.setup_state === 'ready';
   const showWizard = !isAgentActive;
-  const showRestartSetup = isAgentActive;
 
-  // Determine status for each card
-  const agentStatus = isAgentActive ? 'active' : 'warning';
-  const agentStatusText = isAgentActive ? 'Agent: Aktiv' : 'Agent: Einrichtung nötig';
+  // Map data for new UI
+  const kpis = mapOverviewToKPIs(overview);
+  const chartData = mapCallsToChartData(overview.recent_calls);
+  const recentCallsTableData = overview.recent_calls.map(mapCallToTableRow);
 
-  const phoneStatus = overview.status.phone === 'connected' 
-    ? 'active' 
-    : overview.status.phone === 'needs_compliance'
-    ? 'warning'
-    : 'inactive';
-  const phoneStatusText = overview.status.phone === 'connected'
-    ? 'Verbunden'
-    : overview.status.phone === 'needs_compliance'
-    ? 'Compliance nötig'
-    : 'Nicht verbunden';
+  // Determine system health status
+  const phoneHealth: 'ok' | 'error' | 'warning' = 
+    overview.status.phone === 'connected' ? 'ok' : 
+    overview.status.phone === 'needs_compliance' ? 'warning' : 'error';
+  
+  const calendarHealth: 'ok' | 'error' | 'warning' = 
+    overview.status.calendar === 'connected' ? 'ok' : 'error';
 
-  const calendarStatus = overview.status.calendar === 'connected' ? 'active' : 'inactive';
-  const calendarStatusText = overview.status.calendar === 'connected' ? 'Verbunden' : 'Nicht verbunden';
-
-  const callsStatus = overview.recent_calls.length > 0 ? 'active' : 'inactive';
-  const callsStatusText = overview.last_activity
-    ? `Letzte Aktivität: ${new Date(overview.last_activity).toLocaleString('de-CH', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })}`
-    : 'Keine Calls';
+  const calendarConnected = overview.status.calendar === 'connected';
 
   return (
-    <div className="min-h-screen bg-background text-white flex">
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       {/* Side Navigation */}
       <SideNav />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 max-w-7xl mx-auto">
-        {/* Welcome Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Willkommen, {userName} 👋</h1>
-          <p className="text-gray-400">Hier ist dein Operations Dashboard</p>
-        </div>
+      <main className="flex-1 ml-64 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-4 text-slate-500">
+            <span className="text-sm font-medium text-slate-900">Dashboard</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-sm">Tagesübersicht</span>
+          </div>
+        </header>
 
-      {/* System Health */}
-      <div className="mb-6">
-        <SystemHealth 
-          backendSha={overview._backendSha} 
-          lastRefresh={lastRefresh || undefined}
-        />
-      </div>
+        {/* Dashboard Content */}
+        <div className="p-8 max-w-[1600px] mx-auto w-full">
+          {/* Setup Wizard (shown when setup_state != 'ready') */}
+          {showWizard && (
+            <div className="mb-8">
+              <SetupWizard onComplete={() => {}} />
+            </div>
+          )}
 
-      {/* Setup Wizard (shown when setup_state != 'ready') */}
-      {showWizard && (
-        <div className="mb-8">
-          <SetupWizard onComplete={() => {}} />
-        </div>
-      )}
-
-      {/* Status Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Agent Card */}
-        <StatusCard
-          title="Agent"
-          status={agentStatus}
-          statusText={agentStatusText}
-          actions={
-            <>
-              {showRestartSetup && (
-                <button
-                  type="button"
-                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={updateAgentConfig.isPending}
-              onClick={() => {
-                const confirmed = globalThis.confirm('Setup wirklich erneut starten?');
-                if (!confirmed) return;
-                updateAgentConfig.mutateAsync({ setup_state: 'needs_persona' }).catch((err) => {
-                  console.error('[DashboardPage] Error restarting setup:', err);
-                });
-              }}
-                >
-                  {updateAgentConfig.isPending ? 'Wird gestartet…' : 'Setup erneut starten'}
-                </button>
+          <div className="space-y-8">
+            {/* Welcome & Time Range */}
+            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  Willkommen, {userName.split('@')[0]}
+                </h1>
+                <p className="text-slate-500 mt-1">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+              </div>
+              {lastRefresh && (
+                <div className="text-xs text-slate-400">
+                  Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               )}
-              <button
-                type="button"
-                className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
-                onClick={handleTestAgent}
-              >
-                Agent testen
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="text-gray-400">Name:</span>
-              <span className="ml-2">AIDevelo Receptionist</span>
             </div>
-            {overview.agent_config.persona_gender && (
-              <div>
-                <span className="text-gray-400">Persona:</span>
-                <span className="ml-2">
-                  {overview.agent_config.persona_gender === 'female' ? 'Weiblich' : 'Männlich'}
-                  {overview.agent_config.persona_age_range && `, ${overview.agent_config.persona_age_range} Jahre`}
-                </span>
-              </div>
-            )}
-            {overview.agent_config.business_type && (
-              <div>
-                <span className="text-gray-400">Business:</span>
-                <span className="ml-2 capitalize">{overview.agent_config.business_type}</span>
-              </div>
-            )}
-            {Array.isArray(overview.agent_config.services_json) && overview.agent_config.services_json.length > 0 && (
-              <div>
-                <span className="text-gray-400">Services:</span>
-                <ul className="ml-4 list-disc text-xs">
-                  {overview.agent_config.services_json.slice(0, 2).map((service: any, idx: number) => (
-                    <li key={`service-${service.name || idx}-${idx}`}>
-                      {service.name || 'Unbenannt'}
-                      {service.durationMin && ` (${service.durationMin} Min)`}
-                    </li>
-                  ))}
-                  {overview.agent_config.services_json.length > 2 && (
-                    <li className="text-gray-500">+{overview.agent_config.services_json.length - 2} weitere</li>
+
+            {/* KPI Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard 
+                label="Gesamtanrufe" 
+                value={kpis.totalCalls} 
+                icon={Phone}
+                iconColor="text-blue-600"
+                bgColor="bg-blue-50"
+              />
+              <StatCard 
+                label="Termine gebucht" 
+                value={kpis.appointmentsBooked} 
+                icon={Calendar}
+                iconColor="text-green-600"
+                bgColor="bg-green-50"
+              />
+              <StatCard 
+                label="Verpasste Anrufe" 
+                value={kpis.missedCalls} 
+                icon={PhoneMissed}
+                iconColor="text-swiss-red"
+                bgColor="bg-red-50"
+              />
+              <StatCard 
+                label="Durchschn. Dauer" 
+                value={kpis.avgDuration} 
+                icon={Clock}
+                iconColor="text-purple-600"
+                bgColor="bg-purple-50"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Left Column (Calendar, Chart & Logs) */}
+              <div className="xl:col-span-2 space-y-8">
+                {/* Calendar Card */}
+                <Card 
+                  title="Kalender"
+                  action={
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        {calendarConnected ? (
+                          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            {overview.calendar_provider ? `${overview.calendar_provider.charAt(0).toUpperCase() + overview.calendar_provider.slice(1)} Calendar` : 'Google Calendar'}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDisconnectCalendar(); }} 
+                              className="ml-1 p-0.5 hover:bg-emerald-200 rounded text-emerald-800 transition-colors"
+                              title="Verbindung trennen"
+                              aria-label="Kalenderverbindung trennen"
+                            >
+                              <XCircle className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium">
+                              <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                              Offline
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={handleConnectCalendar} className="text-xs h-7 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                              Verbinden
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  }
+                >
+                  {calendarConnected ? (
+                    <div className="space-y-4">
+                      {overview.calendar_connected_email && (
+                        <div className="text-sm text-slate-600">
+                          Verbunden mit: <span className="font-medium">{overview.calendar_connected_email}</span>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => setIsAvailabilityModalOpen(true)}
+                          className="flex-1"
+                        >
+                          Verfügbarkeit prüfen
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => setIsCreateAppointmentModalOpen(true)}
+                          className="flex-1"
+                        >
+                          Termin erstellen
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-50/50">
+                      <p className="text-slate-500 text-sm mb-4">Kalender nicht verbunden</p>
+                      <Button size="sm" onClick={handleConnectCalendar}>Verbinden</Button>
+                    </div>
                   )}
-                </ul>
-              </div>
-            )}
-            {Array.isArray(overview.agent_config.goals_json) && overview.agent_config.goals_json.length > 0 && (
-              <div>
-                <span className="text-gray-400">Ziele:</span>
-                <ul className="ml-4 list-disc text-xs">
-                  {overview.agent_config.goals_json.slice(0, 2).map((goal: string, idx: number) => (
-                    <li key={`goal-${goal}-${idx}`}>{goal}</li>
-                  ))}
-                  {overview.agent_config.goals_json.length > 2 && (
-                    <li className="text-gray-500">+{overview.agent_config.goals_json.length - 2} weitere</li>
+                </Card>
+
+                {/* Activity Chart */}
+                <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
+                  <div className="h-[320px] w-full mt-4">
+                    {chartData.some(d => d.calls > 0) ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData}>
+                          <defs>
+                            <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#DA291C" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                          <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{fill: '#94A3B8', fontSize: 12}} 
+                            dy={10} 
+                          />
+                          <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{fill: '#94A3B8', fontSize: 12}} 
+                          />
+                          <Tooltip 
+                            contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
+                            itemStyle={{color: '#1e293b', fontWeight: 600}}
+                            cursor={{stroke: '#CBD5E1', strokeWidth: 1, strokeDasharray: '4 4'}}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="calls" 
+                            stroke="#DA291C" 
+                            strokeWidth={2} 
+                            fillOpacity={1} 
+                            fill="url(#colorCalls)" 
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-400">
+                        <p>Noch keine Anrufdaten verfügbar</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Recent Logs Table */}
+                <Card 
+                  title="Letzte Anrufe" 
+                  action={
+                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-red-50" onClick={handleViewCalls}>
+                      Alle ansehen
+                    </Button>
+                  }
+                >
+                  {recentCallsTableData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold">Status</th>
+                            <th className="px-4 py-3 font-semibold">Anrufer</th>
+                            <th className="px-4 py-3 font-semibold">Dauer</th>
+                            <th className="px-4 py-3 font-semibold text-right">Zeit</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {recentCallsTableData.slice(0, 10).map((row) => {
+                            const originalCall = overview.recent_calls.find(c => c.id === row.id);
+                            return (
+                              <tr 
+                                key={row.id} 
+                                className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                                onClick={() => originalCall && handleCallClick(originalCall)}
+                              >
+                                <td className="px-4 py-4">
+                                  <StatusBadge status={row.status} />
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="font-medium text-slate-900">{row.caller}</div>
+                                </td>
+                                <td className="px-4 py-4 text-slate-500 font-mono text-xs">{row.duration}</td>
+                                <td className="px-4 py-4 text-right">
+                                  <span className="text-slate-500">{row.timestamp}</span>
+                                  <button 
+                                    className="ml-2 p-1 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (originalCall) handleCallClick(originalCall);
+                                    }}
+                                    aria-label="Anrufdetails anzeigen"
+                                    title="Anrufdetails anzeigen"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-400">
+                      <p>Noch keine Anrufe vorhanden</p>
+                    </div>
                   )}
-                </ul>
+                </Card>
               </div>
-            )}
-          </div>
-        </StatusCard>
 
-        {/* Phone/Twilio Card */}
-        <StatusCard
-          title="Telefon"
-          status={phoneStatus}
-          statusText={phoneStatusText}
-          actions={
-            <>
-              <button
-                type="button"
-                className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-                onClick={handleConnectPhone}
-              >
-                Telefon verbinden
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
-                onClick={handleCheckWebhook}
-              >
-                Webhook Status
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-2 text-sm">
-            {overview.phone_number ? (
-              <div>
-                <span className="text-gray-400">Nummer:</span>
-                <span className="ml-2 font-mono">{overview.phone_number}</span>
-              </div>
-            ) : (
-              <div className="text-gray-500 text-xs">Keine Nummer zugewiesen</div>
-            )}
-          </div>
-        </StatusCard>
+              {/* Right Column (Agent & System) */}
+              <div className="space-y-6">
+                {/* Agent Card */}
+                <div className="rounded-2xl bg-slate-900 text-white p-6 shadow-xl relative overflow-hidden">
+                  {/* Abstract Background Shapes */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
 
-        {/* Calendar Card */}
-        <StatusCard
-          title="Kalender"
-          status={calendarStatus}
-          statusText={calendarStatusText}
-          actions={
-            overview.status.calendar === 'connected' ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-                  onClick={() => setIsAvailabilityModalOpen(true)}
-                >
-                  Verfügbarkeit prüfen
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-                  onClick={() => setIsCreateAppointmentModalOpen(true)}
-                >
-                  Termin erstellen
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                  onClick={handleDisconnectCalendar}
-                >
-                  Trennen
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-                onClick={handleConnectCalendar}
-              >
-                Kalender verbinden
-              </button>
-            )
-          }
-        >
-          <div className="space-y-2 text-sm">
-            {overview.status.calendar === 'connected' ? (
-              <>
-                {overview.calendar_provider && (
-                  <div>
-                    <span className="text-gray-400">Provider:</span>
-                    <span className="ml-2 capitalize">{overview.calendar_provider}</span>
+                  <div className="relative z-10 flex justify-between items-start mb-6">
+                    <div className="flex gap-4">
+                      <div className="relative">
+                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-lg">
+                          <Mic className="w-6 h-6 text-swiss-red" />
+                        </div>
+                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500' : 'bg-amber-500'} border-2 border-slate-900 rounded-full animate-pulse`}></div>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">AIDevelo Receptionist</h3>
+                        <div className="flex items-center gap-2 text-slate-400 text-xs mt-0.5">
+                          <Globe className="w-3 h-3" />
+                          <span>Schweizerdeutsch</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${isAgentActive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {isAgentActive ? 'Active' : 'Setup'}
+                      </span>
+                    </div>
                   </div>
-                )}
-                {overview.calendar_connected_email && (
-                  <div>
-                    <span className="text-gray-400">E-Mail:</span>
-                    <span className="ml-2">{overview.calendar_connected_email}</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-gray-500 text-xs">Nicht verbunden</div>
-            )}
-          </div>
-        </StatusCard>
 
-        {/* Calls/Logs Card */}
-        <StatusCard
-          title="Calls/Logs"
-          status={callsStatus}
-          statusText={callsStatusText}
-          actions={
-            <button
-              type="button"
-              className="px-3 py-1.5 bg-accent text-black rounded text-sm hover:bg-accent/80"
-              onClick={handleViewCalls}
-            >
-              Calls ansehen
-            </button>
-          }
-        >
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="text-gray-400">Anrufe:</span>
-              <span className="ml-2">{overview.recent_calls.length}</span>
+                  <div className="relative z-10 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs uppercase text-slate-400 font-semibold tracking-wider">Agent Status</span>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      {isAgentActive 
+                        ? 'Agent ist aktiv und bereit für Anrufe.'
+                        : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 relative z-10">
+                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                      <div className="text-[10px] text-slate-500 uppercase mb-1">Branche</div>
+                      <div className="font-medium text-sm">{overview.agent_config.business_type || 'Nicht gesetzt'}</div>
+                    </div>
+                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                      <div className="text-[10px] text-slate-500 uppercase mb-1">Nummer</div>
+                      <div className="font-medium text-sm font-mono">
+                        {overview.phone_number ? `${overview.phone_number.substring(0, 8)}...` : 'Nicht verbunden'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-slate-800 relative z-10">
+                    <Button 
+                      onClick={handleTestAgent} 
+                      className="w-full bg-swiss-red hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20"
+                    >
+                      Agent testen
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <Card title="Quick Actions">
+                  <div className="space-y-2">
+                    <QuickActionButton 
+                      icon={Phone} 
+                      label="Telefon verbinden" 
+                      onClick={handleConnectPhone}
+                      disabled={overview.status.phone === 'connected'}
+                    />
+                    <QuickActionButton 
+                      icon={Calendar} 
+                      label="Kalender verbinden" 
+                      onClick={handleConnectCalendar}
+                      disabled={calendarConnected}
+                    />
+                    <QuickActionButton 
+                      icon={Settings} 
+                      label="Webhook Status prüfen" 
+                      onClick={handleCheckWebhook}
+                    />
+                    <QuickActionButton 
+                      icon={PhoneMissed} 
+                      label="Calls ansehen" 
+                      onClick={handleViewCalls}
+                    />
+                  </div>
+                </Card>
+
+                {/* System Health Compact */}
+                <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">System Health</h4>
+                  <div className="space-y-3">
+                    <HealthItem label="Twilio Gateway" status={phoneHealth} />
+                    <HealthItem label="Google Calendar Sync" status={calendarHealth} />
+                    <HealthItem label="ElevenLabs TTS" status={overview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
+                    <HealthItem label="Supabase DB" status="ok" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </StatusCard>
-      </div>
+        </div>
+      </main>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
-        <QuickActions
-          actions={[
-            { label: 'Telefon verbinden', onClick: handleConnectPhone },
-            { label: 'Kalender verbinden', onClick: handleConnectCalendar, disabled: overview.status.calendar === 'connected' },
-            { label: 'Webhook Status prüfen', onClick: handleCheckWebhook },
-            { label: 'Letzte Calls ansehen', onClick: handleViewCalls },
-            { label: 'Agent testen', onClick: handleTestAgent },
-          ]}
-        />
-      </div>
-
-      {/* Recent Calls Table */}
-      <div id="recent-calls" className="mb-8">
-        <RecentCallsTable 
-          calls={overview.recent_calls.map((call) => ({
-            id: call.id,
-            callSid: call.callSid || '',
-            direction: call.direction,
-            from_e164: call.from_e164,
-            to_e164: call.to_e164,
-            started_at: call.started_at,
-            ended_at: call.ended_at,
-            duration_sec: call.duration_sec,
-            outcome: call.outcome,
-            notes: call.notes || {},
-          }))} 
-          onCallClick={handleCallClick} 
-        />
-      </div>
-
-      {/* Call Details Modal */}
+      {/* Modals - All existing modals remain unchanged */}
       <CallDetailsModal
         isOpen={isCallDetailsOpen}
         onClose={() => {
@@ -513,7 +595,6 @@ export const DashboardPage = () => {
         call={selectedCall}
       />
 
-      {/* Agent Test Modal */}
       <AgentTestModal
         isOpen={isAgentTestOpen}
         onClose={() => setIsAgentTestOpen(false)}
@@ -522,7 +603,6 @@ export const DashboardPage = () => {
         elevenAgentId={overview.agent_config.eleven_agent_id}
       />
 
-      {/* Phone Connection Modal */}
       <PhoneConnectionModal
         isOpen={isPhoneConnectionOpen}
         onClose={() => setIsPhoneConnectionOpen(false)}
@@ -533,13 +613,11 @@ export const DashboardPage = () => {
         }}
       />
 
-      {/* Webhook Status Modal */}
       <WebhookStatusModal
         isOpen={isWebhookStatusOpen}
         onClose={() => setIsWebhookStatusOpen(false)}
       />
 
-      {/* Availability Modal */}
       <AvailabilityModal
         isOpen={isAvailabilityModalOpen}
         onClose={() => setIsAvailabilityModalOpen(false)}
@@ -551,7 +629,6 @@ export const DashboardPage = () => {
         }}
       />
 
-      {/* Create Appointment Modal */}
       <CreateAppointmentModal
         isOpen={isCreateAppointmentModalOpen}
         onClose={() => {
@@ -561,7 +638,6 @@ export const DashboardPage = () => {
         locationId={overview.location.id}
         initialSlot={selectedSlot}
       />
-      </div>
     </div>
   );
 };

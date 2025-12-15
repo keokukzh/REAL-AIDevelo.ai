@@ -20,6 +20,7 @@ module.exports = {
         surface: '#111827',
         primary: '#1A73E8',
         accent: '#00E0FF',
+        'swiss-red': '#DA291C',
       },
       animation: {
         'blob': 'blob 7s infinite',
