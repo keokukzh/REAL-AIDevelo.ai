@@ -18,7 +18,9 @@
     "test": "vitest --config vitest.config.ts",
     "test:unit": "vitest --config vitest.config.ts run tests/unit",
     "test:integration": "vitest --config vitest.config.ts run tests/integration",
-    "test:coverage": "vitest --config vitest.config.ts run --coverage"
+    "test:coverage": "vitest --config vitest.config.ts run --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:changed": "node ../scripts/lint-changed.mjs"
   },
   "keywords": [],
   "author": "",

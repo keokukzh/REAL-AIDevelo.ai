@@ -2,6 +2,7 @@ import axios from 'axios';
 import { config } from '../config/env';
 import { supabaseAdmin } from './supabaseDb';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
+import { logger, serializeError, redact } from '../utils/logger';
 
 export interface CalendarAuthResponse {
   authUrl: string;
@@ -81,7 +82,9 @@ export const calendarService = {
     
     // If OAuth is not configured, return a mock URL for testing
     if (!clientId) {
-      console.warn('[CalendarService] OUTLOOK_CLIENT_ID not configured, returning mock auth URL');
+      logger.warn('calendar.oauth.outlook_not_configured', redact({
+        locationId,
+      }));
       return {
         authUrl: `${redirectUri}?code=mock_code&state=${state}`,
         state
@@ -169,7 +172,10 @@ export const calendarService = {
    */
   async storeToken(locationId: string, token: CalendarToken): Promise<void> {
     if (fallbackMode) {
-      console.warn('[CalendarService] Falling back to in-memory tokens (DB unavailable or TOKEN_ENCRYPTION_KEY missing)');
+      logger.warn('calendar.token.fallback_mode', redact({
+        locationId,
+        provider: token.provider,
+      }));
       calendarTokensFallback.set(locationId, token);
       return;
     }
@@ -202,21 +208,35 @@ export const calendarService = {
         throw error;
       }
 
-      console.log(`[CalendarService] Stored token for locationId=${locationId}, provider=${token.provider}, expiry_ts=${expiryTs}`);
+      logger.info('calendar.token.stored', redact({
+        locationId,
+        provider: token.provider,
+        expiryTs,
+      }));
     } catch (error) {
       // In production, never use fallback - fail hard
       if (process.env.NODE_ENV === 'production') {
-        console.error('[CalendarService] FATAL: Cannot store token in production without TOKEN_ENCRYPTION_KEY');
+        logger.error('calendar.token.store_fatal', null, redact({
+          locationId,
+          provider: token.provider,
+          reason: 'TOKEN_ENCRYPTION_KEY missing in production',
+        }));
         throw new Error('Token encryption required in production. TOKEN_ENCRYPTION_KEY must be set.');
       }
       
       // In development, fall back to in-memory only if encryption key missing
       if (!process.env.TOKEN_ENCRYPTION_KEY || (error instanceof Error && error.message.includes('TOKEN_ENCRYPTION_KEY'))) {
-        console.warn('[CalendarService] TOKEN_ENCRYPTION_KEY missing, falling back to in-memory tokens (dev only)');
+        logger.warn('calendar.token.fallback_dev', redact({
+          locationId,
+          provider: token.provider,
+        }));
         fallbackMode = true;
         calendarTokensFallback.set(locationId, token);
       } else {
-        console.error('[CalendarService] Error storing token:', error);
+        logger.error('calendar.token.store_failed', error, redact({
+          locationId,
+          provider: token.provider,
+        }));
         throw error;
       }
     }
@@ -257,7 +277,10 @@ export const calendarService = {
 
       return data;
     } catch (error) {
-      console.error('[CalendarService] Error getting token row:', error);
+      logger.error('calendar.token.get_failed', error, redact({
+        locationId,
+        provider,
+      }));
       throw error;
     }
   },
@@ -345,14 +368,24 @@ export const calendarService = {
         .eq('provider', 'google');
 
       if (error) {
-        console.error('[CalendarService] Error updating refreshed token:', error);
+        logger.error('calendar.token.refresh_update_failed', error, redact({
+          locationId,
+          provider: 'google',
+        }));
         // Still return the new token even if DB update fails
       }
 
-      console.log(`[CalendarService] Refreshed token for locationId=${locationId}, provider=google, refreshed=true, new_expiry_ts=${newExpiryTs}`);
+      logger.info('calendar.token.refreshed', redact({
+        locationId,
+        provider: 'google',
+        newExpiryTs,
+      }));
       return newAccessToken;
     } catch (error: any) {
-      console.error('[CalendarService] Error refreshing Google token:', error.response?.data || error.message);
+      logger.error('calendar.token.refresh_failed', error, redact({
+        locationId,
+        provider: 'google',
+      }));
       throw new Error(`Failed to refresh Google token: ${error.response?.data?.error_description || error.message}`);
     }
   },
@@ -372,7 +405,9 @@ export const calendarService = {
       try {
         refreshToken = decrypt(row.refresh_token_encrypted);
       } catch (error) {
-        console.error('[CalendarService] Error decrypting refresh token:', error);
+        logger.error('calendar.token.decrypt_failed', error, redact({
+          locationId,
+        }));
       }
     }
 

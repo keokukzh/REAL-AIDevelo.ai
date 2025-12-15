@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabaseDb';
 import { generateReportPdfBuffer, ReportFilters } from '../utils/pdfReportGenerator';
 import { sendMail } from './emailService';
+import { logger, serializeError, redact } from '../utils/logger';
 
 const ENABLE_SCHEDULED_REPORTS = process.env.ENABLE_SCHEDULED_REPORTS === 'true'; // Default false
 
@@ -76,12 +77,12 @@ export async function runDueReports(limit: number = 10): Promise<{
     .limit(limit);
 
   if (error) {
-    console.error('[ScheduledReports] Error fetching due reports:', error);
+    logger.error('reports.scheduled.fetch_failed', error, redact({}));
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
   if (!dueReports || dueReports.length === 0) {
-    console.log('[ScheduledReports] No due reports found');
+    logger.info('reports.scheduled.none_due', redact({}));
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
@@ -93,13 +94,21 @@ export async function runDueReports(limit: number = 10): Promise<{
       await runSingleReport(report as ScheduledReport);
       succeeded++;
     } catch (error: any) {
-      console.error(`[ScheduledReports] Failed to run report ${report.id}:`, error.message);
+      logger.error('reports.scheduled.run_failed', error, redact({
+        reportId: report.id,
+        locationId: report.location_id,
+      }));
       failed++;
     }
   }
 
   const duration = Date.now() - startTime;
-  console.log(`[ScheduledReports] runDueReports processed=${dueReports.length} ok=${succeeded} failed=${failed} durationMs=${duration}`);
+  logger.info('reports.scheduled.completed', redact({
+    processed: dueReports.length,
+    succeeded,
+    failed,
+    durationMs: duration,
+  }));
 
   return {
     processed: dueReports.length,
@@ -157,7 +166,10 @@ async function runSingleReport(report: ScheduledReport): Promise<void> {
     .eq('id', report.id);
 
   if (updateError) {
-    console.error(`[ScheduledReports] Failed to update report ${report.id}:`, updateError);
+    logger.error('reports.scheduled.update_failed', updateError, redact({
+      reportId: report.id,
+      locationId: report.location_id,
+    }));
     // Don't throw - email was sent successfully
   }
 }

@@ -5,6 +5,7 @@ import { convertTwilioAudioToPCM16, convertPCM16ToTwilioAudio } from './audioCon
 import { supabaseAdmin } from './supabaseDb';
 import { ensureAgentConfig } from './supabaseDb';
 import { voiceAgentConfig } from '../voice-agent/config';
+import { logger, serializeError, redact } from '../utils/logger';
 
 export interface TranscriptSegment {
   text: string;
@@ -68,13 +69,20 @@ export class ElevenLabsBridgeService {
         .maybeSingle();
 
       if (callLog?.location_id) {
-        console.log(`[ElevenLabsBridge] Resolved locationId from call_logs callSid=${callSid} locationId=${callLog.location_id}`);
+        logger.info('elevenlabs.bridge.location_resolved', redact({
+          callSid,
+          locationId: callLog.location_id,
+          source: 'call_logs',
+        }));
         return callLog.location_id;
       }
 
       // Method 2: Fallback - Try to get from phone_numbers if phoneNumber provided (from customParameters)
       if (phoneNumber) {
-        console.log(`[ElevenLabsBridge] Fallback: resolving locationId from phone_number callSid=${callSid} phoneNumber=${phoneNumber}`);
+        logger.info('elevenlabs.bridge.location_resolve_fallback', redact({
+          callSid,
+          phoneNumber,
+        }));
         const { data: phoneData } = await supabaseAdmin
           .from('phone_numbers')
           .select('location_id')
@@ -83,14 +91,21 @@ export class ElevenLabsBridgeService {
           .maybeSingle();
 
         if (phoneData?.location_id) {
-          console.log(`[ElevenLabsBridge] Resolved locationId from phone_numbers callSid=${callSid} locationId=${phoneData.location_id}`);
+          logger.info('elevenlabs.bridge.location_resolved', redact({
+            callSid,
+            locationId: phoneData.location_id,
+            source: 'phone_numbers',
+          }));
           return phoneData.location_id;
         }
       }
 
       return null;
     } catch (error) {
-      console.error(`[ElevenLabsBridge] Error resolving locationId for callSid=${callSid}:`, error);
+      logger.error('elevenlabs.bridge.location_resolve_failed', error, redact({
+        callSid,
+        phoneNumber,
+      }));
       return null;
     }
   }
@@ -103,7 +118,9 @@ export class ElevenLabsBridgeService {
       const agentConfig = await ensureAgentConfig(locationId);
       return agentConfig.eleven_agent_id;
     } catch (error) {
-      console.error(`[ElevenLabsBridge] Error getting agent config for locationId=${locationId}:`, error);
+      logger.error('elevenlabs.bridge.agent_config_failed', error, redact({
+        locationId,
+      }));
       return null;
     }
   }
@@ -176,11 +193,19 @@ export class ElevenLabsBridgeService {
             twilioMediaStreamService.sendMedia(bridge.twilioSession, Buffer.from(muLawBase64, 'base64'), 'outbound');
             bridge.bytesOut += audio.length;
           } catch (error: any) {
-            console.error(`[ElevenLabsBridge] Error converting/sending audio outbound:`, error.message);
+            logger.error('elevenlabs.bridge.audio_outbound_failed', error, redact({
+              callSid: bridge.callSid,
+              locationId: bridge.locationId,
+            }));
           }
         },
         onTranscription: (text: string, isFinal: boolean) => {
-          console.log(`[ElevenLabsBridge] Transcription callSid=${bridge.callSid} text="${text}" isFinal=${isFinal}`);
+          logger.info('elevenlabs.bridge.transcription', redact({
+            callSid: bridge.callSid,
+            locationId: bridge.locationId,
+            text: text.substring(0, 100), // Limit text length
+            isFinal,
+          }));
           
           // Collect transcript segments
           bridge.transcriptSegments.push({
@@ -190,19 +215,32 @@ export class ElevenLabsBridgeService {
           });
         },
         onError: (error: Error) => {
-          console.error(`[ElevenLabsBridge] ElevenLabs error callSid=${bridge.callSid}:`, error.message);
+          logger.error('elevenlabs.bridge.error', error, redact({
+            callSid: bridge.callSid,
+            locationId: bridge.locationId,
+          }));
           this.handleElevenLabsError(bridge, error);
         },
         onClose: () => {
-          console.log(`[ElevenLabsBridge] ElevenLabs disconnected callSid=${bridge.callSid}`);
+          logger.info('elevenlabs.bridge.disconnected', redact({
+            callSid: bridge.callSid,
+            locationId: bridge.locationId,
+          }));
           this.handleElevenLabsDisconnect(bridge);
         },
         onOpen: () => {
-          console.log(`[ElevenLabsBridge] ElevenLabs connected callSid=${bridge.callSid}`);
+          logger.info('elevenlabs.bridge.connected', redact({
+            callSid: bridge.callSid,
+            locationId: bridge.locationId,
+          }));
         },
         onConversationInitiated: (conversationId: string) => {
           bridge.elevenConversationId = conversationId;
-          console.log(`[ElevenLabsBridge] Conversation initiated callSid=${bridge.callSid} conversationId=${conversationId}`);
+          logger.info('elevenlabs.bridge.conversation_initiated', redact({
+            callSid: bridge.callSid,
+            locationId: bridge.locationId,
+            conversationId,
+          }));
         },
         onRagQuery: (stats) => {
           if (bridge.ragStats.enabled) {
@@ -269,10 +307,18 @@ export class ElevenLabsBridgeService {
       bridge.elevenLabsClient.sendAudioInput(pcm16Buffer);
       
       if (bridge.bytesIn % 16000 === 0) { // Log every ~1 second of audio
-        console.log(`[ElevenLabsBridge] Audio sent callSid=${bridge.callSid} bytesIn=${bridge.bytesIn} bytesOut=${bridge.bytesOut}`);
+        logger.info('elevenlabs.bridge.audio_sent', redact({
+          callSid: bridge.callSid,
+          locationId: bridge.locationId,
+          bytesIn: bridge.bytesIn,
+          bytesOut: bridge.bytesOut,
+        }));
       }
     } catch (error: any) {
-      console.error(`[ElevenLabsBridge] Error processing Twilio audio:`, error.message);
+      logger.error('elevenlabs.bridge.audio_process_failed', error, redact({
+        callSid: bridge.callSid,
+        locationId: bridge.locationId,
+      }));
     }
   }
 
@@ -283,11 +329,20 @@ export class ElevenLabsBridgeService {
     bridge.reconnectAttempts += 1;
 
     if (bridge.reconnectAttempts <= this.MAX_RECONNECT_ATTEMPTS) {
-      console.log(`[ElevenLabsBridge] Reconnecting attempt=${bridge.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS} callSid=${bridge.callSid}`);
+      logger.info('elevenlabs.bridge.reconnecting', redact({
+        callSid: bridge.callSid,
+        locationId: bridge.locationId,
+        attempt: bridge.reconnectAttempts,
+        maxAttempts: this.MAX_RECONNECT_ATTEMPTS,
+      }));
       await new Promise((resolve) => setTimeout(resolve, 1000 * bridge.reconnectAttempts)); // Exponential backoff
       await this.connectToElevenLabs(bridge);
     } else {
-      console.error(`[ElevenLabsBridge] Max reconnection attempts reached callSid=${bridge.callSid}, closing bridge`);
+      logger.error('elevenlabs.bridge.max_reconnect_reached', null, redact({
+        callSid: bridge.callSid,
+        locationId: bridge.locationId,
+        maxAttempts: this.MAX_RECONNECT_ATTEMPTS,
+      }));
       this.closeBridge(bridge.callSid, 'ElevenLabs connection failed');
     }
   }
@@ -355,15 +410,27 @@ export class ElevenLabsBridgeService {
         .eq('call_sid', bridge.callSid);
 
       if (updateError) {
-        console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, updateError);
+        logger.error('elevenlabs.bridge.transcript_persist_failed', updateError, redact({
+          callSid: bridge.callSid,
+          locationId: bridge.locationId,
+        }));
       } else {
-        const ragInfo = bridge.ragStats.enabled
-          ? `rag.totalQueries=${bridge.ragStats.totalQueries} rag.totalResults=${bridge.ragStats.totalResults} rag.totalInjectedChars=${bridge.ragStats.totalInjectedChars}`
-          : 'rag.enabled=false';
-        console.log(`[ElevenLabsBridge] Transcript persisted callSid=${bridge.callSid} transcriptLength=${mergedTranscript.length} segments=${finalSegmentsCount} ${ragInfo}`);
+        logger.info('elevenlabs.bridge.transcript_persisted', redact({
+          callSid: bridge.callSid,
+          locationId: bridge.locationId,
+          transcriptLength: mergedTranscript.length,
+          segments: finalSegmentsCount,
+          ragEnabled: bridge.ragStats.enabled,
+          ragTotalQueries: bridge.ragStats.totalQueries,
+          ragTotalResults: bridge.ragStats.totalResults,
+          ragTotalInjectedChars: bridge.ragStats.totalInjectedChars,
+        }));
       }
     } catch (error: any) {
-      console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, error.message);
+      logger.error('elevenlabs.bridge.transcript_persist_failed', error, redact({
+        callSid: bridge.callSid,
+        locationId: bridge.locationId,
+      }));
       // Don't throw - cleanup must continue
     }
   }
@@ -410,7 +477,7 @@ export class ElevenLabsBridgeService {
     for (const [callSid] of this.bridges.entries()) {
       this.closeBridge(callSid, 'Service shutdown');
     }
-    console.log('[ElevenLabsBridge] All bridges cleaned up');
+    logger.info('elevenlabs.bridge.cleanup_complete', redact({}));
   }
 }
 

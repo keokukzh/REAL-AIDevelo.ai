@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { supabaseAdmin } from '../services/supabaseDb';
+import { logger, serializeError, redact } from '../utils/logger';
 
 function escapeXml(value: string): string {
   return value
@@ -69,20 +70,34 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
             .update(callData)
             .eq('id', existingCall.id);
           if (updateError) {
-            console.error(`[TwilioController] Error updating call log callSid=${callSid}:`, updateError);
+            logger.error('twilio.inbound.call_log_update_failed', updateError, redact({
+              callSid,
+              locationId,
+            }), req);
           }
         } else {
           const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
           if (insertError) {
-            console.error(`[TwilioController] Error inserting call log callSid=${callSid}:`, insertError);
+            logger.error('twilio.inbound.call_log_insert_failed', insertError, redact({
+              callSid,
+              locationId,
+            }), req);
           }
         }
 
-        console.log(`[TwilioController] Call log upserted callSid=${callSid} locationId=${locationId} to=${to}`);
+        logger.info('twilio.inbound.call_log_upserted', redact({
+          callSid,
+          locationId,
+          to,
+        }), req);
       }
     }
   } catch (error: any) {
-    console.error(`[TwilioController] Error upserting call log callSid=${callSid}:`, error.message);
+    logger.error('twilio.inbound.call_log_upsert_failed', error, redact({
+      callSid,
+      to,
+      from,
+    }), req);
     // Continue even if call log upsert fails
   }
 
@@ -117,7 +132,11 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
     }
 
     if (fallbackReason) {
-      console.warn(`[TwilioController] Precondition check failed callSid=${callSid}: ${fallbackReason}, falling back`);
+      logger.warn('twilio.inbound.preflight_failed', redact({
+        callSid,
+        locationId,
+        reason: fallbackReason,
+      }), req);
       const fallbackTwiml = buildTwiML(
         `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
       );
@@ -129,7 +148,11 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
     const wsBaseUrl = getWebSocketBaseUrl(req);
     const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(callSid)}&token=${encodeURIComponent(streamToken!)}`; // streamToken is guaranteed to exist after precondition check
 
-    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=true streamUrl=${streamUrl} locationId=${locationId}`);
+    logger.info('twilio.inbound.media_streams_enabled', redact({
+      callSid,
+      locationId,
+      streamUrl,
+    }), req);
 
     const twiml = buildTwiML(
       `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" track="both_tracks">\n      <Parameter name="to" value="${escapeXml(to)}" />\n      <Parameter name="from" value="${escapeXml(from)}" />\n      <Parameter name="callSid" value="${escapeXml(callSid)}" />\n    </Stream>\n  </Connect>`
@@ -141,7 +164,10 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
       .send(twiml);
   } else {
     // Fallback: Simple TwiML without Media Streams
-    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=false, using fallback TwiML`);
+    logger.info('twilio.inbound.media_streams_disabled', redact({
+      callSid,
+      locationId,
+    }), req);
     const fallbackTwiml = buildTwiML(
       `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
     );
@@ -210,27 +236,35 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
       .eq('id', existingCall.id);
 
     if (updateError) {
-      console.error('[TwilioController] Error updating call log:', updateError);
+      logger.error('twilio.status.call_log_update_failed', updateError, redact({
+        callSid,
+        locationId: phoneData.location_id,
+        callStatus,
+      }), req);
     } else {
-      console.log('[TwilioController] Call log updated', {
-        call_sid: callSid,
-        call_status: callStatus,
-        updated_fields: Object.keys(callData),
-        location_id: phoneData.location_id,
-      });
+      logger.info('twilio.status.call_log_updated', redact({
+        callSid,
+        callStatus,
+        locationId: phoneData.location_id,
+        updatedFields: Object.keys(callData),
+      }), req);
     }
   } else {
     // Create new call log
     const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
 
     if (insertError) {
-      console.error('[TwilioController] Error creating call log:', insertError);
+      logger.error('twilio.status.call_log_create_failed', insertError, redact({
+        callSid,
+        locationId: phoneData.location_id,
+        callStatus,
+      }), req);
     } else {
-      console.log('[TwilioController] Call log created', {
-        call_sid: callSid,
-        call_status: callStatus,
-        location_id: phoneData.location_id,
-      });
+      logger.info('twilio.status.call_log_created', redact({
+        callSid,
+        callStatus,
+        locationId: phoneData.location_id,
+      }), req);
     }
   }
 }
@@ -248,7 +282,9 @@ export async function handleVoiceStatusCallback(req: Request, res: Response): Pr
       await persistCallEvent(callSid, req);
     } catch (error) {
       // Log error but don't fail the webhook response
-      console.error('[TwilioController] Error persisting call event:', error);
+      logger.error('twilio.status.persist_event_failed', error, redact({
+        callSid,
+      }), req);
     }
   }
 }

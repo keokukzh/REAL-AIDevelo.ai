@@ -4,6 +4,7 @@ import { BadRequestError, InternalServerError } from '../utils/errors';
 import { resolveLocationId } from '../utils/locationIdResolver';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { generateReportPdfStream } from '../utils/pdfReportGenerator';
+import { logger, serializeError, redact } from '../utils/logger';
 
 const ENABLE_ANALYTICS_EXPORT = process.env.ENABLE_ANALYTICS_EXPORT !== 'false'; // Default true
 
@@ -95,13 +96,19 @@ export const exportCallsCsv = async (req: AuthenticatedRequest, res: Response, n
     const { data: calls, error } = await query;
 
     if (error) {
-      console.error(`[AnalyticsExport] Error fetching calls for CSV:`, error);
+      logger.error('analytics.export.csv.fetch_failed', error, redact({
+        locationId,
+      }), req);
       return next(new InternalServerError('Failed to fetch call data'));
     }
 
     const queryDuration = Date.now() - startTime;
     const rowsExported = calls?.length || 0;
-    console.log(`[AnalyticsExport] CSV locationId=${locationId} rowsExported=${rowsExported} duration=${queryDuration}ms`);
+    logger.info('analytics.export.csv.completed', redact({
+      locationId,
+      rowsExported,
+      durationMs: queryDuration,
+    }), req);
 
     // Generate filename
     const dateFromStr = dateFrom || 'all';
@@ -161,7 +168,7 @@ export const exportCallsCsv = async (req: AuthenticatedRequest, res: Response, n
 
     res.end();
   } catch (error: any) {
-    console.error(`[AnalyticsExport] Error in exportCallsCsv:`, error);
+    logger.error('analytics.export.csv.error', error, redact({}), req);
     return next(new InternalServerError('Failed to export calls CSV'));
   }
 };
@@ -194,7 +201,10 @@ export const exportReportPdf = async (req: AuthenticatedRequest, res: Response, 
         email,
       });
       locationId = resolution.locationId;
-      console.log(`[AnalyticsExport] PDF: resolved locationId=${locationId} from source=${resolution.source}`);
+      logger.info('analytics.export.pdf.location_resolved', redact({
+        locationId,
+        source: resolution.source,
+      }), req);
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -228,9 +238,12 @@ export const exportReportPdf = async (req: AuthenticatedRequest, res: Response, 
     const pdfStartTime = Date.now();
     await generateReportPdfStream(locationId, filters, res);
     const duration = Date.now() - pdfStartTime;
-    console.log(`[AnalyticsExport] PDF locationId=${locationId} duration=${duration}ms`);
+    logger.info('analytics.export.pdf.completed', redact({
+      locationId,
+      durationMs: duration,
+    }), req);
   } catch (error: any) {
-    console.error(`[AnalyticsExport] Error in exportReportPdf:`, error);
+    logger.error('analytics.export.pdf.error', error, redact({}), req);
     return next(new InternalServerError('Failed to export PDF report'));
   }
 };

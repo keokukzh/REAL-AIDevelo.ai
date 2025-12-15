@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { BadRequestError, InternalServerError } from '../utils/errors';
 import { resolveLocationId } from '../utils/locationIdResolver';
 import { supabaseAdmin } from '../services/supabaseDb';
+import { logger, serializeError, redact } from '../utils/logger';
 
 /**
  * GET /api/analytics/calls/summary
@@ -67,12 +68,18 @@ export const getCallsSummary = async (req: AuthenticatedRequest, res: Response, 
     const { data: calls, error, count } = await query;
 
     if (error) {
-      console.error(`[AnalyticsController] Error fetching calls:`, error);
+      logger.error('analytics.summary.fetch_failed', error, redact({
+        locationId,
+      }), req);
       return next(new InternalServerError('Failed to fetch call statistics'));
     }
 
     const queryDuration = Date.now() - startTime;
-    console.log(`[AnalyticsController] Summary query locationId=${locationId} rows=${count || 0} duration=${queryDuration}ms`);
+    logger.info('analytics.summary.query_completed', redact({
+      locationId,
+      rows: count || 0,
+      durationMs: queryDuration,
+    }), req);
 
     if (!calls || calls.length === 0) {
       return res.json({
@@ -179,7 +186,7 @@ export const getCallsSummary = async (req: AuthenticatedRequest, res: Response, 
       },
     });
   } catch (error: any) {
-    console.error(`[AnalyticsController] Error in getCallsSummary:`, error);
+    logger.error('analytics.summary.error', error, redact({}), req);
     return next(new InternalServerError('Failed to calculate call statistics'));
   }
 };
@@ -204,7 +211,10 @@ export const getTopSources = async (req: AuthenticatedRequest, res: Response, ne
         email,
       });
       locationId = resolution.locationId;
-      console.log(`[AnalyticsController] TopSources: resolved locationId=${locationId} from source=${resolution.source}`);
+      logger.info('analytics.topsources.location_resolved', redact({
+        locationId,
+        source: resolution.source,
+      }), req);
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -237,12 +247,18 @@ export const getTopSources = async (req: AuthenticatedRequest, res: Response, ne
     const { data: calls, error } = await query;
 
     if (error) {
-      console.error(`[AnalyticsController] Error fetching calls for top sources:`, error);
+      logger.error('analytics.topsources.fetch_failed', error, redact({
+        locationId,
+      }), req);
       return next(new InternalServerError('Failed to fetch call data'));
     }
 
     const queryDuration = Date.now() - startTime;
-    console.log(`[AnalyticsController] TopSources query locationId=${locationId} rows=${calls?.length || 0} duration=${queryDuration}ms`);
+    logger.info('analytics.topsources.query_completed', redact({
+      locationId,
+      rows: calls?.length || 0,
+      durationMs: queryDuration,
+    }), req);
 
     if (!calls || calls.length === 0) {
       return res.json({
@@ -318,7 +334,7 @@ export const getTopSources = async (req: AuthenticatedRequest, res: Response, ne
       },
     });
   } catch (error: any) {
-    console.error(`[AnalyticsController] Error in getTopSources:`, error);
+    logger.error('analytics.topsources.error', error, redact({}), req);
     return next(new InternalServerError('Failed to calculate top sources'));
   }
 };
