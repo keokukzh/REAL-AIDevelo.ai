@@ -128,7 +128,6 @@ export const OnboardingPage = () => {
                     });
                     
                     const agentStatus = statusResponse.data.status;
-                    const { logger } = await import('../lib/logger');
                     logger.debug('Agent status check', { 
                         status: agentStatus, 
                         attempt: pollingAttempts + 1 
@@ -145,7 +144,6 @@ export const OnboardingPage = () => {
                     }
                 } catch (pollError) {
                     // Continue polling even if status check fails
-                    const { logger } = await import('../lib/logger');
                     logger.warn('Status check failed, will retry', { error: pollError });
                 }
                 
@@ -153,7 +151,6 @@ export const OnboardingPage = () => {
             }
             
             // If we timeout, still navigate (agent might complete in background)
-            const { logger } = await import('../lib/logger');
             logger.warn('Agent creation timeout - agent may complete in background', { agentId });
             setSubmissionProgress('Agent-Setup wird im Hintergrund abgeschlossen...');
             await new Promise(resolve => setTimeout(resolve, 2000));

@@ -4,6 +4,7 @@ import { Mic, Check, Play, Square, RefreshCw, Shield, Globe, Lock, Cpu, AlertCir
 import { Button } from './ui/Button';
 import { aiService } from '../services/aiService';
 import { AudioUploadOption } from './AudioUploadOption';
+import { logger } from '../lib/logger';
 
 // Phase 3 Data: Sentences tailored for Swiss SMEs
 const sentences = [
@@ -119,7 +120,6 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
             // Continue animation - always continue if recording
             animationFrameRef.current = requestAnimationFrame(updateVisuals);
         } catch (error) {
-            const { logger } = await import('../lib/logger');
             logger.error('Error updating visuals', error);
             // Stop on error
             if (animationFrameRef.current) {
@@ -213,7 +213,6 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         };
 
         mediaRecorder.onerror = async (event) => {
-            const { logger } = await import('../lib/logger');
             logger.error('MediaRecorder error', event as Error);
             isRecordingRef.current = false;
             setAnalysisStatus("Fehler bei der Aufnahme. Bitte versuchen Sie es erneut.");
