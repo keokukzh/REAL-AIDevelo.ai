@@ -2,7 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { SideNav } from '../components/dashboard/SideNav';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useCallsSummary, useTopSources, CallsSummaryFilters, TopSourcesFilters } from '../hooks/useCallAnalytics';
-import { Filter, RefreshCw, AlertCircle, BarChart3, Database, Clock, CheckCircle, FileText, Bot } from 'lucide-react';
+import { exportCsv, exportPdf, ExportFilters } from '../hooks/useCallAnalyticsExport';
+import { Filter, RefreshCw, AlertCircle, BarChart3, Database, Clock, CheckCircle, FileText, Bot, Download } from 'lucide-react';
+import { toast } from '../components/ui/Toast';
 
 export const AnalyticsPage = () => {
   // Filter state
@@ -28,9 +30,46 @@ export const AnalyticsPage = () => {
   const { data: summary, isLoading: isLoadingSummary, error: summaryError, refetch: refetchSummary } = useCallsSummary(summaryFilters);
   const { data: topSources, isLoading: isLoadingSources, error: sourcesError, refetch: refetchSources } = useTopSources(topSourcesFilters);
 
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
   const handleRefetch = () => {
     refetchSummary();
     refetchSources();
+  };
+
+  const handleExportCsv = async () => {
+    setIsExportingCsv(true);
+    try {
+      const exportFilters: ExportFilters = {
+        ...summaryFilters,
+        limit: 10000,
+      };
+      await exportCsv(exportFilters);
+      toast.success('CSV Export erfolgreich');
+    } catch (error: any) {
+      console.error('CSV Export error:', error);
+      toast.error(error.message || 'CSV Export fehlgeschlagen');
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      const exportFilters: ExportFilters = {
+        ...summaryFilters,
+        limitSources: 10,
+      };
+      await exportPdf(exportFilters);
+      toast.success('PDF Export erfolgreich');
+    } catch (error: any) {
+      console.error('PDF Export error:', error);
+      toast.error(error.message || 'PDF Export fehlgeschlagen');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const formatDuration = (seconds: number): string => {
@@ -63,14 +102,32 @@ export const AnalyticsPage = () => {
             </h1>
             <p className="text-gray-400">Call-Qualität & RAG-Nutzung pro Location</p>
           </div>
-          <button
-            onClick={handleRefetch}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition-colors"
-            disabled={isLoadingSummary || isLoadingSources}
-          >
-            <RefreshCw size={16} className={isLoadingSummary || isLoadingSources ? 'animate-spin' : ''} />
-            Aktualisieren
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              disabled={isExportingCsv || isExportingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} className={isExportingCsv ? 'animate-pulse' : ''} />
+              {isExportingCsv ? 'Exportiere...' : 'Export CSV'}
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={isExportingCsv || isExportingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} className={isExportingPdf ? 'animate-pulse' : ''} />
+              {isExportingPdf ? 'Exportiere...' : 'Export PDF'}
+            </button>
+            <button
+              onClick={handleRefetch}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition-colors"
+              disabled={isLoadingSummary || isLoadingSources}
+            >
+              <RefreshCw size={16} className={isLoadingSummary || isLoadingSources ? 'animate-spin' : ''} />
+              Aktualisieren
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
