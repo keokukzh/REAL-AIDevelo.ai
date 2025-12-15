@@ -10,9 +10,9 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '', title, description, action }) => {
   return (
-    <div className={`bg-slate-900/50 border border-slate-700/50 rounded-xl backdrop-blur-sm shadow-sm hover:shadow-lg hover:shadow-black/20 transition-all ${className}`}>
+    <article className={`bg-slate-900/50 border border-slate-700/50 rounded-xl backdrop-blur-sm shadow-sm hover:shadow-lg hover:shadow-black/20 transition-all ${className}`}>
       {(title || action) && (
-        <div className="px-6 py-4 border-b border-slate-700/50 flex justify-between items-center">
+        <header className="px-6 py-4 border-b border-slate-700/50 flex justify-between items-center">
           <div>
             {title && (
               typeof title === 'string' 
@@ -22,11 +22,11 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, des
             {description && <p className="text-sm text-gray-400 mt-1">{description}</p>}
           </div>
           {action && <div>{action}</div>}
-        </div>
+        </header>
       )}
       <div className="p-6">
         {children}
       </div>
-    </div>
+    </article>
   );
 };

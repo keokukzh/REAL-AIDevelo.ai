@@ -2,8 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useCallLogs, CallLog } from '../hooks/useCallLogs';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { SideNav } from '../components/dashboard/SideNav';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Phone, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '../components/newDashboard/ui/Input';
+import { Select } from '../components/newDashboard/ui/Select';
+import { SkeletonTable } from '../components/newDashboard/Skeleton';
+import { EmptyCalls } from '../components/newDashboard/EmptyState';
+import { Card } from '../components/newDashboard/ui/Card';
 
 export const CallsPage = () => {
   const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
@@ -73,180 +77,169 @@ export const CallsPage = () => {
       <SideNav />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Anrufe</h1>
-          <p className="text-gray-400">Verwalte und durchsuche alle Anrufe</p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter size={18} className="text-gray-400" />
-            <h2 className="text-lg font-semibold">Filter</h2>
+      <main className="flex-1 ml-64 flex flex-col min-w-0">
+        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
+          <div>
+            <h1 className="text-2xl font-bold font-display text-white">Anrufe</h1>
+            <p className="text-sm text-gray-400">Verwalte und durchsuche alle Anrufe</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div>
-              <label htmlFor="search-filter" className="block text-xs text-gray-400 mb-2">Suche (Call SID / Nummer)</label>
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  id="search-filter"
-                  type="text"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(0); // Reset to first page
-                  }}
-                  placeholder="CA123..."
-                  className="w-full pl-10 pr-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent"
-                />
-              </div>
-            </div>
+        </header>
 
-            {/* Direction */}
-            <div>
-              <label htmlFor="direction-filter" className="block text-xs text-gray-400 mb-2">Richtung</label>
-              <select
-                id="direction-filter"
+        <div className="p-8 max-w-7xl mx-auto w-full">
+
+          {/* Filters */}
+          <Card title="Filter" className="mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Search */}
+              <Input
+                label="Suche (Call SID / Nummer)"
+                type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                placeholder="CA123..."
+                icon={<Search size={16} />}
+                size="sm"
+              />
+
+              {/* Direction */}
+              <Select
+                label="Richtung"
                 value={direction}
                 onChange={(e) => {
                   setDirection(e.target.value as 'inbound' | 'outbound' | '');
                   setPage(0);
                 }}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white focus:outline-none focus:border-accent"
-              >
-                <option value="">Alle</option>
-                <option value="inbound">Eingehend</option>
-                <option value="outbound">Ausgehend</option>
-              </select>
-            </div>
+                options={[
+                  { value: '', label: 'Alle' },
+                  { value: 'inbound', label: 'Eingehend' },
+                  { value: 'outbound', label: 'Ausgehend' },
+                ]}
+                size="sm"
+              />
 
-            {/* Status */}
-            <div>
-              <label htmlFor="status-filter" className="block text-xs text-gray-400 mb-2">Status</label>
-              <select
-                id="status-filter"
+              {/* Status */}
+              <Select
+                label="Status"
                 value={status}
                 onChange={(e) => {
                   setStatus(e.target.value);
                   setPage(0);
                 }}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white focus:outline-none focus:border-accent"
-              >
-                <option value="">Alle</option>
-                <option value="completed">Abgeschlossen</option>
-                <option value="failed">Fehlgeschlagen</option>
-                <option value="busy">Besetzt</option>
-                <option value="no-answer">Keine Antwort</option>
-                <option value="queued">In Warteschlange</option>
-                <option value="ringing">Klingelt</option>
-              </select>
-            </div>
+                options={[
+                  { value: '', label: 'Alle' },
+                  { value: 'completed', label: 'Abgeschlossen' },
+                  { value: 'failed', label: 'Fehlgeschlagen' },
+                  { value: 'busy', label: 'Besetzt' },
+                  { value: 'no-answer', label: 'Keine Antwort' },
+                  { value: 'queued', label: 'In Warteschlange' },
+                  { value: 'ringing', label: 'Klingelt' },
+                ]}
+                size="sm"
+              />
 
-            {/* Date From */}
-            <div>
-              <label htmlFor="date-from-filter" className="block text-xs text-gray-400 mb-2">Von Datum</label>
-              <input
-                id="date-from-filter"
+              {/* Date From */}
+              <Input
+                label="Von Datum"
                 type="date"
                 value={dateFrom}
                 onChange={(e) => {
                   setDateFrom(e.target.value);
                   setPage(0);
                 }}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white focus:outline-none focus:border-accent"
+                size="sm"
               />
-            </div>
 
-            {/* Date To */}
-            <div>
-              <label htmlFor="date-to-filter" className="block text-xs text-gray-400 mb-2">Bis Datum</label>
-              <input
-                id="date-to-filter"
+              {/* Date To */}
+              <Input
+                label="Bis Datum"
                 type="date"
                 value={dateTo}
                 onChange={(e) => {
                   setDateTo(e.target.value);
                   setPage(0);
                 }}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white focus:outline-none focus:border-accent"
+                size="sm"
               />
             </div>
-          </div>
 
-          {/* Clear Filters */}
-          {(direction || status || dateFrom || dateTo || search) && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  setDirection('');
-                  setStatus('');
-                  setDateFrom('');
-                  setDateTo('');
-                  setSearch('');
-                  setPage(0);
-                }}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                Filter zurücksetzen
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <LoadingSpinner />
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-            <p className="text-red-300">{error.message || 'Fehler beim Laden der Anrufe'}</p>
-          </div>
-        )}
-
-        {/* Calls Table */}
-        {!isLoading && !error && data && (
-          <>
-            {data.items.length === 0 ? (
-              <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-                <Phone size={48} className="mx-auto text-gray-600 mb-4" />
-                <p className="text-gray-400 mb-2">Keine Anrufe gefunden</p>
-                <p className="text-sm text-gray-500">
-                  {direction || status || dateFrom || dateTo || search
-                    ? 'Versuche andere Filter'
-                    : 'Noch keine Anrufe vorhanden'}
-                </p>
+            {/* Clear Filters */}
+            {(direction || status || dateFrom || dateTo || search) && (
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    setDirection('');
+                    setStatus('');
+                    setDateFrom('');
+                    setDateTo('');
+                    setSearch('');
+                    setPage(0);
+                  }}
+                  className="text-sm text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 rounded px-2 py-1"
+                  aria-label="Filter zurücksetzen"
+                >
+                  Filter zurücksetzen
+                </button>
               </div>
-            ) : (
-              <>
-                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            )}
+          </Card>
+
+          {/* Loading State */}
+          {isLoading && (
+            <Card>
+              <SkeletonTable rows={10} />
+            </Card>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <Card className="border-red-500/30 bg-red-500/10">
+              <div className="text-center py-4">
+                <p className="text-red-300 font-medium mb-2">Fehler beim Laden der Anrufe</p>
+                <p className="text-sm text-red-400">{error.message || 'Unbekannter Fehler'}</p>
+              </div>
+            </Card>
+          )}
+
+          {/* Calls Table */}
+          {!isLoading && !error && data && (
+            <>
+              {data.items.length === 0 ? (
+                <Card>
+                  <EmptyCalls />
+                </Card>
+              ) : (
+                <Card title={`${data.total} Anruf${data.total !== 1 ? 'e' : ''} gefunden`}>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm text-left" role="table" aria-label="Anrufliste">
                       <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Zeitpunkt</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Richtung</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Von</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Nach</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Dauer</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Call SID</th>
+                        <tr className="border-b border-slate-700/50">
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Zeitpunkt</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Richtung</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Von</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Nach</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Dauer</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Status</th>
+                          <th scope="col" className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">Call SID</th>
                         </tr>
                       </thead>
                       <tbody>
                         {data.items.map((call) => (
                           <tr
                             key={call.id}
-                            className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer transition-colors"
+                            role="row"
+                            className="border-b border-slate-700/50 hover:bg-slate-800/50 cursor-pointer transition-colors"
                             onClick={() => handleCallClick(call)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleCallClick(call);
+                              }
+                            }}
+                            tabIndex={0}
+                            aria-label={`Anruf von ${formatPhoneNumber(call.from_e164)} am ${formatDateTime(call.started_at)}`}
                           >
                             <td className="py-3 px-4 text-sm text-gray-300">
                               {formatDateTime(call.started_at)}
@@ -282,47 +275,53 @@ export const CallsPage = () => {
                   </div>
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6">
-                    <div className="text-sm text-gray-400">
-                      Zeige {startItem}–{endItem} von {data.total} Anrufen
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPage(Math.max(0, page - 1))}
-                        disabled={page === 0}
-                        className="px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <ChevronLeft size={16} />
-                        Zurück
-                      </button>
-                      <span className="text-sm text-gray-400">
-                        Seite {page + 1} von {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                        disabled={page >= totalPages - 1}
-                        className="px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        Weiter
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  </div>
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-6 border-t border-slate-700/50 pt-4">
+                        <div className="text-sm text-gray-400" role="status" aria-live="polite">
+                          Zeige {startItem}–{endItem} von {data.total} Anrufen
+                        </div>
+                        <nav aria-label="Pagination">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setPage(Math.max(0, page - 1))}
+                              disabled={page === 0}
+                              className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
+                              aria-label="Vorherige Seite"
+                            >
+                              <ChevronLeft size={16} aria-hidden="true" />
+                              Zurück
+                            </button>
+                            <span className="text-sm text-gray-400">
+                              Seite {page + 1} von {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                              disabled={page >= totalPages - 1}
+                              className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
+                              aria-label="Nächste Seite"
+                            >
+                              Weiter
+                              <ChevronRight size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                        </nav>
+                      </div>
+                    )}
+                  </Card>
                 )}
               </>
             )}
-          </>
-        )}
+          )}
 
-        {/* Call Details Modal */}
-        <CallDetailsModal
-          isOpen={isCallDetailsOpen}
-          onClose={handleCloseModal}
-          call={selectedCall}
-        />
-      </div>
+          {/* Call Details Modal */}
+          <CallDetailsModal
+            isOpen={isCallDetailsOpen}
+            onClose={handleCloseModal}
+            call={selectedCall}
+          />
+        </div>
+      </main>
     </div>
   );
 };

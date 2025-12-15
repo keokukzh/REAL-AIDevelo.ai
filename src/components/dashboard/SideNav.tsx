@@ -41,7 +41,11 @@ export const SideNav: React.FC = () => {
   const initials = getInitials(organizationName);
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50">
+    <aside 
+      className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="h-16 flex items-center justify-center px-6 border-b border-slate-800">
         <img 
           src="/logo-studio-white.png" 

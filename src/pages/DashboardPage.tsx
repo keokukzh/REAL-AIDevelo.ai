@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
@@ -20,6 +19,8 @@ import { StatCard } from '../components/newDashboard/StatCard';
 import { StatusBadge } from '../components/newDashboard/StatusBadge';
 import { QuickActionButton } from '../components/newDashboard/QuickActionButton';
 import { HealthItem } from '../components/newDashboard/HealthItem';
+import { SkeletonStatCard } from '../components/newDashboard/Skeleton';
+import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState';
 import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
@@ -175,8 +176,26 @@ export const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <LoadingSpinner />
+      <div className="min-h-screen bg-background flex font-sans text-white relative">
+        <SideNav />
+        <main className="flex-1 ml-64 flex flex-col min-w-0">
+          <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
+            <div className="flex items-center gap-3 text-gray-400">
+              <span className="text-sm font-semibold text-white font-display">Dashboard</span>
+              <span className="text-gray-600">/</span>
+              <span className="text-sm text-gray-400">Tagesübersicht</span>
+            </div>
+          </header>
+          <div className="p-8 max-w-[1600px] mx-auto w-full">
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <SkeletonStatCard key={i} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -218,21 +237,37 @@ export const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
+      {/* Skip to main content link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        Zum Hauptinhalt springen
+      </a>
+
       {/* Background Effects - Grid Pattern */}
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" />
+      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" aria-hidden="true" />
       
       {/* Side Navigation */}
       <SideNav />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 flex flex-col min-w-0">
+      <main id="main-content" className="flex-1 ml-64 flex flex-col min-w-0" role="main">
         {/* Top Header */}
-        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
-          <div className="flex items-center gap-3 text-gray-400">
-            <span className="text-sm font-semibold text-white font-display">Dashboard</span>
-            <span className="text-gray-600">/</span>
-            <span className="text-sm text-gray-400">Tagesübersicht</span>
-          </div>
+        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex items-center gap-3 text-gray-400" role="list">
+              <li>
+                <span className="text-sm font-semibold text-white font-display">Dashboard</span>
+              </li>
+              <li aria-hidden="true">
+                <span className="text-gray-600">/</span>
+              </li>
+              <li>
+                <span className="text-sm text-gray-400">Tagesübersicht</span>
+              </li>
+            </ol>
+          </nav>
         </header>
 
         {/* Dashboard Content */}
@@ -246,22 +281,25 @@ export const DashboardPage = () => {
 
           <div className="space-y-8">
             {/* Welcome & Time Range */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold font-display text-white tracking-tight">
-                  Willkommen, {userName.split('@')[0]}
-                </h1>
-                <p className="text-gray-400 mt-2 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
-              </div>
-              {lastRefresh && (
-                <div className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800">
-                  Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+            <section aria-labelledby="welcome-heading">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h1 id="welcome-heading" className="text-3xl font-bold font-display text-white tracking-tight">
+                    Willkommen, {userName.split('@')[0]}
+                  </h1>
+                  <p className="text-gray-400 mt-2 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
                 </div>
+              {lastRefresh && (
+                <output className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
+                  Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                </output>
               )}
-            </div>
+              </div>
+            </section>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <section aria-label="Key Performance Indicators">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard 
                 label="Gesamtanrufe" 
                 value={kpis.totalCalls} 
@@ -290,7 +328,8 @@ export const DashboardPage = () => {
                 iconColor="text-purple-400"
                 bgColor="bg-purple-500/10"
               />
-            </div>
+              </div>
+            </section>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Left Column (Calendar, Chart & Logs) */}
@@ -358,19 +397,16 @@ export const DashboardPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-slate-700/50 rounded-xl h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-900/30">
-                      <p className="text-gray-400 text-sm mb-4">Kalender nicht verbunden</p>
-                      <Button size="sm" onClick={handleConnectCalendar}>Verbinden</Button>
-                    </div>
+                    <EmptyCalendar onConnect={handleConnectCalendar} />
                   )}
                 </Card>
 
                 {/* Activity Chart */}
                 <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
-                  <div className="h-[320px] w-full mt-4">
+                  <div className="h-[320px] w-full mt-4" aria-label="Anrufvolumen Chart">
                     {chartData.some(d => d.calls > 0) ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData}>
+                        <AreaChart data={chartData} aria-label="Anrufvolumen über Zeit">
                           <defs>
                             <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1}/>
@@ -423,20 +459,20 @@ export const DashboardPage = () => {
                 <Card 
                   title="Letzte Anrufe" 
                   action={
-                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-swiss-red/10" onClick={handleViewCalls}>
+                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-swiss-red/10" onClick={handleViewCalls} aria-label="Alle Anrufe ansehen">
                       Alle ansehen
                     </Button>
                   }
                 >
                   {recentCallsTableData.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
+                      <table className="w-full text-sm text-left" role="table" aria-label="Letzte Anrufe">
                         <thead className="text-xs text-gray-400 uppercase bg-slate-800/50 border-b border-slate-700/50">
-                          <tr>
-                            <th className="px-4 py-3 font-semibold">Status</th>
-                            <th className="px-4 py-3 font-semibold">Anrufer</th>
-                            <th className="px-4 py-3 font-semibold">Dauer</th>
-                            <th className="px-4 py-3 font-semibold text-right">Zeit</th>
+                          <tr role="row">
+                            <th scope="col" className="px-4 py-3 font-semibold">Status</th>
+                            <th scope="col" className="px-4 py-3 font-semibold">Anrufer</th>
+                            <th scope="col" className="px-4 py-3 font-semibold">Dauer</th>
+                            <th scope="col" className="px-4 py-3 font-semibold text-right">Zeit</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
@@ -445,8 +481,17 @@ export const DashboardPage = () => {
                             return (
                               <tr 
                                 key={row.id} 
+                                role="row"
                                 className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
                                 onClick={() => originalCall && handleCallClick(originalCall)}
+                                onKeyDown={(e) => {
+                                  if ((e.key === 'Enter' || e.key === ' ') && originalCall) {
+                                    e.preventDefault();
+                                    handleCallClick(originalCall);
+                                  }
+                                }}
+                                tabIndex={0}
+                                aria-label={`Anruf von ${row.caller}, ${row.status}, ${row.duration}`}
                               >
                                 <td className="px-4 py-4">
                                   <StatusBadge status={row.status} />
@@ -476,9 +521,7 @@ export const DashboardPage = () => {
                       </table>
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <p>Noch keine Anrufe vorhanden</p>
-                    </div>
+                    <EmptyCalls onAction={handleTestAgent} />
                   )}
                 </Card>
               </div>
