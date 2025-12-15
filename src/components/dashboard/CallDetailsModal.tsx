@@ -36,7 +36,7 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
       } catch {
         toast.error('Kopieren fehlgeschlagen');
       }
-      document.body.removeChild(textArea);
+      textArea.remove();
     }
   };
 
@@ -289,7 +289,7 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
                         </thead>
                         <tbody>
                           {rag.topSources.map((source: any, idx: number) => (
-                            <tr key={idx} className="border-b border-gray-800">
+                            <tr key={`${source.documentId}-${source.chunkIndex}-${idx}`} className="border-b border-gray-800">
                               <td className="py-1 px-2 text-gray-300 font-mono">{source.score?.toFixed(3) || '-'}</td>
                               <td className="py-1 px-2 text-gray-300 truncate max-w-[120px]" title={source.title}>
                                 {source.title || '-'}
