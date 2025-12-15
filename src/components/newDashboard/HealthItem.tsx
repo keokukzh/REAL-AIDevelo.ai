@@ -19,14 +19,14 @@ export const HealthItem: React.FC<HealthItemProps> = ({ label, status }) => {
   };
   
   const statusTextColor = {
-    ok: 'text-emerald-600',
-    error: 'text-red-600',
-    warning: 'text-amber-600'
+    ok: 'text-emerald-400',
+    error: 'text-red-400',
+    warning: 'text-amber-400'
   };
 
   return (
     <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 text-slate-600">
+      <div className="flex items-center gap-2 text-gray-300">
         <div className={`w-1.5 h-1.5 rounded-full ${statusColors[status]}`}></div>
         {label}
       </div>

@@ -18,13 +18,13 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     <button 
       onClick={onClick}
       disabled={disabled}
-      className="w-full flex items-center justify-between p-2 rounded hover:bg-slate-50 text-sm text-slate-600 group transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full flex items-center justify-between p-2 rounded hover:bg-slate-800/50 text-sm text-gray-300 group transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div className="flex items-center gap-3">
-        <Icon className="w-4 h-4 text-slate-400 group-hover:text-swiss-red transition-colors" />
+        <Icon className="w-4 h-4 text-gray-500 group-hover:text-accent transition-colors" />
         <span>{label}</span>
       </div>
-      <ArrowUpRight className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
+      <ArrowUpRight className="w-3 h-3 text-gray-600 opacity-0 group-hover:opacity-100 transition-all" />
     </button>
   );
 };

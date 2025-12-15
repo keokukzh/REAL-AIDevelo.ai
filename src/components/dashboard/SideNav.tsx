@@ -43,10 +43,16 @@ export const SideNav: React.FC = () => {
   return (
     <aside className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50">
       <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
-        <div className="bg-swiss-red w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-sm">
-          +
-        </div>
-        <span className="font-bold text-lg tracking-tight">AIDevelo.ai</span>
+        <img 
+          src="/logo-studio-white.png" 
+          alt="AIDevelo Studio" 
+          className="h-8 w-auto object-contain"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+        <span className="font-bold text-lg tracking-tight font-display">AIDevelo Studio</span>
       </div>
       
       <div className="p-4 space-y-1 flex-1 overflow-y-auto">

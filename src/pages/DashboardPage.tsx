@@ -175,7 +175,7 @@ export const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <LoadingSpinner />
       </div>
     );
@@ -183,10 +183,10 @@ export const DashboardPage = () => {
 
   if (error || !overview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-slate-900">Fehler beim Laden</h2>
-          <p className="text-slate-500 mb-4">
+          <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
+          <p className="text-gray-400 mb-4">
             {error instanceof Error ? error.message : 'Unbekannter Fehler'}
           </p>
           <Button onClick={() => globalThis.location.reload()}>
@@ -217,17 +217,20 @@ export const DashboardPage = () => {
   const calendarConnected = overview.status.calendar === 'connected';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+    <div className="min-h-screen bg-background flex font-sans text-white relative">
+      {/* Background Effects - Grid Pattern */}
+      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" />
+      
       {/* Side Navigation */}
       <SideNav />
 
       {/* Main Content */}
       <main className="flex-1 ml-64 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
-          <div className="flex items-center gap-4 text-slate-500">
-            <span className="text-sm font-medium text-slate-900">Dashboard</span>
-            <span className="text-slate-300">/</span>
+        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
+          <div className="flex items-center gap-4 text-gray-400">
+            <span className="text-sm font-medium text-white">Dashboard</span>
+            <span className="text-gray-600">/</span>
             <span className="text-sm">Tagesübersicht</span>
           </div>
         </header>
@@ -245,13 +248,13 @@ export const DashboardPage = () => {
             {/* Welcome & Time Range */}
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-2xl font-bold font-display text-white tracking-tight">
                   Willkommen, {userName.split('@')[0]}
                 </h1>
-                <p className="text-slate-500 mt-1">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+                <p className="text-gray-400 mt-1">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
               </div>
               {lastRefresh && (
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-gray-500">
                   Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
@@ -263,29 +266,29 @@ export const DashboardPage = () => {
                 label="Gesamtanrufe" 
                 value={kpis.totalCalls} 
                 icon={Phone}
-                iconColor="text-blue-600"
-                bgColor="bg-blue-50"
+                iconColor="text-blue-400"
+                bgColor="bg-blue-500/10"
               />
               <StatCard 
                 label="Termine gebucht" 
                 value={kpis.appointmentsBooked} 
                 icon={Calendar}
-                iconColor="text-green-600"
-                bgColor="bg-green-50"
+                iconColor="text-green-400"
+                bgColor="bg-green-500/10"
               />
               <StatCard 
                 label="Verpasste Anrufe" 
                 value={kpis.missedCalls} 
                 icon={PhoneMissed}
                 iconColor="text-swiss-red"
-                bgColor="bg-red-50"
+                bgColor="bg-swiss-red/10"
               />
               <StatCard 
                 label="Durchschn. Dauer" 
                 value={kpis.avgDuration} 
                 icon={Clock}
-                iconColor="text-purple-600"
-                bgColor="bg-purple-50"
+                iconColor="text-purple-400"
+                bgColor="bg-purple-500/10"
               />
             </div>
 
@@ -299,7 +302,7 @@ export const DashboardPage = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         {calendarConnected ? (
-                          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium">
+                          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
                             <span className="relative flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -307,7 +310,7 @@ export const DashboardPage = () => {
                             {overview.calendar_provider ? `${overview.calendar_provider.charAt(0).toUpperCase() + overview.calendar_provider.slice(1)} Calendar` : 'Google Calendar'}
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleDisconnectCalendar(); }} 
-                              className="ml-1 p-0.5 hover:bg-emerald-200 rounded text-emerald-800 transition-colors"
+                              className="ml-1 p-0.5 hover:bg-emerald-500/20 rounded text-emerald-400 transition-colors"
                               title="Verbindung trennen"
                               aria-label="Kalenderverbindung trennen"
                             >
@@ -316,11 +319,11 @@ export const DashboardPage = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium">
-                              <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-800/50 border border-slate-700/50 text-gray-400 text-xs font-medium">
+                              <div className="w-2 h-2 rounded-full bg-gray-500"></div>
                               Offline
                             </div>
-                            <Button variant="ghost" size="sm" onClick={handleConnectCalendar} className="text-xs h-7 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button variant="ghost" size="sm" onClick={handleConnectCalendar} className="text-xs h-7 px-2 text-accent hover:text-accent hover:bg-accent/10">
                               Verbinden
                             </Button>
                           </div>
@@ -332,7 +335,7 @@ export const DashboardPage = () => {
                   {calendarConnected ? (
                     <div className="space-y-4">
                       {overview.calendar_connected_email && (
-                        <div className="text-sm text-slate-600">
+                        <div className="text-sm text-gray-300">
                           Verbunden mit: <span className="font-medium">{overview.calendar_connected_email}</span>
                         </div>
                       )}
@@ -355,8 +358,8 @@ export const DashboardPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-slate-200 rounded-xl h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-50/50">
-                      <p className="text-slate-500 text-sm mb-4">Kalender nicht verbunden</p>
+                    <div className="border-2 border-dashed border-slate-700/50 rounded-xl h-64 flex flex-col items-center justify-center text-center p-8 bg-slate-900/30">
+                      <p className="text-gray-400 text-sm mb-4">Kalender nicht verbunden</p>
                       <Button size="sm" onClick={handleConnectCalendar}>Verbinden</Button>
                     </div>
                   )}
@@ -374,23 +377,29 @@ export const DashboardPage = () => {
                               <stop offset="95%" stopColor="#DA291C" stopOpacity={0}/>
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                           <XAxis 
                             dataKey="name" 
                             axisLine={false} 
                             tickLine={false} 
-                            tick={{fill: '#94A3B8', fontSize: 12}} 
+                            tick={{fill: '#94a3b8', fontSize: 12}} 
                             dy={10} 
                           />
                           <YAxis 
                             axisLine={false} 
                             tickLine={false} 
-                            tick={{fill: '#94A3B8', fontSize: 12}} 
+                            tick={{fill: '#94a3b8', fontSize: 12}} 
                           />
                           <Tooltip 
-                            contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
-                            itemStyle={{color: '#1e293b', fontWeight: 600}}
-                            cursor={{stroke: '#CBD5E1', strokeWidth: 1, strokeDasharray: '4 4'}}
+                            contentStyle={{
+                              borderRadius: '8px', 
+                              border: '1px solid rgba(255, 255, 255, 0.1)', 
+                              backgroundColor: '#1e293b',
+                              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)'
+                            }} 
+                            itemStyle={{color: '#f1f5f9', fontWeight: 600}}
+                            labelStyle={{color: '#cbd5e1'}}
+                            cursor={{stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4'}}
                           />
                           <Area 
                             type="monotone" 
@@ -403,7 +412,7 @@ export const DashboardPage = () => {
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full text-slate-400">
+                      <div className="flex items-center justify-center h-full text-gray-500">
                         <p>Noch keine Anrufdaten verfügbar</p>
                       </div>
                     )}
@@ -414,7 +423,7 @@ export const DashboardPage = () => {
                 <Card 
                   title="Letzte Anrufe" 
                   action={
-                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-red-50" onClick={handleViewCalls}>
+                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-swiss-red/10" onClick={handleViewCalls}>
                       Alle ansehen
                     </Button>
                   }
@@ -422,7 +431,7 @@ export const DashboardPage = () => {
                   {recentCallsTableData.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
+                        <thead className="text-xs text-gray-400 uppercase bg-slate-800/50 border-b border-slate-700/50">
                           <tr>
                             <th className="px-4 py-3 font-semibold">Status</th>
                             <th className="px-4 py-3 font-semibold">Anrufer</th>
@@ -430,26 +439,26 @@ export const DashboardPage = () => {
                             <th className="px-4 py-3 font-semibold text-right">Zeit</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-800/50">
                           {recentCallsTableData.slice(0, 10).map((row) => {
                             const originalCall = overview.recent_calls.find(c => c.id === row.id);
                             return (
                               <tr 
                                 key={row.id} 
-                                className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                                className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
                                 onClick={() => originalCall && handleCallClick(originalCall)}
                               >
                                 <td className="px-4 py-4">
                                   <StatusBadge status={row.status} />
                                 </td>
                                 <td className="px-4 py-4">
-                                  <div className="font-medium text-slate-900">{row.caller}</div>
+                                  <div className="font-medium text-white">{row.caller}</div>
                                 </td>
-                                <td className="px-4 py-4 text-slate-500 font-mono text-xs">{row.duration}</td>
+                                <td className="px-4 py-4 text-gray-400 font-mono text-xs">{row.duration}</td>
                                 <td className="px-4 py-4 text-right">
-                                  <span className="text-slate-500">{row.timestamp}</span>
+                                  <span className="text-gray-400">{row.timestamp}</span>
                                   <button 
-                                    className="ml-2 p-1 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-all"
+                                    className="ml-2 p-1 text-gray-600 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (originalCall) handleCallClick(originalCall);
@@ -467,7 +476,7 @@ export const DashboardPage = () => {
                       </table>
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-slate-400">
+                    <div className="text-center py-12 text-gray-500">
                       <p>Noch keine Anrufe vorhanden</p>
                     </div>
                   )}
@@ -491,8 +500,8 @@ export const DashboardPage = () => {
                         <div className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500' : 'bg-amber-500'} border-2 border-slate-900 rounded-full animate-pulse`}></div>
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">AIDevelo Receptionist</h3>
-                        <div className="flex items-center gap-2 text-slate-400 text-xs mt-0.5">
+                        <h3 className="font-bold font-display text-lg">AIDevelo Receptionist</h3>
+                        <div className="flex items-center gap-2 text-gray-400 text-xs mt-0.5">
                           <Globe className="w-3 h-3" />
                           <span>Schweizerdeutsch</span>
                         </div>
@@ -507,9 +516,9 @@ export const DashboardPage = () => {
 
                   <div className="relative z-10 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm mb-6">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase text-slate-400 font-semibold tracking-wider">Agent Status</span>
+                      <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider">Agent Status</span>
                     </div>
-                    <p className="text-sm text-slate-300 leading-relaxed mb-2">
+                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
                       {isAgentActive 
                         ? 'Agent ist aktiv und bereit für Anrufe.'
                         : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
@@ -524,14 +533,14 @@ export const DashboardPage = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 relative z-10">
+                    <div className="grid grid-cols-2 gap-3 relative z-10">
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                      <div className="text-[10px] text-slate-500 uppercase mb-1">Branche</div>
-                      <div className="font-medium text-sm">{overview.agent_config.business_type || 'Nicht gesetzt'}</div>
+                      <div className="text-[10px] text-gray-500 uppercase mb-1">Branche</div>
+                      <div className="font-medium text-sm text-white">{overview.agent_config.business_type || 'Nicht gesetzt'}</div>
                     </div>
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                      <div className="text-[10px] text-slate-500 uppercase mb-1">Nummer</div>
-                      <div className="font-medium text-sm font-mono">
+                      <div className="text-[10px] text-gray-500 uppercase mb-1">Nummer</div>
+                      <div className="font-medium text-sm font-mono text-white">
                         {overview.phone_number ? `${overview.phone_number.substring(0, 8)}...` : 'Nicht verbunden'}
                       </div>
                     </div>
@@ -576,8 +585,8 @@ export const DashboardPage = () => {
                 </Card>
 
                 {/* System Health Compact */}
-                <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">System Health</h4>
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 backdrop-blur-sm">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System Health</h4>
                   <div className="space-y-3">
                     <HealthItem label="Twilio Gateway" status={phoneHealth} />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />

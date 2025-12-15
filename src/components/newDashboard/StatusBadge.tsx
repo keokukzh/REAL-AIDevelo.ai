@@ -7,9 +7,9 @@ interface StatusBadgeProps {
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const styles: Record<string, string> = {
-    completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    missed: "bg-red-100 text-red-800 border-red-200",
-    voicemail: "bg-amber-100 text-amber-800 border-amber-200"
+    completed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    missed: "bg-red-500/20 text-red-400 border-red-500/30",
+    voicemail: "bg-amber-500/20 text-amber-400 border-amber-500/30"
   };
   
   const labels: Record<string, string> = {
