@@ -188,23 +188,53 @@ function createRateLimiter(windowMs: number, max: number) {
 }
 
 /**
- * Per-route rate limiters cache
+ * Per-route rate limiters cache - initialized at module load time
  */
 const rateLimitersCache = new Map<string, ReturnType<typeof createRateLimiter>>();
 
 /**
- * Get or create rate limiter for a path
+ * Initialize all rate limiters at module load time (app initialization)
+ * This ensures rate limiters are created before any requests are handled
+ */
+function initializeRateLimiters() {
+  // Get unique configs from rateLimitConfig
+  const configs = new Set<string>();
+  Object.values(rateLimitConfig).forEach(config => {
+    const key = `${config.windowMs}-${config.max}`;
+    configs.add(key);
+  });
+  
+  // Also add default config
+  const defaultConfig = { windowMs: 15 * 60 * 1000, max: 100 };
+  const defaultKey = `${defaultConfig.windowMs}-${defaultConfig.max}`;
+  configs.add(defaultKey);
+  
+  // Create rate limiters for all configs
+  configs.forEach(key => {
+    const [windowMs, max] = key.split('-').map(Number);
+    if (!rateLimitersCache.has(key)) {
+      rateLimitersCache.set(key, createRateLimiter(windowMs, max));
+    }
+  });
+}
+
+/**
+ * Get rate limiter for a path (must use pre-initialized limiters)
  */
 function getRateLimiter(path: string) {
   const config = getRateLimitConfig(path);
   const key = `${config.windowMs}-${config.max}`;
   
+  // Ensure limiter exists (should already be initialized, but double-check)
   if (!rateLimitersCache.has(key)) {
     rateLimitersCache.set(key, createRateLimiter(config.windowMs, config.max));
   }
   
   return rateLimitersCache.get(key)!;
 }
+
+// Initialize rate limiters immediately when module loads
+initializeRateLimiters();
 
 /**
  * Apply rate limiting to API routes (except health check and OPTIONS preflight)

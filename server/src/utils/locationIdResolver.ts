@@ -79,34 +79,28 @@ export async function resolveLocationId(
     }
   }
 
-  // PRIORITY 3: Dev fallback - ensureDefaultLocation (only in dev/test)
-  if (process.env.NODE_ENV !== 'production') {
-    const supabaseUserId = options?.supabaseUserId || (req as any).supabaseUser?.supabaseUserId;
-    const email = options?.email || (req as any).supabaseUser?.email;
+  // PRIORITY 3: User's default location - ensureDefaultLocation
+  // This works in both dev and production for authenticated requests
+  const supabaseUserId = options?.supabaseUserId || (req as any).supabaseUser?.supabaseUserId;
+  const email = options?.email || (req as any).supabaseUser?.email;
 
-    if (supabaseUserId) {
-      try {
-        const user = await ensureUserRow(supabaseUserId, email);
-        const org = await ensureOrgForUser(supabaseUserId, email);
-        const location = await ensureDefaultLocation(org.id);
+  if (supabaseUserId) {
+    try {
+      const user = await ensureUserRow(supabaseUserId, email);
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
 
-        console.log(`[LocationIdResolver] Resolved from dev fallback (ensureDefaultLocation): ${location.id}`);
-        return { locationId: location.id, source: 'devFallback' };
-      } catch (error) {
-        console.warn(`[LocationIdResolver] Error in dev fallback: ${error}`);
-      }
+      console.log(`[LocationIdResolver] Resolved from user's default location (ensureDefaultLocation): ${location.id}`);
+      return { locationId: location.id, source: 'devFallback' };
+    } catch (error) {
+      console.warn(`[LocationIdResolver] Error resolving from user's default location: ${error}`);
     }
   }
 
-  // Production: fail if locationId cannot be resolved
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Unable to resolve locationId: missing x-location-id header, body.locationId, callSid, or phoneNumber');
-  }
-
-  // Dev: throw with helpful message
+  // Fail if locationId cannot be resolved
   throw new Error(
     'Unable to resolve locationId. ' +
     'Provide x-location-id header, body.locationId, callSid (via call_logs), phoneNumber (via phone_numbers), ' +
-    'or ensure authenticated request with supabaseUser for dev fallback.'
+    'or ensure authenticated request with supabaseUser for default location fallback.'
   );
 }
