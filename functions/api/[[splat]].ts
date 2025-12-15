@@ -28,9 +28,15 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
   // Reconstruct target URL
   // params.splat is an array of path segments after /api/
   const splat = params.splat as string | string[];
-  const pathSegments = Array.isArray(splat) ? splat.join('/') : (splat || '');
-  const search = new URL(request.url).search; // Preserve query string
+  let pathSegments = Array.isArray(splat) ? splat.join('/') : (splat || '');
   
+  // Normalize path: remove leading/trailing slashes to avoid double slashes
+  pathSegments = pathSegments.replace(/^\/+/, '').replace(/\/+$/, '');
+  
+  const url = new URL(request.url);
+  const search = url.search; // Preserve query string
+  
+  // Construct target URL: ensure single / between segments
   const targetUrl = `${targetOrigin}/api/${pathSegments}${search}`;
   
   // Forward request to Render backend
@@ -94,6 +100,13 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
     // Add debug headers to verify proxy is active
     proxiedHeaders.set('x-aidevelo-proxy', '1');
     proxiedHeaders.set('x-aidevelo-auth-present', hasAuth ? '1' : '0');
+    proxiedHeaders.set('x-aidevelo-proxied-url', targetUrl); // Debug: show what URL was forwarded
+    
+    // Log 404s for debugging (only in non-production or when debugging)
+    if (response.status === 404) {
+      // Minimal logging - only path, not full URL with tokens
+      console.log(`[Pages Function] 404 for path: ${pathSegments}`);
+    }
     
     return new Response(responseBody, {
       status: response.status,
@@ -101,15 +114,22 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
       headers: proxiedHeaders,
     });
   } catch (error) {
-    console.error('[Pages Function] Proxy error:', error);
+    // Log error with path for debugging (safe - no tokens)
+    console.error(`[Pages Function] Proxy error for path: ${pathSegments}`, error instanceof Error ? error.message : 'Unknown error');
+    
     return new Response(
       JSON.stringify({ 
         error: 'Proxy error',
         message: error instanceof Error ? error.message : 'Unknown error',
+        path: pathSegments, // Include path in error for debugging
       }),
       {
         status: 502,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-aidevelo-proxy-error': '1',
+          'x-aidevelo-proxied-url': targetUrl, // Debug header
+        },
       }
     );
   }
