@@ -41,22 +41,21 @@ export const SideNav: React.FC = () => {
   const initials = getInitials(organizationName);
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50">
-      <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
+    <aside className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50">
+      <div className="h-16 flex items-center justify-center px-6 border-b border-slate-800">
         <img 
           src="/logo-studio-white.png" 
           alt="AIDevelo Studio" 
-          className="h-8 w-auto object-contain"
+          className="h-10 w-auto object-contain"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
         />
-        <span className="font-bold text-lg tracking-tight font-display">AIDevelo Studio</span>
       </div>
       
       <div className="p-4 space-y-1 flex-1 overflow-y-auto">
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3 mt-2">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-2">
           Operations
         </div>
         <NavItem 
@@ -90,7 +89,7 @@ export const SideNav: React.FC = () => {
           onClick={() => navigate('/knowledge-base')} 
         />
         
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3 mt-6">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-6">
           Konfiguration
         </div>
         <NavItem 
@@ -103,15 +102,15 @@ export const SideNav: React.FC = () => {
 
       <div className="p-4 border-t border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-swiss-red to-orange-500 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-swiss-red to-orange-500 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2 ring-slate-800">
             {initials}
           </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="font-medium text-sm truncate">{organizationName}</p>
-            <p className="text-xs text-slate-400 truncate">{userEmail || 'Benutzer'}</p>
+          <div className="flex-1 overflow-hidden min-w-0">
+            <p className="font-medium text-sm truncate text-white">{organizationName}</p>
+            <p className="text-xs text-gray-400 truncate">{userEmail || 'Benutzer'}</p>
           </div>
           <Settings 
-            className="w-4 h-4 text-slate-500 hover:text-white cursor-pointer transition-colors" 
+            className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors flex-shrink-0" 
             onClick={() => navigate('/dashboard/settings')}
           />
         </div>

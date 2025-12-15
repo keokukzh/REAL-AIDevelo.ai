@@ -228,10 +228,10 @@ export const DashboardPage = () => {
       <main className="flex-1 ml-64 flex flex-col min-w-0">
         {/* Top Header */}
         <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
-          <div className="flex items-center gap-4 text-gray-400">
-            <span className="text-sm font-medium text-white">Dashboard</span>
+          <div className="flex items-center gap-3 text-gray-400">
+            <span className="text-sm font-semibold text-white font-display">Dashboard</span>
             <span className="text-gray-600">/</span>
-            <span className="text-sm">Tagesübersicht</span>
+            <span className="text-sm text-gray-400">Tagesübersicht</span>
           </div>
         </header>
 
@@ -246,15 +246,15 @@ export const DashboardPage = () => {
 
           <div className="space-y-8">
             {/* Welcome & Time Range */}
-            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold font-display text-white tracking-tight">
+                <h1 className="text-3xl font-bold font-display text-white tracking-tight">
                   Willkommen, {userName.split('@')[0]}
                 </h1>
-                <p className="text-gray-400 mt-1">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+                <p className="text-gray-400 mt-2 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
               </div>
               {lastRefresh && (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800">
                   Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
@@ -486,7 +486,7 @@ export const DashboardPage = () => {
               {/* Right Column (Agent & System) */}
               <div className="space-y-6">
                 {/* Agent Card */}
-                <div className="rounded-2xl bg-slate-900 text-white p-6 shadow-xl relative overflow-hidden">
+                <div className="rounded-2xl bg-slate-900/80 backdrop-blur-sm text-white p-6 shadow-xl relative overflow-hidden border border-slate-700/50">
                   {/* Abstract Background Shapes */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
@@ -557,8 +557,8 @@ export const DashboardPage = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <Card title="Quick Actions">
-                  <div className="space-y-2">
+                <Card title="Quick Actions" className="border-slate-700/50">
+                  <div className="space-y-1.5">
                     <QuickActionButton 
                       icon={Phone} 
                       label="Telefon verbinden" 
@@ -585,9 +585,9 @@ export const DashboardPage = () => {
                 </Card>
 
                 {/* System Health Compact */}
-                <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 backdrop-blur-sm">
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System Health</h4>
-                  <div className="space-y-3">
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 font-display">System Health</h4>
+                  <div className="space-y-3.5">
                     <HealthItem label="Twilio Gateway" status={phoneHealth} />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
                     <HealthItem label="ElevenLabs TTS" status={overview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
