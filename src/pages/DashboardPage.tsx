@@ -111,7 +111,6 @@ export const DashboardPage = () => {
         throw new Error('Keine Auth-URL erhalten');
       }
     } catch (error: any) {
-      console.error('[DashboardPage] Error connecting calendar:', error);
       const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
       toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
     }
@@ -130,7 +129,6 @@ export const DashboardPage = () => {
         throw new Error('Disconnect fehlgeschlagen');
       }
     } catch (error: any) {
-      console.error('[DashboardPage] Error disconnecting calendar:', error);
       const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
       toast.error(`Fehler beim Trennen des Kalenders: ${errorMsg}`);
     }
@@ -511,11 +509,19 @@ export const DashboardPage = () => {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs uppercase text-slate-400 font-semibold tracking-wider">Agent Status</span>
                     </div>
-                    <p className="text-sm text-slate-300 leading-relaxed">
+                    <p className="text-sm text-slate-300 leading-relaxed mb-2">
                       {isAgentActive 
                         ? 'Agent ist aktiv und bereit für Anrufe.'
                         : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
                     </p>
+                    {!overview.agent_config.eleven_agent_id && (
+                      <div className="mt-3 pt-3 border-t border-slate-700/50">
+                        <div className="flex items-center gap-2 text-xs text-amber-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                          <span>ElevenLabs Agent ID fehlt</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 relative z-10">

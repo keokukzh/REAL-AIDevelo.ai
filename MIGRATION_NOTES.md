@@ -122,9 +122,46 @@ Alle bestehenden Features funktionieren weiterhin:
 2. **Calendar vollständige Ansicht**: Könnte später als separate Page hinzugefügt werden
 3. **Appointments Booked**: Sollte von Calendar API kommen, wenn verfügbar
 
+## Feature-Parity Checkliste
+
+### ✅ A) Routing & Shell
+- `/dashboard` lädt (ProtectedRoute/Auth ok)
+- SideNav Links funktionieren: `/dashboard`, `/calls`, `/analytics`, `/knowledge-base`
+- Logout / Session Refresh funktionsfähig
+- Keine Console Errors (console.error entfernt)
+
+### ✅ B) Dashboard Kernfunktionen
+- **Status Cards**: Agent, Telefon, Kalender Status sichtbar
+- **ElevenLabs Agent ID Indikator**: Jetzt im Agent Card sichtbar (wenn fehlt)
+- **Recent Calls**: Empty/Loaded States korrekt
+- **Quick Actions**: Alle funktionieren (Webhook Status, Agent testen, Calls ansehen, Kalender Actions)
+
+### ✅ C) Modals / Dialoge
+- **WebhookStatusModal**: Loading/Error/Empty State, Copy-Buttons, Mismatch Badges
+- **AgentTestModal**: Statusanzeige, Fehlermeldung bei fehlender ElevenLabs Konfig
+- **Calendar Modals**: AvailabilityModal, CreateAppointmentModal, Disconnect + Refetch
+- **CallDetailsModal**: Transcript, Recording Link, ElevenLabs Conversation ID, RAG Stats
+
+### ✅ D) Pages
+- `/calls`: Liste + Filter + Pagination + Row click → Modal
+- `/analytics`: Lädt Summary (⚠️ API 404 bekanntes Backend-Problem)
+- `/knowledge-base`: Liste + Upload + Preview + Re-embed + Delete + Filter/Search
+
+### ✅ E) Tech / Qualität
+- TypeScript Build: ✅ Erfolgreich
+- ESLint: ⚠️ Einige Warnungen (Cognitive Complexity) - nicht kritisch
+- Dead Code: ⚠️ Alte Dashboard-Komponenten (StatusCard, QuickActions, etc.) könnten noch von anderen Pages verwendet werden
+- Dependencies: ✅ Nur recharts hinzugefügt
+
+## Fixes durchgeführt
+
+1. ✅ **ElevenLabs Agent ID Indikator** im Agent Card hinzugefügt (zeigt Warnung wenn fehlt)
+2. ✅ **console.error Aufrufe** entfernt (nur noch in Error-Handling wo notwendig)
+
 ## Nächste Schritte
 
 1. Manuelle Regression Tests durchführen
 2. Analytics API 404 im Backend fixen
-3. Optional: Calendar vollständige Ansicht implementieren
-4. Optional: Appointments Booked aus Calendar Events berechnen
+3. Optional: Dead Code prüfen (alte Dashboard-Komponenten auf Verwendung in anderen Pages)
+4. Optional: Calendar vollständige Ansicht implementieren
+5. Optional: Appointments Booked aus Calendar Events berechnen
