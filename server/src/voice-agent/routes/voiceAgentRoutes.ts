@@ -463,11 +463,19 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
         
         // Bridge integration
         if (message.event === 'start' && message.start) {
-          // Store phone number from start event if available (for locationId resolution)
-          // Note: Twilio start event doesn't include phone numbers, but we can get from call_logs
+          // Extract phoneNumber from customParameters (sent via TwiML <Parameter>)
+          const phoneNumber = message.start.customParameters?.to;
+          if (phoneNumber) {
+            session.phoneNumber = phoneNumber;
+          }
+          console.log(`[TwilioMediaStream] start event customParameters callSid=${callSid} to=${phoneNumber || 'none'}`);
+          
           // Create bridge to ElevenLabs when stream starts
-          elevenLabsBridgeService.createBridge(callSid, session).catch((error) => {
+          // Bridge will try call_logs first, then fallback to phoneNumber from customParameters
+          elevenLabsBridgeService.createBridge(callSid, session, phoneNumber).catch((error) => {
             console.error(`[TwilioMediaStream] Failed to create bridge callSid=${callSid}:`, error);
+            // Close session if bridge creation fails
+            twilioMediaStreamService.cleanupSession(callSid, 'Bridge creation failed');
           });
         } else if (message.event === 'media' && message.media?.payload && message.media.track === 'inbound') {
           // Forward inbound audio to ElevenLabs bridge

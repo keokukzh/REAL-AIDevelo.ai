@@ -24,6 +24,11 @@ export interface TwilioStreamMessage {
     streamSid: string;
     callSid: string;
     accountSid?: string;
+    customParameters?: {
+      to?: string;
+      from?: string;
+      callSid?: string;
+    };
     tracks?: {
       inbound?: { codec?: string; sampleRate?: number };
       outbound?: { codec?: string; sampleRate?: number };
@@ -137,7 +142,11 @@ export class TwilioMediaStreamService {
         if (message.start) {
           session.streamSid = message.start.streamSid;
           session.tracks = message.start.tracks;
-          console.log(`[TwilioMediaStream] start streamSid=${session.streamSid} callSid=${session.callSid} tracks=${JSON.stringify(session.tracks)}`);
+          // Store customParameters for locationId resolution fallback
+          if (message.start.customParameters?.to) {
+            session.phoneNumber = message.start.customParameters.to;
+          }
+          console.log(`[TwilioMediaStream] start streamSid=${session.streamSid} callSid=${session.callSid} tracks=${JSON.stringify(session.tracks)} customParameters=${JSON.stringify(message.start.customParameters)}`);
         }
         break;
 

@@ -20,16 +20,104 @@ function getWebSocketBaseUrl(req: Request): string {
   return base.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
 }
 
-export function handleInboundVoice(req: Request, res: Response): void {
+export async function handleInboundVoice(req: Request, res: Response): Promise<void> {
   const callSid = req.body.CallSid || 'unknown';
+  const from = req.body.From || '';
+  const to = req.body.To || '';
   const enableMediaStreams = process.env.ENABLE_MEDIA_STREAMS === 'true';
+
+  // Step 1: Upsert call_logs early to ensure locationId is available for WebSocket handler
+  let locationId: string | null = null;
+  try {
+    if (to) {
+      const { data: phoneData } = await supabaseAdmin
+        .from('phone_numbers')
+        .select('location_id')
+        .or(`e164.eq.${to},customer_public_number.eq.${to}`)
+        .limit(1)
+        .maybeSingle();
+
+      locationId = phoneData?.location_id || null;
+
+      if (locationId) {
+        // Upsert call_logs entry
+        const timestamp = req.body.Timestamp ? new Date(req.body.Timestamp).toISOString() : new Date().toISOString();
+        const callData: any = {
+          location_id: locationId,
+          call_sid: callSid,
+          direction: 'inbound',
+          from_e164: from || null,
+          to_e164: to || null,
+          started_at: timestamp,
+          outcome: 'ringing', // Initial status
+          notes_json: {
+            status: 'ringing',
+            timestamp,
+          },
+        };
+
+        // Check if call log already exists
+        const { data: existingCall } = await supabaseAdmin
+          .from('call_logs')
+          .select('id')
+          .eq('call_sid', callSid)
+          .maybeSingle();
+
+        if (existingCall) {
+          const { error: updateError } = await supabaseAdmin
+            .from('call_logs')
+            .update(callData)
+            .eq('id', existingCall.id);
+          if (updateError) {
+            console.error(`[TwilioController] Error updating call log callSid=${callSid}:`, updateError);
+          }
+        } else {
+          const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
+          if (insertError) {
+            console.error(`[TwilioController] Error inserting call log callSid=${callSid}:`, insertError);
+          }
+        }
+
+        console.log(`[TwilioController] Call log upserted callSid=${callSid} locationId=${locationId} to=${to}`);
+      }
+    }
+  } catch (error: any) {
+    console.error(`[TwilioController] Error upserting call log callSid=${callSid}:`, error.message);
+    // Continue even if call log upsert fails
+  }
 
   // Feature Flag: Use Media Streams if enabled, otherwise fallback to TwiML without stream
   if (enableMediaStreams) {
+    // Step 3: Preconditions check
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL;
     const streamToken = process.env.TWILIO_STREAM_TOKEN;
-    if (!streamToken) {
-      console.error(`[TwilioController] ENABLE_MEDIA_STREAMS=true but TWILIO_STREAM_TOKEN not configured, falling back`);
-      // Fallback to simple TwiML
+    let fallbackReason: string | null = null;
+
+    if (!publicBaseUrl) {
+      fallbackReason = 'PUBLIC_BASE_URL not configured';
+    } else if (!streamToken) {
+      fallbackReason = 'TWILIO_STREAM_TOKEN not configured';
+    } else if (!locationId) {
+      fallbackReason = `locationId not resolvable for to=${to}`;
+    } else {
+      // Check if agent_configs.eleven_agent_id exists
+      try {
+        const { data: agentConfig } = await supabaseAdmin
+          .from('agent_configs')
+          .select('eleven_agent_id')
+          .eq('location_id', locationId)
+          .maybeSingle();
+
+        if (!agentConfig?.eleven_agent_id) {
+          fallbackReason = `eleven_agent_id missing for locationId=${locationId}`;
+        }
+      } catch (error: any) {
+        fallbackReason = `Error checking agent config: ${error.message}`;
+      }
+    }
+
+    if (fallbackReason) {
+      console.warn(`[TwilioController] Precondition check failed callSid=${callSid}: ${fallbackReason}, falling back`);
       const fallbackTwiml = buildTwiML(
         `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
       );
@@ -37,13 +125,14 @@ export function handleInboundVoice(req: Request, res: Response): void {
       return;
     }
 
+    // Step 2: Build TwiML with Stream Parameters
     const wsBaseUrl = getWebSocketBaseUrl(req);
-    const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(callSid)}&token=${encodeURIComponent(streamToken)}`;
+    const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(callSid)}&token=${encodeURIComponent(streamToken!)}`; // streamToken is guaranteed to exist after precondition check
 
-    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=true streamUrl=${streamUrl}`);
+    console.log(`[TwilioController] callSid=${callSid} ENABLE_MEDIA_STREAMS=true streamUrl=${streamUrl} locationId=${locationId}`);
 
     const twiml = buildTwiML(
-      `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" track="both_tracks" />\n  </Connect>`
+      `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" track="both_tracks">\n      <Parameter name="to" value="${escapeXml(to)}" />\n      <Parameter name="from" value="${escapeXml(from)}" />\n      <Parameter name="callSid" value="${escapeXml(callSid)}" />\n    </Stream>\n  </Connect>`
     );
 
     res

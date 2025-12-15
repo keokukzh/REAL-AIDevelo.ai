@@ -29,12 +29,12 @@ export class ElevenLabsBridgeService {
   /**
    * Resolve locationId from callSid
    * Tries multiple methods:
-   * 1. From call_logs (if call was already logged)
-   * 2. From phone_numbers via To/From number (requires phoneNumber parameter)
+   * 1. From call_logs (if call was already logged via handleInboundVoice upsert)
+   * 2. From phone_numbers via To number from customParameters (fallback)
    */
   private async resolveLocationIdFromCallSid(callSid: string, phoneNumber?: string): Promise<string | null> {
     try {
-      // Method 1: Try to get from call_logs first
+      // Method 1: Try to get from call_logs first (should exist after handleInboundVoice upsert)
       const { data: callLog } = await supabaseAdmin
         .from('call_logs')
         .select('location_id')
@@ -42,11 +42,13 @@ export class ElevenLabsBridgeService {
         .maybeSingle();
 
       if (callLog?.location_id) {
+        console.log(`[ElevenLabsBridge] Resolved locationId from call_logs callSid=${callSid} locationId=${callLog.location_id}`);
         return callLog.location_id;
       }
 
-      // Method 2: Try to get from phone_numbers if phoneNumber provided
+      // Method 2: Fallback - Try to get from phone_numbers if phoneNumber provided (from customParameters)
       if (phoneNumber) {
+        console.log(`[ElevenLabsBridge] Fallback: resolving locationId from phone_number callSid=${callSid} phoneNumber=${phoneNumber}`);
         const { data: phoneData } = await supabaseAdmin
           .from('phone_numbers')
           .select('location_id')
@@ -55,6 +57,7 @@ export class ElevenLabsBridgeService {
           .maybeSingle();
 
         if (phoneData?.location_id) {
+          console.log(`[ElevenLabsBridge] Resolved locationId from phone_numbers callSid=${callSid} locationId=${phoneData.location_id}`);
           return phoneData.location_id;
         }
       }
@@ -83,10 +86,12 @@ export class ElevenLabsBridgeService {
    * Create bridge session
    */
   async createBridge(callSid: string, twilioSession: TwilioMediaStreamSession, phoneNumber?: string): Promise<void> {
-    // Resolve locationId
-    const locationId = await this.resolveLocationIdFromCallSid(callSid, phoneNumber);
+    // Resolve locationId (try call_logs first, then fallback to phoneNumber from customParameters)
+    const locationId = await this.resolveLocationIdFromCallSid(callSid, phoneNumber || twilioSession.phoneNumber);
     if (!locationId) {
-      console.error(`[ElevenLabsBridge] Could not resolve locationId for callSid=${callSid}, bridge not created`);
+      console.error(`[ElevenLabsBridge] Could not resolve locationId for callSid=${callSid} phoneNumber=${phoneNumber || twilioSession.phoneNumber || 'none'}, closing session`);
+      // Close WebSocket session cleanly if locationId cannot be resolved
+      twilioMediaStreamService.cleanupSession(callSid, 'locationId resolution failed');
       return;
     }
 
