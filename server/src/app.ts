@@ -94,6 +94,7 @@ import calendarRoutes from './routes/calendarRoutes';
 import devCalendarRoutes from './routes/devCalendarRoutes';
 import devRagRoutes from './routes/devRagRoutes';
 import ragRoutes from './routes/ragRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
 import voiceRoutes from './routes/voiceRoutes';
@@ -392,6 +393,7 @@ v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/calendar', calendarRoutes);
 v1Router.use('/rag', ragRoutes); // Auth applied per-route
+v1Router.use('/analytics', analyticsRoutes); // Auth applied per-route
 if (process.env.NODE_ENV !== 'production') {
   v1Router.use('/dev/calendar', devCalendarRoutes); // Dev-only endpoints
   v1Router.use('/dev/rag', devRagRoutes); // Dev-only RAG endpoints

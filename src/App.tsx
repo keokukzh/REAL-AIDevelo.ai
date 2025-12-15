@@ -21,6 +21,7 @@ const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').the
 const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
 const CallsPage = React.lazy(() => import('./pages/CallsPage').then(m => ({ default: m.CallsPage })));
 const KnowledgeBasePage = React.lazy(() => import('./pages/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })));
+const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -134,6 +135,13 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <KnowledgeBasePage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/analytics" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <AnalyticsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
