@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../ui/Modal';
-import { Phone, Clock, Calendar, CheckCircle, XCircle, AlertCircle, ExternalLink, Copy } from 'lucide-react';
+import { Phone, Clock, Calendar, CheckCircle, XCircle, AlertCircle, ExternalLink, Copy, Database, Bot } from 'lucide-react';
 import { useCallDetails } from '../../hooks/useCallDetails';
 import { CallLog } from '../../hooks/useCallLogs';
 import { toast } from '../ui/Toast';
@@ -93,6 +93,8 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
   const notes = displayCall.notes || {};
   const transcript = notes.transcript || notes.transcription || null;
   const recordingUrl = notes.recordingUrl || notes.recording_url || null;
+  const rag = notes.rag || null;
+  const elevenConversationId = notes.elevenConversationId || null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Anruf-Details" size="lg">
@@ -199,8 +201,120 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
           </div>
         )}
 
+        {/* ElevenLabs Conversation ID */}
+        {elevenConversationId && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Bot size={16} className="text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-300">ElevenLabs</h3>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-gray-400 flex-1 truncate">{elevenConversationId}</span>
+              <button
+                onClick={() => handleCopyConversationId(elevenConversationId)}
+                className="p-1 hover:bg-gray-700 rounded transition-colors"
+                title="Conversation ID kopieren"
+              >
+                <Copy size={14} className="text-gray-400" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* RAG Stats */}
+        {rag && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Database size={16} className="text-gray-400" />
+              <h3 className="text-sm font-semibold text-gray-300">RAG Stats</h3>
+            </div>
+
+            {/* Enabled Badge */}
+            <div className="mb-3">
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                rag.enabled
+                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                  : 'bg-gray-700 text-gray-400 border border-gray-600'
+              }`}>
+                {rag.enabled ? 'Aktiviert' : 'Deaktiviert'}
+              </span>
+            </div>
+
+            {/* Stats Grid */}
+            {rag.enabled && (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <span className="text-xs text-gray-400">Queries</span>
+                    <p className="text-sm font-medium text-gray-200">{rag.totalQueries || 0}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Results</span>
+                    <p className="text-sm font-medium text-gray-200">{rag.totalResults || 0}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Injected Chars</span>
+                    <p className="text-sm font-medium text-gray-200">{rag.totalInjectedChars || 0}</p>
+                  </div>
+                </div>
+
+                {/* Last Query */}
+                {rag.lastQuery && (
+                  <div className="mb-3 p-2 bg-gray-900/50 rounded border border-gray-700">
+                    <span className="text-xs text-gray-400 mb-1 block">Letzte Query</span>
+                    <p className="text-xs text-gray-300 mb-2">{rag.lastQuery.query}</p>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-gray-400">Results: <span className="text-gray-300">{rag.lastQuery.results}</span></span>
+                      <span className="text-gray-400">Chars: <span className="text-gray-300">{rag.lastQuery.injectedChars}</span></span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Sources Table */}
+                {rag.topSources && rag.topSources.length > 0 && (
+                  <div>
+                    <span className="text-xs text-gray-400 mb-2 block">Top Sources ({rag.topSources.length})</span>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-700">
+                            <th className="text-left text-gray-400 py-1 px-2">Score</th>
+                            <th className="text-left text-gray-400 py-1 px-2">Title</th>
+                            <th className="text-left text-gray-400 py-1 px-2">File</th>
+                            <th className="text-left text-gray-400 py-1 px-2">Doc ID</th>
+                            <th className="text-left text-gray-400 py-1 px-2">Chunk</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rag.topSources.map((source: any, idx: number) => (
+                            <tr key={idx} className="border-b border-gray-800">
+                              <td className="py-1 px-2 text-gray-300 font-mono">{source.score?.toFixed(3) || '-'}</td>
+                              <td className="py-1 px-2 text-gray-300 truncate max-w-[120px]" title={source.title}>
+                                {source.title || '-'}
+                              </td>
+                              <td className="py-1 px-2 text-gray-400 truncate max-w-[100px]" title={source.fileName}>
+                                {source.fileName || '-'}
+                              </td>
+                              <td className="py-1 px-2 text-gray-400 font-mono text-[10px] truncate max-w-[80px]" title={source.documentId}>
+                                {source.documentId || '-'}
+                              </td>
+                              <td className="py-1 px-2 text-gray-400 font-mono">{source.chunkIndex ?? '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* Notes (if available and not already shown as transcript) */}
-        {notes && typeof notes === 'object' && Object.keys(notes).length > 0 && !transcript && (
+        {notes && typeof notes === 'object' && Object.keys(notes).length > 0 && !transcript && !rag && !elevenConversationId && (
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <h3 className="text-sm font-semibold text-gray-300 mb-2">Notizen</h3>
             <pre className="text-xs text-gray-300 overflow-auto max-h-48">
