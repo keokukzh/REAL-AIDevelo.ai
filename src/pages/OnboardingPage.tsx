@@ -91,18 +91,16 @@ export const OnboardingPage = () => {
                 purchaseId: purchaseId || undefined,
             };
 
-            console.log('[Onboarding] Creating agent with payload:', payload);
+            const { logger } = await import('../lib/logger');
+            logger.debug('Creating agent with payload', { payload });
             setSubmissionProgress('Daten werden gesendet...');
-            
-            // Debug calls removed - no longer needed
             
             const response = await apiRequest<{ success: boolean; data: any }>('/agents', {
                 method: 'POST',
                 data: payload,
             });
 
-            console.log('[Onboarding] Full response:', response);
-            console.log('[Onboarding] Response structure:', {
+            logger.debug('Agent creation response received', {
                 hasSuccess: 'success' in response,
                 hasData: 'data' in response,
                 responseKeys: Object.keys(response),
@@ -113,7 +111,7 @@ export const OnboardingPage = () => {
                 throw new Error(`Unexpected response format: ${JSON.stringify(response)}`);
             }
 
-            console.log('[Onboarding] Agent creation started:', response.data.id);
+            logger.info('Agent creation started', { agentId: response.data.id });
             setSubmissionProgress('Agent wird konfiguriert (dies kann bis zu 30 Sekunden dauern)...');
             
             // Poll for agent status until it's no longer 'creating'
@@ -130,10 +128,14 @@ export const OnboardingPage = () => {
                     });
                     
                     const agentStatus = statusResponse.data.status;
-                    console.log(`[Onboarding] Agent status: ${agentStatus} (poll attempt ${pollingAttempts + 1})`);
+                    const { logger } = await import('../lib/logger');
+                    logger.debug('Agent status check', { 
+                        status: agentStatus, 
+                        attempt: pollingAttempts + 1 
+                    });
                     
                     if (agentStatus === 'pending_activation') {
-                        console.log('[Onboarding] Agent creation completed!');
+                        logger.info('Agent creation completed', { agentId });
                         setSubmissionProgress('Agent erfolgreich erstellt!');
                         await new Promise(resolve => setTimeout(resolve, 500));
                         navigate('/dashboard');
@@ -143,25 +145,27 @@ export const OnboardingPage = () => {
                     }
                 } catch (pollError) {
                     // Continue polling even if status check fails
-                    console.log('[Onboarding] Status check failed, will retry:', pollError);
+                    const { logger } = await import('../lib/logger');
+                    logger.warn('Status check failed, will retry', { error: pollError });
                 }
                 
                 pollingAttempts++;
             }
             
             // If we timeout, still navigate (agent might complete in background)
-            console.warn('[Onboarding] Agent creation timeout - agent may complete in background');
+            const { logger } = await import('../lib/logger');
+            logger.warn('Agent creation timeout - agent may complete in background', { agentId });
             setSubmissionProgress('Agent-Setup wird im Hintergrund abgeschlossen...');
             await new Promise(resolve => setTimeout(resolve, 2000));
             navigate('/dashboard');
             
         } catch (error) {
+            const { logger } = await import('../lib/logger');
             let errorMessage = "Fehler beim Erstellen des Agents.";
             if (error instanceof ApiRequestError) {
                 errorMessage = error.message;
-                console.error('[Onboarding] ApiRequestError:', {
+                logger.error('Agent creation failed - ApiRequestError', error, {
                     statusCode: error.statusCode,
-                    message: error.message,
                     details: error.details
                 });
                 // Try to extract detailed validation errors
@@ -175,10 +179,9 @@ export const OnboardingPage = () => {
                     }
                 }
             } else {
-                console.error('[Onboarding] Unexpected error:', error);
+                logger.error('Agent creation failed - unexpected error', error);
                 errorMessage = error instanceof Error ? error.message : String(error);
             }
-            console.error('[Onboarding] Full error object:', error);
             alert(errorMessage);
         } finally {
             setIsSubmitting(false);

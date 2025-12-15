@@ -38,12 +38,14 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       delete config.headers.Authorization;
       // Log warning in dev mode only
       if (import.meta.env.DEV) {
-        console.warn('[apiClient] No access token available for request:', config.url);
+        const { logger } = await import('../lib/logger');
+        logger.warn('No access token available for request', { url: config.url });
       }
     }
   } catch (error) {
     // If getAccessToken fails, log but don't crash
-    console.error('[apiClient] Error getting access token:', error);
+    const { logger } = await import('../lib/logger');
+    logger.error('Error getting access token', error);
     delete config.headers.Authorization;
   }
   return config;

@@ -119,7 +119,8 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
             // Continue animation - always continue if recording
             animationFrameRef.current = requestAnimationFrame(updateVisuals);
         } catch (error) {
-            console.error('[VoiceOnboarding] Error updating visuals:', error);
+            const { logger } = await import('../lib/logger');
+            logger.error('Error updating visuals', error);
             // Stop on error
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
@@ -211,8 +212,9 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
             processRecording(audioBlob);
         };
 
-        mediaRecorder.onerror = (event) => {
-            console.error('[VoiceOnboarding] MediaRecorder error:', event);
+        mediaRecorder.onerror = async (event) => {
+            const { logger } = await import('../lib/logger');
+            logger.error('MediaRecorder error', event as Error);
             isRecordingRef.current = false;
             setAnalysisStatus("Fehler bei der Aufnahme. Bitte versuchen Sie es erneut.");
             setIsRecording(false);
