@@ -6,6 +6,12 @@ import { supabaseAdmin } from './supabaseDb';
 import { ensureAgentConfig } from './supabaseDb';
 import { voiceAgentConfig } from '../voice-agent/config';
 
+export interface TranscriptSegment {
+  text: string;
+  timestamp: Date;
+  isFinal: boolean;
+}
+
 export interface BridgeSession {
   callSid: string;
   locationId: string;
@@ -16,6 +22,19 @@ export interface BridgeSession {
   bytesIn: number;
   bytesOut: number;
   startTime: Date;
+  transcriptSegments: TranscriptSegment[];
+  elevenConversationId: string | null;
+  ragStats: {
+    enabled: boolean;
+    totalQueries: number;
+    totalResults: number;
+    totalInjectedChars: number;
+    lastQuery?: {
+      query: string;
+      results: number;
+      injectedChars: number;
+    };
+  };
 }
 
 /**
@@ -114,6 +133,14 @@ export class ElevenLabsBridgeService {
       bytesIn: 0,
       bytesOut: 0,
       startTime: new Date(),
+      transcriptSegments: [],
+      elevenConversationId: null,
+      ragStats: {
+        enabled: voiceAgentConfig.rag.enabled,
+        totalQueries: 0,
+        totalResults: 0,
+        totalInjectedChars: 0,
+      },
     };
 
     this.bridges.set(callSid, bridge);
@@ -146,7 +173,13 @@ export class ElevenLabsBridgeService {
         },
         onTranscription: (text: string, isFinal: boolean) => {
           console.log(`[ElevenLabsBridge] Transcription callSid=${bridge.callSid} text="${text}" isFinal=${isFinal}`);
-          // TODO: Store transcript in call_logs (Step 5)
+          
+          // Collect transcript segments
+          bridge.transcriptSegments.push({
+            text,
+            timestamp: new Date(),
+            isFinal,
+          });
         },
         onError: (error: Error) => {
           console.error(`[ElevenLabsBridge] ElevenLabs error callSid=${bridge.callSid}:`, error.message);
@@ -159,12 +192,19 @@ export class ElevenLabsBridgeService {
         onOpen: () => {
           console.log(`[ElevenLabsBridge] ElevenLabs connected callSid=${bridge.callSid}`);
         },
+        onConversationInitiated: (conversationId: string) => {
+          bridge.elevenConversationId = conversationId;
+          console.log(`[ElevenLabsBridge] Conversation initiated callSid=${bridge.callSid} conversationId=${conversationId}`);
+        },
       };
 
       const client = new ElevenLabsStreamingClient(config, callbacks);
       await client.connect();
       bridge.elevenLabsClient = client;
       bridge.reconnectAttempts = 0;
+      
+      // Store conversation ID when available (will be set in onTranscription or via client property if available)
+      // Note: conversationId is set internally in ElevenLabsStreamingClient, we'll capture it later if needed
 
       console.log(`[ElevenLabsBridge] Connected callSid=${bridge.callSid} agentId=${bridge.elevenAgentId}`);
     } catch (error: any) {
@@ -237,6 +277,66 @@ export class ElevenLabsBridgeService {
   }
 
   /**
+   * Build merged transcript from final segments
+   */
+  private buildMergedTranscript(bridge: BridgeSession): string {
+    const finalSegments = bridge.transcriptSegments.filter(s => s.isFinal);
+    return finalSegments.map(s => s.text).join(' ').trim();
+  }
+
+  /**
+   * Persist transcript and stats to call_logs
+   */
+  private async persistTranscript(bridge: BridgeSession): Promise<void> {
+    try {
+      const mergedTranscript = this.buildMergedTranscript(bridge);
+      const finalSegmentsCount = bridge.transcriptSegments.filter(s => s.isFinal).length;
+
+      // Get current notes_json
+      const { data: existingCall } = await supabaseAdmin
+        .from('call_logs')
+        .select('notes_json')
+        .eq('call_sid', bridge.callSid)
+        .maybeSingle();
+
+      const existingNotes = existingCall?.notes_json || {};
+      
+      // Update notes_json with transcript and stats
+      const updatedNotes = {
+        ...existingNotes,
+        transcript: mergedTranscript,
+        transcriptSegments: bridge.transcriptSegments.map(s => ({
+          text: s.text,
+          timestamp: s.timestamp.toISOString(),
+          isFinal: s.isFinal,
+        })),
+        elevenConversationId: bridge.elevenConversationId,
+        rag: bridge.ragStats.enabled ? {
+          enabled: bridge.ragStats.enabled,
+          totalQueries: bridge.ragStats.totalQueries,
+          totalResults: bridge.ragStats.totalResults,
+          totalInjectedChars: bridge.ragStats.totalInjectedChars,
+          lastQuery: bridge.ragStats.lastQuery,
+        } : { enabled: false },
+      };
+
+      const { error: updateError } = await supabaseAdmin
+        .from('call_logs')
+        .update({ notes_json: updatedNotes })
+        .eq('call_sid', bridge.callSid);
+
+      if (updateError) {
+        console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, updateError);
+      } else {
+        console.log(`[ElevenLabsBridge] Transcript persisted callSid=${bridge.callSid} transcriptLength=${mergedTranscript.length} segments=${finalSegmentsCount} ragQueries=${bridge.ragStats.totalQueries}`);
+      }
+    } catch (error: any) {
+      console.error(`[ElevenLabsBridge] Error persisting transcript callSid=${bridge.callSid}:`, error.message);
+      // Don't throw - cleanup must continue
+    }
+  }
+
+  /**
    * Close bridge and cleanup
    */
   closeBridge(callSid: string, reason?: string): void {
@@ -247,6 +347,11 @@ export class ElevenLabsBridgeService {
 
     const duration = Date.now() - bridge.startTime.getTime();
     console.log(`[ElevenLabsBridge] Closing bridge callSid=${callSid} reason=${reason || 'unknown'} duration=${Math.round(duration / 1000)}s bytesIn=${bridge.bytesIn} bytesOut=${bridge.bytesOut}`);
+
+    // Persist transcript before closing
+    this.persistTranscript(bridge).catch((error) => {
+      console.error(`[ElevenLabsBridge] Failed to persist transcript callSid=${callSid}:`, error);
+    });
 
     if (bridge.elevenLabsClient) {
       try {

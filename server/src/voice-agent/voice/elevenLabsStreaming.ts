@@ -16,6 +16,7 @@ export interface ElevenLabsStreamCallbacks {
   onError?: (error: Error) => void;
   onClose?: () => void;
   onOpen?: () => void;
+  onConversationInitiated?: (conversationId: string) => void;
 }
 
 export interface ConversationConfig {
@@ -118,6 +119,9 @@ export class ElevenLabsStreamingClient {
         case 'conversation_initiation_client_data':
           this.conversationId = message.conversation_id;
           console.log('[ElevenLabs] Conversation initiated:', this.conversationId);
+          if (this.conversationId) {
+            this.callbacks.onConversationInitiated?.(this.conversationId);
+          }
           break;
 
         case 'audio_out':
