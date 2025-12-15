@@ -18,7 +18,7 @@ export function buildExportUrl(endpoint: string, filters: ExportFilters): string
   if (filters.limit) params.append('limit', filters.limit.toString());
   if (filters.limitSources) params.append('limitSources', filters.limitSources.toString());
 
-  return `/api/analytics/exports/${endpoint}?${params.toString()}`;
+  return `/analytics/exports/${endpoint}?${params.toString()}`;
 }
 
 /**

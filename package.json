@@ -26,7 +26,8 @@
     "workflow:monitor": "tsx workflows/cli/cli.ts monitor",
     "workflow:history": "tsx workflows/cli/cli.ts history",
     "workflow:status": "tsx workflows/cli/cli.ts status",
-    "lint:changed": "node scripts/lint-changed.mjs"
+    "lint:changed": "node scripts/lint-changed.mjs",
+    "lint:api-prefix": "node scripts/check-api-prefix.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

@@ -60,7 +60,7 @@ export function useCallsSummary(filters: CallsSummaryFilters = {}) {
       if (filters.direction) params.append('direction', filters.direction);
       if (filters.outcome) params.append('outcome', filters.outcome);
 
-      const response = await apiClient.get(`/api/analytics/calls/summary?${params.toString()}`);
+      const response = await apiClient.get(`/analytics/calls/summary?${params.toString()}`);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to fetch call summary');
       }
@@ -83,7 +83,7 @@ export function useTopSources(filters: TopSourcesFilters = {}) {
       if (filters.dateTo) params.append('dateTo', filters.dateTo);
       if (filters.limit) params.append('limit', filters.limit.toString());
 
-      const response = await apiClient.get(`/api/analytics/calls/top-sources?${params.toString()}`);
+      const response = await apiClient.get(`/analytics/calls/top-sources?${params.toString()}`);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to fetch top sources');
       }

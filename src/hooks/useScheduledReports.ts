@@ -53,7 +53,7 @@ export function useScheduledReports() {
   return useQuery({
     queryKey: ['scheduledReports'],
     queryFn: async (): Promise<ScheduledReport[]> => {
-      const response = await apiClient.get('/api/reports/scheduled');
+      const response = await apiClient.get('/reports/scheduled');
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to fetch scheduled reports');
       }
@@ -70,7 +70,7 @@ export function useCreateScheduledReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateScheduledReportInput): Promise<ScheduledReport> => {
-      const response = await apiClient.post('/api/reports/scheduled', input);
+      const response = await apiClient.post('/reports/scheduled', input);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to create scheduled report');
       }
@@ -89,7 +89,7 @@ export function useUpdateScheduledReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateScheduledReportInput }): Promise<ScheduledReport> => {
-      const response = await apiClient.patch(`/api/reports/scheduled/${id}`, input);
+      const response = await apiClient.patch(`/reports/scheduled/${id}`, input);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to update scheduled report');
       }
@@ -108,7 +108,7 @@ export function useDeleteScheduledReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await apiClient.delete(`/api/reports/scheduled/${id}`);
+      const response = await apiClient.delete(`/reports/scheduled/${id}`);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to delete scheduled report');
       }
@@ -125,7 +125,7 @@ export function useDeleteScheduledReport() {
 export function useTestScheduledReport() {
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await apiClient.post(`/api/reports/scheduled/${id}/test`);
+      const response = await apiClient.post(`/reports/scheduled/${id}/test`);
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to send test report');
       }
