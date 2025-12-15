@@ -26,11 +26,14 @@ export const SideNav: React.FC = () => {
 
   const getInitials = (name: string | null | undefined): string => {
     if (!name) return 'U';
-    const parts = name.split(' ');
+    // Split on spaces and filter out empty strings (handles consecutive spaces)
+    const parts = name.split(' ').filter(part => part.length > 0);
     if (parts.length >= 2) {
+      // Both parts are guaranteed to be non-empty after filtering
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    // Fallback: use first 2 characters of the name (or first character if name is too short)
+    return name.substring(0, 2).toUpperCase() || name.substring(0, 1).toUpperCase() || 'U';
   };
 
   const organizationName = overview?.organization?.name || 'AIDevelo';
