@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
@@ -24,8 +24,9 @@ import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState
 import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
-import { useCalendarEvents } from '../hooks/useCalendarEvents';
-import { CalendarEventModal } from '../components/dashboard/CalendarEventModal';
+import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents';
+import { CallLog } from '../hooks/useCallLogs';
+import { extractErrorMessage } from '../lib/errorUtils';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 
 export const DashboardPage = () => {
@@ -53,7 +54,7 @@ export const DashboardPage = () => {
     }
   }, [queryClient, refetch]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-  const [selectedCall, setSelectedCall] = useState<any | null>(null);
+  const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
   const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
   const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
@@ -61,7 +62,7 @@ export const DashboardPage = () => {
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(undefined);
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -152,6 +153,9 @@ export const DashboardPage = () => {
           return;
         }
 
+        // Store interval ID for cleanup
+        let pollInterval: NodeJS.Timeout | null = null;
+
         // Listen for OAuth callback postMessage
         const messageListener = (event: MessageEvent) => {
           // Accept messages from backend (real-aidevelo-ai.onrender.com) or frontend
@@ -178,6 +182,11 @@ export const DashboardPage = () => {
             refetch();
             authWindow?.close();
             window.removeEventListener('message', messageListener);
+            // Clean up polling if it exists
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
           } else if (event.data?.type === 'calendar-oauth-error') {
             const errorMsg = typeof event.data.message === 'string' 
               ? event.data.message 
@@ -185,6 +194,11 @@ export const DashboardPage = () => {
             toast.error(errorMsg);
             authWindow?.close();
             window.removeEventListener('message', messageListener);
+            // Clean up polling if it exists
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
           }
         };
 
@@ -194,12 +208,15 @@ export const DashboardPage = () => {
         // (e.g., if Chrome blocks the callback page)
         let pollCount = 0;
         const maxPolls = 30; // 30 seconds
-        const pollInterval = setInterval(() => {
+        pollInterval = setInterval(() => {
           pollCount++;
           
           // Check if window was closed
           if (authWindow?.closed) {
-            clearInterval(pollInterval);
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
             window.removeEventListener('message', messageListener);
             
             // If window closed and we haven't received success, check if calendar is connected
@@ -207,9 +224,9 @@ export const DashboardPage = () => {
               // Wait a bit for backend to process, then check
               setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-                refetch().then(() => {
-                  // Check if calendar is now connected
-                  if (overview?.status?.calendar === 'connected') {
+                refetch().then((result) => {
+                  // Check if calendar is now connected using refetched data
+                  if (result.data?.status?.calendar === 'connected') {
                     toast.success('Kalender erfolgreich verbunden');
                   }
                 });
@@ -220,38 +237,19 @@ export const DashboardPage = () => {
           
           // Stop polling after max attempts
           if (pollCount >= maxPolls) {
-            clearInterval(pollInterval);
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
             window.removeEventListener('message', messageListener);
           }
         }, 1000);
       } else {
         throw new Error('Keine Auth-URL erhalten');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[DashboardPage] Calendar connection error:', error);
-      
-      // Extract error message from various error formats
-      let errorMsg = 'Unbekannter Fehler';
-      
-      if (error?.response?.data) {
-        // Handle Axios error response
-        const errorData = error.response.data;
-        if (typeof errorData.error === 'string') {
-          errorMsg = errorData.error;
-        } else if (typeof errorData.message === 'string') {
-          errorMsg = errorData.message;
-        } else if (typeof errorData === 'string') {
-          errorMsg = errorData;
-        } else if (errorData.error && typeof errorData.error === 'object') {
-          // If error is an object, try to extract message
-          errorMsg = errorData.error.message || errorData.error.error || JSON.stringify(errorData.error);
-        }
-      } else if (error?.message) {
-        errorMsg = error.message;
-      } else if (typeof error === 'string') {
-        errorMsg = error;
-      }
-      
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Kalenders');
       toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
     }
   };
@@ -268,9 +266,9 @@ export const DashboardPage = () => {
       } else {
         throw new Error('Disconnect fehlgeschlagen');
       }
-    } catch (error: any) {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
-      toast.error(`Fehler beim Trennen des Kalenders: ${errorMsg}`);
+    } catch (error: unknown) {
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Trennen des Kalenders');
+      toast.error(errorMsg);
     }
   };
 
@@ -295,9 +293,20 @@ export const DashboardPage = () => {
   };
 
   // Handle call click
-  const handleCallClick = (call: any) => {
+  const handleCallClick = (call: {
+    id: string;
+    callSid?: string;
+    direction: string;
+    from_e164: string | null;
+    to_e164: string | null;
+    started_at: string;
+    ended_at: string | null;
+    duration_sec: number | null;
+    outcome: string | null;
+    notes?: Record<string, unknown>;
+  }) => {
     // Map to CallLog format
-    const callLog: any = {
+    const callLog: CallLog = {
       id: call.id,
       callSid: call.callSid || call.id,
       direction: call.direction,
@@ -315,8 +324,11 @@ export const DashboardPage = () => {
 
   // Fetch today's and next few days' events for dashboard
   // IMPORTANT: Hooks must be called before any early returns
-  const today = React.useMemo(() => new Date(), []);
-  const weekEnd = React.useMemo(() => addDays(today, 7), [today]);
+  // Note: We create a new Date() each render for "today" since we want current date
+  // For weekEnd, we memoize based on today's date string to avoid unnecessary recalculations
+  const today = new Date();
+  const todayDateString = today.toDateString();
+  const weekEnd = React.useMemo(() => addDays(today, 7), [todayDateString]);
   const calendarConnected = overview?.status?.calendar === 'connected';
   const { events: calendarEvents, isLoading: isLoadingEvents } = useCalendarEvents({
     locationId: overview?.location?.id || '',
@@ -326,10 +338,17 @@ export const DashboardPage = () => {
   });
 
   // Get next 5 upcoming events
+  // Use a ref for "now" to avoid creating new Date on every render
+  const nowRef = useRef(new Date());
   const upcomingEvents = React.useMemo(() => {
+    // Update nowRef periodically (every minute) or use current time for comparison
     const now = new Date();
+    // Update ref if more than a minute has passed
+    if (now.getTime() - nowRef.current.getTime() > 60000) {
+      nowRef.current = now;
+    }
     return calendarEvents
-      .filter(event => new Date(event.start) >= now)
+      .filter(event => new Date(event.start) >= nowRef.current)
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
       .slice(0, 5);
   }, [calendarEvents]);
@@ -548,7 +567,7 @@ export const DashboardPage = () => {
                         <div className="space-y-2">
                           {upcomingEvents.map((event) => {
                             const eventDate = new Date(event.start);
-                            const isToday = eventDate.toDateString() === today.toDateString();
+                            const isToday = eventDate.toDateString() === todayDateString;
                             const summaryParts = event.summary.split(' - ');
                             const clientName = summaryParts.length > 1 ? summaryParts[0] : '';
                             const service = summaryParts.length > 1 ? summaryParts[1] : event.summary;
