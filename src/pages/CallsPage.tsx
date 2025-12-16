@@ -273,45 +273,43 @@ export const CallsPage = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between mt-6 border-t border-slate-700/50 pt-4">
-                        <div className="text-sm text-gray-400" role="status" aria-live="polite">
-                          Zeige {startItem}–{endItem} von {data.total} Anrufen
-                        </div>
-                        <nav aria-label="Pagination">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setPage(Math.max(0, page - 1))}
-                              disabled={page === 0}
-                              className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
-                              aria-label="Vorherige Seite"
-                            >
-                              <ChevronLeft size={16} aria-hidden="true" />
-                              Zurück
-                            </button>
-                            <span className="text-sm text-gray-400">
-                              Seite {page + 1} von {totalPages}
-                            </span>
-                            <button
-                              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                              disabled={page >= totalPages - 1}
-                              className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
-                              aria-label="Nächste Seite"
-                            >
-                              Weiter
-                              <ChevronRight size={16} aria-hidden="true" />
-                            </button>
-                          </div>
-                        </nav>
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6 border-t border-slate-700/50 pt-4">
+                      <div className="text-sm text-gray-400" role="status" aria-live="polite">
+                        Zeige {startItem}–{endItem} von {data.total} Anrufen
                       </div>
-                    )}
-                  </Card>
-                )}
-              </>
-            )}
+                      <nav aria-label="Pagination">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setPage(Math.max(0, page - 1))}
+                            disabled={page === 0}
+                            className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
+                            aria-label="Vorherige Seite"
+                          >
+                            <ChevronLeft size={16} aria-hidden="true" />
+                            Zurück
+                          </button>
+                          <span className="text-sm text-gray-400">
+                            Seite {page + 1} von {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                            disabled={page >= totalPages - 1}
+                            className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 text-white rounded hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
+                            aria-label="Nächste Seite"
+                          >
+                            Weiter
+                            <ChevronRight size={16} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </nav>
+                    </div>
+                  )}
+                </Card>
+              )}
+            </>
           )}
 
           {/* Call Details Modal */}
