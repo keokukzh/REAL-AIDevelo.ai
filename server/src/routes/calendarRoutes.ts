@@ -311,9 +311,9 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
     
     // Escape single quotes and newlines for JavaScript string
     const escapedMessage = errorMessage
-      .replaceAll("'", "\\'")
-      .replaceAll('\n', ' ')
-      .replaceAll('\r', '');
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, '');
     
     res.send(`
       <!DOCTYPE html>
