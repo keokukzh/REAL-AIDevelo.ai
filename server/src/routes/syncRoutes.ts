@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { syncAgentWithElevenLabs, syncAllAgents, handleElevenLabsWebhook } from '../services/syncService';
 import { Request, Response, NextFunction } from 'express';
 import { BadRequestError } from '../utils/errors';
+import { verifyElevenLabsWebhook } from '../middleware/verifyElevenLabsWebhook';
 
 const router = Router();
 
@@ -96,7 +97,7 @@ router.post('/agents', async (req: Request, res: Response, next: NextFunction) =
  *       200:
  *         description: Webhook processed successfully
  */
-router.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/webhook', verifyElevenLabsWebhook, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { event, timestamp } = req.body;
     

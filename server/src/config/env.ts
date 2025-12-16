@@ -14,6 +14,7 @@ const requiredEnvVars = [
 // Additional required variables for production runtime
 const productionRequiredEnvVars = [
   'ELEVENLABS_API_KEY',
+  'ELEVENLABS_WEBHOOK_SECRET',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   // STRIPE/PAYMENT REMOVED - No longer required
