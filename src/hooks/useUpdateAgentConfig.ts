@@ -8,6 +8,7 @@ export interface UpdateAgentConfigRequest {
   goals_json?: string[];
   services_json?: any[];
   setup_state?: 'needs_persona' | 'needs_business' | 'needs_phone' | 'needs_calendar' | 'ready';
+  eleven_agent_id?: string | null;
 }
 
 export interface AgentConfigResponse {

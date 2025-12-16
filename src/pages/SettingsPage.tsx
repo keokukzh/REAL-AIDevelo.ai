@@ -22,8 +22,11 @@ import {
   Phone, 
   Calendar, 
   XCircle,
-  Info
+  Info,
+  Bot,
+  Save
 } from 'lucide-react';
+import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 
 export const SettingsPage = () => {
   const { user } = useAuthContext();
@@ -31,6 +34,9 @@ export const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
+  const updateAgentConfig = useUpdateAgentConfig();
+  const [elevenAgentId, setElevenAgentId] = useState<string>('');
+  const [isSavingAgentId, setIsSavingAgentId] = useState(false);
 
   // Update last refresh time when data updates
   useEffect(() => {
@@ -38,6 +44,15 @@ export const SettingsPage = () => {
       setLastRefresh(new Date());
     }
   }, [overview]);
+
+  // Initialize ElevenLabs Agent ID from overview
+  useEffect(() => {
+    if (overview?.agent_config?.eleven_agent_id) {
+      setElevenAgentId(overview.agent_config.eleven_agent_id);
+    } else {
+      setElevenAgentId('');
+    }
+  }, [overview?.agent_config?.eleven_agent_id]);
 
   // Handle calendar OAuth postMessage events
   useEffect(() => {
@@ -242,6 +257,29 @@ export const SettingsPage = () => {
     }
   };
 
+  // Handle ElevenLabs Agent ID save
+  const handleSaveAgentId = async () => {
+    if (!overview?.agent_config) {
+      toast.error('Agent-Konfiguration nicht gefunden');
+      return;
+    }
+
+    setIsSavingAgentId(true);
+    try {
+      await updateAgentConfig.mutateAsync({
+        eleven_agent_id: elevenAgentId.trim() || null,
+      });
+      toast.success('ElevenLabs Agent ID erfolgreich gespeichert');
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+      refetch();
+    } catch (error: unknown) {
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Agent ID');
+      toast.error(errorMsg);
+    } finally {
+      setIsSavingAgentId(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex font-sans text-white relative">
@@ -380,6 +418,61 @@ export const SettingsPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-400 text-xs mt-2">Read-only</p>
+              </div>
+            </Card>
+
+            {/* Agent Configuration Section */}
+            <Card title="Agent-Konfiguration" icon={Bot}>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Bot className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      ElevenLabs Agent ID
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Die Agent ID von ElevenLabs, die für Voice Calls verwendet wird. 
+                      Du findest diese in deinem ElevenLabs Dashboard.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={elevenAgentId}
+                        onChange={(e) => setElevenAgentId(e.target.value)}
+                        placeholder="z.B. abc123def456..."
+                        className="flex-1 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveAgentId}
+                        disabled={isSavingAgentId || !overview?.agent_config}
+                      >
+                        {isSavingAgentId ? (
+                          <>
+                            <LoadingSpinner className="w-4 h-4 mr-2" />
+                            Speichern...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Speichern
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {overview?.agent_config?.eleven_agent_id && (
+                      <p className="text-green-400 text-xs mt-2">
+                        ✓ Agent ID ist konfiguriert
+                      </p>
+                    )}
+                    {!overview?.agent_config?.eleven_agent_id && (
+                      <p className="text-yellow-400 text-xs mt-2">
+                        ⚠ Agent ID fehlt - Agent kann nicht getestet werden
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </Card>
 
