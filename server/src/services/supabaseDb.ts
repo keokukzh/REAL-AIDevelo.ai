@@ -252,8 +252,23 @@ export async function ensureAgentConfig(
     .eq('location_id', locationId)
     .maybeSingle();
 
-  // If config exists and no error, return it
+  // If config exists and no error, check if it needs default Agent ID
   if (existingConfig && !findError) {
+    // Auto-update if eleven_agent_id is missing
+    if (!existingConfig.eleven_agent_id) {
+      const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
+      const { data: updatedConfig, error: updateError } = await supabaseAdmin
+        .from('agent_configs')
+        .update({ eleven_agent_id: defaultElevenAgentId })
+        .eq('id', existingConfig.id)
+        .select('*')
+        .single();
+      
+      if (!updateError && updatedConfig) {
+        console.log(`[ensureAgentConfig] Auto-set default Agent ID for locationId=${locationId}`);
+        return updatedConfig;
+      }
+    }
     return existingConfig;
   }
 
@@ -263,7 +278,8 @@ export async function ensureAgentConfig(
   }
 
   // Agent config doesn't exist - create it
-  const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || null;
+  // Default Agent ID for immediate testing: ogdlaxy0T9rCSVdH0VJM
+  const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
 
   const { data: newConfig, error: createError } = await supabaseAdmin
     .from('agent_configs')
