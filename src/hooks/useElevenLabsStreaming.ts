@@ -88,7 +88,19 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       ws.onerror = (event) => {
         console.error('[ElevenLabs] WebSocket error:', event);
         // Try to get more details about the error
-        const errorMessage = (event as any).message || 'WebSocket connection error';
+        const errorTarget = event.target as WebSocket;
+        const errorMessage = (event as any).message || 
+                           (errorTarget?.readyState === WebSocket.CLOSED ? 'Connection closed unexpectedly' : 
+                           errorTarget?.readyState === WebSocket.CONNECTING ? 'Connection failed' : 
+                           'WebSocket connection error');
+        
+        // Log additional details
+        console.error('[ElevenLabs] WebSocket error details:', {
+          readyState: errorTarget?.readyState,
+          url: wsUrl,
+          error: event,
+        });
+        
         setError(`WebSocket connection error: ${errorMessage}`);
         setIsConnected(false);
         setIsLoading(false);
@@ -180,14 +192,29 @@ export function useElevenLabsStreaming(config: StreamConfig) {
     try {
       setError(null);
 
+      // Check if microphone permission is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Microphone access not available. Please check browser permissions.');
+      }
+
       if (!mediaStreamRef.current) {
-        mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
+        try {
+          mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        } catch (mediaError: any) {
+          if (mediaError.name === 'NotAllowedError' || mediaError.name === 'PermissionDeniedError') {
+            throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.');
+          } else if (mediaError.name === 'NotFoundError' || mediaError.name === 'DevicesNotFoundError') {
+            throw new Error('No microphone found. Please connect a microphone and try again.');
+          } else {
+            throw new Error(`Microphone access failed: ${mediaError.message || mediaError.name}`);
+          }
+        }
       }
 
       if (!audioContextRef.current) {
