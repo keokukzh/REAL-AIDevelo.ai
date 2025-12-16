@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       build: {
         chunkSizeWarningLimit: 1200,
+        // Disable source maps in production to avoid eval() usage
+        sourcemap: false,
         rollupOptions: {
           output: {
             manualChunks: {
