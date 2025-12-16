@@ -111,6 +111,19 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         setIsConnected(false);
         setIsListening(false);
         
+        // Handle specific ElevenLabs error codes
+        if (event.code === 3000) {
+          // Agent does not exist
+          setError(`Agent not found: ${event.reason || 'The AI agent does not exist. Please verify the Agent ID in Settings.'}`);
+          return;
+        }
+        
+        if (event.code === 4001 || event.code === 4003) {
+          // Authentication or authorization error
+          setError(`Authentication failed: ${event.reason || 'Invalid API key or insufficient permissions.'}`);
+          return;
+        }
+        
         // Don't reconnect if it was a clean close or an authentication error
         if (event.code === 1000 || event.code === 1008 || event.code === 4001) {
           if (event.code !== 1000) {
@@ -127,7 +140,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
             connect();
           }, delay);
         } else {
-          setError('Connection failed after multiple attempts. Please check your configuration.');
+          setError(`Connection failed after multiple attempts: ${event.reason || 'Please check your configuration.'}`);
         }
       };
 

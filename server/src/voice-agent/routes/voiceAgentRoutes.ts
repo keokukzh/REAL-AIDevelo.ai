@@ -323,6 +323,43 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       });
     }
 
+    // First, verify that the agent exists in ElevenLabs
+    try {
+      const agentCheckResponse = await axios.get(
+        `https://api.elevenlabs.io/v1/convai/agent/${encodeURIComponent(elevenAgentId)}`,
+        {
+          headers: {
+            'xi-api-key': apiKey,
+          },
+          timeout: 10000,
+        }
+      );
+
+      if (!agentCheckResponse.data) {
+        throw new Error('Agent not found in ElevenLabs');
+      }
+
+      console.log('[VoiceAgentRoutes] Agent verified in ElevenLabs:', {
+        agentId: elevenAgentId,
+        agentName: agentCheckResponse.data.name,
+      });
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.error('[VoiceAgentRoutes] Agent not found in ElevenLabs:', {
+          agentId: elevenAgentId,
+          status: error.response.status,
+          message: error.response.data?.detail || error.message,
+        });
+        return res.status(404).json({
+          success: false,
+          error: 'Agent not found',
+          message: `The ElevenLabs agent with ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the agent ID in your ElevenLabs dashboard.`,
+          agentId: elevenAgentId,
+        });
+      }
+      console.warn('[VoiceAgentRoutes] Failed to verify agent, continuing anyway:', error.message);
+    }
+
     // Get signed URL from ElevenLabs for secure connection
     // This keeps the API key server-side and provides a temporary signed URL
     let wsUrl: string;
