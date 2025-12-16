@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { twilioService } from '../services/twilioService';
 import { supabaseAdmin, ensureDefaultLocation, ensureUserRow, ensureOrgForUser } from '../services/supabaseDb';
 import { BadRequestError, InternalServerError } from '../utils/errors';
+import { config } from '../config/env';
 
 /**
  * GET /api/phone/numbers

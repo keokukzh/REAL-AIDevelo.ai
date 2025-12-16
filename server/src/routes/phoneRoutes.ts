@@ -36,4 +36,17 @@ if (process.env.NODE_ENV !== 'production') {
   router.post('/test-webhook', verifySupabaseAuth, testWebhook);
 }
 
+/**
+ * GET /api/phone/health
+ * Check Twilio Gateway health status
+ */
+router.get('/health', verifySupabaseAuth, async (req, res, next) => {
+  try {
+    const { checkTwilioGatewayHealth } = await import('../controllers/phoneController');
+    return checkTwilioGatewayHealth(req as any, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
