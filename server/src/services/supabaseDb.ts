@@ -256,7 +256,7 @@ export async function ensureAgentConfig(
   if (existingConfig && !findError) {
     // Auto-update if eleven_agent_id is missing
     if (!existingConfig.eleven_agent_id) {
-      const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
+      const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
       const { data: updatedConfig, error: updateError } = await supabaseAdmin
         .from('agent_configs')
         .update({ eleven_agent_id: defaultElevenAgentId })
@@ -278,8 +278,8 @@ export async function ensureAgentConfig(
   }
 
   // Agent config doesn't exist - create it
-  // Default Agent ID for immediate testing: ogdlaxy0T9rCSVdH0VJM
-  const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
+  // Default Agent ID for immediate testing: agent_1601kcmqt4efe41bzwykaytm2yrj
+  const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
 
   const { data: newConfig, error: createError } = await supabaseAdmin
     .from('agent_configs')

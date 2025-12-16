@@ -309,12 +309,12 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
 
     if (agentConfig?.eleven_agent_id) {
       elevenAgentId = agentConfig.eleven_agent_id;
-    } else {
-      // If agentId is already an eleven_agent_id, use it directly
-      // Otherwise, use default or fail
-      const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
-      elevenAgentId = defaultAgentId;
-    }
+      } else {
+        // If agentId is already an eleven_agent_id, use it directly
+        // Otherwise, use default or fail
+        const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+        elevenAgentId = defaultAgentId;
+      }
 
     if (!elevenAgentId) {
       return res.status(400).json({
