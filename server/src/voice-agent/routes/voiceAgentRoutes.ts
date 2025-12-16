@@ -377,9 +377,24 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
         wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
         console.log('[VoiceAgentRoutes] Using direct URL with agent_id (fallback)');
       }
-    } catch (error: any) {
-      console.warn('[VoiceAgentRoutes] Failed to get signed URL, using direct URL:', error.message);
-      // Fallback: Use direct URL with agent_id (for public agents)
+    } catch (signedUrlError: any) {
+      // Check if this is an agent not found error
+      if (axios.isAxiosError(signedUrlError) && signedUrlError.response?.status === 404) {
+        console.error('[VoiceAgentRoutes] Agent not found when getting signed URL:', {
+          agentId: elevenAgentId,
+          error: signedUrlError.response?.data,
+          message: 'The specified agent ID does not exist in ElevenLabs. Please verify the agent ID in Settings or Render environment variables.',
+        });
+        return res.status(404).json({
+          success: false,
+          error: 'Agent not found',
+          message: `The AI agent you are trying to reach does not exist. Agent ID: ${elevenAgentId}. Please verify the Agent ID in Settings or contact support.`,
+          agentId: elevenAgentId,
+        });
+      }
+      
+      // For other errors, fallback to direct URL
+      console.warn('[VoiceAgentRoutes] Failed to get signed URL, using direct URL:', signedUrlError.message);
       wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
     }
 
@@ -389,6 +404,7 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       elevenAgentId,
       customerId,
       wsUrlPrefix: wsUrl.substring(0, 80) + '...',
+      source: agentConfig?.eleven_agent_id ? 'database' : 'default',
     });
 
     res.json({

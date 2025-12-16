@@ -114,7 +114,14 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         // Handle specific ElevenLabs error codes
         if (event.code === 3000) {
           // Agent does not exist
-          setError(`Agent not found: ${event.reason || 'The AI agent does not exist. Please verify the Agent ID in Settings.'}`);
+          const agentId = (config as any).elevenAgentId || 'unknown';
+          setError(`Agent not found: The AI agent you are trying to reach does not exist. Agent ID: ${agentId}. Please verify the Agent ID in Settings or contact support.`);
+          console.error('[ElevenLabs] Agent not found error:', {
+            agentId,
+            code: event.code,
+            reason: event.reason,
+            wsUrl: wsUrl.substring(0, 100) + '...',
+          });
           return;
         }
         
