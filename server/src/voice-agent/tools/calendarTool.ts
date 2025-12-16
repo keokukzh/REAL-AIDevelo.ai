@@ -20,6 +20,13 @@ export interface CalendarEvent {
   end: Date;
   description?: string;
   attendees?: string[];
+  // Extended fields for API responses
+  id?: string;
+  summary?: string;
+  location?: string;
+  htmlLink?: string;
+  aiBooked?: boolean;
+  calendarId?: string;
 }
 
 export interface CalendarAvailability {
@@ -228,9 +235,121 @@ export class CalendarTool {
       const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
 
       if (calendarType === 'google') {
+        // Build description with AI BOOKED marker if this is an AI-created appointment
+        // Check if this is being called from the voice agent (via tool call)
+        const isAIBooked = input.description?.includes('[AI_BOOKED]') || 
+                          (input as any).aiBooked === true ||
+                          (input as any).aiBooked === 'true';
+        
+        let description = input.description || '';
+        if (isAIBooked && !description.includes('[AI_BOOKED]')) {
+          description = description ? `[AI_BOOKED]\n${description}` : '[AI_BOOKED]';
+        }
+
+        // Build event payload
+        const eventPayload: any = {
+          summary: input.summary,
+          description,
+          start: {
+            dateTime: formatISODateTime(start, timezone),
+            timeZone: timezone,
+          },
+          end: {
+            dateTime: formatISODateTime(end, timezone),
+            timeZone: timezone,
+          },
+          attendees: input.attendees || [],
+          location: input.location || '',
+        };
+
+        // Add extendedProperties for AI booking marker (more reliable than description)
+        if (isAIBooked) {
+          eventPayload.extendedProperties = {
+            private: {
+              aiBooked: 'true',
+            },
+          };
+        }
+
         // Google Calendar events.insert API
         const response = await axios.post(
           `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
+          eventPayload,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        return {
+          success: true,
+          data: {
+            eventId: response.data.id,
+            htmlLink: response.data.htmlLink || '',
+            start: formatISODateTime(start, timezone),
+            end: formatISODateTime(end, timezone),
+            calendarId,
+          },
+        };
+      } else {
+        // Outlook Calendar API call would go here
+        return {
+          success: false,
+          error: 'Outlook calendar not yet implemented',
+        };
+      }
+    } catch (error: any) {
+      if (error.message?.includes('Calendar not connected')) {
+        return {
+          success: false,
+          error: 'Calendar not connected',
+        };
+      }
+      if (error.response?.data?.error) {
+        return {
+          success: false,
+          error: `Google API error: ${error.response.data.error.message || error.response.data.error}`,
+        };
+      }
+      return {
+        success: false,
+        error: error.message || 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Update an existing calendar event
+   */
+  async updateEvent(
+    eventId: string,
+    input: CreateAppointmentInput,
+    calendarType: 'google' | 'outlook' = 'google',
+    calendarId: string = 'primary'
+  ): Promise<CreateAppointmentOutput> {
+    try {
+      const timezone = input.timezone || 'Europe/Zurich';
+
+      // Parse and validate dates
+      const start = parseISODateTime(input.start, timezone);
+      const end = parseISODateTime(input.end, timezone);
+
+      if (start >= end) {
+        return {
+          success: false,
+          error: 'Invalid time range: start must be before end',
+        };
+      }
+
+      // Refresh token if needed
+      const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
+
+      if (calendarType === 'google') {
+        // Google Calendar events.update API
+        const response = await axios.put(
+          `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`,
           {
             summary: input.summary,
             description: input.description || '',
@@ -264,7 +383,58 @@ export class CalendarTool {
           },
         };
       } else {
-        // Outlook Calendar API call would go here
+        return {
+          success: false,
+          error: 'Outlook calendar not yet implemented',
+        };
+      }
+    } catch (error: any) {
+      if (error.message?.includes('Calendar not connected')) {
+        return {
+          success: false,
+          error: 'Calendar not connected',
+        };
+      }
+      if (error.response?.data?.error) {
+        return {
+          success: false,
+          error: `Google API error: ${error.response.data.error.message || error.response.data.error}`,
+        };
+      }
+      return {
+        success: false,
+        error: error.message || 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Delete a calendar event
+   */
+  async deleteEvent(
+    eventId: string,
+    calendarType: 'google' | 'outlook' = 'google',
+    calendarId: string = 'primary'
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Refresh token if needed
+      const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
+
+      if (calendarType === 'google') {
+        // Google Calendar events.delete API
+        await axios.delete(
+          `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        return {
+          success: true,
+        };
+      } else {
         return {
           success: false,
           error: 'Outlook calendar not yet implemented',
@@ -316,15 +486,85 @@ export class CalendarTool {
   }
 
   /**
-   * List upcoming events
+   * List calendar events within a date range
    */
   async listEvents(
     start: Date,
     end: Date,
-    calendarType: 'google' | 'outlook' = 'google'
+    calendarType: 'google' | 'outlook' = 'google',
+    calendarId: string = 'primary'
   ): Promise<CalendarEvent[]> {
-    // Placeholder implementation
-    return [];
+    try {
+      // Refresh token if needed
+      const accessToken = await calendarService.refreshTokenIfNeeded(this.locationId, calendarType);
+
+      if (calendarType === 'google') {
+        // Format dates for Google Calendar API (RFC3339 format)
+        const timeMin = start.toISOString();
+        const timeMax = end.toISOString();
+
+        // Google Calendar events.list API
+        const response = await axios.get(
+          `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
+          {
+            params: {
+              timeMin,
+              timeMax,
+              singleEvents: true,
+              orderBy: 'startTime',
+              maxResults: 2500, // Google Calendar API limit
+            },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        // Transform Google Calendar events to CalendarEvent format
+        const events: CalendarEvent[] = (response.data.items || []).map((item: any) => {
+          const eventStart = item.start?.dateTime 
+            ? new Date(item.start.dateTime)
+            : new Date(item.start?.date || start);
+          const eventEnd = item.end?.dateTime
+            ? new Date(item.end.dateTime)
+            : new Date(item.end?.date || end);
+
+          // Check if event is AI-booked
+          const aiBooked = 
+            item.description?.includes('[AI_BOOKED]') ||
+            item.extendedProperties?.private?.aiBooked === 'true' ||
+            item.extendedProperties?.private?.aiBooked === true;
+
+          return {
+            id: item.id,
+            title: item.summary || 'Kein Titel',
+            summary: item.summary || 'Kein Titel',
+            start: eventStart,
+            end: eventEnd,
+            description: item.description || '',
+            location: item.location || '',
+            htmlLink: item.htmlLink || '',
+            attendees: item.attendees?.map((a: any) => a.email || a.displayName || '') || [],
+            aiBooked,
+            calendarId,
+          };
+        });
+
+        return events;
+      } else {
+        // Outlook Calendar API call would go here
+        console.warn('[CalendarTool] Outlook calendar listEvents not yet implemented');
+        return [];
+      }
+    } catch (error: any) {
+      if (error.message?.includes('Calendar not connected')) {
+        throw new Error('Calendar not connected');
+      }
+      if (error.response?.data?.error) {
+        throw new Error(`Google API error: ${error.response.data.error.message || error.response.data.error}`);
+      }
+      throw error;
+    }
   }
 
   /**

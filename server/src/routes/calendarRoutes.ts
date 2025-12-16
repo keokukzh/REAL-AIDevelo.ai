@@ -574,8 +574,16 @@ router.post('/google/create-appointment', verifySupabaseAuth, async (req: Authen
     // Create calendar tool
     const calendarTool = createCalendarTool(locationId);
 
+    // Mark as AI-booked if this is called from the voice agent
+    // (can be determined by checking if there's a specific header or flag)
+    const isAIBooked = req.body.aiBooked === true || req.body.aiBooked === 'true';
+    const appointmentInput = {
+      ...req.body,
+      aiBooked: isAIBooked,
+    };
+
     // Call create_appointment
-    const result = await calendarTool.createAppointment(req.body, 'google');
+    const result = await calendarTool.createAppointment(appointmentInput, 'google');
 
     res.json({
       success: result.success,
@@ -584,6 +592,286 @@ router.post('/google/create-appointment', verifySupabaseAuth, async (req: Authen
     });
   } catch (error: any) {
     console.error('[CalendarRoutes] Error in admin create-appointment:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+});
+
+/**
+ * @swagger
+ * /calendar/google/events:
+ *   get:
+ *     summary: List calendar events within a date range
+ *     tags: [Calendar]
+ *     parameters:
+ *       - in: query
+ *         name: start
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Start date/time in ISO 8601 format
+ *       - in: query
+ *         name: end
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: End date/time in ISO 8601 format
+ *       - in: query
+ *         name: calendarId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Calendar ID (default: 'primary')
+ *     responses:
+ *       200:
+ *         description: Events retrieved successfully
+ */
+router.get('/google/events', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[CalendarRoutes] List events: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Get query parameters
+    const { start, end, calendarId } = req.query;
+
+    if (!start || !end) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: start and end',
+        message: 'Both start and end date/time are required in ISO 8601 format',
+      });
+    }
+
+    // Parse dates
+    const startDate = new Date(start as string);
+    const endDate = new Date(end as string);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format',
+        message: 'Start and end must be valid ISO 8601 date/time strings',
+      });
+    }
+
+    if (startDate >= endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date range',
+        message: 'Start date must be before end date',
+      });
+    }
+
+    // Create calendar tool
+    const calendarTool = createCalendarTool(locationId);
+
+    // List events
+    const events = await calendarTool.listEvents(
+      startDate,
+      endDate,
+      'google',
+      (calendarId as string) || 'primary'
+    );
+
+    // Transform events to API response format (convert Date objects to ISO strings)
+    const eventsResponse = events.map(event => ({
+      id: event.id || '',
+      summary: event.summary || event.title,
+      description: event.description,
+      start: event.start.toISOString(),
+      end: event.end.toISOString(),
+      location: event.location,
+      attendees: event.attendees?.map(email => ({ email })) || [],
+      htmlLink: event.htmlLink,
+      aiBooked: event.aiBooked || false,
+      calendarId: event.calendarId || 'primary',
+    }));
+
+    res.json({
+      success: true,
+      data: eventsResponse,
+    });
+  } catch (error: any) {
+    console.error('[CalendarRoutes] Error listing events:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+});
+
+/**
+ * @swagger
+ * /calendar/google/events/{eventId}:
+ *   put:
+ *     summary: Update a calendar event
+ *     tags: [Calendar]
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event updated successfully
+ */
+router.put('/google/events/:eventId', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+    const { eventId } = req.params;
+    const { calendarId } = req.query;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[CalendarRoutes] Update event: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Validate required fields
+    if (!req.body.summary || !req.body.start || !req.body.end) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: summary, start, end',
+      });
+    }
+
+    // Create calendar tool
+    const calendarTool = createCalendarTool(locationId);
+
+    // Update event
+    const result = await calendarTool.updateEvent(
+      eventId,
+      {
+        summary: req.body.summary,
+        start: req.body.start,
+        end: req.body.end,
+        description: req.body.description,
+        attendees: req.body.attendees,
+        location: req.body.location,
+        timezone: req.body.timezone || 'Europe/Zurich',
+        calendarId: (calendarId as string) || 'primary',
+      },
+      'google',
+      (calendarId as string) || 'primary'
+    );
+
+    if (result.success && result.data) {
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to update event',
+      });
+    }
+  } catch (error: any) {
+    console.error('[CalendarRoutes] Error updating event:', error);
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+});
+
+/**
+ * @swagger
+ * /calendar/google/events/{eventId}:
+ *   delete:
+ *     summary: Delete a calendar event
+ *     tags: [Calendar]
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event deleted successfully
+ */
+router.delete('/google/events/:eventId', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+    const { eventId } = req.params;
+    const { calendarId } = req.query;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+      console.log(`[CalendarRoutes] Delete event: resolved locationId=${locationId} from source=${resolution.source}`);
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId missing',
+        message: error.message || 'Unable to resolve locationId',
+      });
+    }
+
+    // Create calendar tool
+    const calendarTool = createCalendarTool(locationId);
+
+    // Delete event
+    const result = await calendarTool.deleteEvent(
+      eventId,
+      'google',
+      (calendarId as string) || 'primary'
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Event deleted successfully',
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to delete event',
+      });
+    }
+  } catch (error: any) {
+    console.error('[CalendarRoutes] Error deleting event:', error);
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 });

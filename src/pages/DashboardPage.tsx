@@ -8,7 +8,7 @@ import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
 import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal';
 import { AvailabilityModal } from '../components/dashboard/AvailabilityModal';
-import { CreateAppointmentModal } from '../components/dashboard/CreateAppointmentModal';
+import { CalendarEventModal } from '../components/dashboard/CalendarEventModal';
 import { SideNav } from '../components/dashboard/SideNav';
 import { apiClient } from '../services/apiClient';
 import { toast } from '../components/ui/Toast';
@@ -21,9 +21,12 @@ import { QuickActionButton } from '../components/newDashboard/QuickActionButton'
 import { HealthItem } from '../components/newDashboard/HealthItem';
 import { SkeletonStatCard } from '../components/newDashboard/Skeleton';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState';
-import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal } from 'lucide-react';
+import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
+import { CalendarEventModal } from '../components/dashboard/CalendarEventModal';
+import { startOfDay, endOfDay, addDays } from 'date-fns';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -58,6 +61,7 @@ export const DashboardPage = () => {
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(undefined);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -370,6 +374,25 @@ export const DashboardPage = () => {
 
   const calendarConnected = overview.status.calendar === 'connected';
 
+  // Fetch today's and next few days' events for dashboard
+  const today = React.useMemo(() => new Date(), []);
+  const weekEnd = React.useMemo(() => addDays(today, 7), [today]);
+  const { events: calendarEvents } = useCalendarEvents({
+    locationId: overview.location.id,
+    start: startOfDay(today),
+    end: endOfDay(weekEnd),
+    enabled: calendarConnected && !!overview.location.id,
+  });
+
+  // Get next 5 upcoming events
+  const upcomingEvents = React.useMemo(() => {
+    const now = new Date();
+    return calendarEvents
+      .filter(event => new Date(event.start) >= now)
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+      .slice(0, 5);
+  }, [calendarEvents]);
+
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
       {/* Skip to main content link */}
@@ -509,25 +532,128 @@ export const DashboardPage = () => {
                   {calendarConnected ? (
                     <div className="space-y-4">
                       {overview.calendar_connected_email && (
-                        <div className="text-sm text-gray-300">
+                        <div className="text-sm text-gray-300 mb-3">
                           Verbunden mit: <span className="font-medium">{overview.calendar_connected_email}</span>
                         </div>
                       )}
-                      <div className="flex gap-2">
+                      
+                      {/* Upcoming Events List */}
+                      {isLoadingEvents ? (
+                        <div className="space-y-2">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="h-16 bg-slate-800/50 rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      ) : upcomingEvents.length > 0 ? (
+                        <div className="space-y-2">
+                          {upcomingEvents.map((event) => {
+                            const eventDate = new Date(event.start);
+                            const isToday = eventDate.toDateString() === today.toDateString();
+                            const summaryParts = event.summary.split(' - ');
+                            const clientName = summaryParts.length > 1 ? summaryParts[0] : '';
+                            const service = summaryParts.length > 1 ? summaryParts[1] : event.summary;
+
+                            return (
+                              <div
+                                key={event.id}
+                                className={`p-3 rounded-lg border cursor-pointer transition-colors group ${
+                                  event.aiBooked
+                                    ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20'
+                                    : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800'
+                                }`}
+                                onClick={() => {
+                                  setSelectedEvent(event);
+                                  setIsCreateAppointmentModalOpen(true);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSelectedEvent(event);
+                                    setIsCreateAppointmentModalOpen(true);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Termin: ${event.summary}`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-mono text-gray-400">
+                                        {eventDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                      {isToday && (
+                                        <span className="text-xs px-1.5 py-0.5 rounded bg-accent/20 text-accent">
+                                          Heute
+                                        </span>
+                                      )}
+                                      {event.aiBooked && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-semibold">
+                                          AI
+                                        </span>
+                                      )}
+                                    </div>
+                                    {clientName && (
+                                      <div className="font-semibold text-white text-sm truncate">
+                                        {clientName}
+                                      </div>
+                                    )}
+                                    <div className={`text-sm truncate ${clientName ? 'text-gray-300' : 'text-white font-medium'}`}>
+                                      {service}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedEvent(event);
+                                      setIsCreateAppointmentModalOpen(true);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 transition-all"
+                                    aria-label="Termin bearbeiten"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-gray-400 text-sm">
+                          Keine bevorstehenden Termine
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-2 border-t border-slate-700/50">
                         <Button 
                           size="sm" 
                           onClick={() => setIsAvailabilityModalOpen(true)}
                           className="flex-1"
+                          variant="outline"
                         >
                           Verfügbarkeit prüfen
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => setIsCreateAppointmentModalOpen(true)}
+                          onClick={() => {
+                            setSelectedEvent(null);
+                            setSelectedSlot(undefined);
+                            setIsCreateAppointmentModalOpen(true);
+                          }}
                           className="flex-1"
                         >
                           Termin erstellen
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => navigate('/dashboard/calendar')}
+                          className="text-accent hover:text-accent hover:bg-accent/10"
+                          aria-label="Alle Termine ansehen"
+                        >
+                          <ArrowRight size={16} />
                         </Button>
                       </div>
                     </div>
@@ -822,13 +948,16 @@ export const DashboardPage = () => {
         }}
       />
 
-      <CreateAppointmentModal
+      <CalendarEventModal
         isOpen={isCreateAppointmentModalOpen}
         onClose={() => {
           setIsCreateAppointmentModalOpen(false);
           setSelectedSlot(undefined);
+          setSelectedEvent(null);
+          queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
         }}
         locationId={overview.location.id}
+        event={selectedEvent}
         initialSlot={selectedSlot}
       />
     </div>
