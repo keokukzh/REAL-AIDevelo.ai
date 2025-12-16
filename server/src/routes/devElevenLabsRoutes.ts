@@ -90,6 +90,72 @@ if (process.env.NODE_ENV !== 'production') {
   });
 
   /**
+   * GET /api/dev/elevenlabs/list-agents
+   * List all available ElevenLabs agents
+   */
+  router.get('/list-agents', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!config.isElevenLabsConfigured) {
+        return res.status(400).json({
+          success: false,
+          error: 'ELEVENLABS_API_KEY not configured',
+        });
+      }
+
+      const API_BASE = 'https://api.elevenlabs.io/v1';
+
+      try {
+        const agentsResponse = await axios.get(`${API_BASE}/convai/agents`, {
+          headers: { 'xi-api-key': config.elevenLabsApiKey },
+          timeout: 10000,
+        });
+
+        const agents = agentsResponse.data?.agents || agentsResponse.data || [];
+        
+        // Also get current configuration
+        const { data: agentConfig } = await supabaseAdmin
+          .from('agent_configs')
+          .select('id, location_id, eleven_agent_id')
+          .limit(1)
+          .maybeSingle();
+
+        const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+
+        res.json({
+          success: true,
+          data: {
+            agents: Array.isArray(agents) ? agents : [],
+            currentConfig: {
+              databaseAgentId: agentConfig?.eleven_agent_id || null,
+              defaultAgentId,
+              locationId: agentConfig?.location_id || null,
+            },
+            recommendations: {
+              useAgentId: agentConfig?.eleven_agent_id || defaultAgentId,
+              agentExists: Array.isArray(agents) && agents.some((a: any) => 
+                a.agent_id === (agentConfig?.eleven_agent_id || defaultAgentId)
+              ),
+            },
+          },
+        });
+      } catch (error: any) {
+        if (axios.isAxiosError(error)) {
+          return res.status(error.response?.status || 500).json({
+            success: false,
+            error: 'Failed to list agents',
+            message: error.response?.data?.detail?.message || error.message,
+            status: error.response?.status,
+          });
+        }
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('[DevElevenLabsRoutes] Error in list-agents:', error);
+      next(new InternalServerError(error.message || 'Unknown error'));
+    }
+  });
+
+  /**
    * POST /api/dev/elevenlabs/test-rag
    * Test RAG integration with ElevenLabs
    */
