@@ -313,6 +313,27 @@ export const DashboardPage = () => {
     setIsCallDetailsOpen(true);
   };
 
+  // Fetch today's and next few days' events for dashboard
+  // IMPORTANT: Hooks must be called before any early returns
+  const today = React.useMemo(() => new Date(), []);
+  const weekEnd = React.useMemo(() => addDays(today, 7), [today]);
+  const calendarConnected = overview?.status?.calendar === 'connected';
+  const { events: calendarEvents, isLoading: isLoadingEvents } = useCalendarEvents({
+    locationId: overview?.location?.id || '',
+    start: startOfDay(today),
+    end: endOfDay(weekEnd),
+    enabled: calendarConnected && !!overview?.location?.id,
+  });
+
+  // Get next 5 upcoming events
+  const upcomingEvents = React.useMemo(() => {
+    const now = new Date();
+    return calendarEvents
+      .filter(event => new Date(event.start) >= now)
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+      .slice(0, 5);
+  }, [calendarEvents]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex font-sans text-white relative">
@@ -371,27 +392,6 @@ export const DashboardPage = () => {
   
   const calendarHealth: 'ok' | 'error' | 'warning' = 
     overview.status.calendar === 'connected' ? 'ok' : 'error';
-
-  const calendarConnected = overview.status.calendar === 'connected';
-
-  // Fetch today's and next few days' events for dashboard
-  const today = React.useMemo(() => new Date(), []);
-  const weekEnd = React.useMemo(() => addDays(today, 7), [today]);
-  const { events: calendarEvents } = useCalendarEvents({
-    locationId: overview.location.id,
-    start: startOfDay(today),
-    end: endOfDay(weekEnd),
-    enabled: calendarConnected && !!overview.location.id,
-  });
-
-  // Get next 5 upcoming events
-  const upcomingEvents = React.useMemo(() => {
-    const now = new Date();
-    return calendarEvents
-      .filter(event => new Date(event.start) >= now)
-      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-      .slice(0, 5);
-  }, [calendarEvents]);
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
