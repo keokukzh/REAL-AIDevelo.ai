@@ -41,7 +41,8 @@ export const DashboardPage = () => {
       // Clean up URL
       window.history.replaceState({}, '', '/dashboard');
     } else if (urlParams.get('error') === 'calendar_connection_failed') {
-      toast.error('Fehler beim Verbinden des Kalenders. Bitte versuchen Sie es erneut.');
+      const errorMsg = urlParams.get('msg') || 'Fehler beim Verbinden des Kalenders. Bitte versuchen Sie es erneut.';
+      toast.error(decodeURIComponent(errorMsg));
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
       // Clean up URL

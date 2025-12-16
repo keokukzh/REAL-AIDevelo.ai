@@ -6,6 +6,7 @@ import { ensureDefaultLocation, ensureOrgForUser, ensureUserRow } from '../servi
 import { createSignedState, verifySignedState } from '../utils/oauthState';
 import { resolveLocationId } from '../utils/locationIdResolver';
 import { createCalendarTool } from '../voice-agent/tools/calendarTool';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -268,36 +269,112 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
       </html>
     `);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-    let frontendUrl = process.env.FRONTEND_URL;
-    if (!frontendUrl) {
+    // Log detailed error for debugging
+    console.error('[CalendarRoutes] OAuth callback error:', error);
+    
+    // Extract meaningful error message
+    let errorMessage = 'Unbekannter Fehler beim Verbinden des Kalenders';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Provide user-friendly messages for common errors
+      if (error.message.includes('TOKEN_ENCRYPTION_KEY')) {
+        errorMessage = 'TOKEN_ENCRYPTION_KEY fehlt oder ist ungültig. Bitte setze diese Variable in Render Environment Variables. Siehe docs/TOKEN_ENCRYPTION_KEY_SETUP.md';
+      } else if (error.message.includes('refreshToken is required')) {
+        errorMessage = 'Google OAuth hat keinen Refresh Token zurückgegeben. Bitte versuche es erneut.';
+      } else if (error.message.includes('exchangeGoogleCode') || error.message.includes('exchangeOutlookCode')) {
+        errorMessage = 'Fehler beim Austausch des OAuth-Codes. Bitte versuche es erneut.';
+      } else if (error.message.includes('storeToken') || error.message.includes('database')) {
+        errorMessage = 'Fehler beim Speichern des Kalender-Tokens. Bitte überprüfe die Datenbankverbindung.';
+      }
+    }
+    
+    // Log the error with context
+    logger.error('calendar.oauth.callback_failed', error, {
+      provider: req.params.provider,
+      hasCode: !!req.query.code,
+      hasState: !!req.query.state,
+    });
+    
+    let frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    if (!frontendUrl || frontendUrl === '') {
       if (process.env.NODE_ENV === 'production') {
         console.error('[CalendarRoutes] FATAL: FRONTEND_URL missing in production');
-        return next(new InternalServerError('FRONTEND_URL must be set in production'));
+        frontendUrl = 'https://aidevelo.ai'; // Fallback
       } else {
         frontendUrl = '*';
       }
     }
+    
+    // Remove trailing slash
+    frontendUrl = frontendUrl.replace(/\/$/, '');
+    
+    // Escape single quotes and newlines for JavaScript string
+    const escapedMessage = errorMessage
+      .replaceAll("'", "\\'")
+      .replaceAll('\n', ' ')
+      .replaceAll('\r', '');
     
     res.send(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>Fehler</title>
+          <meta charset="utf-8">
         </head>
         <body>
           <script>
-            if (window.opener) {
-              window.opener.postMessage({
+            (function() {
+              const errorData = {
                 type: 'calendar-oauth-error',
-                message: '${errorMessage.replace(/'/g, "\\'")}'
-              }, ${frontendUrl === '*' ? "'*'" : `'${frontendUrl}'`});
-              window.close();
-            } else {
-              window.location.href = '${frontendUrl === '*' ? window.location.origin : frontendUrl}/dashboard?error=calendar_connection_failed';
-            }
+                message: '${escapedMessage}'
+              };
+              
+              // Try to send postMessage to parent window
+              if (window.opener && !window.opener.closed) {
+                try {
+                  // Try multiple target origins
+                  const targetOrigins = [
+                    '${frontendUrl}',
+                    'https://aidevelo.ai',
+                    'https://www.aidevelo.ai',
+                    '*'
+                  ];
+                  
+                  targetOrigins.forEach(origin => {
+                    try {
+                      window.opener.postMessage(errorData, origin);
+                    } catch (e) {
+                      console.warn('[CalendarCallback] Failed to postMessage to', origin, e);
+                    }
+                  });
+                  
+                  // Also try without origin restriction
+                  try {
+                    window.opener.postMessage(errorData, '*');
+                  } catch (e) {
+                    console.warn('[CalendarCallback] Failed to postMessage with *', e);
+                  }
+                  
+                  console.log('[CalendarCallback] Error postMessage sent, closing window');
+                  
+                  setTimeout(function() {
+                    window.close();
+                  }, 500);
+                } catch (err) {
+                  console.error('[CalendarCallback] Error sending postMessage:', err);
+                  // Fallback: redirect to dashboard with error
+                  window.location.href = '${frontendUrl}/dashboard?error=calendar_connection_failed&msg=' + encodeURIComponent('${escapedMessage}');
+                }
+              } else {
+                // No opener window - redirect to dashboard
+                console.log('[CalendarCallback] No opener window, redirecting to dashboard with error');
+                window.location.href = '${frontendUrl}/dashboard?error=calendar_connection_failed&msg=' + encodeURIComponent('${escapedMessage}');
+              }
+            })();
           </script>
           <p>Fehler beim Verbinden des Kalenders: ${errorMessage}</p>
+          <p><a href="${frontendUrl}/dashboard">Zum Dashboard</a></p>
         </body>
       </html>
     `);
