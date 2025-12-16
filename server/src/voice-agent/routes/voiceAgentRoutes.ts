@@ -16,6 +16,8 @@ import { BadRequestError } from '../../utils/errors';
 import { voiceAgentConfig } from '../config';
 import { twilioMediaStreamService, TwilioStreamMessage } from '../../services/twilioMediaStreamService';
 import { elevenLabsBridgeService } from '../../services/elevenLabsBridgeService';
+import { config } from '../../config/env';
+import { supabaseAdmin } from '../../services/supabaseDb';
 
 const router = Router();
 
@@ -284,7 +286,6 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
     }
 
     // Get ElevenLabs API key from config
-    const { config } = require('../config/env');
     const apiKey = config.elevenLabsApiKey;
 
     if (!apiKey || !config.isElevenLabsConfigured) {
@@ -296,7 +297,6 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
 
     // Resolve eleven_agent_id from agent_configs table
     // agentId might be agent_configs.id, so we need to get the eleven_agent_id
-    const { supabaseAdmin } = require('../services/supabaseDb');
     let elevenAgentId: string | null = null;
 
     // Try to get eleven_agent_id from agent_configs table
