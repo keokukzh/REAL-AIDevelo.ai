@@ -272,8 +272,27 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
     // Log detailed error for debugging
     console.error('[CalendarRoutes] OAuth callback error:', error);
     
+    // Log error details for debugging
+    if (error instanceof Error) {
+      console.error('[CalendarRoutes] Error name:', error.name);
+      console.error('[CalendarRoutes] Error message:', error.message);
+      console.error('[CalendarRoutes] Error stack:', error.stack);
+    }
+    
+    // Check for axios errors (from exchangeGoogleCode)
+    let axiosError: any = null;
+    if ((error as any)?.response) {
+      axiosError = (error as any).response;
+      console.error('[CalendarRoutes] Axios error response:', {
+        status: axiosError.status,
+        statusText: axiosError.statusText,
+        data: axiosError.data,
+      });
+    }
+    
     // Extract meaningful error message
     let errorMessage = 'Unbekannter Fehler beim Verbinden des Kalenders';
+    
     if (error instanceof Error) {
       errorMessage = error.message;
       
@@ -282,10 +301,38 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
         errorMessage = 'TOKEN_ENCRYPTION_KEY fehlt oder ist ungültig. Bitte setze diese Variable in Render Environment Variables. Siehe docs/TOKEN_ENCRYPTION_KEY_SETUP.md';
       } else if (error.message.includes('refreshToken is required')) {
         errorMessage = 'Google OAuth hat keinen Refresh Token zurückgegeben. Bitte versuche es erneut.';
+      } else if (error.message.includes('Failed to exchange Google authorization code')) {
+        // Extract Google API error details
+        if (axiosError?.data?.error_description) {
+          errorMessage = `Google OAuth Fehler: ${axiosError.data.error_description}`;
+        } else if (axiosError?.data?.error) {
+          errorMessage = `Google OAuth Fehler: ${axiosError.data.error}`;
+        } else {
+          errorMessage = error.message;
+        }
       } else if (error.message.includes('exchangeGoogleCode') || error.message.includes('exchangeOutlookCode')) {
         errorMessage = 'Fehler beim Austausch des OAuth-Codes. Bitte versuche es erneut.';
       } else if (error.message.includes('storeToken') || error.message.includes('database')) {
         errorMessage = 'Fehler beim Speichern des Kalender-Tokens. Bitte überprüfe die Datenbankverbindung.';
+      } else if (error.message.includes('GOOGLE_OAUTH_CLIENT_ID') || error.message.includes('GOOGLE_OAUTH_CLIENT_SECRET')) {
+        errorMessage = 'Google OAuth ist nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID und GOOGLE_OAUTH_CLIENT_SECRET in Render Environment Variables.';
+      } else if (error.message.includes('Invalid state') || error.message.includes('Ungültiger OAuth-State')) {
+        errorMessage = 'Ungültiger OAuth-State. Bitte versuche es erneut.';
+      } else if (error.message.includes('Code und State sind erforderlich')) {
+        errorMessage = 'OAuth-Callback fehlt erforderliche Parameter. Bitte versuche es erneut.';
+      }
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (axiosError) {
+      // Handle axios errors
+      if (axiosError.status === 400) {
+        errorMessage = `Google OAuth Fehler: ${axiosError.data?.error_description || axiosError.data?.error || 'Ungültige Anfrage'}`;
+      } else if (axiosError.status === 401) {
+        errorMessage = 'Google OAuth Authentifizierung fehlgeschlagen. Bitte überprüfe GOOGLE_OAUTH_CLIENT_ID und GOOGLE_OAUTH_CLIENT_SECRET.';
+      } else if (axiosError.status === 403) {
+        errorMessage = 'Google OAuth Zugriff verweigert. Bitte überprüfe die OAuth-Konfiguration.';
+      } else {
+        errorMessage = `Google OAuth Fehler (${axiosError.status}): ${axiosError.data?.error_description || axiosError.data?.error || axiosError.statusText}`;
       }
     }
     

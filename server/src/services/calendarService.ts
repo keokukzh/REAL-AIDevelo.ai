@@ -133,6 +133,17 @@ export const calendarService = {
         },
       });
 
+      // Check if refresh_token is present (required for offline access)
+      if (!response.data.refresh_token) {
+        console.error('[CalendarService] Google OAuth response missing refresh_token:', {
+          hasAccessToken: !!response.data.access_token,
+          hasRefreshToken: !!response.data.refresh_token,
+          expiresIn: response.data.expires_in,
+          scope: response.data.scope,
+        });
+        throw new Error('Google OAuth hat keinen Refresh Token zurückgegeben. Stelle sicher, dass access_type=offline und prompt=consent in der OAuth-URL gesetzt sind.');
+      }
+
       const token: CalendarToken = {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
@@ -142,8 +153,27 @@ export const calendarService = {
 
       return token;
     } catch (error: any) {
-      console.error('[CalendarService] Error exchanging Google code:', error.response?.data || error.message);
-      throw new Error(`Failed to exchange Google authorization code: ${error.response?.data?.error_description || error.message}`);
+      console.error('[CalendarService] Error exchanging Google code:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+      });
+      
+      // Extract detailed error message from Google API
+      let errorMessage = 'Fehler beim Austausch des OAuth-Codes';
+      if (error.response?.data) {
+        const googleError = error.response.data;
+        if (googleError.error_description) {
+          errorMessage = `Google OAuth Fehler: ${googleError.error_description}`;
+        } else if (googleError.error) {
+          errorMessage = `Google OAuth Fehler: ${googleError.error}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   },
 
