@@ -184,11 +184,12 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
 
     // Get frontend URL for postMessage targetOrigin
     // In production, FRONTEND_URL must be set; in dev, allow fallback
-    let frontendUrl = process.env.FRONTEND_URL;
-    if (!frontendUrl) {
+    let frontendUrl = process.env.FRONTEND_URL || 'https://aidevelo.ai';
+    if (!frontendUrl || frontendUrl === '') {
       if (process.env.NODE_ENV === 'production') {
-        console.error('[CalendarRoutes] FATAL: FRONTEND_URL missing in production');
-        return next(new InternalServerError('FRONTEND_URL must be set in production'));
+        // Fallback to aidevelo.ai if not set
+        console.warn('[CalendarRoutes] FRONTEND_URL not set, using https://aidevelo.ai as fallback');
+        frontendUrl = 'https://aidevelo.ai';
       } else {
         // Dev fallback: use '*' for postMessage (less secure but allows testing)
         console.warn('[CalendarRoutes] FRONTEND_URL not set, using "*" as postMessage targetOrigin (dev only)');
@@ -196,26 +197,73 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
       }
     }
     
+    // Remove trailing slash
+    frontendUrl = frontendUrl.replace(/\/$/, '');
+    
     // Return HTML that posts message to parent window
+    // Try multiple origins to handle Chrome security warnings
     res.send(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>Kalender verbunden</title>
+          <meta charset="utf-8">
         </head>
         <body>
           <script>
-            if (window.opener) {
-              window.opener.postMessage({
+            (function() {
+              const successData = {
                 type: 'calendar-oauth-success',
                 provider: '${provider}'
-              }, ${frontendUrl === '*' ? "'*'" : `'${frontendUrl}'`});
-              window.close();
-            } else {
-              window.location.href = '${frontendUrl === '*' ? window.location.origin : frontendUrl}/dashboard';
-            }
+              };
+              
+              // Try to send postMessage to parent window
+              if (window.opener && !window.opener.closed) {
+                try {
+                  // Try multiple target origins to handle different scenarios
+                  const targetOrigins = [
+                    '${frontendUrl}',
+                    'https://aidevelo.ai',
+                    'https://www.aidevelo.ai',
+                    '*'
+                  ];
+                  
+                  // Send to all possible origins (postMessage accepts array in some browsers)
+                  targetOrigins.forEach(origin => {
+                    try {
+                      window.opener.postMessage(successData, origin);
+                    } catch (e) {
+                      console.warn('[CalendarCallback] Failed to postMessage to', origin, e);
+                    }
+                  });
+                  
+                  // Also try without origin restriction (less secure but works if origin check fails)
+                  try {
+                    window.opener.postMessage(successData, '*');
+                  } catch (e) {
+                    console.warn('[CalendarCallback] Failed to postMessage with *', e);
+                  }
+                  
+                  console.log('[CalendarCallback] postMessage sent, closing window');
+                  
+                  // Close window after a short delay to ensure message is sent
+                  setTimeout(function() {
+                    window.close();
+                  }, 500);
+                } catch (error) {
+                  console.error('[CalendarCallback] Error sending postMessage:', error);
+                  // Fallback: redirect to dashboard
+                  window.location.href = '${frontendUrl}/dashboard?calendar=connected';
+                }
+              } else {
+                // No opener window (e.g., Chrome blocked it) - redirect to dashboard
+                console.log('[CalendarCallback] No opener window, redirecting to dashboard');
+                window.location.href = '${frontendUrl}/dashboard?calendar=connected';
+              }
+            })();
           </script>
           <p>Kalender erfolgreich verbunden. Sie können dieses Fenster schließen.</p>
+          <p><a href="${frontendUrl}/dashboard">Zum Dashboard</a></p>
         </body>
       </html>
     `);

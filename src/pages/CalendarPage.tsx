@@ -55,15 +55,31 @@ export const CalendarPage = () => {
 
         // Listen for OAuth callback
         const messageListener = (event: MessageEvent) => {
-          if (event.origin !== globalThis.location.origin) return;
+          // Accept messages from backend (real-aidevelo-ai.onrender.com) or frontend
+          const allowedOrigins = [
+            'https://real-aidevelo-ai.onrender.com',
+            'https://aidevelo.ai',
+            'https://www.aidevelo.ai',
+            globalThis.location.origin,
+          ];
+          
+          const isAllowed = allowedOrigins.some(origin => 
+            event.origin === origin || 
+            event.origin.includes(origin.replace('https://', '').replace('http://', ''))
+          );
+          
+          if (!isAllowed) {
+            return;
+          }
 
-          if (event.data.type === 'calendar-oauth-success') {
+          if (event.data?.type === 'calendar-oauth-success') {
+            console.log('[CalendarPage] Calendar OAuth success via postMessage');
             toast.success('Kalender erfolgreich verbunden');
             queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
             refetch();
             authWindow?.close();
             window.removeEventListener('message', messageListener);
-          } else if (event.data.type === 'calendar-oauth-error') {
+          } else if (event.data?.type === 'calendar-oauth-error') {
             const errorMsg = typeof event.data.message === 'string' 
               ? event.data.message 
               : 'Fehler bei der Kalender-Verbindung';

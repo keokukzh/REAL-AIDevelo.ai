@@ -29,6 +29,18 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
+
+  // Check for calendar connection success in URL params (fallback if postMessage fails)
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    if (urlParams.get('calendar') === 'connected') {
+      toast.success('Kalender erfolgreich verbunden');
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+      refetch();
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [queryClient, refetch]);
   const queryClient = useQueryClient();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [selectedCall, setSelectedCall] = useState<any | null>(null);
@@ -58,13 +70,29 @@ export const DashboardPage = () => {
   // Handle calendar OAuth postMessage events
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Security: Only accept messages from our frontend URL
+      // Security: Accept messages from our frontend URL or backend (for OAuth callback)
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || globalThis.location.origin;
-      if (event.origin !== frontendUrl && !event.origin.includes(globalThis.location.hostname)) {
+      const allowedOrigins = [
+        frontendUrl,
+        'https://aidevelo.ai',
+        'https://www.aidevelo.ai',
+        'https://real-aidevelo-ai.onrender.com',
+        globalThis.location.origin,
+      ];
+      
+      // Check if origin is allowed (more permissive for OAuth callback)
+      const isAllowedOrigin = allowedOrigins.some(allowed => 
+        event.origin === allowed || 
+        event.origin.includes(allowed.replace('https://', '').replace('http://', ''))
+      );
+      
+      if (!isAllowedOrigin) {
+        console.warn('[DashboardPage] Rejected postMessage from origin:', event.origin);
         return;
       }
 
       if (event.data?.type === 'calendar-oauth-success') {
+        console.log('[DashboardPage] Calendar OAuth success received');
         toast.success('Kalender erfolgreich verbunden');
         // Refetch dashboard overview
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
@@ -110,7 +138,81 @@ export const DashboardPage = () => {
         
         if (!authWindow) {
           toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
+          return;
         }
+
+        // Listen for OAuth callback postMessage
+        const messageListener = (event: MessageEvent) => {
+          // Accept messages from backend (real-aidevelo-ai.onrender.com) or frontend
+          const allowedOrigins = [
+            'https://real-aidevelo-ai.onrender.com',
+            'https://aidevelo.ai',
+            'https://www.aidevelo.ai',
+            globalThis.location.origin,
+          ];
+          
+          const isAllowed = allowedOrigins.some(origin => 
+            event.origin === origin || 
+            event.origin.includes(origin.replace('https://', '').replace('http://', ''))
+          );
+          
+          if (!isAllowed) {
+            return;
+          }
+
+          if (event.data?.type === 'calendar-oauth-success') {
+            console.log('[DashboardPage] Calendar OAuth success via postMessage');
+            toast.success('Kalender erfolgreich verbunden');
+            queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+            refetch();
+            authWindow?.close();
+            window.removeEventListener('message', messageListener);
+          } else if (event.data?.type === 'calendar-oauth-error') {
+            const errorMsg = typeof event.data.message === 'string' 
+              ? event.data.message 
+              : 'Fehler beim Verbinden des Kalenders';
+            toast.error(errorMsg);
+            authWindow?.close();
+            window.removeEventListener('message', messageListener);
+          }
+        };
+
+        window.addEventListener('message', messageListener);
+
+        // Fallback: Poll for calendar connection if postMessage doesn't work
+        // (e.g., if Chrome blocks the callback page)
+        let pollCount = 0;
+        const maxPolls = 30; // 30 seconds
+        const pollInterval = setInterval(() => {
+          pollCount++;
+          
+          // Check if window was closed
+          if (authWindow?.closed) {
+            clearInterval(pollInterval);
+            window.removeEventListener('message', messageListener);
+            
+            // If window closed and we haven't received success, check if calendar is connected
+            if (pollCount < maxPolls) {
+              // Wait a bit for backend to process, then check
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+                refetch().then(() => {
+                  // Check if calendar is now connected
+                  if (overview?.status?.calendar === 'connected') {
+                    toast.success('Kalender erfolgreich verbunden');
+                  }
+                });
+              }, 2000);
+            }
+            return;
+          }
+          
+          // Stop polling after max attempts
+          if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            window.removeEventListener('message', messageListener);
+          }
+        }, 1000);
       } else {
         throw new Error('Keine Auth-URL erhalten');
       }
