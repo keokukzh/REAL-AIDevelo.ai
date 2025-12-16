@@ -216,12 +216,27 @@ export const calendarService = {
     } catch (error) {
       // In production, never use fallback - fail hard
       if (process.env.NODE_ENV === 'production') {
-        logger.error('calendar.token.store_fatal', null, redact({
-          locationId,
-          provider: token.provider,
-          reason: 'TOKEN_ENCRYPTION_KEY missing in production',
-        }));
-        throw new Error('Token encryption required in production. TOKEN_ENCRYPTION_KEY must be set.');
+        const isEncryptionKeyError = error instanceof Error && 
+          (error.message.includes('TOKEN_ENCRYPTION_KEY') || 
+           !process.env.TOKEN_ENCRYPTION_KEY || 
+           process.env.TOKEN_ENCRYPTION_KEY === '');
+        
+        if (isEncryptionKeyError) {
+          logger.error('calendar.token.store_fatal', null, redact({
+            locationId,
+            provider: token.provider,
+            reason: 'TOKEN_ENCRYPTION_KEY missing in production',
+          }));
+          throw new Error(
+            'TOKEN_ENCRYPTION_KEY fehlt in Render. ' +
+            'Bitte setze diese Environment Variable in Render: ' +
+            '1. Render Dashboard → REAL-AIDevelo.ai → Environment → Add Variable, ' +
+            '2. KEY: TOKEN_ENCRYPTION_KEY, ' +
+            '3. VALUE: (generiere mit: openssl rand -base64 32), ' +
+            '4. Save Changes. ' +
+            'Ohne diesen Key können Kalender-Tokens nicht verschlüsselt gespeichert werden.'
+          );
+        }
       }
       
       // In development, fall back to in-memory only if encryption key missing
@@ -233,6 +248,7 @@ export const calendarService = {
         fallbackMode = true;
         calendarTokensFallback.set(locationId, token);
       } else {
+        // Re-throw the original error if it's not about encryption key
         logger.error('calendar.token.store_failed', error, redact({
           locationId,
           provider: token.provider,
