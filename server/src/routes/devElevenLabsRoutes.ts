@@ -57,7 +57,7 @@ if (process.env.NODE_ENV !== 'production') {
       const API_BASE = 'https://api.elevenlabs.io/v1';
 
       try {
-        const agentResponse = await axios.get(`${API_BASE}/convai/agent/${finalAgentId}`, {
+        const agentResponse = await axios.get(`${API_BASE}/convai/agents/${finalAgentId}`, {
           headers: { 'xi-api-key': config.elevenLabsApiKey },
           timeout: 10000,
         });
