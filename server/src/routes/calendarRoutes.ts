@@ -83,7 +83,24 @@ router.get('/:provider/auth', async (req: AuthenticatedRequest, res: Response, n
     }
   } catch (error) {
     console.error('[CalendarRoutes] Error generating auth URL:', error);
-    next(new InternalServerError('Fehler beim Generieren der OAuth-URL'));
+    
+    // Extract meaningful error message
+    let errorMessage = 'Fehler beim Generieren der OAuth-URL';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Provide more specific error messages for common issues
+      if (error.message.includes('ensureUserRow') || error.message.includes('create organization') || error.message.includes('create user')) {
+        errorMessage = 'Fehler beim Erstellen des Benutzers oder der Organisation';
+      } else if (error.message.includes('ensureOrgForUser') || error.message.includes('Organization not found')) {
+        errorMessage = 'Fehler beim Abrufen der Organisation';
+      } else if (error.message.includes('ensureDefaultLocation') || error.message.includes('create location')) {
+        errorMessage = 'Fehler beim Erstellen des Standorts';
+      } else if (error.message.includes('GOOGLE_OAUTH_CLIENT_ID')) {
+        errorMessage = 'Google OAuth ist nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in den Environment Variables.';
+      }
+    }
+    
+    next(new InternalServerError(errorMessage));
   }
 });
 
