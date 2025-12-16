@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { calendarService } from '../services/calendarService';
 import { BadRequestError, InternalServerError } from '../utils/errors';
-import { AuthenticatedRequest } from '../middleware/supabaseAuth';
+import { AuthenticatedRequest, verifySupabaseAuth } from '../middleware/supabaseAuth';
 import { ensureDefaultLocation, ensureOrgForUser, ensureUserRow } from '../services/supabaseDb';
 import { createSignedState, verifySignedState } from '../utils/oauthState';
 import { resolveLocationId } from '../utils/locationIdResolver';
@@ -26,10 +26,20 @@ const router = Router();
  *       200:
  *         description: OAuth URL generated successfully
  */
-router.get('/:provider/auth', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/:provider/auth', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    // This should never happen if verifySupabaseAuth middleware is applied correctly
+    // But add defensive check with proper 401 response
     if (!req.supabaseUser) {
-      return next(new InternalServerError('User not authenticated'));
+      console.error('[CalendarRoutes] User not authenticated - middleware may have failed', {
+        hasAuthHeader: !!req.headers.authorization,
+        authHeaderPrefix: req.headers.authorization?.substring(0, 20) || 'none',
+      });
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Please log in to connect your calendar',
+      });
     }
 
     const { provider } = req.params;
@@ -126,6 +136,7 @@ router.get('/:provider/auth', async (req: AuthenticatedRequest, res: Response, n
  *         description: Calendar connected successfully
  */
 router.get('/:provider/callback', async (req: Request, res: Response, next: NextFunction) => {
+  // Note: Callback route does NOT require auth (called by Google OAuth)
   try {
     const { provider } = req.params;
     const { code, state } = req.query;
@@ -262,10 +273,16 @@ router.get('/:provider/callback', async (req: Request, res: Response, next: Next
  *       200:
  *         description: Calendar disconnected successfully
  */
-router.delete('/:provider/disconnect', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.delete('/:provider/disconnect', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    // This should never happen if verifySupabaseAuth middleware is applied correctly
     if (!req.supabaseUser) {
-      return next(new InternalServerError('User not authenticated'));
+      console.error('[CalendarRoutes] User not authenticated - middleware may have failed');
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Please log in to disconnect your calendar',
+      });
     }
 
     const { provider } = req.params;
@@ -303,7 +320,7 @@ router.delete('/:provider/disconnect', async (req: AuthenticatedRequest, res: Re
  * POST /api/calendar/google/check-availability
  * Admin endpoint to check calendar availability (auth required)
  */
-router.post('/google/check-availability', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/google/check-availability', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -349,7 +366,7 @@ router.post('/google/check-availability', async (req: AuthenticatedRequest, res:
  * POST /api/calendar/google/create-appointment
  * Admin endpoint to create appointment (auth required)
  */
-router.post('/google/create-appointment', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/google/create-appointment', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));

@@ -43,6 +43,21 @@ export const listScheduledReports = async (req: AuthenticatedRequest, res: Respo
       .order('created_at', { ascending: false });
 
     if (error) {
+      // Check if table doesn't exist (PGRST205) - graceful degradation
+      if (error.code === 'PGRST205' || error.message?.includes('scheduled_reports')) {
+        console.warn('[ScheduledReports] Table not found - feature not available', {
+          locationId,
+          errorCode: error.code,
+        });
+        // Return empty array if feature not enabled or table missing
+        if (process.env.ENABLE_SCHEDULED_REPORTS !== 'true') {
+          return res.json({
+            success: true,
+            data: [],
+            warning: 'Scheduled reports feature not available. Table migration not applied.',
+          });
+        }
+      }
       console.error('[ScheduledReports] Error listing reports:', error);
       return next(new InternalServerError('Failed to list scheduled reports'));
     }
