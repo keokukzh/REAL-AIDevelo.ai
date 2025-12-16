@@ -326,6 +326,14 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
     // Note: For production, consider using a proxy WebSocket server to keep API key server-side
     const wsUrl = `wss://api.elevenlabs.io/v1/convai?api_key=${encodeURIComponent(apiKey)}`;
 
+    console.log('[VoiceAgentRoutes] Generated stream token', {
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      elevenAgentId,
+      customerId,
+      wsUrlPrefix: wsUrl.substring(0, 50) + '...',
+    });
+
     res.json({
       success: true,
       data: {
@@ -338,10 +346,16 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('[VoiceAgentRoutes] Error generating stream token:', error);
+    console.error('[VoiceAgentRoutes] Error generating stream token:', {
+      error: error.message,
+      stack: error.stack,
+      customerId: req.body?.customerId,
+      agentId: req.body?.agentId,
+    });
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to generate stream token',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 });

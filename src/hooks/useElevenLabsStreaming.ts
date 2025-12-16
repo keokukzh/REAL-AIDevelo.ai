@@ -38,8 +38,15 @@ export function useElevenLabsStreaming(config: StreamConfig) {
           voiceId: config.voiceId,
         },
       });
+      
+      // Store the actual ElevenLabs agent ID for conversation initialization
+      if (response.data.agentId) {
+        (config as any).elevenAgentId = response.data.agentId;
+      }
+      
       return response.data.wsUrl;
     } catch (err) {
+      console.error('[ElevenLabs] Failed to get stream URL:', err);
       throw new Error(`Failed to get stream URL: ${err}`);
     }
   }, [config]);
@@ -61,14 +68,17 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         reconnectAttemptRef.current = 0;
         
         // Initialize conversation with ElevenLabs
+        // Use the actual ElevenLabs agent ID (eleven_agent_id), not the config ID
+        const elevenAgentId = (config as any).elevenAgentId || config.agentId;
         const initMessage = {
           type: 'conversation_initiation_client_data',
           conversation_config: {
-            agent_id: config.agentId,
+            agent_id: elevenAgentId,
             language: 'de',
             client_tool_result: null,
           },
         };
+        console.log('[ElevenLabs] Initializing conversation with agent_id:', elevenAgentId);
         ws.send(JSON.stringify(initMessage));
       };
 
@@ -87,15 +97,26 @@ export function useElevenLabsStreaming(config: StreamConfig) {
 
       ws.onerror = (event) => {
         console.error('[ElevenLabs] WebSocket error:', event);
-        setError('WebSocket connection error');
+        // Try to get more details about the error
+        const errorMessage = (event as any).message || 'WebSocket connection error';
+        setError(`WebSocket connection error: ${errorMessage}`);
         setIsConnected(false);
         setIsLoading(false);
       };
 
-      ws.onclose = () => {
-        console.log('[ElevenLabs] WebSocket closed');
+      ws.onclose = (event) => {
+        console.log('[ElevenLabs] WebSocket closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
         setIsConnected(false);
         setIsListening(false);
+        
+        // Don't reconnect if it was a clean close or an authentication error
+        if (event.code === 1000 || event.code === 1008 || event.code === 4001) {
+          if (event.code !== 1000) {
+            setError(`Connection closed: ${event.reason || 'Authentication or configuration error'}`);
+          }
+          return;
+        }
+        
         // Attempt reconnect with exponential backoff
         if (reconnectAttemptRef.current < 3) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), 10000);
@@ -103,6 +124,8 @@ export function useElevenLabsStreaming(config: StreamConfig) {
             reconnectAttemptRef.current++;
             connect();
           }, delay);
+        } else {
+          setError('Connection failed after multiple attempts. Please check your configuration.');
         }
       };
 
