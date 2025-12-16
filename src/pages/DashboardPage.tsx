@@ -31,11 +31,17 @@ export const DashboardPage = () => {
   const queryClient = useQueryClient();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
 
-  // Check for calendar connection success in URL params (fallback if postMessage fails)
+  // Check for calendar connection success/error in URL params (fallback if postMessage fails)
   React.useEffect(() => {
     const urlParams = new URLSearchParams(globalThis.location.search);
     if (urlParams.get('calendar') === 'connected') {
       toast.success('Kalender erfolgreich verbunden');
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+      refetch();
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+    } else if (urlParams.get('error') === 'calendar_connection_failed') {
+      toast.error('Fehler beim Verbinden des Kalenders. Bitte versuchen Sie es erneut.');
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
       // Clean up URL
