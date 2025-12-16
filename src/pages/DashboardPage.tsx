@@ -28,6 +28,7 @@ import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../li
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
+  const queryClient = useQueryClient();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
 
   // Check for calendar connection success in URL params (fallback if postMessage fails)
@@ -41,7 +42,6 @@ export const DashboardPage = () => {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, [queryClient, refetch]);
-  const queryClient = useQueryClient();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [selectedCall, setSelectedCall] = useState<any | null>(null);
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
