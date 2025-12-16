@@ -41,7 +41,7 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
     let text: string;
     let fileName: string | undefined;
     let mimeType: string | undefined;
-    let source: 'upload' | 'text' = 'text';
+    let source: 'upload' | 'text';
 
     // Handle file upload (multipart/form-data)
     if (req.file) {
@@ -163,7 +163,7 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
 
     const { supabaseUserId, email } = req.supabaseUser;
 
-    // Resolve locationId
+    // Resolve locationId with better error handling
     let locationId: string;
     try {
       const resolution = await resolveLocationId(req, {
@@ -173,6 +173,7 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       locationId = resolution.locationId;
       console.log(`[RAGController] List documents: resolved locationId=${locationId} from source=${resolution.source}`);
     } catch (error: any) {
+      console.error('[RAGController] Failed to resolve locationId:', error);
       return res.status(400).json({
         success: false,
         error: 'locationId missing',
@@ -180,7 +181,7 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       });
     }
 
-    // Query documents for location
+    // Query documents with improved error handling
     const { data: documents, error } = await supabaseAdmin
       .from('rag_documents')
       .select('id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, created_at, updated_at')
@@ -188,7 +189,25 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[RAGController] Error listing documents:', error);
+      console.error('[RAGController] Supabase error:', error);
+      // Check if table exists or schema issue
+      if (error.code === 'PGRST204' || error.message?.includes('relation') || error.message?.includes('does not exist') || error.message?.includes('Could not find')) {
+        return res.status(500).json({
+          success: false,
+          error: 'Database schema error',
+          message: 'rag_documents table may not exist. Please run migrations.',
+          details: error.message,
+        });
+      }
+      // Check for permission/RLS issues
+      if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('RLS')) {
+        return res.status(500).json({
+          success: false,
+          error: 'Database permission error',
+          message: 'Unable to access rag_documents table. Please check RLS policies.',
+          details: error.message,
+        });
+      }
       return next(new InternalServerError(`Failed to list documents: ${error.message || 'Unknown error'}`));
     }
 
@@ -199,7 +218,7 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       },
     });
   } catch (error: any) {
-    console.error('[RAGController] Error in listDocuments:', error);
+    console.error('[RAGController] Unexpected error in listDocuments:', error);
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 };

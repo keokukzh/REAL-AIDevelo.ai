@@ -93,6 +93,8 @@ import enterpriseRoutes from './routes/enterpriseRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import devCalendarRoutes from './routes/devCalendarRoutes';
 import devRagRoutes from './routes/devRagRoutes';
+import devElevenLabsRoutes from './routes/devElevenLabsRoutes';
+import devTwilioRoutes from './routes/devTwilioRoutes';
 import ragRoutes from './routes/ragRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import analyticsExportRoutes from './routes/analyticsExportRoutes';
@@ -403,6 +405,8 @@ v1Router.use('/reports/scheduled', scheduledReportsRoutes); // Auth applied per-
 if (process.env.NODE_ENV !== 'production') {
   v1Router.use('/dev/calendar', devCalendarRoutes); // Dev-only endpoints
   v1Router.use('/dev/rag', devRagRoutes); // Dev-only RAG endpoints
+  v1Router.use('/dev/elevenlabs', devElevenLabsRoutes); // Dev-only ElevenLabs endpoints
+  v1Router.use('/dev/twilio', devTwilioRoutes); // Dev-only Twilio endpoints
 }
 v1Router.use('/onboarding', onboardingAIAssistantRoutes);
 v1Router.use('/voice-agent', voiceAgentRoutes);
