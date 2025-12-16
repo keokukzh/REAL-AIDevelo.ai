@@ -64,7 +64,10 @@ export const CalendarPage = () => {
             authWindow?.close();
             window.removeEventListener('message', messageListener);
           } else if (event.data.type === 'calendar-oauth-error') {
-            toast.error(event.data.message || 'Fehler bei der Kalender-Verbindung');
+            const errorMsg = typeof event.data.message === 'string' 
+              ? event.data.message 
+              : 'Fehler bei der Kalender-Verbindung';
+            toast.error(errorMsg);
             authWindow?.close();
             window.removeEventListener('message', messageListener);
           }
@@ -83,7 +86,30 @@ export const CalendarPage = () => {
         throw new Error('Fehler beim Abrufen der OAuth-URL');
       }
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
+      console.error('[CalendarPage] Calendar connection error:', error);
+      
+      // Extract error message from various error formats
+      let errorMsg = 'Unbekannter Fehler';
+      
+      if (error?.response?.data) {
+        // Handle Axios error response
+        const errorData = error.response.data;
+        if (typeof errorData.error === 'string') {
+          errorMsg = errorData.error;
+        } else if (typeof errorData.message === 'string') {
+          errorMsg = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMsg = errorData;
+        } else if (errorData.error && typeof errorData.error === 'object') {
+          // If error is an object, try to extract message
+          errorMsg = errorData.error.message || errorData.error.error || JSON.stringify(errorData.error);
+        }
+      } else if (error?.message) {
+        errorMsg = error.message;
+      } else if (typeof error === 'string') {
+        errorMsg = error;
+      }
+      
       toast.error(`Fehler beim Verbinden: ${errorMsg}`);
     }
   };
