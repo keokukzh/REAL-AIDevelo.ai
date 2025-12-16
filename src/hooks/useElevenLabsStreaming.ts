@@ -27,21 +27,20 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   const micStreamRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const reconnectAttemptRef = useRef(0);
 
-  // Get WebSocket token from backend
-  const getStreamToken = useCallback(async () => {
+  // Get WebSocket URL from backend
+  const getStreamUrl = useCallback(async () => {
     try {
-      const response = await apiRequest<{ data: { token: string } }>('/voice-agent/elevenlabs-stream-token', {
+      const response = await apiRequest<{ data: { wsUrl: string; agentId: string; customerId: string; voiceId?: string } }>('/voice-agent/elevenlabs-stream-token', {
         method: 'POST',
         data: {
           customerId: config.customerId,
           agentId: config.agentId,
           voiceId: config.voiceId,
-          duration: config.duration || 3600,
         },
       });
-      return response.data.token;
+      return response.data.wsUrl;
     } catch (err) {
-      throw new Error(`Failed to get stream token: ${err}`);
+      throw new Error(`Failed to get stream URL: ${err}`);
     }
   }, [config]);
 
@@ -50,16 +49,27 @@ export function useElevenLabsStreaming(config: StreamConfig) {
     try {
       setError(null);
       setIsLoading(true);
-      const token = await getStreamToken();
+      const wsUrl = await getStreamUrl();
 
       // Connect to ElevenLabs WebSocket
-      const ws = new WebSocket(`wss://api.elevenlabs.io/v1/convai?token=${token}`);
+      const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         console.log('[ElevenLabs] WebSocket connected');
         setIsConnected(true);
         setIsLoading(false);
         reconnectAttemptRef.current = 0;
+        
+        // Initialize conversation with ElevenLabs
+        const initMessage = {
+          type: 'conversation_initiation_client_data',
+          conversation_config: {
+            agent_id: config.agentId,
+            language: 'de',
+            client_tool_result: null,
+          },
+        };
+        ws.send(JSON.stringify(initMessage));
       };
 
       ws.onmessage = (event) => {
@@ -103,7 +113,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       setIsConnected(false);
       setIsLoading(false);
     }
-  }, [getStreamToken]);
+  }, [getStreamUrl]);
 
   // Handle incoming audio from ElevenLabs
   const handleAudioMessage = useCallback((audioBlob: Blob) => {

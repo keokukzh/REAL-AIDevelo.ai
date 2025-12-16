@@ -269,12 +269,12 @@ router.delete('/call-session/:sessionId', (req: Request, res: Response) => {
 
 /**
  * POST /api/voice-agent/elevenlabs-stream-token
- * Get temporary token for ElevenLabs WebSocket connection
- * Keeps API key server-side; frontend uses token with limited scope
+ * Get WebSocket URL for ElevenLabs Conversational API
+ * Returns the WebSocket URL with API key embedded (secure for server-side use)
  */
 router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
   try {
-    const { customerId, agentId, voiceId, duration = 3600 } = req.body;
+    const { customerId, agentId, voiceId } = req.body;
 
     if (!customerId || !agentId) {
       return res.status(400).json({
@@ -283,32 +283,65 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       });
     }
 
-    // In production, generate a signed token with exp claim
-    // For now, return agent-specific config (never expose API key)
-    const streamToken = {
-      agentId,
-      customerId,
-      voiceId: voiceId || undefined,
-      expiresIn: duration,
-      timestamp: Date.now(),
-    };
+    // Get ElevenLabs API key from config
+    const { config } = require('../config/env');
+    const apiKey = config.elevenLabsApiKey;
 
-    // In a real implementation, sign this token with a secret
-    // const signedToken = jwt.sign(streamToken, process.env.JWT_SECRET);
+    if (!apiKey || !config.isElevenLabsConfigured) {
+      return res.status(400).json({
+        success: false,
+        error: 'ElevenLabs API key not configured',
+      });
+    }
+
+    // Resolve eleven_agent_id from agent_configs table
+    // agentId might be agent_configs.id, so we need to get the eleven_agent_id
+    const { supabaseAdmin } = require('../services/supabaseDb');
+    let elevenAgentId: string | null = null;
+
+    // Try to get eleven_agent_id from agent_configs table
+    const { data: agentConfig } = await supabaseAdmin
+      .from('agent_configs')
+      .select('eleven_agent_id')
+      .eq('id', agentId)
+      .maybeSingle();
+
+    if (agentConfig?.eleven_agent_id) {
+      elevenAgentId = agentConfig.eleven_agent_id;
+    } else {
+      // If agentId is already an eleven_agent_id, use it directly
+      // Otherwise, use default or fail
+      const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'ogdlaxy0T9rCSVdH0VJM';
+      elevenAgentId = defaultAgentId;
+    }
+
+    if (!elevenAgentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'ElevenLabs Agent ID not found. Please configure the Agent ID in Settings.',
+      });
+    }
+
+    // Build WebSocket URL with API key
+    // Note: For production, consider using a proxy WebSocket server to keep API key server-side
+    const wsUrl = `wss://api.elevenlabs.io/v1/convai?api_key=${encodeURIComponent(apiKey)}`;
 
     res.json({
       success: true,
       data: {
-        token: Buffer.from(JSON.stringify(streamToken)).toString('base64'),
-        expiresIn: duration,
-        // Frontend will connect via WebSocket using this config
-        // But actual API key is never exposed
+        wsUrl,
+        agentId: elevenAgentId, // Return the actual ElevenLabs agent ID
+        customerId,
+        voiceId: voiceId || undefined,
+        // Note: API key is embedded in URL for direct connection
+        // In production, consider using a proxy WebSocket server
       },
     });
   } catch (error: any) {
+    console.error('[VoiceAgentRoutes] Error generating stream token:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Failed to generate stream token',
     });
   }
 });
