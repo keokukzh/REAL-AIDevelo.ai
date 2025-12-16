@@ -57,17 +57,32 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get<{ success: boolean; data: PhoneNumber[] }>(
+      const response = await apiClient.get<{ 
+        success: boolean; 
+        data: PhoneNumber[];
+        warning?: string;
+        isMockData?: boolean;
+      }>(
         '/phone/numbers?country=CH'
       );
       if (response.data?.success && Array.isArray(response.data.data)) {
         setAvailableNumbers(response.data.data);
+        
+        // Show warning if Twilio not configured
+        if (response.data.warning) {
+          setError(response.data.warning);
+          if (response.data.isMockData) {
+            toast.warning('Twilio API Keys nicht konfiguriert. Mock-Daten werden angezeigt.');
+          } else {
+            toast.warning(response.data.warning);
+          }
+        }
       } else {
         throw new Error('Ungültige Antwort vom Server');
       }
     } catch (err: any) {
       console.error('[PhoneConnectionModal] Error loading numbers:', err);
-      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Laden der verfügbaren Nummern';
+      const errorMsg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Fehler beim Laden der verfügbaren Nummern';
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -147,12 +162,27 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         ) : availableNumbers.length === 0 ? (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
-            <div>
+            <div className="flex-1">
               <h3 className="text-sm font-semibold text-yellow-300 mb-1">Keine Nummern verfügbar</h3>
-              <p className="text-xs text-yellow-200/80">
-                Es sind derzeit keine Telefonnummern verfügbar. Bitte versuche es später erneut oder 
-                kontaktiere den Support.
+              <p className="text-xs text-yellow-200/80 mb-2">
+                {error || 'Es sind derzeit keine Telefonnummern verfügbar.'}
               </p>
+              {error && error.includes('TWILIO_ACCOUNT_SID') && (
+                <div className="mt-3 p-3 bg-slate-800/50 rounded border border-slate-700/50">
+                  <p className="text-xs text-gray-300 mb-2 font-medium">Lösung:</p>
+                  <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
+                    <li>Gehe zu Render Dashboard → Environment Variables</li>
+                    <li>Setze <code className="text-yellow-300">TWILIO_ACCOUNT_SID</code> (deine Twilio Account SID)</li>
+                    <li>Setze <code className="text-yellow-300">TWILIO_AUTH_TOKEN</code> (dein Twilio Auth Token)</li>
+                    <li>Starte den Service neu</li>
+                  </ol>
+                </div>
+              )}
+              {!error && (
+                <p className="text-xs text-yellow-200/60 mt-2">
+                  Bitte versuche es später erneut oder kontaktiere den Support.
+                </p>
+              )}
             </div>
           </div>
         ) : (

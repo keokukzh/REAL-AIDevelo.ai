@@ -20,21 +20,64 @@ export const listPhoneNumbers = async (
     }
 
     const { country = 'CH' } = req.query;
-    const numbers = await twilioService.listPhoneNumbers(country as string);
+    
+    // Check if Twilio is configured
+    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID || '';
+    const twilioAuthToken = config.twilioAuthToken || '';
+    const isTwilioConfigured = !!(twilioAccountSid && twilioAuthToken);
+
+    let numbers;
+    let isMockData = false;
+    
+    try {
+      numbers = await twilioService.listPhoneNumbers(country as string);
+      
+      // Check if we got mock data (indicates Twilio not configured)
+      if (!isTwilioConfigured && numbers.length > 0) {
+        isMockData = numbers.some(num => num.sid.startsWith('mock_'));
+      }
+    } catch (error: any) {
+      // If Twilio API call fails, return helpful error
+      console.error('[PhoneController] Error fetching phone numbers:', error);
+      
+      if (!isTwilioConfigured) {
+        return res.json({
+          success: true,
+          data: [],
+          warning: 'Twilio API keys not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
+          isMockData: false,
+        });
+      }
+      
+      // If configured but API call failed, return error
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch phone numbers from Twilio',
+        message: error.message || 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      });
+    }
+
+    // Map numbers to response format
+    const mappedNumbers = numbers.map((num) => ({
+      id: num.sid,
+      providerSid: num.sid,
+      number: num.phoneNumber,
+      country: country as string,
+      status: 'available' as const,
+      capabilities: num.capabilities,
+      metadata: {
+        friendlyName: num.friendlyName,
+      },
+    }));
 
     res.json({
       success: true,
-      data: numbers.map((num) => ({
-        id: num.sid,
-        providerSid: num.sid,
-        number: num.phoneNumber,
-        country: country as string,
-        status: 'available' as const,
-        capabilities: num.capabilities,
-        metadata: {
-          friendlyName: num.friendlyName,
-        },
-      })),
+      data: mappedNumbers,
+      ...(isMockData && {
+        warning: 'Twilio API keys not configured. Showing mock data for testing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
+        isMockData: true,
+      }),
     });
   } catch (error) {
     next(error);
