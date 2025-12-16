@@ -388,3 +388,168 @@ export const testWebhook = async (
     next(error);
   }
 };
+
+/**
+ * GET /api/phone/health
+ * Check Twilio Gateway health status
+ * Returns detailed health information including API keys, phone connection, and webhooks
+ */
+export const checkTwilioGatewayHealth = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Get user's location
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // Check Twilio API configuration
+    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID || '';
+    const twilioAuthToken = config.twilioAuthToken || '';
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
+
+    const healthChecks: Record<string, { ok: boolean; message: string; details?: any }> = {
+      apiKeys: {
+        ok: !!(twilioAccountSid && twilioAuthToken),
+        message: twilioAccountSid && twilioAuthToken
+          ? 'Twilio API keys are configured'
+          : 'Twilio API keys are missing (TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN)',
+        details: {
+          hasAccountSid: !!twilioAccountSid,
+          hasAuthToken: !!twilioAuthToken,
+        },
+      },
+      publicUrl: {
+        ok: !!publicBaseUrl,
+        message: publicBaseUrl
+          ? `Public base URL is configured: ${publicBaseUrl}`
+          : 'PUBLIC_BASE_URL is not set (required for webhooks)',
+        details: {
+          publicBaseUrl: publicBaseUrl || null,
+        },
+      },
+      phoneConnection: {
+        ok: false,
+        message: 'No phone number connected',
+        details: {
+          phoneNumber: null,
+          status: null,
+        },
+      },
+      webhooks: {
+        ok: false,
+        message: 'Webhooks not configured (no phone number connected)',
+        details: {
+          voiceUrl: null,
+          statusCallbackUrl: null,
+          matches: {
+            voiceUrl: false,
+            statusCallbackUrl: false,
+          },
+        },
+      },
+    };
+
+    // Check phone number connection
+    const { data: phoneData } = await supabaseAdmin
+      .from('phone_numbers')
+      .select('twilio_number_sid, e164, customer_public_number, status')
+      .eq('location_id', location.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (phoneData?.twilio_number_sid) {
+      healthChecks.phoneConnection = {
+        ok: phoneData.status === 'connected',
+        message: phoneData.status === 'connected'
+          ? `Phone number connected: ${phoneData.e164 || phoneData.customer_public_number}`
+          : `Phone number exists but status is '${phoneData.status}' (expected 'connected')`,
+        details: {
+          phoneNumber: phoneData.e164 || phoneData.customer_public_number || null,
+          status: phoneData.status,
+          twilioNumberSid: phoneData.twilio_number_sid,
+        },
+      };
+
+      // Check webhook configuration if phone is connected
+      if (phoneData.status === 'connected' && publicBaseUrl) {
+        try {
+          const webhookStatus = await twilioService.getWebhookStatus(phoneData.twilio_number_sid);
+          const expectedVoiceUrl = `${publicBaseUrl}/api/twilio/voice/inbound`;
+          const expectedStatusCallbackUrl = `${publicBaseUrl}/api/twilio/voice/status`;
+
+          const voiceUrlMatches = urlsMatch(webhookStatus.voiceUrl, expectedVoiceUrl);
+          const statusCallbackMatches = urlsMatch(webhookStatus.statusCallback, expectedStatusCallbackUrl);
+
+          healthChecks.webhooks = {
+            ok: voiceUrlMatches && statusCallbackMatches,
+            message: voiceUrlMatches && statusCallbackMatches
+              ? 'Webhooks are correctly configured'
+              : 'Webhook URLs do not match expected values',
+            details: {
+              configured: {
+                voiceUrl: webhookStatus.voiceUrl,
+                statusCallbackUrl: webhookStatus.statusCallback,
+              },
+              expected: {
+                voiceUrl: expectedVoiceUrl,
+                statusCallbackUrl: expectedStatusCallbackUrl,
+              },
+              matches: {
+                voiceUrl: voiceUrlMatches,
+                statusCallbackUrl: statusCallbackMatches,
+              },
+            },
+          };
+        } catch (webhookError: any) {
+          healthChecks.webhooks = {
+            ok: false,
+            message: `Failed to check webhook status: ${webhookError.message || 'Unknown error'}`,
+            details: {
+              error: webhookError.message || 'Unknown error',
+            },
+          };
+        }
+      }
+    }
+
+    // Determine overall health status
+    const allChecksOk = Object.values(healthChecks).every(check => check.ok);
+    const criticalChecksOk = healthChecks.apiKeys.ok && healthChecks.publicUrl.ok;
+
+    // Overall status
+    let overallStatus: 'ok' | 'error' | 'warning' = 'ok';
+    if (!criticalChecksOk) {
+      overallStatus = 'error';
+    } else if (!healthChecks.phoneConnection.ok) {
+      overallStatus = 'error';
+    } else if (!healthChecks.webhooks.ok) {
+      overallStatus = 'warning';
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: overallStatus,
+        allChecksOk,
+        checks: healthChecks,
+        recommendations: !allChecksOk ? [
+          !healthChecks.apiKeys.ok && 'Configure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables',
+          !healthChecks.publicUrl.ok && 'Set PUBLIC_BASE_URL in Render environment variables (e.g., https://aidevelo.ai)',
+          !healthChecks.phoneConnection.ok && 'Connect a phone number via the "Telefon verbinden" button in the dashboard',
+          healthChecks.phoneConnection.ok && !healthChecks.webhooks.ok && 'Webhook URLs need to be updated. Try reconnecting the phone number or use the "Webhook Status prüfen" button.',
+        ].filter(Boolean) : [],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
