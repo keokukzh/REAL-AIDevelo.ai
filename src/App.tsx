@@ -21,6 +21,7 @@ const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').the
 const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
 const CallsPage = React.lazy(() => import('./pages/CallsPage').then(m => ({ default: m.CallsPage })));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const KnowledgeBasePage = React.lazy(() => import('./pages/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 import { AuthProvider } from './contexts/AuthContext';
@@ -136,6 +137,13 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner />}>
                           <CalendarPage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/settings" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <SettingsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
