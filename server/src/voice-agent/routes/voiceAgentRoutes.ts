@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import axios from 'axios';
 import { chatService } from '../llm/chat';
 import { ragQueryService } from '../rag/query';
 import { ragContextBuilder } from '../rag/contextBuilder';
@@ -322,16 +323,40 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       });
     }
 
-    // Build WebSocket URL with API key
-    // Note: For production, consider using a proxy WebSocket server to keep API key server-side
-    const wsUrl = `wss://api.elevenlabs.io/v1/convai?api_key=${encodeURIComponent(apiKey)}`;
+    // Get signed URL from ElevenLabs for secure connection
+    // This keeps the API key server-side and provides a temporary signed URL
+    let wsUrl: string;
+    try {
+      const signedUrlResponse = await axios.get(
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(elevenAgentId)}`,
+        {
+          headers: {
+            'xi-api-key': apiKey,
+          },
+          timeout: 10000,
+        }
+      );
+
+      if (signedUrlResponse.data?.signed_url) {
+        wsUrl = signedUrlResponse.data.signed_url;
+        console.log('[VoiceAgentRoutes] Got signed URL from ElevenLabs');
+      } else {
+        // Fallback: Use direct URL with agent_id (for public agents)
+        wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
+        console.log('[VoiceAgentRoutes] Using direct URL with agent_id (fallback)');
+      }
+    } catch (error: any) {
+      console.warn('[VoiceAgentRoutes] Failed to get signed URL, using direct URL:', error.message);
+      // Fallback: Use direct URL with agent_id (for public agents)
+      wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
+    }
 
     console.log('[VoiceAgentRoutes] Generated stream token', {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
       elevenAgentId,
       customerId,
-      wsUrlPrefix: wsUrl.substring(0, 50) + '...',
+      wsUrlPrefix: wsUrl.substring(0, 80) + '...',
     });
 
     res.json({
@@ -341,8 +366,6 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
         agentId: elevenAgentId, // Return the actual ElevenLabs agent ID
         customerId,
         voiceId: voiceId || undefined,
-        // Note: API key is embedded in URL for direct connection
-        // In production, consider using a proxy WebSocket server
       },
     });
   } catch (error: any) {

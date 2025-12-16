@@ -67,19 +67,9 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         setIsLoading(false);
         reconnectAttemptRef.current = 0;
         
-        // Initialize conversation with ElevenLabs
-        // Use the actual ElevenLabs agent ID (eleven_agent_id), not the config ID
-        const elevenAgentId = (config as any).elevenAgentId || config.agentId;
-        const initMessage = {
-          type: 'conversation_initiation_client_data',
-          conversation_config: {
-            agent_id: elevenAgentId,
-            language: 'de',
-            client_tool_result: null,
-          },
-        };
-        console.log('[ElevenLabs] Initializing conversation with agent_id:', elevenAgentId);
-        ws.send(JSON.stringify(initMessage));
+        // Note: With signed URL or agent_id in URL, we don't need to send conversation_initiation
+        // The connection is already initialized with the agent_id in the URL
+        console.log('[ElevenLabs] WebSocket connected, ready for conversation');
       };
 
       ws.onmessage = (event) => {
