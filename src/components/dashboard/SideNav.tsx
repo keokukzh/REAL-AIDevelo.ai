@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, PhoneCall, Settings, BookOpen, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Calendar, PhoneCall, Settings, BookOpen, BarChart3, HelpCircle } from 'lucide-react';
 import { NavItem } from '../newDashboard/NavItem';
 import { useDashboardOverview } from '../../hooks/useDashboardOverview';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { SupportContactModal } from './SupportContactModal';
 
 export const SideNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
   const { data: overview } = useDashboardOverview();
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -41,21 +43,26 @@ export const SideNav: React.FC = () => {
   const initials = getInitials(organizationName);
 
   return (
-    <aside 
+    <nav 
       className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50"
-      role="navigation"
       aria-label="Main navigation"
     >
       <div className="h-16 flex items-center justify-center px-6 border-b border-slate-800">
-        <img 
-          src="/logo-studio-white.png" 
-          alt="AIDevelo Studio" 
-          className="h-10 w-auto object-contain"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-        />
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="focus:outline-none focus:ring-2 focus:ring-swiss-red focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md p-2 transition-all duration-200 hover:scale-105 hover:shadow-glow-red cursor-pointer"
+          aria-label="Navigate to dashboard"
+        >
+          <img 
+            src="/logo-studio-white.png" 
+            alt="AIDevelo Studio" 
+            className="h-10 w-auto object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        </button>
       </div>
       
       <div className="p-4 space-y-1 flex-1 overflow-y-auto">
@@ -104,7 +111,7 @@ export const SideNav: React.FC = () => {
         />
       </div>
 
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+      <div className="p-4 border-t border-slate-800 bg-slate-900/50 space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-swiss-red to-orange-500 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2 ring-slate-800">
             {initials}
@@ -116,9 +123,23 @@ export const SideNav: React.FC = () => {
           <Settings 
             className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors flex-shrink-0" 
             onClick={() => navigate('/dashboard/settings')}
+            aria-label="Einstellungen"
           />
         </div>
+        <button
+          onClick={() => setIsSupportModalOpen(true)}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-slate-800/70 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"
+          aria-label="Support kontaktieren"
+        >
+          <HelpCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+          <span className="truncate">Support</span>
+        </button>
       </div>
-    </aside>
+
+      <SupportContactModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
+    </nav>
   );
 };
