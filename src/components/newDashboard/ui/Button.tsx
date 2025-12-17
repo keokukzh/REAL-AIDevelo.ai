@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -33,28 +34,47 @@ export const Button: React.FC<ButtonProps> = ({
 
   const isDisabled = disabled || isLoading;
 
+  const buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement> = {
+    className: `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`,
+    disabled: isDisabled,
+    ...(ariaLabel && { 'aria-label': ariaLabel }),
+    ...props,
+  };
+
+  if (isDisabled) {
+    buttonProps['aria-disabled'] = true;
+  }
+  if (isLoading) {
+    buttonProps['aria-busy'] = true;
+  }
+
   return (
-    <button 
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={isDisabled}
-      aria-disabled={isDisabled || undefined}
-      aria-busy={isLoading || undefined}
-      aria-label={ariaLabel || (typeof children === 'string' ? undefined : ariaLabel)}
-      {...props}
-    >
+    <button {...buttonProps}>
       {isLoading ? (
         <>
           <span className="sr-only">Loading</span>
-          <svg 
-            className="animate-spin h-4 w-4 text-current mr-2" 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <div className="mr-2 h-4 w-4 relative overflow-hidden rounded-sm">
+            <motion.div
+              className="absolute inset-0 bg-current opacity-30"
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                repeatType: 'reverse'
+              }}
+            />
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-current to-transparent opacity-50"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: 'linear'
+              }}
+            />
+          </div>
         </>
       ) : null}
       {children}

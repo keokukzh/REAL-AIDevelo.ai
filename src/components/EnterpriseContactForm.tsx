@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/Button';
 import { apiRequest, ApiRequestError } from '../services/api';
-import { Loader2, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 
 interface EnterpriseContactFormProps {
   onSuccess?: () => void;
@@ -183,7 +183,28 @@ export const EnterpriseContactForm: React.FC<EnterpriseContactFormProps> = ({ on
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 animate-spin" size={16} />
+              <div className="mr-2 h-4 w-4 relative overflow-hidden rounded-sm">
+                <motion.div
+                  className="absolute inset-0 bg-white opacity-30"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    repeatType: 'reverse'
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50"
+                  animate={{ x: ['-100%', '100%'] }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: 'linear'
+                  }}
+                />
+              </div>
               Wird gesendet...
             </>
           ) : (
