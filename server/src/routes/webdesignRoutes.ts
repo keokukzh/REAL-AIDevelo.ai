@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { InternalServerError } from '../utils/errors';
 import { webdesignContactSchema, WebdesignContactRequest } from '../types/webdesign';
 import { validateRequest } from '../middleware/validateRequest';
@@ -6,16 +7,25 @@ import { sendMail } from '../services/emailService';
 
 const router = Router();
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { 
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 10, // Max 10 files
+  },
+});
+
 /**
  * @swagger
  * /webdesign/contact:
  *   post:
- *     summary: Submit webdesign contact request
+ *     summary: Submit webdesign contact request with optional file attachments
  *     tags: [Webdesign]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -44,6 +54,12 @@ const router = Router();
  *               message:
  *                 type: string
  *                 description: Project description (minimum 12 characters)
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Optional file attachments (ZIP, images, PDF, documents - max 10MB per file, max 10 files)
  *     responses:
  *       200:
  *         description: Webdesign request submitted successfully
@@ -61,9 +77,25 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/contact', validateRequest(webdesignContactSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
+  upload.array('files', 10)(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(new InternalServerError('Datei zu groß. Maximale Dateigröße: 10MB pro Datei.'));
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+          return next(new InternalServerError('Zu viele Dateien. Maximum: 10 Dateien.'));
+        }
+      }
+      return next(new InternalServerError('Fehler beim Hochladen der Dateien.'));
+    }
+    next();
+  });
+}, validateRequest(webdesignContactSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, email, phone, company, requestType, message }: WebdesignContactRequest = req.body;
+    const files = req.files as Express.Multer.File[] || [];
 
     // Prepare email content
     const requestTypeLabel = requestType === 'new' ? 'Neue Website' : 'Website Redesign';
@@ -110,12 +142,41 @@ router.post('/contact', validateRequest(webdesignContactSchema), async (req: Req
       </div>
     `;
 
-    // Send email to support
+    // Prepare attachments from uploaded files
+    const attachments = files.map((file) => ({
+      filename: file.originalname,
+      content: file.buffer,
+      contentType: file.mimetype || undefined,
+    }));
+
+    // Add file info to email content if files were uploaded
+    let fileInfoText = '';
+    let fileInfoHtml = '';
+    if (files.length > 0) {
+      const fileListTextParts: string[] = [];
+      const fileListHtmlParts: string[] = [];
+      
+      files.forEach(f => {
+        const sizeKB = (f.size / 1024).toFixed(2);
+        fileListTextParts.push(`- ${f.originalname} (${sizeKB} KB)`);
+        fileListHtmlParts.push(`<li>${f.originalname} (${sizeKB} KB)</li>`);
+      });
+      
+      const fileListText = fileListTextParts.join('\n');
+      const fileListHtml = fileListHtmlParts.join('');
+      const fileCount = files.length.toString();
+      
+      fileInfoText = '\n\nAngehängte Dateien (' + fileCount + '):\n' + fileListText;
+      fileInfoHtml = '<p><strong>Angehängte Dateien (' + fileCount + '):</strong></p><ul>' + fileListHtml + '</ul>';
+    }
+
+    // Send email to support with attachments
     const emailResult = await sendMail({
       to: ['support@aidevelo.ai'],
       subject: emailSubject,
-      text: emailText,
-      html: emailHtml,
+      text: emailText + fileInfoText,
+      html: emailHtml + fileInfoHtml,
+      attachments: attachments,
     });
 
     if (!emailResult.success) {
@@ -142,3 +203,5 @@ router.post('/contact', validateRequest(webdesignContactSchema), async (req: Req
 });
 
 export default router;
+
+

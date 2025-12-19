@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/Button';
 import { apiRequest, ApiRequestError } from '../services/api';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Paperclip, X } from 'lucide-react';
 
 interface WebdesignContactFormProps {
   onSuccess?: () => void;
+}
+
+interface SelectedFile {
+  file: File;
+  id: string;
 }
 
 export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSuccess }) => {
@@ -17,9 +22,35 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     requestType: 'new' as 'new' | 'redesign',
     message: '',
   });
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newFiles: SelectedFile[] = files.map(file => ({
+      file,
+      id: `${Date.now()}-${Math.random()}`,
+    }));
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setSelectedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +74,28 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     setError(null);
 
     try {
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('company', formData.company);
+      formDataToSend.append('requestType', formData.requestType);
+      formDataToSend.append('message', formData.message);
+
+      // Append files
+      selectedFiles.forEach((selectedFile) => {
+        formDataToSend.append('files', selectedFile.file);
+      });
+
       await apiRequest('/webdesign/contact', {
         method: 'POST',
-        data: formData,
+        data: formDataToSend,
+        // Don't set Content-Type header - axios will set it automatically with boundary for FormData
       });
 
       setSuccess(true);
+      setSelectedFiles([]);
       if (onSuccess) {
         setTimeout(() => onSuccess(), 2000);
       }
@@ -212,6 +259,71 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         <p className="text-xs text-gray-500 mt-1">Mindestens 12 Zeichen erforderlich</p>
       </div>
 
+      {/* File Upload Section */}
+      <div>
+        <label htmlFor="webdesign-files" className="block text-sm text-gray-400 mb-2">
+          Dateien anhängen (optional)
+        </label>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              id="webdesign-files"
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              disabled={loading}
+              className="hidden"
+              accept=".zip,.rar,.7z,.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <Paperclip size={16} />
+              Dateien auswählen
+            </Button>
+            <span className="text-xs text-gray-500">
+              ZIP, Bilder, PDF, Dokumente (max. 10MB pro Datei)
+            </span>
+          </div>
+
+          {/* Selected Files List */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              {selectedFiles.map((selectedFile) => (
+                <motion.div
+                  key={selectedFile.id}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Paperclip size={16} className="text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-white truncate">{selectedFile.file.name}</div>
+                      <div className="text-xs text-gray-400">{formatFileSize(selectedFile.file.size)}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(selectedFile.id)}
+                    disabled={loading}
+                    className="ml-3 p-1 hover:bg-white/10 rounded transition-colors"
+                    aria-label="Datei entfernen"
+                  >
+                    <X size={16} className="text-gray-400" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-400">
           <AlertCircle size={20} />
@@ -260,3 +372,5 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     </form>
   );
 };
+
+
