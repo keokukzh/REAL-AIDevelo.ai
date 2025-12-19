@@ -1,105 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useNavigation, useNavigationWithLocation } from '../hooks/useNavigation';
+import { useNavbarState } from '../hooks/useNavbarState';
+import { ROUTES, NAVIGATION_ITEMS, SECTION_LINKS } from '../config/navigation';
+import { NavLink } from './navigation/NavLink';
 
 interface NavbarProps {
   onStartOnboarding?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
-  const [hidden, setHidden] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [voiceAgentsDropdownOpen, setVoiceAgentsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() || 0;
-    if (latest > previous && latest > 150) {
-      setHidden(true);
-    } else {
-      setHidden(false);
-    }
-    if (latest > 50) {
-      setScrolled(true);
-    } else {
-      setScrolled(false);
-    }
-  });
+  const { nav, location } = useNavigationWithLocation();
+  const {
+    hidden,
+    scrolled,
+    mobileMenuOpen,
+    setMobileMenuOpen,
+    voiceAgentsDropdownOpen,
+    setVoiceAgentsDropdownOpen,
+    dropdownRef,
+  } = useNavbarState();
 
   const handleStart = () => {
     if (onStartOnboarding) {
       onStartOnboarding();
     } else {
-      navigate('/onboarding');
+      nav.goTo(ROUTES.ONBOARDING);
     }
     setMobileMenuOpen(false);
   };
 
-  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleSectionClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    
-    // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
-    const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
-    if (href !== '#' && !SAFE_ANCHOR_REGEX.test(href)) {
-      // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
-      setMobileMenuOpen(false);
-      return;
-    }
-    
-    // If we are not on the landing page, navigate there with the hash
-    if (location.pathname !== '/') {
-      navigate('/', { state: { scrollTarget: href } });
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    const section = document.querySelector(href);
-    if (section) {
-      const headerOffset = 80;
-      const elementPosition = section.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-      setMobileMenuOpen(false);
-    } else if (href === '#') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    nav.goToSection(href, location.pathname);
+    setMobileMenuOpen(false);
+    setVoiceAgentsDropdownOpen(false);
   };
 
-  const navLinks = [
-    { name: 'Funktionen', href: '#features' },
-    { name: 'Branchen', href: '#industries' },
-    { name: 'Demo', href: '#demo' },
-    { name: 'Ablauf', href: '#how-it-works' },
-    { name: 'Preise', href: '#pricing' },
-    { name: 'FAQ', href: '#faq' },
-  ];
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setVoiceAgentsDropdownOpen(false);
-      }
-    };
-
-    if (voiceAgentsDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [voiceAgentsDropdownOpen]);
+  const isWebdesignPage = location.pathname === ROUTES.WEBDESIGN;
 
   return (
     <motion.header
@@ -117,37 +58,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             <div className="hidden md:grid grid-cols-3 w-full items-center">
               {/* Left Side: Webdesign Link */}
               <div className="flex items-center justify-start">
-                <motion.a
-                  href="/webdesign"
-                  onClick={(e) => { e.preventDefault(); navigate('/webdesign'); }}
-                  className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
-                  whileHover={{ scale: 1.05, color: '#fff' }}
-                  aria-label="Zu Webdesign navigieren"
-                >
-                  Webdesign
-                </motion.a>
+                <NavLink
+                  to={ROUTES.WEBDESIGN}
+                  label={NAVIGATION_ITEMS.WEBDESIGN.label}
+                  variant="link"
+                  ariaLabel={NAVIGATION_ITEMS.WEBDESIGN.ariaLabel}
+                />
               </div>
 
               {/* Center: Logo - Perfectly Centered */}
               <div className="flex items-center justify-center">
                 <motion.a 
-                    href={location.pathname === '/webdesign' ? '/webdesign' : '/'} 
+                    href={isWebdesignPage ? ROUTES.WEBDESIGN : ROUTES.HOME} 
                     onClick={(e) => { 
                       e.preventDefault(); 
-                      if (location.pathname === '/webdesign') {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      if (isWebdesignPage) {
+                        nav.scrollToTop();
                       } else {
-                        navigate('/'); 
-                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                        nav.goToHome();
                       }
                     }}
                     className="flex items-center gap-2 text-white font-display font-bold text-xl tracking-wide group"
                     whileHover={{ scale: 1.05 }}
-                    aria-label={location.pathname === '/webdesign' ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
+                    aria-label={isWebdesignPage ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
                 >
                     <img 
-                      src={location.pathname === '/webdesign' ? '/webdesign-logo-white.png' : '/main-logo.png'} 
-                      alt={location.pathname === '/webdesign' ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
+                      src={isWebdesignPage ? '/webdesign-logo-white.png' : '/main-logo.png'} 
+                      alt={isWebdesignPage ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
                       className="h-8 w-auto object-contain"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -161,19 +98,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 </motion.a>
               </div>
 
-              {/* Right Side: Voice Agents Dropdown + Buttons */}
+              {/* Right Side: Voice Agents Link + Dropdown + Buttons */}
               <div className="flex items-center gap-4 justify-end">
-              {/* Voice Agents Dropdown */}
+              {/* Voice Agents Link (always visible) */}
+              <NavLink
+                to={ROUTES.HOME}
+                label={NAVIGATION_ITEMS.VOICE_AGENTS.label}
+                variant="link"
+                scrollToTop={true}
+                ariaLabel={NAVIGATION_ITEMS.VOICE_AGENTS.ariaLabel}
+              />
+              
+              {/* Voice Agents Dropdown (for section links) */}
               <div className="relative" ref={dropdownRef}>
                 <motion.button
                   onClick={() => setVoiceAgentsDropdownOpen(!voiceAgentsDropdownOpen)}
                   onMouseEnter={() => setVoiceAgentsDropdownOpen(true)}
                   className="flex items-center gap-1 text-sm font-medium text-white hover:text-white transition-colors cursor-pointer px-3 py-2 rounded-lg hover:bg-white/10 bg-white/5 border border-white/10"
                   whileHover={{ scale: 1.05 }}
-                  aria-label="Voice Agents Menü"
+                  aria-label="Voice Agents Sektionen Menü"
                   aria-haspopup="true"
                 >
-                  Voice Agents
                   <ChevronDown 
                     size={16} 
                     className={`transition-transform duration-200 ${voiceAgentsDropdownOpen ? 'rotate-180' : ''}`}
@@ -190,13 +135,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                       onMouseLeave={() => setVoiceAgentsDropdownOpen(false)}
                       className="absolute top-full right-0 mt-2 w-48 bg-black/95 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl py-2 z-50"
                     >
-                      {navLinks.map((link) => (
+                      <motion.a
+                        href={ROUTES.HOME}
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          nav.goToHome();
+                          setVoiceAgentsDropdownOpen(false);
+                        }}
+                        className="block px-4 py-2.5 text-sm text-white font-semibold hover:bg-white/10 transition-colors cursor-pointer border-b border-white/10"
+                        whileHover={{ x: 4 }}
+                        aria-label="Zur Voice Agents Hauptseite navigieren"
+                      >
+                        Hauptseite
+                      </motion.a>
+                      {SECTION_LINKS.map((link) => (
                         <motion.a
                           key={link.name}
                           href={link.href}
                           onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                            scrollToSection(e, link.href);
-                            setVoiceAgentsDropdownOpen(false);
+                            handleSectionClick(e, link.href);
                           }}
                           className="block px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                           whileHover={{ x: 4 }}
@@ -218,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   Onboarding starten
                 </Button>
                 <Button 
-                  onClick={() => navigate('/dashboard')} 
+                  onClick={() => nav.goToDashboard()} 
                   variant="outline" 
                   className="!px-4 !py-2 text-sm flex items-center gap-2 text-white border-white/40 hover:border-white/70"
                   aria-label="Login to Aidevelo Studio"
@@ -242,23 +199,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             <div className="md:hidden flex items-center gap-3 flex-1">
               {/* Mobile Logo */}
               <motion.a 
-                href={location.pathname === '/webdesign' ? '/webdesign' : '/'} 
+                href={isWebdesignPage ? ROUTES.WEBDESIGN : ROUTES.HOME} 
                 onClick={(e) => { 
                   e.preventDefault(); 
-                  if (location.pathname === '/webdesign') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (isWebdesignPage) {
+                    nav.scrollToTop();
                   } else {
-                    navigate('/'); 
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                    nav.goToHome();
                   }
                 }}
                 className="flex items-center flex-shrink-0"
                 whileHover={{ scale: 1.05 }}
-                aria-label={location.pathname === '/webdesign' ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
+                aria-label={isWebdesignPage ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
               >
                 <img 
-                  src={location.pathname === '/webdesign' ? '/webdesign-logo-white.png' : '/main-logo.png'} 
-                  alt={location.pathname === '/webdesign' ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
+                  src={isWebdesignPage ? '/webdesign-logo-white.png' : '/main-logo.png'} 
+                  alt={isWebdesignPage ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
                   className="h-6 w-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -271,14 +227,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 />
               </motion.a>
               
-              <motion.a
-                href="/webdesign"
-                onClick={(e) => { e.preventDefault(); navigate('/webdesign'); setMobileMenuOpen(false); }}
+              <NavLink
+                to={ROUTES.WEBDESIGN}
+                label={NAVIGATION_ITEMS.WEBDESIGN.label}
+                variant="link"
+                onClick={() => setMobileMenuOpen(false)}
+                ariaLabel={NAVIGATION_ITEMS.WEBDESIGN.ariaLabel}
                 className="text-sm font-medium text-white"
-                aria-label="Zu Webdesign navigieren"
-              >
-                Webdesign
-              </motion.a>
+              />
                 <Button
                   onClick={handleStart}
                   variant="primary"
@@ -288,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   Onboarding
                 </Button>
                 <Button 
-                  onClick={() => navigate('/dashboard')} 
+                  onClick={() => nav.goToDashboard()} 
                   variant="outline" 
                   className="!px-3 !py-2 text-xs flex items-center gap-1 text-white border-white/40 hover:border-white/70"
                   aria-label="Login to Studio"
@@ -321,12 +277,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   className="absolute top-0 right-0 w-full h-screen bg-black flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
                   aria-label="Hauptnavigation"
                 >
-                    <div className="text-xl font-semibold text-gray-400 mb-4">Voice Agents</div>
-                    {navLinks.map((link) => (
+                    <a 
+                        href={ROUTES.HOME}
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          nav.goToHome();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="text-2xl font-bold text-white hover:text-accent cursor-pointer"
+                        aria-label="Zur Voice Agents Hauptseite navigieren"
+                    >
+                        Voice Agents
+                    </a>
+                    <div className="text-xl font-semibold text-gray-400 mb-4">Sektionen</div>
+                    {SECTION_LINKS.map((link) => (
                         <a 
                             key={link.name} 
                             href={link.href}
-                            onClick={(e) => scrollToSection(e, link.href)}
+                            onClick={(e) => handleSectionClick(e, link.href)}
                             className="text-2xl font-bold text-white hover:text-accent cursor-pointer"
                             aria-label={`Zu ${link.name} navigieren`}
                         >
@@ -334,7 +302,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         </a>
                     ))}
                     <Button 
-                      onClick={() => navigate('/dashboard')} 
+                      onClick={() => nav.goToDashboard()} 
                       variant="outline"
                       className="w-full flex items-center justify-center gap-2 text-white border-white/40 hover:border-white/70"
                       aria-label="Login to Studio"

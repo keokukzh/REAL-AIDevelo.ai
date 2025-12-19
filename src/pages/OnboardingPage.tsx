@@ -1,6 +1,7 @@
 import { apiRequest, ApiRequestError } from '../services/api';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ROUTES } from '../config/navigation';
 import { OnboardingWizard } from '../components/OnboardingWizard';
 import { AgentTemplateSelector } from '../components/AgentTemplateSelector';
 import { AgentTemplate, getTemplateById } from '../data/agentTemplates';
@@ -137,7 +138,7 @@ export const OnboardingPage = () => {
                         logger.info('Agent creation completed', { agentId });
                         setSubmissionProgress('Agent erfolgreich erstellt!');
                         await new Promise(resolve => setTimeout(resolve, 500));
-                        navigate('/dashboard');
+                        navigate(ROUTES.DASHBOARD);
                         return;
                     } else if (agentStatus === 'creation_failed') {
                         throw new Error('Agent-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.');

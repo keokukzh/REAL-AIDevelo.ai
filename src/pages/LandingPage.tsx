@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ROUTES } from '../config/navigation';
 import { Navbar } from '../components/Navbar';
 import { Hero } from '../components/Hero';
 import { SEO } from '../components/SEO';
@@ -51,7 +52,7 @@ export const LandingPage = () => {
   const startOnboarding = (industry?: string) => {
     // All onboarding/agent creation happens in Studio only
     // Landing page only shows demo data and previews
-    navigate('/dashboard');
+    navigate(ROUTES.DASHBOARD);
   };
 
   const scrollToLeadCapture = () => {

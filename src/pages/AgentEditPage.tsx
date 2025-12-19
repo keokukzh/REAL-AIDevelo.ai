@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ROUTES } from '../config/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -311,7 +312,7 @@ export const AgentEditPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-gray-300">
         <p className="mb-4">Agent nicht gefunden.</p>
-        <Button variant="outline" onClick={() => navigate('/dashboard')}>
+        <Button variant="outline" onClick={() => navigate(ROUTES.DASHBOARD)}>
           Zurück zum Dashboard
         </Button>
       </div>

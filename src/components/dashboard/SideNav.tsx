@@ -5,6 +5,8 @@ import { NavItem } from '../newDashboard/NavItem';
 import { useDashboardOverview } from '../../hooks/useDashboardOverview';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { SupportContactModal } from './SupportContactModal';
+import { CrossSectionNav } from '../navigation/CrossSectionNav';
+import { ROUTES } from '../../config/navigation';
 
 export const SideNav: React.FC = () => {
   const navigate = useNavigate();
@@ -14,14 +16,14 @@ export const SideNav: React.FC = () => {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/dashboard';
+    if (path === ROUTES.DASHBOARD) {
+      return location.pathname === ROUTES.DASHBOARD;
     }
-    if (path === '/knowledge-base') {
-      return location.pathname === '/knowledge-base';
+    if (path === ROUTES.KNOWLEDGE_BASE) {
+      return location.pathname === ROUTES.KNOWLEDGE_BASE;
     }
-    if (path === '/analytics') {
-      return location.pathname === '/analytics';
+    if (path === ROUTES.ANALYTICS) {
+      return location.pathname === ROUTES.ANALYTICS;
     }
     return location.pathname.startsWith(path);
   };
@@ -49,7 +51,7 @@ export const SideNav: React.FC = () => {
     >
       <div className="h-16 flex items-center justify-center px-6 border-b border-slate-800">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(ROUTES.DASHBOARD)}
           className="focus:outline-none focus:ring-2 focus:ring-swiss-red focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md p-2 transition-all duration-200 hover:scale-105 hover:shadow-glow-red cursor-pointer"
           aria-label="Navigate to dashboard"
         >
@@ -72,32 +74,32 @@ export const SideNav: React.FC = () => {
         <NavItem 
           icon={LayoutDashboard} 
           label="Übersicht" 
-          active={isActive('/dashboard')} 
-          onClick={() => navigate('/dashboard')} 
+          active={isActive(ROUTES.DASHBOARD)} 
+          onClick={() => navigate(ROUTES.DASHBOARD)} 
         />
         <NavItem 
           icon={PhoneCall} 
           label="Anrufprotokoll" 
-          active={isActive('/calls')} 
-          onClick={() => navigate('/calls')} 
+          active={isActive(ROUTES.CALLS)} 
+          onClick={() => navigate(ROUTES.CALLS)} 
         />
         <NavItem 
           icon={Calendar} 
           label="Kalender" 
-          active={isActive('/dashboard/calendar')} 
-          onClick={() => navigate('/dashboard/calendar')} 
+          active={isActive(ROUTES.CALENDAR)} 
+          onClick={() => navigate(ROUTES.CALENDAR)} 
         />
         <NavItem 
           icon={BarChart3} 
           label="Analytics" 
-          active={isActive('/analytics')} 
-          onClick={() => navigate('/analytics')} 
+          active={isActive(ROUTES.ANALYTICS)} 
+          onClick={() => navigate(ROUTES.ANALYTICS)} 
         />
         <NavItem 
           icon={BookOpen} 
           label="Knowledge Base" 
-          active={isActive('/knowledge-base')} 
-          onClick={() => navigate('/knowledge-base')} 
+          active={isActive(ROUTES.KNOWLEDGE_BASE)} 
+          onClick={() => navigate(ROUTES.KNOWLEDGE_BASE)} 
         />
         
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-6">
@@ -106,8 +108,8 @@ export const SideNav: React.FC = () => {
         <NavItem 
           icon={Settings} 
           label="Einstellungen" 
-          active={isActive('/dashboard/settings')} 
-          onClick={() => navigate('/dashboard/settings')} 
+          active={isActive(ROUTES.SETTINGS)} 
+          onClick={() => navigate(ROUTES.SETTINGS)} 
         />
       </div>
 
@@ -122,10 +124,11 @@ export const SideNav: React.FC = () => {
           </div>
           <Settings 
             className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors flex-shrink-0" 
-            onClick={() => navigate('/dashboard/settings')}
+            onClick={() => navigate(ROUTES.SETTINGS)}
             aria-label="Einstellungen"
           />
         </div>
+        <CrossSectionNav variant="sidebar" />
         <button
           onClick={() => setIsSupportModalOpen(true)}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-slate-800/70 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ROUTES } from '../config/navigation';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const LoginPage = () => {
           return;
         }
         await register(email, password);
-        navigate('/dashboard', { replace: true });
+        navigate(ROUTES.DASHBOARD, { replace: true });
       } else {
         if (!password) {
           setError('Passwort ist erforderlich');
@@ -38,7 +39,7 @@ export const LoginPage = () => {
           return;
         }
         await login(email, password);
-        navigate('/dashboard', { replace: true });
+        navigate(ROUTES.DASHBOARD, { replace: true });
       }
     } catch (err: any) {
       // Extract user-friendly error message

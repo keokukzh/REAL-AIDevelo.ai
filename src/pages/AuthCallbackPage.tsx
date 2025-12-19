@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ROUTES } from '../config/navigation';
 
 export const AuthCallbackPage = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export const AuthCallbackPage = () => {
           if (data.session) {
             // Clear URL fragment and navigate
             window.history.replaceState(null, '', '/auth/callback');
-            navigate('/dashboard', { replace: true });
+            navigate(ROUTES.DASHBOARD, { replace: true });
             return;
           }
         }
@@ -50,7 +51,7 @@ export const AuthCallbackPage = () => {
           // No session - redirect to login
           setError('No session found. Please try logging in again.');
           setTimeout(() => {
-            navigate('/login', { replace: true });
+            navigate(ROUTES.LOGIN, { replace: true });
           }, 2000);
         }
       } catch (error) {

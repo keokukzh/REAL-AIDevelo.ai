@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CrossSectionNav } from '../components/navigation/CrossSectionNav';
+import { ROUTES } from '../config/navigation';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
@@ -68,7 +70,7 @@ export const DashboardPage = () => {
   React.useEffect(() => {
     if (error && 'status' in error && error.status === 401) {
       logout();
-      navigate('/login', { replace: true });
+      navigate(ROUTES.LOGIN, { replace: true });
     }
   }, [error, logout, navigate]);
 
@@ -432,7 +434,7 @@ export const DashboardPage = () => {
       <main id="main-content" className="flex-1 ml-64 flex flex-col min-w-0" role="main">
         {/* Top Header */}
         <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
-          <nav aria-label="Breadcrumb">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-4">
             <ol className="flex items-center gap-3 text-gray-400" role="list">
               <li>
                 <span className="text-sm font-semibold text-white font-display">Dashboard</span>
@@ -444,6 +446,7 @@ export const DashboardPage = () => {
                 <span className="text-sm text-gray-400">Tagesübersicht</span>
               </li>
             </ol>
+            <CrossSectionNav variant="header" className="ml-6 pl-6 border-l border-white/10" />
           </nav>
         </header>
 
@@ -668,7 +671,7 @@ export const DashboardPage = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => navigate('/dashboard/calendar')}
+                          onClick={() => navigate(ROUTES.CALENDAR)}
                           className="text-accent hover:text-accent hover:bg-accent/10"
                           aria-label="Alle Termine ansehen"
                         >

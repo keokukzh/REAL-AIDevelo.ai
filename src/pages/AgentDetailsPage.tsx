@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../config/navigation';
 import { apiRequest, ApiRequestError } from '../services/api';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
@@ -185,7 +186,7 @@ export const AgentDetailsPage = () => {
             <div className="min-h-screen bg-background text-white flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-gray-400 mb-4">Agent nicht gefunden.</p>
-                    <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                    <Button variant="outline" onClick={() => navigate(ROUTES.DASHBOARD)}>
                         Zurück zum Dashboard
                     </Button>
                 </div>
