@@ -11,11 +11,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const devBypassEnabled = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
 
   if (isLoading && !devBypassEnabled) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-white">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner fullScreen={true} size="lg" />;
   }
 
   // In dev bypass mode, allow access without authentication

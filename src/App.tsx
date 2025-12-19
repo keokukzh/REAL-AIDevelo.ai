@@ -87,123 +87,123 @@ function AppContent() {
                 <AnimatePresence mode='wait'>
                     <Routes>
                     <Route path="/" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <LandingPage />
                       </Suspense>
                     } />
                     <Route path="/checkout" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <CheckoutPage />
                       </Suspense>
                     } />
-                    <Route path="/payment-success" element={
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <PaymentSuccessPage />
-                      </Suspense>
-                    } />
+                      <Route path="/payment-success" element={
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                          <PaymentSuccessPage />
+                        </Suspense>
+                      } />
                     <Route path="/enterprise" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <EnterpriseContactPage />
                       </Suspense>
                     } />
                     <Route path="/webdesign" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <WebdesignPage />
                       </Suspense>
                     } />
                     <Route path="/calendar/:provider/callback" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <CalendarCallbackPage />
                       </Suspense>
                     } />
                     <Route path="/auth/callback" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <AuthCallbackPage />
                       </Suspense>
                     } />
                     <Route path="/login" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <LoginPage />
                       </Suspense>
                     } />
                     <Route path="/onboarding" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <OnboardingPage />
                       </Suspense>
                     } />
                     <Route path="/voice-edit" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <VoiceEditPage />
                       </Suspense>
                     } />
                     <Route path="/dashboard" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <DashboardPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/agents/:id" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <AgentDetailsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/agents/:id/edit" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <AgentEditPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/calls" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <CallsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/calendar" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <CalendarPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/settings" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <SettingsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/knowledge-base" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <KnowledgeBasePage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/analytics" element={
                       <ProtectedRoute>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <AnalyticsPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/impressum" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <ImpressumPage />
                       </Suspense>
                     } />
                     <Route path="/datenschutz" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <DatenschutzPage />
                       </Suspense>
                     } />
                     <Route path="/agb" element={
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <AGBPage />
                       </Suspense>
                     } />

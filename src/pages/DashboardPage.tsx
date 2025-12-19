@@ -23,6 +23,7 @@ import { QuickActionButton } from '../components/newDashboard/QuickActionButton'
 import { HealthItem } from '../components/newDashboard/HealthItem';
 import { SkeletonStatCard } from '../components/newDashboard/Skeleton';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
@@ -277,7 +278,7 @@ export const DashboardPage = () => {
 
 
   // Fetch today's and next few days' events for dashboard
-  // IMPORTANT: Hooks must be called before any early returns
+  // IMPORTANT: ALL hooks must be called before any early returns
   // Note: We create a new Date() each render for "today" since we want current date
   // For weekEnd, we memoize based on today's date string to avoid unnecessary recalculations
   const today = new Date();
@@ -307,67 +308,26 @@ export const DashboardPage = () => {
       .slice(0, 5);
   }, [calendarEvents]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex font-sans text-white relative">
-        <SideNav />
-        <main className="flex-1 ml-64 flex flex-col min-w-0">
-          <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
-            <div className="flex items-center gap-3 text-gray-400">
-              <span className="text-sm font-semibold text-white font-display">Dashboard</span>
-              <span className="text-gray-600">/</span>
-              <span className="text-sm text-gray-400">Tagesübersicht</span>
-            </div>
-          </header>
-          <div className="p-8 max-w-[1600px] mx-auto w-full">
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <SkeletonStatCard key={i} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error || !overview) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
-          <p className="text-gray-400 mb-4">
-            {error instanceof Error ? error.message : 'Unbekannter Fehler'}
-          </p>
-          <Button onClick={() => globalThis.location.reload()}>
-            Seite neu laden
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const userName = user?.email || overview.user.email || 'Benutzer';
-  const isAgentActive = overview.agent_config.setup_state === 'ready';
-  const showWizard = !isAgentActive;
+  // Compute derived values - must be before early returns
+  const userName = React.useMemo(() => user?.email || overview?.user?.email || 'Benutzer', [user?.email, overview?.user?.email]);
+  const isAgentActive = React.useMemo(() => overview?.agent_config?.setup_state === 'ready', [overview?.agent_config?.setup_state]);
+  const showWizard = React.useMemo(() => !isAgentActive, [isAgentActive]);
 
   // Map data for new UI (memoized to prevent recalculation on every render)
-  const kpis = React.useMemo(() => mapOverviewToKPIs(overview), [overview]);
-  const chartData = React.useMemo(() => mapCallsToChartData(overview.recent_calls), [overview.recent_calls]);
-  const recentCallsTableData = React.useMemo(() => overview.recent_calls.map(mapCallToTableRow), [overview.recent_calls]);
+  const kpis = React.useMemo(() => overview ? mapOverviewToKPIs(overview) : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' }, [overview]);
+  const chartData = React.useMemo(() => overview?.recent_calls ? mapCallsToChartData(overview.recent_calls) : [], [overview?.recent_calls]);
+  const recentCallsTableData = React.useMemo(() => overview?.recent_calls ? overview.recent_calls.map(mapCallToTableRow) : [], [overview?.recent_calls]);
 
   // Determine system health status (memoized)
   const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
-    overview.status.phone === 'connected' ? 'ok' : 
-    overview.status.phone === 'needs_compliance' ? 'warning' : 'error',
-    [overview.status.phone]
+    overview?.status?.phone === 'connected' ? 'ok' : 
+    overview?.status?.phone === 'needs_compliance' ? 'warning' : 'error',
+    [overview?.status?.phone]
   );
   
   const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
-    overview.status.calendar === 'connected' ? 'ok' : 'error',
-    [overview.status.calendar]
+    overview?.status?.calendar === 'connected' ? 'ok' : 'error',
+    [overview?.status?.calendar]
   );
   
   // Memoize callbacks to prevent unnecessary re-renders
@@ -397,23 +357,46 @@ export const DashboardPage = () => {
     ended_at: string | null;
     duration_sec: number | null;
     outcome: string | null;
-    notes?: Record<string, unknown>;
   }) => {
-    const callLog: CallLog = {
-      id: call.id,
-      callSid: call.callSid || call.id,
-      direction: call.direction,
-      from_e164: call.from_e164,
-      to_e164: call.to_e164,
-      started_at: call.started_at,
-      ended_at: call.ended_at,
-      duration_sec: call.duration_sec,
-      outcome: call.outcome,
-      notes: call.notes || {},
-    };
-    setSelectedCall(callLog);
+    setSelectedCall(call as CallLog);
     setIsCallDetailsOpen(true);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex font-sans text-white relative">
+        <SideNav />
+        <main className="flex-1 lg:ml-64 flex flex-col min-w-0">
+          <header className="h-16 bg-background/80 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg">
+            <div className="flex items-center gap-3 text-gray-400">
+              <span className="text-sm font-semibold text-white font-display">Dashboard</span>
+              <span className="text-gray-600">/</span>
+              <span className="text-sm text-gray-400">Tagesübersicht</span>
+            </div>
+          </header>
+          <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full flex items-center justify-center min-h-[60vh]">
+            <LoadingSpinner fullScreen={false} size="lg" message="Dashboard wird geladen..." />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !overview) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
+          <p className="text-gray-400 mb-4">
+            {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+          </p>
+          <Button onClick={() => globalThis.location.reload()}>
+            Seite neu laden
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
