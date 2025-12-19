@@ -2,6 +2,13 @@
 import { setupObservability } from './config/observability';
 import { config } from './config/env';
 import { initializeDatabase, testConnection } from './services/database';
+import { StructuredLoggingService } from './services/loggingService';
+import { initSentry } from './config/sentry';
+import { SIZE_LIMITS } from './config/constants';
+
+// Initialize Sentry before other imports
+initSentry();
+
 setupObservability(config.otlpExporterEndpoint);
 
 // Initialize database connection with improved error handling
@@ -12,9 +19,9 @@ if (config.databaseUrl) {
     // Check if DATABASE_URL points to old/invalid project (pdxdgfxhpyefqyouotat)
     const isOldProject = config.databaseUrl.includes('pdxdgfxhpyefqyouotat');
     if (isOldProject) {
-      console.warn('[Database] ⚠️  DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
-      console.warn('[Database] ⚠️  Skipping legacy database connection - new code uses Supabase client directly');
-      console.warn('[Database] ⚠️  Remove DATABASE_URL from Render environment variables to avoid ENOTFOUND errors');
+      StructuredLoggingService.warn('DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
+      StructuredLoggingService.warn('Skipping legacy database connection - new code uses Supabase client directly');
+      StructuredLoggingService.warn('Remove DATABASE_URL from Render environment variables to avoid ENOTFOUND errors');
       dbInitialized = false;
     } else {
       console.log('[Startup] Initializing legacy database connection...');
@@ -23,8 +30,8 @@ if (config.databaseUrl) {
       
       // Validate connection string format
       if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
-        console.error('[Database] ❌ Invalid DATABASE_URL format - must start with postgresql:// or postgres://');
-        console.warn('[Database] ⚠️  Skipping legacy database connection');
+        StructuredLoggingService.error('Invalid DATABASE_URL format - must start with postgresql:// or postgres://', new Error('Invalid DATABASE_URL format'));
+        StructuredLoggingService.warn('Skipping legacy database connection');
         dbInitialized = false;
       } else {
         try {
@@ -34,36 +41,35 @@ if (config.databaseUrl) {
           testConnection(8).then(async (connected) => {
             dbInitialized = connected;
             if (connected) {
-              console.log('[Database] ✅ Legacy connection successful and ready');
+              StructuredLoggingService.info('Legacy connection successful and ready');
             } else {
-              console.error('[Database] ❌ Connection test failed after retries');
-              console.error('[Database] Troubleshooting:');
-              console.error('[Database]   1. Verify DATABASE_URL is correct in environment variables');
-              console.error('[Database]   2. Ensure PostgreSQL service is running and accessible');
-              console.error('[Database]   3. Verify network connectivity and firewall rules');
-              console.error('[Database]   4. Check Supabase/Neon/Render dashboard for connection issues');
-              console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+              StructuredLoggingService.error('Connection test failed after retries', new Error('Database connection test failed'));
+              StructuredLoggingService.error('Troubleshooting: 1. Verify DATABASE_URL is correct in environment variables');
+              StructuredLoggingService.error('Troubleshooting: 2. Ensure PostgreSQL service is running and accessible');
+              StructuredLoggingService.error('Troubleshooting: 3. Verify network connectivity and firewall rules');
+              StructuredLoggingService.error('Troubleshooting: 4. Check Supabase/Neon/Render dashboard for connection issues');
+              StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
             }
           }).catch((err) => {
-            console.error('[Database] ❌ Connection error:', err.message);
-            console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+            StructuredLoggingService.error('Connection error', err instanceof Error ? err : new Error(String(err)), { message: err.message });
+            StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
             dbInitialized = false;
           });
         } catch (initError) {
-          console.error('[Database] ❌ Failed to initialize legacy connection:', (initError as Error).message);
-          console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+          StructuredLoggingService.error('Failed to initialize legacy connection', initError instanceof Error ? initError : new Error(String(initError)));
+          StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
           dbInitialized = false;
         }
       }
     }
   } catch (error) {
-    console.error('[Database] ❌ Failed to initialize:', (error as Error).message);
-    console.warn('[Database] ⚠️  Server will continue - new code uses Supabase client directly');
+    StructuredLoggingService.error('Failed to initialize', error instanceof Error ? error : new Error(String(error)));
+    StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
     dbInitialized = false;
   }
 } else {
-  console.log('[Database] ℹ️  DATABASE_URL not set - using Supabase client directly (recommended)');
-  console.log('[Database] ℹ️  Legacy Agent/Purchase features require DATABASE_URL, but new routes use Supabase client');
+  StructuredLoggingService.info('DATABASE_URL not set - using Supabase client directly (recommended)');
+  StructuredLoggingService.info('Legacy Agent/Purchase features require DATABASE_URL, but new routes use Supabase client');
 }
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -202,14 +208,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Response-Time', `${duration}ms`);
     
     // Log slow requests (>1s)
-    if (duration > 1000) {
-      console.warn('[Performance] Slow request detected', {
-        method: req.method,
-        path: req.path,
-        duration,
-        statusCode: res.statusCode,
-        requestId: req.headers['x-request-id'],
-      });
+    if (duration > PERFORMANCE.SLOW_REQUEST_THRESHOLD_MS) {
+      StructuredLoggingService.warn(
+        'Slow request detected',
+        {
+          method: req.method,
+          path: req.path,
+          duration,
+          statusCode: res.statusCode,
+          requestId: req.headers['x-request-id'],
+        },
+        req
+      );
     }
     
     // Handle Express res.end() overloads
@@ -396,7 +406,7 @@ app.get('/metrics', (req: Request, res: Response) => {
 // Auth Middleware: Use dev bypass in dev, otherwise Supabase auth
 // Dev bypass MUST be before routes to intercept all /api requests
 if (process.env.DEV_BYPASS_AUTH === 'true' && process.env.NODE_ENV !== 'production') {
-  console.log('⚠️  [DevBypassAuth] Dev bypass auth ENABLED - skipping Supabase token verification');
+  StructuredLoggingService.warn('Dev bypass auth ENABLED - skipping Supabase token verification');
   app.use('/api', devBypassAuth);
 } else {
   // Normal Supabase auth - applied per-route via verifySupabaseAuth middleware
@@ -468,7 +478,7 @@ if (require.main === module) {
 
   // Graceful shutdown: cleanup Media Streams sessions and bridges
   process.on('SIGTERM', () => {
-    console.log('[Server] SIGTERM received, cleaning up...');
+    StructuredLoggingService.info('SIGTERM received, cleaning up...');
     const { twilioMediaStreamService } = require('./services/twilioMediaStreamService');
     const { elevenLabsBridgeService } = require('./services/elevenLabsBridgeService');
     twilioMediaStreamService.cleanup();
@@ -477,7 +487,7 @@ if (require.main === module) {
   });
 
   process.on('SIGINT', () => {
-    console.log('[Server] SIGINT received, cleaning up...');
+    StructuredLoggingService.info('SIGINT received, cleaning up...');
     const { twilioMediaStreamService } = require('./services/twilioMediaStreamService');
     const { elevenLabsBridgeService } = require('./services/elevenLabsBridgeService');
     twilioMediaStreamService.cleanup();
@@ -493,16 +503,16 @@ if (require.main === module) {
 
   const runMigrations = async () => {
     if (!config.databaseUrl) {
-      console.log('[Database] ℹ️  DATABASE_URL not set - skipping legacy migrations');
-      console.log('[Database] ℹ️  New code uses Supabase client directly (no migrations needed)');
+      StructuredLoggingService.info('DATABASE_URL not set - skipping legacy migrations');
+      StructuredLoggingService.info('New code uses Supabase client directly (no migrations needed)');
       return;
     }
 
     // Check if DATABASE_URL points to old/invalid project
     if (config.databaseUrl.includes('pdxdgfxhpyefqyouotat')) {
-      console.warn('[Database] ⚠️  DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
-      console.warn('[Database] ⚠️  Skipping migrations to avoid ENOTFOUND errors');
-      console.warn('[Database] ⚠️  Remove DATABASE_URL from Render environment variables');
+      StructuredLoggingService.warn('DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
+      StructuredLoggingService.warn('Skipping migrations to avoid ENOTFOUND errors');
+      StructuredLoggingService.warn('Remove DATABASE_URL from Render environment variables');
       return;
     }
 
@@ -511,24 +521,24 @@ if (require.main === module) {
     const { getPool, testConnection } = require('./services/database');
 
     // Wait for database connection before running migrations
-    console.log('[Database] [Startup] Waiting for database connection...');
+    StructuredLoggingService.info('[Startup] Waiting for database connection...');
     let connected = false;
     for (let i = 0; i < 10; i++) {
       connected = await testConnection(3);
       if (connected) {
         break;
       }
-      console.log(`[Database] [Startup] Waiting for database... (${i + 1}/10)`);
+      StructuredLoggingService.info(`[Startup] Waiting for database... (${i + 1}/10)`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     if (!connected) {
-      console.error('[Database] [Startup] ❌ Cannot run migrations - database not connected');
-      console.error('[Database] [Startup] Migrations will be skipped. Server will continue but database features may not work.');
+      StructuredLoggingService.error('[Startup] Cannot run migrations - database not connected', new Error('Database connection failed'));
+      StructuredLoggingService.error('[Startup] Migrations will be skipped. Server will continue but database features may not work.');
       return;
     }
 
-    console.log('[Database] [Startup] Starting migrations...');
+    StructuredLoggingService.info('[Startup] Starting migrations...');
 
     const migrationsDir = fs.existsSync('/app/db/migrations') 
       ? '/app/db/migrations'
@@ -554,7 +564,7 @@ if (require.main === module) {
         )
       ]) as any;
       
-      console.log('[Database] [Startup] ✅ Got client from pool');
+      StructuredLoggingService.info('[Startup] Got client from pool');
 
       await client.query(`
         CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -568,39 +578,39 @@ if (require.main === module) {
         .filter((f: string) => f.endsWith('.sql'))
         .sort();
 
-      console.log(`[Database] [Startup] Found ${files.length} migration files`);
+      StructuredLoggingService.info(`[Startup] Found ${files.length} migration files`, { count: files.length });
 
       for (const file of files) {
         const name = file;
         const res = await client.query('SELECT 1 FROM schema_migrations WHERE name = $1', [name]);
         if (res.rows.length > 0) {
-          console.log(`[Database] [Startup] Skipping already-applied: ${name}`);
+          StructuredLoggingService.debug(`[Startup] Skipping already-applied: ${name}`, { name });
           continue;
         }
 
         const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-        console.log(`[Database] [Startup] Applying ${name}...`);
+        StructuredLoggingService.info(`[Startup] Applying ${name}...`, { name });
         try {
           await client.query('BEGIN');
           await client.query(sql);
           await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [name]);
           await client.query('COMMIT');
-          console.log(`[Database] [Startup] ✅ Applied ${name}`);
+          StructuredLoggingService.info(`[Startup] Applied ${name}`, { name });
         } catch (err: any) {
           await client.query('ROLLBACK').catch(() => {}); // Ignore rollback errors
-          console.error(`[Database] [Startup] ❌ Failed to apply ${name}:`, err.message);
+          StructuredLoggingService.error(`[Startup] Failed to apply ${name}`, err instanceof Error ? err : new Error(String(err)), { name, message: err.message });
           throw err;
         }
       }
 
-      console.log('[Database] [Startup] ✅ All migrations completed successfully');
+      StructuredLoggingService.info('[Startup] All migrations completed successfully');
     } catch (error: any) {
-      console.error('[Database] [Startup] ❌ Migration error:', error.message);
+      StructuredLoggingService.error('[Startup] Migration error', error instanceof Error ? error : new Error(String(error)));
       // Don't throw - allow server to start even if migrations fail
     } finally {
       if (client) {
         client.release();
-        console.log('[Database] [Startup] Client released back to pool');
+        StructuredLoggingService.debug('[Startup] Client released back to pool');
       }
     }
   };
@@ -609,29 +619,29 @@ if (require.main === module) {
     try {
       await runMigrations();
     } catch (err: any) {
-      console.error('[Database] [Startup] Migration error:', err?.message || err);
+      StructuredLoggingService.error('[Startup] Migration error', err instanceof Error ? err : new Error(String(err)));
     }
 
     httpServer.listen(config.port, '0.0.0.0', () => {
-      console.log(`[AIDevelo Server] Running on http://0.0.0.0:${config.port}`);
-      console.log(`[AIDevelo Server] Environment: ${config.nodeEnv}`);
-      console.log(`[AIDevelo Server] Allowed Origins: ${config.allowedOrigins.join(', ')}`);
-      console.log(`[AIDevelo Server] WebSocket server ready for voice-agent connections`);
-      console.log(`[AIDevelo Server] Background sync jobs registered and scheduled`);
-      console.log(`[AIDevelo Server] ✅ Server is READY for requests`);
+      StructuredLoggingService.info(`Running on http://0.0.0.0:${config.port}`, { port: config.port });
+      StructuredLoggingService.info(`Environment: ${config.nodeEnv}`, { nodeEnv: config.nodeEnv });
+      StructuredLoggingService.info(`Allowed Origins: ${config.allowedOrigins.join(', ')}`, { allowedOrigins: config.allowedOrigins });
+      StructuredLoggingService.info('WebSocket server ready for voice-agent connections');
+      StructuredLoggingService.info('Background sync jobs registered and scheduled');
+      StructuredLoggingService.info('Server is READY for requests');
     });
 
     // Error handling for httpServer
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
-      console.error('[AIDevelo Server] ❌ Server error:', err.message);
+      StructuredLoggingService.error('Server error', err, { message: err.message, code: err.code });
       if (err.code === 'EADDRINUSE') {
-        console.error(`[AIDevelo Server] Port ${config.port} is already in use`);
+        StructuredLoggingService.error(`Port ${config.port} is already in use`, new Error('Port in use'), { port: config.port });
       }
     });
   };
 
   start().catch((err) => {
-    console.error('[AIDevelo Server] ❌ Failed to start server:', err);
+    StructuredLoggingService.error('Failed to start server', err instanceof Error ? err : new Error(String(err)));
     process.exit(1);
   });
 }

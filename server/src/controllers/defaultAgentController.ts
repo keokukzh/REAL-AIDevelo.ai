@@ -12,6 +12,7 @@ import { InternalServerError, BadRequestError } from '../utils/errors';
 import { twilioService } from '../services/twilioService';
 import { z } from 'zod';
 import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService';
+import { StructuredLoggingService } from '../services/loggingService';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
 const getBackendVersion = (): string => {
@@ -76,6 +77,31 @@ type DashboardOverviewResponse = z.infer<typeof DashboardOverviewResponseSchema>
 /**
  * POST /api/agent/default
  * Idempotent: ensures user, org, location, and agent config exist
+ * 
+ * This endpoint is idempotent - multiple calls with the same user will not create duplicates.
+ * It ensures all required resources exist: user row, organization, default location, and agent config.
+ * 
+ * @param req - Authenticated request with supabaseUser
+ * @param res - Express response
+ * @param next - Express next function for error handling
+ * @returns JSON response with user, organization, location, agent_config, and status
+ * @throws {InternalServerError} If any step fails (user creation, org creation, location creation, agent config creation)
+ * 
+ * @example
+ * ```typescript
+ * POST /api/agent/default
+ * Body: { locationName?: string }
+ * Response: {
+ *   success: true,
+ *   data: {
+ *     user: { id: string, email: string },
+ *     organization: { id: string, name: string },
+ *     location: { id: string, name: string, timezone: string },
+ *     agent_config: { id: string, setup_state: string, ... },
+ *     status: { agent: 'ready' | 'needs_setup', phone: 'not_connected' | 'connected' | 'needs_compliance', calendar: 'not_connected' | 'connected' }
+ *   }
+ * }
+ * ```
  */
 export const createDefaultAgent = async (
   req: AuthenticatedRequest,
@@ -201,32 +227,67 @@ export const createDefaultAgent = async (
       }
     }
     
-    console.error('[DefaultAgentController] Error creating default agent:', {
-      requestId,
-      step: failedStep,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    
-    if (error instanceof z.ZodError) {
-      return res.status(500).json({
-        error: 'Response validation failed',
-        step: failedStep,
+    StructuredLoggingService.error(
+      'Error creating default agent',
+      error instanceof Error ? error : new Error('Unknown error'),
+      {
         requestId,
-      });
-    }
+        step: failedStep,
+      },
+      req
+    );
     
-    return res.status(500).json({
-      error: 'Failed to create default agent',
-      step: failedStep,
-      requestId,
-    });
+    // Use next(error) pattern for consistent error handling
+    const appError = error instanceof z.ZodError
+      ? new InternalServerError('Response validation failed')
+      : new InternalServerError('Failed to create default agent');
+    
+    // Add step and requestId to error for debugging
+    (appError as any).step = failedStep;
+    (appError as any).requestId = requestId;
+    
+    next(appError);
   }
 };
 
 /**
  * GET /api/dashboard/overview
- * Returns dashboard overview with recent calls
+ * Returns dashboard overview with recent calls, phone status, and calendar status
+ * 
+ * This endpoint provides a comprehensive overview of the user's dashboard including:
+ * - User and organization information
+ * - Location details
+ * - Agent configuration and status
+ * - Phone connection status
+ * - Calendar integration status
+ * - Recent call history (last 10 calls)
+ * 
+ * The response is cached for 30 seconds to reduce database load.
+ * 
+ * @param req - Authenticated request with supabaseUser
+ * @param res - Express response
+ * @param next - Express next function for error handling
+ * @returns JSON response with dashboard overview data
+ * @throws {InternalServerError} If any step fails (user/org/location/agent config creation, data fetching)
+ * 
+ * @example
+ * ```typescript
+ * GET /api/dashboard/overview
+ * Response: {
+ *   success: true,
+ *   data: {
+ *     user: { id: string, email: string },
+ *     organization: { id: string, name: string },
+ *     location: { id: string, name: string, timezone: string },
+ *     agent_config: { id: string, setup_state: string, ... },
+ *     status: { agent: 'ready', phone: 'connected', calendar: 'connected' },
+ *     recent_calls: [...],
+ *     phone_number: string | null,
+ *     calendar_provider: string | null,
+ *     last_activity: string | null
+ *   }
+ * }
+ * ```
  */
 export const getDashboardOverview = async (
   req: AuthenticatedRequest,
@@ -410,32 +471,57 @@ export const getDashboardOverview = async (
       }
     }
     
-    console.error('[DefaultAgentController] Error getting dashboard overview:', {
-      requestId,
-      step: failedStep,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    
-    if (error instanceof z.ZodError) {
-      return res.status(500).json({
-        error: 'Response validation failed',
-        step: failedStep,
+    StructuredLoggingService.error(
+      'Error getting dashboard overview',
+      error instanceof Error ? error : new Error('Unknown error'),
+      {
         requestId,
-      });
-    }
+        step: failedStep,
+      },
+      req
+    );
     
-    return res.status(500).json({
-      error: 'Failed to get dashboard overview',
-      step: failedStep,
-      requestId,
-    });
+    // Use next(error) pattern for consistent error handling
+    const appError = error instanceof z.ZodError
+      ? new InternalServerError('Response validation failed')
+      : new InternalServerError('Failed to get dashboard overview');
+    
+    // Add step and requestId to error for debugging
+    (appError as any).step = failedStep;
+    (appError as any).requestId = requestId;
+    
+    next(appError);
   }
 };
 
 /**
  * POST /api/agent/test-call
  * Initiate a test call for the agent
+ * 
+ * Creates an outbound call via Twilio to test the voice agent.
+ * Requires a connected phone number for the location.
+ * 
+ * @param req - Authenticated request with body: { to: string }
+ * @param res - Express response
+ * @param next - Express next function for error handling
+ * @returns JSON response with call SID and status
+ * @throws {BadRequestError} If phone number not connected or missing 'to' parameter
+ * @throws {InternalServerError} If PUBLIC_BASE_URL not configured or Twilio call fails
+ * 
+ * @example
+ * ```typescript
+ * POST /api/agent/test-call
+ * Body: { to: '+41123456789' }
+ * Response: {
+ *   success: true,
+ *   data: {
+ *     callSid: 'CA...',
+ *     status: 'queued',
+ *     from: '+41...',
+ *     to: '+41123456789'
+ *   }
+ * }
+ * ```
  */
 export const testAgentCall = async (
   req: AuthenticatedRequest,
@@ -524,7 +610,12 @@ export const testAgentCall = async (
       },
     });
   } catch (error) {
-    console.error('[DefaultAgentController] Error initiating test call:', error);
+    StructuredLoggingService.error(
+      'Error initiating test call',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req
+    );
     next(error);
   }
 };

@@ -1,18 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendFailure } from '../utils/apiResponse';
+import { REQUEST_TIMEOUTS } from '../config/constants';
+import { StructuredLoggingService } from '../services/loggingService';
 
 /**
  * Timeout configuration per route (in milliseconds)
  */
 const timeoutConfig: Record<string, number> = {
-  '/api/health': 5000,           // 5 seconds
-  '/health': 5000,                // 5 seconds
-  '/api/voice-agent/*': 60000,   // 60 seconds (WebSocket/streaming)
-  '/api/knowledge/upload': 120000, // 120 seconds (file uploads)
-  '/api/knowledge/scrape': 30000,  // 30 seconds
-  '/api/calendar/*': 15000,       // 15 seconds
-  '/api/elevenlabs/*': 30000,     // 30 seconds
-  '/api/*': 30000,                // 30 seconds default
+  '/api/health': REQUEST_TIMEOUTS.HEALTH_CHECK,
+  '/health': REQUEST_TIMEOUTS.HEALTH_CHECK,
+  '/api/voice-agent/*': REQUEST_TIMEOUTS.VOICE_AGENT,
+  '/api/knowledge/upload': REQUEST_TIMEOUTS.FILE_UPLOAD,
+  '/api/knowledge/scrape': REQUEST_TIMEOUTS.KNOWLEDGE_SCRAPE,
+  '/api/calendar/*': REQUEST_TIMEOUTS.CALENDAR,
+  '/api/elevenlabs/*': REQUEST_TIMEOUTS.ELEVENLABS,
+  '/api/*': REQUEST_TIMEOUTS.DEFAULT,
 };
 
 /**
@@ -42,7 +44,7 @@ function getTimeout(path: string): number {
   }
 
   // Default timeout
-  return 30000; // 30 seconds
+  return REQUEST_TIMEOUTS.DEFAULT;
 }
 
 /**
@@ -97,14 +99,18 @@ export const timeoutMiddleware = (
         // Log request duration if it was close to timeout
         if (!isTimedOut) {
           const duration = Date.now() - (req as any).startTime;
-          if (duration > timeout * 0.8) {
-            console.warn('[TimeoutMiddleware] Slow request detected', {
-              method: req.method,
-              path: req.path,
-              duration,
-              timeout,
-              requestId: req.headers['x-request-id'],
-            });
+          if (duration > timeout * REQUEST_TIMEOUTS.SLOW_REQUEST_THRESHOLD_MULTIPLIER) {
+            StructuredLoggingService.warn(
+              'Slow request detected',
+              {
+                method: req.method,
+                path: req.path,
+                duration,
+                timeout,
+                requestId: req.headers['x-request-id'],
+              },
+              req
+            );
           }
         }
 

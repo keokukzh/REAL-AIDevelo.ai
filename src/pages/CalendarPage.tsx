@@ -11,6 +11,8 @@ import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents';
 import { apiClient } from '../services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '../components/ui/Toast';
+import { logger } from '../lib/logger';
+import { CALENDAR_OAUTH_WINDOW } from '../config/constants';
 import { 
   Calendar, 
   Plus, 
@@ -54,8 +56,8 @@ export const CalendarPage = () => {
       
       if (response.data?.success && response.data.data?.authUrl) {
         // Open OAuth window
-        const width = 600;
-        const height = 700;
+        const width = CALENDAR_OAUTH_WINDOW.WIDTH;
+        const height = CALENDAR_OAUTH_WINDOW.HEIGHT;
         const left = window.screen.width / 2 - width / 2;
         const top = window.screen.height / 2 - height / 2;
 
@@ -90,7 +92,7 @@ export const CalendarPage = () => {
           }
 
           if (event.data?.type === 'calendar-oauth-success') {
-            console.log('[CalendarPage] Calendar OAuth success via postMessage');
+            logger.info('[CalendarPage] Calendar OAuth success via postMessage');
             toast.success('Kalender erfolgreich verbunden');
             queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
             refetch();
@@ -119,7 +121,7 @@ export const CalendarPage = () => {
         throw new Error('Fehler beim Abrufen der OAuth-URL');
       }
     } catch (error: any) {
-      console.error('[CalendarPage] Calendar connection error:', error);
+      logger.error('[CalendarPage] Calendar connection error', error instanceof Error ? error : new Error(String(error)));
       
       // Extract error message from various error formats
       let errorMsg = 'Unbekannter Fehler';

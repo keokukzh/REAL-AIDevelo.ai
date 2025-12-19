@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { StructuredLoggingService } from '../services/loggingService';
 
 dotenv.config();
 
@@ -88,17 +89,13 @@ const validateEnv = () => {
     if (!process.env.JWT_REFRESH_SECRET) {
       const secret = generateSecret();
       process.env.JWT_REFRESH_SECRET = secret;
-      console.warn('⚠️  JWT_REFRESH_SECRET not set - generated secure random secret (this will change on restart)');
-      console.warn('   For production, set JWT_REFRESH_SECRET in environment variables for persistence.');
+      StructuredLoggingService.warn('JWT_REFRESH_SECRET not set - generated secure random secret (this will change on restart). For production, set JWT_REFRESH_SECRET in environment variables for persistence.');
     }
     // Generate TOKEN_ENCRYPTION_KEY if missing in production (32 bytes base64 encoded)
     if (!process.env.TOKEN_ENCRYPTION_KEY || process.env.TOKEN_ENCRYPTION_KEY === '' || process.env.TOKEN_ENCRYPTION_KEY.includes('placeholder') || process.env.TOKEN_ENCRYPTION_KEY.includes('change-me')) {
       const key = crypto.randomBytes(32).toString('base64');
       process.env.TOKEN_ENCRYPTION_KEY = key;
-      console.warn('⚠️  TOKEN_ENCRYPTION_KEY not set - generated secure random key (this will change on restart)');
-      console.warn('   For production, set TOKEN_ENCRYPTION_KEY in environment variables for persistence.');
-      console.warn('   Generate a key: openssl rand -base64 32');
-      console.warn('   ⚠️  WARNING: Encrypted calendar tokens will not be decryptable after restart if key changes.\n');
+      StructuredLoggingService.warn('TOKEN_ENCRYPTION_KEY not set - generated secure random key (this will change on restart). For production, set TOKEN_ENCRYPTION_KEY in environment variables. Generate a key: openssl rand -base64 32. WARNING: Encrypted calendar tokens will not be decryptable after restart if key changes.');
     }
   }
   
@@ -114,47 +111,38 @@ const validateEnv = () => {
     // In production we require the important secrets to be set — fail fast if missing
     const missing = productionRequiredEnvVars.filter(v => !process.env[v] || process.env[v] === '' || (process.env[v] || '').includes('placeholder'));
     if (missing.length > 0) {
-      console.error('\n🚨 Missing required environment variables for production:', missing.join(', '));
-      console.error('   The server will exit. Please configure these in your production environment (do not commit them in git).\n');
+      StructuredLoggingService.error(`Missing required environment variables for production: ${missing.join(', ')}. The server will exit. Please configure these in your production environment (do not commit them in git).`, new Error('Missing required environment variables'));
       process.exit(1);
     }
 
     // Validate TOKEN_ENCRYPTION_KEY in production (should be set by now if auto-generated)
     if (isTokenKeyMissing) {
       // This should not happen since we auto-generate it above, but keep as safety check
-      console.error('\n🚨 FATAL: TOKEN_ENCRYPTION_KEY is missing or invalid in production');
-      console.error('   Calendar token encryption requires a valid 32-byte key.');
-      console.error('   Generate a key: openssl rand -base64 32');
-      console.error('   The server will exit. Set TOKEN_ENCRYPTION_KEY in your production environment.\n');
+      StructuredLoggingService.error('FATAL: TOKEN_ENCRYPTION_KEY is missing or invalid in production. Calendar token encryption requires a valid 32-byte key. Generate a key: openssl rand -base64 32. The server will exit. Set TOKEN_ENCRYPTION_KEY in your production environment.', new Error('TOKEN_ENCRYPTION_KEY missing'));
       process.exit(1);
     } else {
-      console.log('✅ Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
+      StructuredLoggingService.info('Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
     }
 
     // If API key exists and looks ok, log confirmation
     if (!isApiKeyPlaceholder) {
-      console.log('✅ ElevenLabs API key configured');
+      StructuredLoggingService.info('ElevenLabs API key configured');
     }
   } else {
     // Development: Warn but do not block startup
     if (isApiKeyPlaceholder) {
-      console.warn('\n⚠️  WARNING: ELEVENLABS_API_KEY not set or using placeholder.');
-      console.warn('   The server will start, but voice generation will not work.');
-      console.warn('   Please set a real ELEVENLABS_API_KEY in your .env file.');
-      console.warn('   Get your API key from: https://elevenlabs.io/app/settings/api-keys\n');
+      StructuredLoggingService.warn('WARNING: ELEVENLABS_API_KEY not set or using placeholder. The server will start, but voice generation will not work. Please set a real ELEVENLABS_API_KEY in your .env file. Get your API key from: https://elevenlabs.io/app/settings/api-keys');
       // Provide developer-friendly placeholder to avoid runtime crashes in dev
       if (!apiKey || apiKey === '') process.env.ELEVENLABS_API_KEY = 'PLACEHOLDER_FOR_TESTING';
     } else {
-      console.log('✅ ElevenLabs API key configured');
+      StructuredLoggingService.info('ElevenLabs API key configured');
     }
 
     // In development, warn about TOKEN_ENCRYPTION_KEY but don't fail
     if (isTokenKeyMissing) {
-      console.warn('\n⚠️  WARNING: TOKEN_ENCRYPTION_KEY not set or using placeholder.');
-      console.warn('   Calendar token encryption will fall back to in-memory storage (not persisted).');
-      console.warn('   For production, set TOKEN_ENCRYPTION_KEY (32 bytes: openssl rand -base64 32).\n');
+      StructuredLoggingService.warn('WARNING: TOKEN_ENCRYPTION_KEY not set or using placeholder. Calendar token encryption will fall back to in-memory storage (not persisted). For production, set TOKEN_ENCRYPTION_KEY (32 bytes: openssl rand -base64 32).');
     } else {
-      console.log('✅ Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
+      StructuredLoggingService.info('Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
     }
   }
 };

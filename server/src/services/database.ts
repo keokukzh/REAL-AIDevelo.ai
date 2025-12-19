@@ -1,6 +1,7 @@
 import { Pool, PoolClient, PoolConfig } from 'pg';
 import dns from 'dns';
 import { config } from '../config/env';
+import { DATABASE_POOL } from '../config/constants';
 
 let pool: Pool | null = null;
 
@@ -17,7 +18,7 @@ function parseDatabaseUrl(url: string): { host: string; port: number; database: 
       user: urlObj.username || 'postgres',
     };
   } catch (error) {
-    console.error('[Database] Invalid DATABASE_URL format:', error);
+    StructuredLoggingService.error('Invalid DATABASE_URL format', error instanceof Error ? error : new Error(String(error)));
     return null;
   }
 }
@@ -39,7 +40,11 @@ export function initializeDatabase(): Pool {
     // Log connection attempt (without sensitive data)
     const urlForLogging = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
     const parsed = parseDatabaseUrl(config.databaseUrl);
-    console.log('[Database] Connecting to:', parsed ? `${parsed.host}:${parsed.port}/${parsed.database}` : urlForLogging.split('@')[1] || 'database');
+    StructuredLoggingService.info('Connecting to database', { 
+      host: parsed?.host, 
+      port: parsed?.port, 
+      database: parsed?.database 
+    });
     
     // Determine SSL configuration based on provider
     const isRailway = config.databaseUrl.includes('railway') || 
@@ -66,7 +71,7 @@ export function initializeDatabase(): Pool {
         sslConfig = {
           rejectUnauthorized: true,
         };
-        console.log('[Database] SSL enabled with certificate validation');
+        StructuredLoggingService.debug('SSL enabled with certificate validation');
       } else {
         // Railway uses self-signed certs
         sslConfig = {
@@ -87,14 +92,14 @@ export function initializeDatabase(): Pool {
     } = {
       connectionString: config.databaseUrl,
       ssl: sslConfig,
-      max: 10, // Optimized for cloud providers (better connection management)
-      min: 2, // Keep minimum connections alive
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000, // Reduced timeout - fail fast and retry
-      statement_timeout: 30000, // Query timeout
-      query_timeout: 30000,
+      max: DATABASE_POOL.MAX_CONNECTIONS,
+      min: DATABASE_POOL.MIN_CONNECTIONS,
+      idleTimeoutMillis: DATABASE_POOL.IDLE_TIMEOUT_MS,
+      connectionTimeoutMillis: DATABASE_POOL.CONNECTION_TIMEOUT_MS,
+      statement_timeout: DATABASE_POOL.QUERY_TIMEOUT_MS,
+      query_timeout: DATABASE_POOL.QUERY_TIMEOUT_MS,
       keepAlive: true,
-      keepAliveInitialDelayMillis: 0, // Start keepalive immediately
+      keepAliveInitialDelayMillis: DATABASE_POOL.KEEP_ALIVE_INITIAL_DELAY_MS,
       allowExitOnIdle: false, // Don't close pool when idle
       // Force IPv4 to avoid ENETUNREACH when IPv6 is not available in the runtime
       lookup: (hostname: string, options: dns.LookupOneOptions, callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
@@ -106,12 +111,12 @@ export function initializeDatabase(): Pool {
 
     // Enhanced error handling
     pool.on('error', (err: Error) => {
-      console.error('[Database] Pool error:', err.message);
+      StructuredLoggingService.error('Database pool error', err);
       // Don't crash on pool errors - they're handled per-query
     });
 
     pool.on('connect', (client: any) => {
-      console.log('[Database] ✅ New client connected to database');
+      StructuredLoggingService.debug('New client connected to database');
     });
 
     pool.on('acquire', () => {
@@ -119,10 +124,10 @@ export function initializeDatabase(): Pool {
     });
 
     pool.on('remove', () => {
-      console.log('[Database] Client removed from pool');
+      StructuredLoggingService.debug('Client removed from pool');
     });
 
-    console.log('[Database] Connection pool initialized with optimized cloud settings');
+    StructuredLoggingService.info('Connection pool initialized with optimized cloud settings');
     return pool;
   } catch (error) {
     console.error('[Database] Failed to initialize connection pool:', error);
@@ -153,7 +158,7 @@ export async function query<T = any>(text: string, params?: any[]): Promise<T[]>
     const result = await dbPool.query(text, params);
     return result.rows as T[];
   } catch (error) {
-    console.error('[Database] Query error:', error);
+    StructuredLoggingService.error('Database query error', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }

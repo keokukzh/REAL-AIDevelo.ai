@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError, ValidationError } from '../utils/errors';
 import { config } from '../config/env';
 import { sendFailure } from '../utils/apiResponse';
+import { StructuredLoggingService } from '../services/loggingService';
+import { captureException, setUser, clearUser } from '../config/sentry';
 
 // Get backend version from environment
 const getBackendVersion = (): string => {
@@ -131,27 +133,37 @@ export const errorHandler = (
     userContext.orgId = (req as any).auth.orgId;
   }
 
-  console.error('[ErrorHandler] Error caught', {
-    requestId,
-    method: req.method,
-    path: req.path,
-    name: err.name,
-    message: err.message,
-    statusCode: err instanceof AppError ? err.statusCode : 500,
-    origin: req.headers.origin,
-    ...userContext,
-    stack: stackLines,
-  });
+  // Log error using StructuredLoggingService
+  StructuredLoggingService.error(
+    'Error caught',
+    err,
+    {
+      requestId,
+      method: req.method,
+      path: req.path,
+      name: err.name,
+      message: err.message,
+      statusCode: err instanceof AppError ? err.statusCode : 500,
+      origin: req.headers.origin,
+      ...userContext,
+      stack: stackLines,
+    },
+    req
+  );
   
   // Handle CORS errors specifically
   if (err.message && err.message.includes('CORS')) {
-    console.warn('[CORS Error]', {
-      requestId,
-      message: err.message,
-      origin: req.headers.origin,
-      path: req.path,
-      method: req.method
-    });
+    StructuredLoggingService.warn(
+      'CORS Error',
+      {
+        requestId,
+        message: err.message,
+        origin: req.headers.origin,
+        path: req.path,
+        method: req.method
+      },
+      req
+    );
     
     // For CORS errors, send proper response with CORS headers
     // This prevents 500 errors on OPTIONS requests
@@ -184,7 +196,6 @@ export const errorHandler = (
   }
 
   // Handle unknown/unexpected errors
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
   const message = config.isProduction && !isDebugMode && statusCode >= 500
     ? 'Internal Server Error'
     : err.message || 'Internal Server Error';

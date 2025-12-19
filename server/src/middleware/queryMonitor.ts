@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
+import { QUERY_MONITORING } from '../config/constants';
 
 /**
  * Query performance monitoring configuration
  */
-const SLOW_QUERY_THRESHOLD_MS = 1000; // 1 second
+const SLOW_QUERY_THRESHOLD_MS = QUERY_MONITORING.SLOW_QUERY_THRESHOLD_MS;
 const QUERY_LOG_INTERVAL_MS = 5000; // Log query stats every 5 seconds
+const MAX_QUERY_TIMINGS = QUERY_MONITORING.MAX_QUERY_TIMINGS;
 
 /**
  * Query timing data structure
@@ -72,8 +74,8 @@ function logQueryStats() {
     });
   }
 
-  // Clear old entries (keep last 1000 for rolling window)
-  queryTimings.splice(0, Math.max(0, queryTimings.length - 1000));
+  // Clear old entries (keep last N for rolling window)
+  queryTimings.splice(0, Math.max(0, queryTimings.length - MAX_QUERY_TIMINGS));
   lastLogTime = now;
 }
 
@@ -98,13 +100,21 @@ export function monitorSupabaseQuery(
         timestamp: Date.now(),
       });
 
-      // Log slow queries immediately
+      // Log slow queries immediately and send to Sentry
       if (duration > SLOW_QUERY_THRESHOLD_MS) {
         logger.warn('query.performance.slow', {
           query: queryDescription,
           duration,
           threshold: SLOW_QUERY_THRESHOLD_MS,
         });
+        
+        // Send slow query metric to Sentry
+        try {
+          const { captureMessage } = require('../config/sentry');
+          captureMessage(`Slow query detected: ${queryDescription.substring(0, 100)}`, 'warning');
+        } catch {
+          // Sentry not available, ignore
+        }
       }
 
       // Log aggregated stats periodically

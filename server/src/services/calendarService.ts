@@ -3,6 +3,8 @@ import { config } from '../config/env';
 import { supabaseAdmin } from './supabaseDb';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
 import { logger, serializeError, redact } from '../utils/logger';
+import { StructuredLoggingService } from './loggingService';
+import { Request } from 'express';
 
 export interface CalendarAuthResponse {
   authUrl: string;
@@ -110,6 +112,21 @@ export const calendarService = {
 
   /**
    * Exchange authorization code for tokens (Google)
+   * 
+   * Exchanges the OAuth authorization code for access and refresh tokens.
+   * Uses retry logic and circuit breaker for resilience.
+   * Validates that refresh_token is present (required for offline access).
+   * 
+   * @param code - OAuth authorization code from Google
+   * @param redirectUri - OAuth redirect URI (must match request)
+   * @returns Promise resolving to CalendarToken with accessToken, refreshToken, expiresAt, and provider
+   * @throws {Error} If token exchange fails or refresh_token missing
+   * 
+   * @example
+   * ```typescript
+   * const token = await calendarService.exchangeGoogleCode('auth_code', 'https://...');
+   * // Returns: { accessToken: '...', refreshToken: '...', expiresAt: 1234567890, provider: 'google' }
+   * ```
    */
   async exchangeGoogleCode(code: string, redirectUri: string): Promise<CalendarToken> {
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || '';
@@ -135,12 +152,16 @@ export const calendarService = {
 
       // Check if refresh_token is present (required for offline access)
       if (!response.data.refresh_token) {
-        console.error('[CalendarService] Google OAuth response missing refresh_token:', {
-          hasAccessToken: !!response.data.access_token,
-          hasRefreshToken: !!response.data.refresh_token,
-          expiresIn: response.data.expires_in,
-          scope: response.data.scope,
-        });
+        StructuredLoggingService.error(
+          'Google OAuth response missing refresh_token',
+          new Error('Missing refresh_token in OAuth response'),
+          {
+            hasAccessToken: !!response.data.access_token,
+            hasRefreshToken: !!response.data.refresh_token,
+            expiresIn: response.data.expires_in,
+            scope: response.data.scope,
+          }
+        );
         throw new Error('Google OAuth hat keinen Refresh Token zurückgegeben. Stelle sicher, dass access_type=offline und prompt=consent in der OAuth-URL gesetzt sind.');
       }
 
@@ -352,12 +373,18 @@ export const calendarService = {
 
     // Check if token expires within 5 minutes
     if (expiryTs > now + fiveMinutesMs) {
-      console.log(`[CalendarService] Token still valid for locationId=${locationId}, provider=${provider}, expires in ${Math.round((expiryTs - now) / 1000)}s`);
+      StructuredLoggingService.debug(
+        `Token still valid for locationId=${locationId}, provider=${provider}, expires in ${Math.round((expiryTs - now) / 1000)}s`,
+        { locationId, provider, expiresIn: Math.round((expiryTs - now) / 1000) }
+      );
       return row.access_token;
     }
 
     // Token expired or expires soon, refresh it
-    console.log(`[CalendarService] Refreshing token for locationId=${locationId}, provider=${provider}`);
+    StructuredLoggingService.info(
+      `Refreshing token for locationId=${locationId}, provider=${provider}`,
+      { locationId, provider }
+    );
 
     if (provider === 'google') {
       return await this.refreshGoogleToken(locationId, row.refresh_token_encrypted);
@@ -386,16 +413,24 @@ export const calendarService = {
     }
 
     try {
-      const response = await axios.post('https://oauth2.googleapis.com/token', {
-        refresh_token: refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'refresh_token',
-      }, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
+      const { retryApiCall } = require('../utils/retry');
+      const { circuitBreakers } = require('../utils/circuitBreaker');
+      const { API_TIMEOUTS } = require('../config/constants');
+      const response = await circuitBreakers.googleCalendar.execute(
+        () => retryApiCall(
+          () => axios.post('https://oauth2.googleapis.com/token', {
+            refresh_token: refreshToken,
+            client_id: clientId,
+            client_secret: clientSecret,
+            grant_type: 'refresh_token',
+          }, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: API_TIMEOUTS.GOOGLE_CALENDAR,
+          })
+        )
+      );
 
       const newAccessToken = response.data.access_token;
       const expiresIn = response.data.expires_in || 3600; // Default 1 hour

@@ -70,7 +70,8 @@
     "typescript": "^5.3.3",
     "uuid": "^13.0.0",
     "ws": "^8.18.3",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@sentry/node": "^8.45.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.15",

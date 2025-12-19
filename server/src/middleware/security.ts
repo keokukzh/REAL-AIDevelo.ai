@@ -17,13 +17,28 @@ export const isOriginAllowed = (origin: string | undefined): boolean => {
     return true; // Allow requests with no origin (mobile apps, Postman, server-to-server)
   }
 
-  // Production origins
-  if (
-    origin === 'https://aidevelo.ai' ||
-    origin.endsWith('.aidevelo.ai') ||
-    origin.endsWith('.pages.dev')
-  ) {
-    return true;
+  // Production origins - restrict to specific domains
+  if (config.isProduction) {
+    const allowedProductionOrigins = [
+      'https://aidevelo.ai',
+      'https://www.aidevelo.ai',
+      // Add specific Cloudflare Pages domains if needed
+      // 'https://your-project.pages.dev',
+    ];
+    
+    // Check exact matches first
+    if (allowedProductionOrigins.includes(origin)) {
+      return true;
+    }
+    
+    // Allow subdomains of aidevelo.ai
+    if (origin.endsWith('.aidevelo.ai')) {
+      return true;
+    }
+    
+    // In production, be more restrictive - only allow known patterns
+    // Remove wildcard .pages.dev for better security
+    return false;
   }
 
   // Development origins (only in non-production)
@@ -50,7 +65,7 @@ export const corsMiddleware = cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`[CORS] Rejected origin: ${origin}`);
+      StructuredLoggingService.warn(`CORS rejected origin: ${origin}`, { origin }, req);
       callback(null, false); // Don't throw error, just reject
     }
   },
@@ -104,21 +119,21 @@ export const helmetMiddleware = config.isProduction
  */
 const rateLimitConfig: Record<string, { windowMs: number; max: number }> = {
   // Authentication endpoints - strict limits
-  '/api/auth/login': { windowMs: 15 * 60 * 1000, max: 5 },
-  '/api/auth/register': { windowMs: 60 * 60 * 1000, max: 3 }, // 3 per hour
-  '/api/auth/refresh': { windowMs: 15 * 60 * 1000, max: 10 },
-  '/api/auth/*': { windowMs: 15 * 60 * 1000, max: 10 },
+  '/api/auth/login': RATE_LIMITS.AUTH_LOGIN,
+  '/api/auth/register': RATE_LIMITS.AUTH_REGISTER,
+  '/api/auth/refresh': RATE_LIMITS.AUTH_REFRESH,
+  '/api/auth/*': RATE_LIMITS.AUTH_DEFAULT,
   
   // Agent endpoints - moderate limits
-  '/api/agents': { windowMs: 60 * 1000, max: 30 }, // 30 per minute
-  '/api/dashboard': { windowMs: 60 * 1000, max: 60 }, // 60 per minute
+  '/api/agents': RATE_LIMITS.AGENTS,
+  '/api/dashboard': RATE_LIMITS.DASHBOARD,
   
   // Health and public endpoints - lenient limits
-  '/api/health': { windowMs: 60 * 1000, max: 100 },
-  '/health': { windowMs: 60 * 1000, max: 100 },
+  '/api/health': RATE_LIMITS.HEALTH,
+  '/health': RATE_LIMITS.HEALTH,
   
   // Default for all other API routes
-  '/api/*': { windowMs: 15 * 60 * 1000, max: 100 },
+  '/api/*': RATE_LIMITS.DEFAULT,
 };
 
 /**
@@ -148,7 +163,7 @@ function getRateLimitConfig(path: string): { windowMs: number; max: number } {
   }
   
   // Default rate limit
-  return { windowMs: 15 * 60 * 1000, max: 100 };
+  return RATE_LIMITS.DEFAULT;
 }
 
 /**
@@ -205,7 +220,7 @@ function initializeRateLimiters() {
   });
   
   // Also add default config
-  const defaultConfig = { windowMs: 15 * 60 * 1000, max: 100 };
+  const defaultConfig = RATE_LIMITS.DEFAULT;
   const defaultKey = `${defaultConfig.windowMs}-${defaultConfig.max}`;
   configs.add(defaultKey);
   

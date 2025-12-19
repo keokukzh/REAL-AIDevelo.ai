@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/Button';
 import { CheckCircle2, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { apiRequest, ApiRequestError } from '../services/api';
+import { CALENDAR_OAUTH_WINDOW } from '../config/constants';
+import { logger } from '../lib/logger';
 
 interface CalendarIntegrationProps {
   onConnected: (provider: 'google' | 'outlook') => void;
@@ -29,7 +31,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onConn
         
         if (isMockUrl) {
           // For testing: simulate OAuth flow with mock URL
-          console.warn('[CalendarIntegration] OAuth not configured, simulating success for testing');
+          logger.warn('[CalendarIntegration] OAuth not configured, simulating success for testing');
           
           // Simulate opening OAuth window and receiving callback
           setTimeout(() => {
@@ -42,8 +44,8 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onConn
         }
 
         // Open OAuth window for real OAuth flow
-        const width = 600;
-        const height = 700;
+        const width = CALENDAR_OAUTH_WINDOW.WIDTH;
+        const height = CALENDAR_OAUTH_WINDOW.HEIGHT;
         const left = window.screen.width / 2 - width / 2;
         const top = window.screen.height / 2 - height / 2;
 
@@ -92,7 +94,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onConn
         }, 1000);
       } else {
         // For testing: simulate success if OAuth is not configured
-        console.warn('[CalendarIntegration] OAuth not configured, simulating success for testing');
+        logger.warn('[CalendarIntegration] OAuth not configured, simulating success for testing');
         setTimeout(() => {
           setConnected(provider);
           onConnected(provider);
@@ -100,11 +102,11 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onConn
         }, 1000);
       }
     } catch (err) {
-      console.error('[CalendarIntegration] Error:', err);
+      logger.error('[CalendarIntegration] Error', err instanceof Error ? err : new Error(String(err)));
       
       // For development/testing: if server is not available, simulate success
       if (err instanceof ApiRequestError && err.statusCode === 0) {
-        console.warn('[CalendarIntegration] Server not available, simulating success for testing');
+        logger.warn('[CalendarIntegration] Server not available, simulating success for testing');
         setTimeout(() => {
           setConnected(provider);
           onConnected(provider);

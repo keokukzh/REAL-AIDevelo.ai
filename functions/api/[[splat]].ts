@@ -104,10 +104,13 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
     // Add X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
     proxiedHeaders.set('X-Content-Type-Options', 'nosniff');
     
-    // Add debug headers to verify proxy is active
-    proxiedHeaders.set('x-aidevelo-proxy', '1');
-    proxiedHeaders.set('x-aidevelo-auth-present', hasAuth ? '1' : '0');
-    proxiedHeaders.set('x-aidevelo-proxied-url', targetUrl); // Debug: show what URL was forwarded
+    // Add debug headers only in development (not in production)
+    const isProduction = env.ENVIRONMENT === 'production' || !env.ENVIRONMENT;
+    if (!isProduction) {
+      proxiedHeaders.set('x-aidevelo-proxy', '1');
+      proxiedHeaders.set('x-aidevelo-auth-present', hasAuth ? '1' : '0');
+      proxiedHeaders.set('x-aidevelo-proxied-url', targetUrl); // Debug: show what URL was forwarded
+    }
     
     // Log 404s for debugging (only in non-production or when debugging)
     if (response.status === 404) {
@@ -134,8 +137,10 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
         status: 502,
         headers: { 
           'Content-Type': 'application/json',
-          'x-aidevelo-proxy-error': '1',
-          'x-aidevelo-proxied-url': targetUrl, // Debug header
+          ...(env.ENVIRONMENT !== 'production' && !env.ENVIRONMENT ? {
+            'x-aidevelo-proxy-error': '1',
+            'x-aidevelo-proxied-url': targetUrl, // Debug header (dev only)
+          } : {}),
         },
       }
     );

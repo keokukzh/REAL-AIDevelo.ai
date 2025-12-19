@@ -276,7 +276,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
                         setAnalysisStatus("Höre zu... ✓");
                     }
                 } catch (error) {
-                    console.error('[VoiceOnboarding] Error checking audio level:', error);
+                    logger.error('[VoiceOnboarding] Error checking audio level', error instanceof Error ? error : new Error(String(error)));
                 }
             }
         }, 1000);
@@ -286,9 +286,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
         setAnalysisStatus("Fehler: Mikrofonzugriff verweigert. Bitte erlauben Sie den Zugriff in Ihren Browsereinstellungen.");
         // Only log in development for debugging
-        if ((import.meta as any).env?.DEV) {
-            console.warn("Microphone access error:", errorMessage);
-        }
+        logger.warn("Microphone access error", { errorMessage });
     }
   };
 
@@ -310,7 +308,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
                     recorder.stop();
                 }
             } catch (e) {
-                console.warn('[VoiceOnboarding] Error stopping recorder:', e);
+                logger.warn('[VoiceOnboarding] Error stopping recorder', { error: e });
             }
         }
         
@@ -347,7 +345,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
             });
         }
     } catch (error) {
-        console.error('[VoiceOnboarding] Error stopping recording:', error);
+        logger.error('[VoiceOnboarding] Error stopping recording', error instanceof Error ? error : new Error(String(error)));
         isRecordingRef.current = false;
         setIsRecording(false);
         setAnalysisStatus("Fehler beim Stoppen. Bitte versuchen Sie es erneut.");
@@ -434,7 +432,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         // Proceed to processing phase
         await startProcessingPhase();
     } catch (error) {
-        console.error('[VoiceOnboarding] Error processing uploaded audio:', error);
+        logger.error('[VoiceOnboarding] Error processing uploaded audio', error instanceof Error ? error : new Error(String(error)));
         setAnalysisStatus("Fehler beim Verarbeiten der Audio-Datei. Bitte versuchen Sie es erneut.");
         setStep('upload');
     }
@@ -490,7 +488,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         audio.onplay = () => setIsPlaying(true);
         audio.onended = () => setIsPlaying(false);
         audio.onerror = (e) => {
-            console.error('[VoiceOnboarding] Audio playback error:', e);
+            logger.error('[VoiceOnboarding] Audio playback error', new Error('Audio playback failed'), { event: e });
             setIsPlaying(false);
             // Try alternative format
             if (!audioSrc.includes('audio/wav')) {
@@ -498,14 +496,14 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
                 altAudio.onplay = () => setIsPlaying(true);
                 altAudio.onended = () => setIsPlaying(false);
                 altAudio.play().catch(err => {
-                    console.error('[VoiceOnboarding] Alternative audio format also failed:', err);
+                    logger.error('[VoiceOnboarding] Alternative audio format also failed', err instanceof Error ? err : new Error(String(err)));
                     alert('Audio-Wiedergabe fehlgeschlagen. Bitte versuchen Sie es später erneut oder nehmen Sie neu auf.');
                 });
             }
         };
         await audio.play();
     } catch (error) {
-        console.error('[VoiceOnboarding] Error playing audio:', error);
+        logger.error('[VoiceOnboarding] Error playing audio', error instanceof Error ? error : new Error(String(error)));
         setIsPlaying(false);
         alert('Audio-Wiedergabe fehlgeschlagen. Bitte versuchen Sie es später erneut oder nehmen Sie neu auf.');
     }

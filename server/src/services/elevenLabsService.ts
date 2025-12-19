@@ -2,6 +2,9 @@ import axios from 'axios';
 import { AgentConfig, PhoneNumber, PhoneSettings, PhoneStatus } from '../models/types';
 import { config } from '../config/env';
 import { InternalServerError } from '../utils/errors';
+import { retryApiCall, isRetryableError } from '../utils/retry';
+import { API_TIMEOUTS } from '../config/constants';
+import { circuitBreakers } from '../utils/circuitBreaker';
 
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
@@ -19,10 +22,14 @@ export class ElevenLabsService {
     }
     
     try {
-      const response = await axios.get(`${API_BASE}/voices`, {
-        headers: { 'xi-api-key': config.elevenLabsApiKey },
-        timeout: 10000 // 10 second timeout
-      });
+      const response = await circuitBreakers.elevenLabs.execute(
+        () => retryApiCall(
+          () => axios.get(`${API_BASE}/voices`, {
+            headers: { 'xi-api-key': config.elevenLabsApiKey },
+            timeout: API_TIMEOUTS.ELEVENLABS_VOICE_FETCH
+          })
+        )
+      );
       
       const allVoices = response.data.voices;
       // Simple logic to return relevant voices (in reality, we might filter by 'labels' or specific IDs known to be good)
@@ -40,6 +47,22 @@ export class ElevenLabsService {
 
   /**
    * Create a Conversational Agent in ElevenLabs
+   * 
+   * Creates a new conversational AI agent in ElevenLabs with the specified configuration.
+   * The agent is configured with system prompt, voice settings, and language.
+   * 
+   * @param agentName - Name of the agent
+   * @param agentConfig - Agent configuration including systemPrompt, elevenLabs settings
+   * @returns Promise resolving to ElevenLabs agent ID
+   * @throws {InternalServerError} If agent creation fails or API key is invalid
+   * 
+   * @example
+   * ```typescript
+   * const agentId = await elevenLabsService.createAgent('My Agent', {
+   *   systemPrompt: 'You are a helpful assistant...',
+   *   elevenLabs: { voiceId: 'voice_id_here' }
+   * });
+   * ```
    */
   async createAgent(agentName: string, agentConfig: AgentConfig): Promise<string> {
     try {
@@ -59,13 +82,17 @@ export class ElevenLabsService {
         }
       };
 
-      const response = await axios.post(`${API_BASE}/convai/agents/create`, payload, {
-        headers: { 
-          'xi-api-key': config.elevenLabsApiKey,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000 // 30 second timeout for agent creation
-      });
+      const response = await circuitBreakers.elevenLabs.execute(
+        () => retryApiCall(
+          () => axios.post(`${API_BASE}/convai/agents/create`, payload, {
+            headers: { 
+              'xi-api-key': config.elevenLabsApiKey,
+              'Content-Type': 'application/json'
+            },
+            timeout: API_TIMEOUTS.ELEVENLABS_AGENT_CREATION
+          })
+        )
+      );
 
       return response.data.agent_id;
     } catch (error) {
@@ -95,24 +122,28 @@ export class ElevenLabsService {
     }
     
     try {
-      const response = await axios.post(
-        `${API_BASE}/text-to-speech/${voiceId}`,
-        {
-          text,
-          model_id: modelId,
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-          },
-        },
-        {
-          headers: {
-            'xi-api-key': config.elevenLabsApiKey,
-            'Content-Type': 'application/json',
-          },
-          responseType: 'arraybuffer',
-          timeout: 30000, // 30 second timeout
-        }
+      const response = await circuitBreakers.elevenLabs.execute(
+        () => retryApiCall(
+          () => axios.post(
+            `${API_BASE}/text-to-speech/${voiceId}`,
+            {
+              text,
+              model_id: modelId,
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+              },
+            },
+            {
+              headers: {
+                'xi-api-key': config.elevenLabsApiKey,
+                'Content-Type': 'application/json',
+              },
+              responseType: 'arraybuffer',
+              timeout: API_TIMEOUTS.ELEVENLABS,
+            }
+          )
+        )
       );
 
       return Buffer.from(response.data);
@@ -203,13 +234,15 @@ export class ElevenLabsService {
         contentType: mimeType,
       });
 
-      const response = await axios.post(`${API_BASE}/voices/add`, formData, {
-        headers: {
-          'xi-api-key': config.elevenLabsApiKey,
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 60000, // 60 second timeout for voice cloning
-      });
+      const response = await retryApiCall(
+        () => axios.post(`${API_BASE}/voices/add`, formData, {
+          headers: {
+            'xi-api-key': config.elevenLabsApiKey,
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: API_TIMEOUTS.ELEVENLABS_VOICE_CLONE,
+        })
+      );
 
       return response.data.voice_id;
     } catch (error) {

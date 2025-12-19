@@ -37,123 +37,121 @@ export interface AuditLog {
 export class CallLoggingService {
   /**
    * Log a new call
+   * @deprecated Use Supabase client directly or call_logs table via supabaseAdmin
+   * This method is kept for backward compatibility
    */
   static async logCall(record: Omit<CallRecord, 'id'>): Promise<CallRecord> {
-    const pool = getPool();
-    if (!pool) {
-      throw new AppError(503, 'Database connection not available');
+    const id = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const { data, error } = await supabaseAdmin
+      .from('call_logs')
+      .insert({
+        id,
+        agent_id: record.agentId,
+        customer_id: record.customerId,
+        phone_number: record.phoneNumber,
+        start_time: record.startTime.toISOString(),
+        status: record.status,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new AppError(500, `Failed to log call: ${error.message}`);
     }
 
-    const id = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const query = `
-      INSERT INTO call_logs (
-        id, agent_id, customer_id, phone_number, 
-        start_time, status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [
-      id,
-      record.agentId,
-      record.customerId,
-      record.phoneNumber,
-      record.startTime,
-      record.status,
-    ]);
-
-    return this.formatCallRecord(result.rows[0]);
+    return this.formatCallRecord(data);
   }
 
   /**
    * Update call record (end time, duration, result, etc.)
+   * @deprecated Use Supabase client directly
+   * This method is kept for backward compatibility
    */
   static async updateCall(
     callId: string,
     updates: Partial<Omit<CallRecord, 'id'>>
   ): Promise<CallRecord> {
-    const pool = getPool();
-    if (!pool) {
-      throw new AppError(503, 'Database connection not available');
-    }
-
-    const fields: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
+    const updateData: any = {};
+    
     if (updates.endTime) {
-      fields.push(`end_time = $${paramIndex}`);
-      values.push(updates.endTime);
-      paramIndex++;
+      updateData.end_time = updates.endTime.toISOString();
     }
     if (updates.duration !== undefined) {
-      fields.push(`duration = $${paramIndex}`);
-      values.push(updates.duration);
-      paramIndex++;
+      updateData.duration_sec = updates.duration;
     }
     if (updates.status) {
-      fields.push(`status = $${paramIndex}`);
-      values.push(updates.status);
-      paramIndex++;
+      updateData.status = updates.status;
     }
     if (updates.recordingUrl) {
-      fields.push(`recording_url = $${paramIndex}`);
-      values.push(updates.recordingUrl);
-      paramIndex++;
+      updateData.recording_url = updates.recordingUrl;
     }
     if (updates.transcription) {
-      fields.push(`transcription = $${paramIndex}`);
-      values.push(updates.transcription);
-      paramIndex++;
+      updateData.transcription = updates.transcription;
     }
     if (updates.successRate !== undefined) {
-      fields.push(`success_rate = $${paramIndex}`);
-      values.push(updates.successRate);
-      paramIndex++;
+      updateData.success_rate = updates.successRate;
     }
 
-    fields.push(`updated_at = NOW()`);
-    values.push(callId);
+    const { data, error } = await supabaseAdmin
+      .from('call_logs')
+      .update(updateData)
+      .eq('id', callId)
+      .select()
+      .single();
 
-    const query = `
-      UPDATE call_logs 
-      SET ${fields.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      throw new AppError(404, `Call ${callId} not found`);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new AppError(404, `Call ${callId} not found`);
+      }
+      throw new AppError(500, `Failed to update call: ${error.message}`);
     }
 
-    return this.formatCallRecord(result.rows[0]);
+    return this.formatCallRecord(data);
   }
 
   /**
    * Get call metrics for an agent
+   * @deprecated Use Supabase client directly
+   * This method is kept for backward compatibility
    */
   static async getAgentMetrics(agentId: string, days = 7) {
-    const pool = getPool();
-    if (!pool) {
-      throw new AppError(503, 'Database connection not available');
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data, error } = await supabaseAdmin
+      .from('call_logs')
+      .select('status, duration_sec, success_rate, started_at')
+      .eq('agent_id', agentId)
+      .gte('started_at', startDate.toISOString());
+
+    if (error) {
+      throw new AppError(500, `Failed to get agent metrics: ${error.message}`);
     }
 
-    const query = `
-      SELECT
-        COUNT(*) as total_calls,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_calls,
-        COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_calls,
-        AVG(duration) as avg_duration,
-        AVG(success_rate) as avg_success_rate,
-        MAX(start_time) as last_call
-      FROM call_logs
-      WHERE agent_id = $1
-      AND start_time >= NOW() - INTERVAL '${days} days'
-    `;
+    if (!data || data.length === 0) {
+      return null;
+    }
 
-    const result = await pool.query(query, [agentId]);
-    return result.rows[0] || null;
+    const totalCalls = data.length;
+    const completedCalls = data.filter(c => c.status === 'completed').length;
+    const failedCalls = data.filter(c => c.status === 'failed').length;
+    const durations = data.map(c => c.duration_sec).filter(d => d !== null) as number[];
+    const successRates = data.map(c => c.success_rate).filter(r => r !== null) as number[];
+    const lastCall = data.reduce((latest, call) => {
+      const callTime = new Date(call.started_at).getTime();
+      const latestTime = latest ? new Date(latest).getTime() : 0;
+      return callTime > latestTime ? call.started_at : latest;
+    }, null as string | null);
+
+    return {
+      total_calls: totalCalls,
+      completed_calls: completedCalls,
+      failed_calls: failedCalls,
+      avg_duration: durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : null,
+      avg_success_rate: successRates.length > 0 ? successRates.reduce((a, b) => a + b, 0) / successRates.length : null,
+      last_call: lastCall,
+    };
   }
 
   /**
@@ -182,9 +180,9 @@ export class CallLoggingService {
       agentId: row.agent_id,
       customerId: row.customer_id,
       phoneNumber: row.phone_number,
-      startTime: new Date(row.start_time),
-      endTime: row.end_time ? new Date(row.end_time) : undefined,
-      duration: row.duration,
+      startTime: new Date(row.started_at || row.start_time),
+      endTime: row.ended_at || row.end_time ? new Date(row.ended_at || row.end_time) : undefined,
+      duration: row.duration_sec || row.duration,
       status: row.status,
       recordingUrl: row.recording_url,
       transcription: row.transcription,
@@ -212,8 +210,8 @@ export class AuditLoggingService {
   ): Promise<AuditLog> {
     const pool = getPool();
     if (!pool) {
-      // In development, just log to console
-      console.log('[Audit]', { userId, action, resourceType, resourceId, details });
+      // In development, just log using StructuredLoggingService
+      StructuredLoggingService.info('[Audit]', { userId, action, resourceType, resourceId, details });
       return {
         id: `audit_${Date.now()}`,
         userId,
@@ -252,22 +250,22 @@ export class AuditLoggingService {
 
   /**
    * Get audit logs for a user (for transparency/compliance)
+   * @deprecated Use auditService.ts which uses Supabase client
+   * This method is kept for backward compatibility
    */
   static async getUserAuditLogs(userId: string, limit = 100) {
-    const pool = getPool();
-    if (!pool) {
-      throw new AppError(503, 'Database connection not available');
+    const { data, error } = await supabaseAdmin
+      .from('audit_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw new AppError(500, `Failed to get audit logs: ${error.message}`);
     }
 
-    const query = `
-      SELECT * FROM audit_logs
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2
-    `;
-
-    const result = await pool.query(query, [userId, limit]);
-    return result.rows.map((row: any) => this.formatAuditLog(row));
+    return (data || []).map((row: any) => this.formatAuditLog(row));
   }
 
   private static formatAuditLog(row: any): AuditLog {
@@ -277,7 +275,7 @@ export class AuditLoggingService {
       action: row.action,
       resourceType: row.resource_type,
       resourceId: row.resource_id,
-      details: JSON.parse(row.details || '{}'),
+      details: typeof row.details === 'string' ? JSON.parse(row.details || '{}') : (row.details || {}),
       timestamp: new Date(row.created_at),
       ipAddress: row.ip_address,
       userAgent: row.user_agent,

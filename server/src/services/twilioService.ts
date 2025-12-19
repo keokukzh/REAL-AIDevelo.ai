@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { config } from '../config/env';
 import { InternalServerError } from '../utils/errors';
+import { StructuredLoggingService } from './loggingService';
 
 interface TwilioPhoneNumber {
   sid: string;
@@ -20,15 +21,33 @@ interface TwilioCallResponse {
   to: string;
 }
 
+/**
+ * Twilio Service
+ * Handles all Twilio API interactions including phone numbers, webhooks, and calls
+ * Uses circuit breakers and retry logic for resilience
+ */
 class TwilioService {
+  /**
+   * Get Twilio Account SID from environment
+   * @returns Account SID or empty string if not configured
+   */
   private getAccountSid(): string {
     return process.env.TWILIO_ACCOUNT_SID || '';
   }
 
+  /**
+   * Get Twilio Auth Token from config
+   * @returns Auth token
+   */
   private getAuthToken(): string {
     return config.twilioAuthToken;
   }
 
+  /**
+   * Get Twilio API base URL
+   * @returns Base URL for Twilio API
+   * @throws {InternalServerError} If Account SID not configured
+   */
   private getBaseUrl(): string {
     const accountSid = this.getAccountSid();
     if (!accountSid) {
@@ -37,6 +56,10 @@ class TwilioService {
     return `https://api.twilio.com/2010-04-01/Accounts/${accountSid}`;
   }
 
+  /**
+   * Get HTTP Basic Auth credentials for Twilio API
+   * @returns Object with username (Account SID) and password (Auth Token)
+   */
   private getAuth(): { username: string; password: string } {
     return {
       username: this.getAccountSid(),
@@ -46,6 +69,19 @@ class TwilioService {
 
   /**
    * List available phone numbers from Twilio
+   * 
+   * Retrieves phone numbers available in the Twilio account, optionally filtered by country.
+   * Uses circuit breaker and retry logic for resilience.
+   * 
+   * @param country - Country code to filter by (default: 'CH' for Switzerland)
+   * @returns Promise resolving to array of Twilio phone numbers
+   * @throws {InternalServerError} If API call fails or credentials invalid
+   * 
+   * @example
+   * ```typescript
+   * const numbers = await twilioService.listPhoneNumbers('CH');
+   * // Returns: [{ sid: '...', phoneNumber: '+41...', ... }, ...]
+   * ```
    */
   async listPhoneNumbers(country: string = 'CH'): Promise<TwilioPhoneNumber[]> {
     const accountSid = this.getAccountSid();
@@ -53,7 +89,10 @@ class TwilioService {
 
     if (!accountSid || !authToken) {
       // Return mock data for testing
-      console.warn('[TwilioService] TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not configured, returning mock data');
+      StructuredLoggingService.warn(
+        'TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not configured, returning mock data',
+        { country }
+      );
       return [
         {
           sid: 'mock_1',
@@ -74,13 +113,17 @@ class TwilioService {
 
     try {
       const baseUrl = this.getBaseUrl();
-      const response = await axios.get(`${baseUrl}/IncomingPhoneNumbers.json`, {
-        auth: this.getAuth(),
-        params: {
-          PhoneNumber: country === 'CH' ? '+41' : undefined,
-        },
-        timeout: 10000,
-      });
+      const response = await circuitBreakers.twilio.execute(
+        () => retryApiCall(
+          () => axios.get(`${baseUrl}/IncomingPhoneNumbers.json`, {
+            auth: this.getAuth(),
+            params: {
+              PhoneNumber: country === 'CH' ? '+41' : undefined,
+            },
+            timeout: API_TIMEOUTS.TWILIO,
+          })
+        )
+      );
 
       return (response.data.incoming_phone_numbers || []).map((num: any) => ({
         sid: num.sid,
@@ -156,19 +199,23 @@ class TwilioService {
 
     try {
       const baseUrl = this.getBaseUrl();
-      await axios.post(
-        `${baseUrl}/IncomingPhoneNumbers/${phoneNumberSid}.json`,
-        new URLSearchParams({
-          VoiceUrl: voiceUrl,
-          StatusCallback: statusCallback,
-        }),
-        {
-          auth: this.getAuth(),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          timeout: 10000,
-        }
+      await circuitBreakers.twilio.execute(
+        () => retryApiCall(
+          () => axios.post(
+            `${baseUrl}/IncomingPhoneNumbers/${phoneNumberSid}.json`,
+            new URLSearchParams({
+              VoiceUrl: voiceUrl,
+              StatusCallback: statusCallback,
+            }),
+            {
+              auth: this.getAuth(),
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              timeout: API_TIMEOUTS.TWILIO,
+            }
+          )
+        )
       );
     } catch (error) {
       if (axios.isAxiosError(error)) {

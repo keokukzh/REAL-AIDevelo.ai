@@ -2,9 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { HelmetProvider } from 'react-helmet-async';
+import { initSentry } from './lib/sentry';
 import './index.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
+
+// Initialize Sentry before rendering app
+initSentry();
 
 // Build: 2025-12-11 01:50 - Force fresh deployment
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiRequest } from '../services/api';
+import { logger } from '../lib/logger';
 
 interface StreamConfig {
   customerId: string;
@@ -46,7 +47,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       
       return response.data.wsUrl;
     } catch (err) {
-      console.error('[ElevenLabs] Failed to get stream URL:', err);
+      logger.error('[ElevenLabs] Failed to get stream URL', err instanceof Error ? err : new Error(String(err)));
       throw new Error(`Failed to get stream URL: ${err}`);
     }
   }, [config]);
@@ -62,14 +63,14 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('[ElevenLabs] WebSocket connected');
+        logger.debug('[ElevenLabs] WebSocket connected');
         setIsConnected(true);
         setIsLoading(false);
         reconnectAttemptRef.current = 0;
         
         // Note: With signed URL or agent_id in URL, we don't need to send conversation_initiation
         // The connection is already initialized with the agent_id in the URL
-        console.log('[ElevenLabs] WebSocket connected, ready for conversation');
+        logger.debug('[ElevenLabs] WebSocket connected, ready for conversation');
       };
 
       ws.onmessage = (event) => {
@@ -80,13 +81,12 @@ export function useElevenLabsStreaming(config: StreamConfig) {
             const message = JSON.parse(event.data) as StreamMessage;
             handleMessage(message);
           } catch (err) {
-            console.error('[ElevenLabs] Failed to parse message:', err);
+            logger.error('[ElevenLabs] Failed to parse message', err instanceof Error ? err : new Error(String(err)));
           }
         }
       };
 
       ws.onerror = (event) => {
-        console.error('[ElevenLabs] WebSocket error:', event);
         // Try to get more details about the error
         const errorTarget = event.target as WebSocket;
         const errorMessage = (event as any).message || 
@@ -95,10 +95,10 @@ export function useElevenLabsStreaming(config: StreamConfig) {
                            'WebSocket connection error');
         
         // Log additional details
-        console.error('[ElevenLabs] WebSocket error details:', {
+        logger.error('[ElevenLabs] WebSocket error', new Error(errorMessage), {
           readyState: errorTarget?.readyState,
-          url: wsUrl,
-          error: event,
+          url: wsUrl.substring(0, 100), // Truncate URL for security
+          error: String(event),
         });
         
         setError(`WebSocket connection error: ${errorMessage}`);
@@ -107,7 +107,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       };
 
       ws.onclose = (event) => {
-        console.log('[ElevenLabs] WebSocket closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
+        logger.debug('[ElevenLabs] WebSocket closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
         setIsConnected(false);
         setIsListening(false);
         
@@ -116,7 +116,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
           // Agent does not exist
           const agentId = (config as any).elevenAgentId || 'unknown';
           setError(`Agent not found: The AI agent you are trying to reach does not exist. Agent ID: ${agentId}. Please verify the Agent ID in Settings or contact support.`);
-          console.error('[ElevenLabs] Agent not found error:', {
+          logger.error('[ElevenLabs] Agent not found error', new Error('Agent not found'), {
             agentId,
             code: event.code,
             reason: event.reason,
@@ -180,7 +180,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         source.connect(audioContext.destination);
         source.start(0);
       } catch (err) {
-        console.error('[ElevenLabs] Failed to play audio:', err);
+        logger.error('[ElevenLabs] Failed to play audio', err instanceof Error ? err : new Error(String(err)));
       }
     };
 
@@ -191,7 +191,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   const handleMessage = useCallback((message: StreamMessage) => {
     switch (message.type) {
       case 'conversation_initiation':
-        console.log('[ElevenLabs] Conversation initialized');
+        logger.debug('[ElevenLabs] Conversation initialized');
         break;
 
       case 'user_transcript':
@@ -199,11 +199,11 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         break;
 
       case 'server_mid':
-        console.log('[ElevenLabs] Server MID:', message.mid);
+        logger.debug('[ElevenLabs] Server MID', { mid: message.mid });
         break;
 
       default:
-        console.log('[ElevenLabs] Message:', message.type);
+        logger.debug('[ElevenLabs] Message', { type: message.type });
     }
   }, []);
 
