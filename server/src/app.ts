@@ -4,7 +4,7 @@ import { config } from './config/env';
 import { initializeDatabase, testConnection } from './services/database';
 import { StructuredLoggingService } from './services/loggingService';
 import { initSentry } from './config/sentry';
-import { SIZE_LIMITS } from './config/constants';
+import { SIZE_LIMITS, PERFORMANCE } from './config/constants';
 
 // Initialize Sentry before other imports
 initSentry();
@@ -88,7 +88,6 @@ import {
 import { timeoutMiddleware } from './middleware/timeout';
 import { cacheMiddleware } from './middleware/cache';
 import { queryMonitorMiddleware } from './middleware/queryMonitor';
-import { StructuredLoggingService } from './services/loggingService';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import dbRoutes from './routes/dbRoutes';
@@ -216,7 +215,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
           path: req.path,
           duration,
           statusCode: res.statusCode,
-          requestId: req.headers['x-request-id'],
+          requestId: Array.isArray(req.headers['x-request-id']) 
+            ? req.headers['x-request-id'][0] 
+            : req.headers['x-request-id'],
         },
         req
       );

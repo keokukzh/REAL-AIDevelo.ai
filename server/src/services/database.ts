@@ -2,6 +2,7 @@ import { Pool, PoolClient, PoolConfig } from 'pg';
 import dns from 'dns';
 import { config } from '../config/env';
 import { DATABASE_POOL } from '../config/constants';
+import { StructuredLoggingService } from './loggingService';
 
 let pool: Pool | null = null;
 

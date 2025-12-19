@@ -196,6 +196,7 @@ export const errorHandler = (
   }
 
   // Handle unknown/unexpected errors
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
   const message = config.isProduction && !isDebugMode && statusCode >= 500
     ? 'Internal Server Error'
     : err.message || 'Internal Server Error';

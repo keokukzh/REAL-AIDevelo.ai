@@ -211,7 +211,10 @@ export const createDefaultAgent = async (
     });
   } catch (error) {
     // Generate request ID for tracking
-    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const requestIdHeader = req.headers['x-request-id'];
+    const requestId = Array.isArray(requestIdHeader) 
+      ? requestIdHeader[0] 
+      : requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
     // Determine which step failed
     let failedStep = 'unknown';
@@ -453,7 +456,10 @@ export const getDashboardOverview = async (
     });
   } catch (error) {
     // Generate request ID for tracking
-    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const requestIdHeader = req.headers['x-request-id'];
+    const requestId = Array.isArray(requestIdHeader) 
+      ? requestIdHeader[0] 
+      : requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
     // Determine which step failed
     let failedStep = 'unknown';

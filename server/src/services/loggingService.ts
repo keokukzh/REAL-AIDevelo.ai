@@ -2,6 +2,7 @@ import { getPool } from './database';
 import { AppError } from '../utils/errors';
 import { Request } from 'express';
 import { config } from '../config/env';
+import { supabaseAdmin } from './supabaseDb';
 
 export interface CallRecord {
   id: string;
@@ -134,11 +135,11 @@ export class CallLoggingService {
     }
 
     const totalCalls = data.length;
-    const completedCalls = data.filter(c => c.status === 'completed').length;
-    const failedCalls = data.filter(c => c.status === 'failed').length;
-    const durations = data.map(c => c.duration_sec).filter(d => d !== null) as number[];
-    const successRates = data.map(c => c.success_rate).filter(r => r !== null) as number[];
-    const lastCall = data.reduce((latest, call) => {
+    const completedCalls = data.filter((c: any) => c.status === 'completed').length;
+    const failedCalls = data.filter((c: any) => c.status === 'failed').length;
+    const durations = data.map((c: any) => c.duration_sec).filter((d: any) => d !== null) as number[];
+    const successRates = data.map((c: any) => c.success_rate).filter((r: any) => r !== null) as number[];
+    const lastCall = data.reduce((latest: string | null, call: any) => {
       const callTime = new Date(call.started_at).getTime();
       const latestTime = latest ? new Date(latest).getTime() : 0;
       return callTime > latestTime ? call.started_at : latest;

@@ -107,7 +107,9 @@ export const timeoutMiddleware = (
                 path: req.path,
                 duration,
                 timeout,
-                requestId: req.headers['x-request-id'],
+                requestId: Array.isArray(req.headers['x-request-id']) 
+                  ? req.headers['x-request-id'][0] 
+                  : req.headers['x-request-id'],
               },
               req
             );

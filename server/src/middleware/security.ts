@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from '../config/env';
+import { RATE_LIMITS } from '../config/constants';
+import { StructuredLoggingService } from '../services/loggingService';
 
 /**
  * Security Middleware Configuration
@@ -65,7 +67,8 @@ export const corsMiddleware = cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      StructuredLoggingService.warn(`CORS rejected origin: ${origin}`, { origin }, req);
+      // Note: req is not available in CORS origin callback, so we log without it
+      StructuredLoggingService.warn(`CORS rejected origin: ${origin}`, { origin });
       callback(null, false); // Don't throw error, just reject
     }
   },

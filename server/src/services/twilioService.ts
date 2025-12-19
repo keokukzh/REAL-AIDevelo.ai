@@ -2,6 +2,9 @@ import axios from 'axios';
 import { config } from '../config/env';
 import { InternalServerError } from '../utils/errors';
 import { StructuredLoggingService } from './loggingService';
+import { circuitBreakers } from '../utils/circuitBreaker';
+import { retryApiCall } from '../utils/retry';
+import { API_TIMEOUTS } from '../config/constants';
 
 interface TwilioPhoneNumber {
   sid: string;

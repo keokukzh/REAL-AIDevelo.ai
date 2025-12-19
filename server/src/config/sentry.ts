@@ -30,7 +30,7 @@ export function initSentry(): void {
     ],
     
     // Don't send errors from localhost in production
-    beforeSend(event, hint) {
+    beforeSend(event: Sentry.ErrorEvent, hint: Sentry.EventHint) {
       // In production, filter out localhost errors
       if (config.isProduction && event.request?.url?.includes('localhost')) {
         return null;
@@ -51,7 +51,7 @@ export function initSentry(): void {
  */
 export function captureException(error: Error, context?: Record<string, unknown>): void {
   if (context) {
-    Sentry.withScope((scope) => {
+    Sentry.withScope((scope: Sentry.Scope) => {
       Object.entries(context).forEach(([key, value]) => {
         scope.setContext(key, { [key]: value });
       });

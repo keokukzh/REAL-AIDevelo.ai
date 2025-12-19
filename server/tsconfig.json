@@ -12,5 +12,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/_disabled", "src/controllers/paymentController.ts", "src/services/paymentService.ts", "src/routes/paymentRoutes.ts", "src/routes/purchaseRoutes.ts", "src/controllers/purchaseController.ts", "src/voice-agent/voice/openaiRealtime.ts"]
+  "exclude": ["node_modules", "src/_disabled", "src/controllers/paymentController.ts", "src/services/paymentService.ts", "src/routes/paymentRoutes.ts", "src/routes/purchaseRoutes.ts", "src/controllers/purchaseController.ts", "src/voice-agent/voice/openaiRealtime.ts", "**/__tests__/**", "**/*.test.ts"]
 }
