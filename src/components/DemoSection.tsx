@@ -84,19 +84,28 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
                 ))}
               </div>
 
-              {/* Subtitles */}
-              <div className="w-full bg-white/5 backdrop-blur-md rounded-xl p-4 min-h-[80px] border border-white/5">
+              {/* Subtitles with Timer */}
+              <div className="w-full bg-white/5 backdrop-blur-md rounded-xl p-4 min-h-[100px] border border-white/5">
                 <AnimatePresence mode='wait'>
                     {isPlaying ? (
-                        <motion.p 
+                        <motion.div
                             key="text-playing"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="text-sm text-gray-200 text-center leading-relaxed"
+                            className="space-y-2"
                         >
-                            "Guten Tag! Hier ist der digitale Assistent von Dr. Weber. Möchten Sie einen Termin für eine Untersuchung vereinbaren?"
-                        </motion.p>
+                            <div className="flex items-center justify-center gap-2 mb-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span className="text-xs text-green-400 font-mono">Terminbuchung läuft...</span>
+                            </div>
+                            <p className="text-sm text-gray-200 text-center leading-relaxed">
+                                "Guten Tag! Hier ist der digitale Assistent von Dr. Weber. Möchten Sie einen Termin für eine Untersuchung vereinbaren?"
+                            </p>
+                            <p className="text-xs text-accent text-center mt-2">
+                                ✓ Termin gebucht: Donnerstag, 14:30 Uhr
+                            </p>
+                        </motion.div>
                     ) : (
                         <motion.p 
                             key="text-idle"
@@ -105,7 +114,7 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
                             exit={{ opacity: 0 }}
                             className="text-sm text-gray-500 text-center italic"
                         >
-                            Drücken Sie Play für eine Demo...
+                            Drücken Sie Play für eine Demo der Terminbuchung in 30 Sekunden...
                         </motion.p>
                     )}
                 </AnimatePresence>
@@ -136,11 +145,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
              viewport={{ once: true }}
            >
              <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">
-               So klingt Ihr <br />
-               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">persönlicher Voice Agent.</span>
+               Terminbuchung in <br />
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">30 Sekunden</span>
              </h2>
              <p className="text-xl text-gray-400 leading-relaxed mb-8">
-               Schweizerdeutsch, empathisch und schnell. Der Agent nimmt 24/7 ab, qualifiziert und bucht direkt in Ihren Kalender.
+               Sehen Sie, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden qualifiziert und direkt einen Termin in Ihren Kalender bucht – alles in unter 30 Sekunden.
              </p>
              
              <ul className="space-y-4 mb-8">

@@ -1,43 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { HeroBackground } from './hero/HeroBackground';
 import { HeroPhone } from './hero/HeroPhone';
+import { trackCTAClick } from '../lib/analytics';
 
 interface HeroProps {
   onStartOnboarding?: () => void;
   onScrollToSection?: (href: string) => void;
 }
 
-const ROTATING_TITLES = [
-  "Schweizer KMU",
-  "Praxen",
-  "Garagen",
-  "Makler",
-  "Restaurants",
-  "Salons"
-];
-
 export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
   const { scrollY } = useScroll();
   const yContent = useTransform(scrollY, [0, 500], [0, 100]);
-  const [titleIndex, setTitleIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTitleIndex((prev) => (prev + 1) % ROTATING_TITLES.length);
-    }, 3000); // Rotate every 3 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   const scrollToDemo = () => {
     const demoSection = document.getElementById('demo');
     if (demoSection) {
         const headerOffset = 80;
         const elementPosition = demoSection.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        window.scrollTo({
+        const offsetPosition = elementPosition + globalThis.window.pageYOffset - headerOffset;
+        globalThis.window.scrollTo({
             top: offsetPosition,
             behavior: "smooth"
         });
@@ -45,6 +29,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
   };
 
   const handlePrimary = () => {
+    trackCTAClick('hero_primary', 'hero');
     if (onStartOnboarding) {
       onStartOnboarding();
     } else if (onScrollToSection) {
@@ -52,6 +37,11 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
     } else {
       window.location.href = '/onboarding';
     }
+  };
+  
+  const handleDemoClick = () => {
+    trackCTAClick('hero_demo', 'hero');
+    scrollToDemo();
   };
 
   return (
@@ -83,71 +73,66 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                 <span className="text-xs font-semibold tracking-wide text-slate-300 uppercase">Jetzt live: Schweizerdeutsch v2.0</span>
               </div>
               
-              {/* Heading with Rotating Text */}
+              {/* Heading */}
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl">
-                <span className="text-white">Voice Agent für</span>
+                <span className="text-white">Ihr 24/7 Teamqualifizierer</span>
                 <br />
-                <div className="relative h-[1.2em] overflow-hidden inline-block min-w-[200px] leading-[1.2em]">
-                    <AnimatePresence mode="wait">
-                        <motion.span
-                            key={titleIndex}
-                            initial={{ y: 40, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -40, opacity: 0 }}
-                            transition={{ duration: 0.5, ease: "circOut" }}
-                            className="absolute top-0 left-0 w-full h-full"
-                        >
-                            <span className="gradient-text block w-full">
-                                {ROTATING_TITLES[titleIndex]}
-                            </span>
-                        </motion.span>
-                    </AnimatePresence>
-                    {/* Spacer to maintain height */}
-                    <span className="invisible block">{ROTATING_TITLES[0]}</span>
-                </div>
+                <span className="gradient-text">für Schweizer KMUs</span>
               </h1>
               
               {/* Subheading */}
               <div className="text-lg md:text-xl text-slate-300 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
-                <p>Vergessen Sie verpasste Anrufe. Ihr Teamqualifizierer beantwortet Anfragen, bucht Termine und spricht Schweizerdeutsch – voll eingerichtet in 24h.</p>
+                <p>Automatische Terminbuchung, Lead-Qualifizierung und Kundenbetreuung in Schweizerdeutsch. Geht in 24h live – ohne IT-Aufwand.</p>
               </div>
 
-               {/* Benefits List (from screenshot idea) */}
+               {/* Benefits List */}
                  <div className="space-y-3 max-w-md mx-auto lg:mx-0">
                     <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <span>Versteht Schweizerdeutsch & Hochdeutsch</span>
+                        <span>Versteht Schweizerdeutsch & Hochdeutsch – natürlich und empathisch</span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <span>Erkennt Emotionen und Dringlichkeit</span>
+                        <span>Bucht Termine direkt in Google/Outlook Kalender – keine Doppelbuchungen</span>
                     </div>
-                     <div className="flex items-center gap-3 text-slate-300 text-sm">
+                    <div className="flex items-center gap-3 text-slate-300 text-sm">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <span>Kann unterbrochen werden (Full Duplex)</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-300 text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <span>Geht in 24h live – inkl. Kalender und Skript</span>
+                        <span>Qualifiziert Leads automatisch – nur ernsthafte Kunden landen bei Ihnen</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-300 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                        <span>24/7 erreichbar – auch nachts und am Wochenende</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-300 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                        <span>Geht in 24h live – inkl. Kalender-Integration und Skript-Anpassung</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-300 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                        <span>DSGVO/nDSG-konform – Hosting in der Schweiz</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-300 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                        <span>Kann unterbrochen werden (Full Duplex) – wie ein echter Gesprächspartner</span>
                     </div>
                </div>
 
 
               {/* Buttons */}
-              <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
                 <Button 
                   onClick={handlePrimary} 
                   variant="secondary" 
-                  className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-8 py-6 text-lg font-semibold" 
+                  className="!bg-blue-600 hover:!bg-blue-500 !border-none !text-white shadow-lg shadow-blue-900/40 px-10 py-6 text-lg font-semibold" 
                   icon={<Play size={24} className="fill-current" />}
-                  aria-label="Onboarding starten"
+                  aria-label="Jetzt kostenlos testen"
                 >
-                   Onboarding starten
+                   Jetzt kostenlos testen
                 </Button>
                 <Button 
-                  onClick={scrollToDemo} 
+                  onClick={handleDemoClick} 
                   variant="secondary" 
-                  className="border-slate-600 hover:bg-slate-800/80 px-8 py-6 text-lg font-semibold"
+                  className="border-slate-600 hover:bg-slate-800/80 px-6 py-6 text-base font-medium"
                   aria-label="Zur Demo-Sektion scrollen"
                 >
                   Demo anhören

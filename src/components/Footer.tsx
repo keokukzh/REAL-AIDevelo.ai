@@ -187,15 +187,19 @@ export const Footer: React.FC = () => {
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-600 text-xs">© {new Date().getFullYear()} AIDevelo.ai Switzerland. Alle Rechte vorbehalten.</p>
           <div className="flex gap-4">
-            {/* Social Icons Placeholders */}
-            <motion.div 
-                whileHover={{ scale: 1.1 }}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-            />
-            <motion.div 
-                whileHover={{ scale: 1.1 }}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-            />
+            {/* Social Icons - Add actual links when social media accounts are available */}
+            {/* Example:
+            <motion.a
+              href="https://linkedin.com/company/aidevelo"
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.1 }}
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors flex items-center justify-center"
+              aria-label="LinkedIn"
+            >
+              <LinkedIn size={16} />
+            </motion.a>
+            */}
           </div>
         </div>
       </div>

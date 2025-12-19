@@ -17,6 +17,7 @@ import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
 import { LeadCaptureForm } from '../components/LeadCaptureForm';
 import { SectionNav } from '../components/navigation/SectionNav';
+import { Integrations } from '../components/Integrations';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export const LandingPage = () => {
@@ -86,6 +87,8 @@ export const LandingPage = () => {
         {/* 3. Features & Industries */}
         <Features />
         
+        {/* 3b. Integrations */}
+        <Integrations />
         
         <IndustryTabs onStartOnboarding={startOnboarding} />
         

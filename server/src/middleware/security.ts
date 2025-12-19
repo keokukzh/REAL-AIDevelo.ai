@@ -103,15 +103,62 @@ export const helmetMiddleware = config.isProduction
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:'],
-          connectSrc: ["'self'", 'https:']
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'", // Required for React
+            'https://*.supabase.co',
+            'https://fonts.googleapis.com',
+            'https://www.googletagmanager.com', // GA4
+            'https://plausible.io', // Plausible Analytics
+          ],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'", // Required for React
+            'https://fonts.googleapis.com',
+          ],
+          fontSrc: [
+            "'self'",
+            'https://fonts.gstatic.com',
+          ],
+          imgSrc: [
+            "'self'",
+            'data:',
+            'https:', // Allow all HTTPS images (Unsplash, etc.)
+            'blob:',
+          ],
+          connectSrc: [
+            "'self'",
+            'https://*.supabase.co',
+            'https://*.supabase.io',
+            'wss://*.supabase.co',
+            'https://api.elevenlabs.io',
+            'wss://api.elevenlabs.io',
+            'https://www.google-analytics.com', // GA4
+            'https://www.googletagmanager.com', // GA4
+            'https://plausible.io', // Plausible Analytics
+            'https://*.plausible.io', // Plausible Analytics subdomains
+          ],
+          frameSrc: [
+            "'self'",
+            'https://*.supabase.co',
+          ],
+          mediaSrc: [
+            "'self'",
+            'blob:',
+          ],
         }
       },
-      crossOriginResourcePolicy: { policy: 'cross-origin' }
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
     })
-  : helmet();
+  : helmet({
+      // Development: More permissive CSP
+      contentSecurityPolicy: false, // Disable in dev to avoid issues with HMR
+    });
 
 /**
  * Rate Limiting Configuration

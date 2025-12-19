@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useNavigation, useNavigationWithLocation } from '../hooks/useNavigation';
 import { useNavbarState } from '../hooks/useNavbarState';
@@ -37,7 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     e.preventDefault();
     nav.goToSection(href, location.pathname);
     setMobileMenuOpen(false);
-    setVoiceAgentsDropdownOpen(false);
   };
 
   const isWebdesignPage = location.pathname === ROUTES.WEBDESIGN;
@@ -110,78 +109,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 </motion.a>
               </div>
 
-              {/* Right Side: Voice Agents Link + Dropdown + Buttons */}
+              {/* Right Side: Buttons */}
               <div className="flex items-center gap-4 justify-end">
-              {/* Voice Agents Link (always visible) */}
-              <NavLink
-                to={ROUTES.HOME}
-                label={NAVIGATION_ITEMS.VOICE_AGENTS.label}
-                variant="link"
-                scrollToTop={true}
-                ariaLabel={NAVIGATION_ITEMS.VOICE_AGENTS.ariaLabel}
-                className={isVoiceAgentsActive ? 'text-white font-semibold' : ''}
-              />
-              
-              {/* Voice Agents Dropdown (for section links) */}
-              <div className="relative" ref={dropdownRef}>
-                <motion.button
-                  onClick={() => setVoiceAgentsDropdownOpen(!voiceAgentsDropdownOpen)}
-                  onMouseEnter={() => setVoiceAgentsDropdownOpen(true)}
-                  className="flex items-center gap-1 text-sm font-medium text-white hover:text-white transition-all duration-200 cursor-pointer px-3 py-2 rounded-lg hover:bg-white/10 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black/60"
-                  whileHover={{ scale: 1.05 }}
-                  whileFocus={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-label="Voice Agents Sektionen Menü"
-                  aria-haspopup="true"
-                  aria-expanded={voiceAgentsDropdownOpen}
-                >
-                  <ChevronDown 
-                    size={16} 
-                    className={`transition-transform duration-200 ${voiceAgentsDropdownOpen ? 'rotate-180' : ''}`}
-                  />
-                </motion.button>
-
-                <AnimatePresence>
-                  {voiceAgentsDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      onMouseLeave={() => setVoiceAgentsDropdownOpen(false)}
-                      className="absolute top-full right-0 mt-2 w-48 bg-black/95 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl py-2 z-50"
-                    >
-                      <motion.a
-                        href={ROUTES.HOME}
-                        onClick={(e) => { 
-                          e.preventDefault(); 
-                          nav.goToHome();
-                          setVoiceAgentsDropdownOpen(false);
-                        }}
-                        className="block px-4 py-2.5 text-sm text-white font-semibold hover:bg-white/10 transition-colors cursor-pointer border-b border-white/10"
-                        whileHover={{ x: 4 }}
-                        aria-label="Zur Voice Agents Hauptseite navigieren"
-                      >
-                        Hauptseite
-                      </motion.a>
-                      {SECTION_LINKS.map((link) => (
-                        <motion.a
-                          key={link.name}
-                          href={link.href}
-                          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                            handleSectionClick(e, link.href);
-                          }}
-                          className="block px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                          whileHover={{ x: 4 }}
-                          aria-label={`Zu ${link.name} navigieren`}
-                        >
-                          {link.name}
-                        </motion.a>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
                 <Button
                   onClick={handleStart}
                   variant="primary"

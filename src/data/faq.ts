@@ -3,7 +3,7 @@ import { FaqItem } from '../types';
 export const faqs: FaqItem[] = [
   {
     question: "Klingt die Stimme wirklich natürlich?",
-    answer: "Ja, wir nutzen die neueste Generation von AI-Voice-Modellen. Mit unserem Voice-Cloning können wir sogar Ihre eigene Stimme digitalisieren, sodass der Agent fast ununterscheidbar von Ihnen klingt."
+    answer: "Ja, mit Voice Cloning klingt der Agent fast ununterscheidbar von Ihnen. Wir nutzen die neueste Generation von AI-Voice-Modellen, die Ihre eigene Stimme digitalisieren können."
   },
   {
     question: "Kann der Agent Termine in meinen Kalender eintragen?",
@@ -15,7 +15,7 @@ export const faqs: FaqItem[] = [
   },
   {
     question: "Wie schnell ist das System eingerichtet?",
-    answer: "Mit unserem Onboarding-Wizard ist die Grundkonfiguration in 20 Minuten erledigt. Die vollständige Aktivierung inkl. Telefonnummern-Portierung dauert in der Regel 24-48 Stunden."
+    answer: "Grundkonfiguration in 20 Minuten, vollständige Aktivierung inkl. Telefonnummern-Portierung in 24-48 Stunden."
   },
   {
     question: "Was passiert, wenn der Agent eine Frage nicht beantworten kann?",

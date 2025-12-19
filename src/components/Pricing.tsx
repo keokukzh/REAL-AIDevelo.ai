@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, Star } from 'lucide-react';
 import { Button } from './ui/Button';
 import { pricingPlans } from '../data/pricing';
+import { trackCTAClick } from '../lib/analytics';
 
 interface PricingProps {
   onStartOnboarding?: () => void;
@@ -24,6 +25,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
   ];
 
   const handleCardClick = (planId: string) => {
+    trackCTAClick(`pricing_plan_${planId}`, 'pricing');
     if (planId === 'enterprise') {
       // Redirect to enterprise contact form
       window.location.href = '/enterprise';
@@ -51,10 +53,24 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
           <p className="text-gray-400 mb-6">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-            <Button variant="primary" onClick={() => onOpenLeadCapture?.()} className="px-6 py-3 text-base">
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                trackCTAClick('pricing_demo_request', 'pricing');
+                onOpenLeadCapture?.();
+              }} 
+              className="px-6 py-3 text-base"
+            >
               Demo anfragen
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/dashboard'} className="px-6 py-3 text-base">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                trackCTAClick('pricing_studio', 'pricing');
+                window.location.href = '/dashboard';
+              }} 
+              className="px-6 py-3 text-base"
+            >
               Zum Studio
             </Button>
           </div>
@@ -109,14 +125,19 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
                       : 'bg-slate-900/80 border border-slate-800 backdrop-blur-md hover:border-slate-700'
                   }`}
                 >
-                  {/* Badge für Business Plan */}
-                  {isHighlighted && plan.badge && (
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-cyan-500 text-slate-950 font-bold px-3 py-1 rounded-full text-xs shadow-lg shadow-cyan-500/40 whitespace-nowrap z-20">
-                      {plan.badge}
+                  {/* Badges */}
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+                    {isHighlighted && plan.badge && (
+                      <div className="bg-cyan-500 text-slate-950 font-bold px-3 py-1 rounded-full text-xs shadow-lg shadow-cyan-500/40 whitespace-nowrap">
+                        {plan.badge}
+                      </div>
+                    )}
+                    <div className="bg-emerald-500/90 text-white font-semibold px-3 py-1 rounded-full text-xs shadow-lg shadow-emerald-500/40 whitespace-nowrap border border-emerald-400/50">
+                      14 Tage Geld-zurück-Garantie
                     </div>
-                  )}
+                  </div>
 
-                  <div className={`text-center ${isHighlighted ? 'pt-4' : ''}`}>
+                  <div className={`text-center ${isHighlighted ? 'pt-12' : 'pt-12'}`}>
                     <h3 className={`font-bold mb-2 flex items-center justify-center gap-2 ${isHighlighted ? 'text-2xl text-white' : 'text-xl text-gray-300'}`}>
                       {plan.name}
                       {isHighlighted && <Star size={16} className="text-yellow-400 fill-yellow-400" />}
@@ -190,10 +211,15 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
                 className="relative p-10 rounded-3xl bg-gradient-to-b from-slate-900 to-black border-2 border-slate-700 hover:border-cyan-400/40 flex flex-col md:flex-row items-center md:items-start gap-8 cursor-pointer transition-all duration-200 ease-out hover:shadow-[0_0_60px_rgba(34,211,238,0.2)] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-3xl font-bold text-white mb-2 flex items-center justify-center md:justify-start gap-2">
-                    {enterprisePlan.name}
-                    <Star size={20} className="text-yellow-400 fill-yellow-400" />
-                  </h3>
+                  <div className="flex flex-col items-center md:items-start gap-2 mb-2">
+                    <h3 className="text-3xl font-bold text-white flex items-center gap-2">
+                      {enterprisePlan.name}
+                      <Star size={20} className="text-yellow-400 fill-yellow-400" />
+                    </h3>
+                    <div className="bg-emerald-500/90 text-white font-semibold px-3 py-1 rounded-full text-xs shadow-lg shadow-emerald-500/40 whitespace-nowrap border border-emerald-400/50">
+                      14 Tage Geld-zurück-Garantie
+                    </div>
+                  </div>
                   {enterprisePlan.description && (
                     <p className="text-cyan-400 text-sm mb-4">{enterprisePlan.description}</p>
                   )}
@@ -240,7 +266,14 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
               <h3 className="text-2xl font-bold text-white">Vergleich auf einen Blick</h3>
               <p className="text-gray-400 text-sm">Kernmerkmale der Pläne, damit Sie schneller entscheiden können.</p>
             </div>
-            <Button variant="secondary" onClick={() => onOpenLeadCapture?.()} className="px-4 py-3 text-sm">
+            <Button 
+              variant="secondary" 
+              onClick={() => {
+                trackCTAClick('pricing_comparison_demo', 'pricing');
+                onOpenLeadCapture?.();
+              }} 
+              className="px-4 py-3 text-sm"
+            >
               Unklar? Demo anfragen
             </Button>
           </div>

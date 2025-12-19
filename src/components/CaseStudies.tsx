@@ -70,7 +70,12 @@ const CaseCard: React.FC<{ data: typeof cases[0], index: number }> = ({ data, in
       {/* Header Image Area */}
       <div className="h-32 w-full relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
-        <img src={data.image} alt={data.client} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" />
+        <img 
+          src={data.image} 
+          alt={data.client} 
+          loading="lazy"
+          className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" 
+        />
         <div className="absolute bottom-3 left-4 z-20">
           <h3 className="text-white font-bold text-lg">{data.client}</h3>
           <div className="flex items-center gap-1 text-xs text-gray-300">
