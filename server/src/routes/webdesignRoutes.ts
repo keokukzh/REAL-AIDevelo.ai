@@ -94,7 +94,7 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
   });
 }, validateRequest(webdesignContactSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, email, phone, company, requestType, message }: WebdesignContactRequest = req.body;
+    const { name, email, phone, company, requestType, currentWebsiteUrl, message }: WebdesignContactRequest = req.body;
     const files = req.files as Express.Multer.File[] || [];
 
     // Prepare email content
@@ -113,6 +113,9 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
     if (phone) {
       emailTextParts.push(`Telefon: ${phone}`);
     }
+    if (requestType === 'redesign' && currentWebsiteUrl) {
+      emailTextParts.push(`Aktuelle Website: ${currentWebsiteUrl}`);
+    }
     emailTextParts.push(
       '',
       `Nachricht:\n${message}`,
@@ -126,6 +129,9 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
     // Build email HTML
     const companyHtml = company ? `<p><strong>Firma:</strong> ${company}</p>` : '';
     const phoneHtml = phone ? `<p><strong>Telefon:</strong> ${phone}</p>` : '';
+    const currentWebsiteHtml = (requestType === 'redesign' && currentWebsiteUrl) 
+      ? `<p><strong>Aktuelle Website:</strong> <a href="${currentWebsiteUrl}" target="_blank" rel="noopener noreferrer">${currentWebsiteUrl}</a></p>` 
+      : '';
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #DA291C;">Webdesign-Anfrage</h2>
@@ -133,6 +139,7 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
         <p><strong>Art:</strong> ${requestTypeLabel}</p>
         ${companyHtml}
         ${phoneHtml}
+        ${currentWebsiteHtml}
         <p><strong>Preis:</strong> 500 CHF</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
         <p><strong>Nachricht:</strong></p>

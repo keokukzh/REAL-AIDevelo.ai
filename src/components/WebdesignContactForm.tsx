@@ -20,6 +20,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     phone: '',
     company: '',
     requestType: 'new' as 'new' | 'redesign',
+    currentWebsiteUrl: '',
     message: '',
   });
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -70,6 +71,15 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
       setError('Bitte beschreiben Sie Ihr Projekt (mind. 12 Zeichen).');
       return;
     }
+    // Validate URL if redesign is selected
+    if (formData.requestType === 'redesign' && formData.currentWebsiteUrl.trim()) {
+      try {
+        new URL(formData.currentWebsiteUrl.trim());
+      } catch {
+        setError('Bitte geben Sie eine gültige URL ein (z.B. https://example.com).');
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
 
@@ -81,6 +91,9 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
       formDataToSend.append('phone', formData.phone);
       formDataToSend.append('company', formData.company);
       formDataToSend.append('requestType', formData.requestType);
+      if (formData.requestType === 'redesign' && formData.currentWebsiteUrl.trim()) {
+        formDataToSend.append('currentWebsiteUrl', formData.currentWebsiteUrl.trim());
+      }
       formDataToSend.append('message', formData.message);
 
       // Append files
@@ -100,9 +113,26 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         setTimeout(() => onSuccess(), 2000);
       }
     } catch (err) {
-      const errorMessage = err instanceof ApiRequestError
-        ? err.message
-        : 'Fehler beim Senden der Nachricht. Bitte versuchen Sie es später erneut.';
+      let errorMessage = 'Fehler beim Senden der Nachricht. Bitte versuchen Sie es später erneut.';
+      
+      if (err instanceof ApiRequestError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object') {
+        // Handle error objects properly
+        const errorObj = err as any;
+        if (errorObj.message) {
+          errorMessage = String(errorObj.message);
+        } else if (errorObj.error) {
+          errorMessage = String(errorObj.error);
+        } else {
+          errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -241,6 +271,30 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
           </label>
         </div>
       </fieldset>
+
+      {/* Current Website URL - only shown when redesign is selected */}
+      {formData.requestType === 'redesign' && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <label htmlFor="webdesign-current-url" className="block text-sm text-gray-400 mb-2">
+            Link zur aktuellen Website
+          </label>
+          <input
+            id="webdesign-current-url"
+            type="url"
+            value={formData.currentWebsiteUrl}
+            onChange={(e) => { setError(null); setFormData({ ...formData, currentWebsiteUrl: e.target.value }); }}
+            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-swiss-red focus:ring-2 focus:ring-swiss-red/20 outline-none transition-colors"
+            placeholder="https://www.example.com"
+            disabled={loading}
+          />
+          <p className="text-xs text-gray-500 mt-1">Optional: Geben Sie die URL Ihrer aktuellen Website ein</p>
+        </motion.div>
+      )}
 
       <div>
         <label htmlFor="webdesign-message" className="block text-sm text-gray-400 mb-2">
