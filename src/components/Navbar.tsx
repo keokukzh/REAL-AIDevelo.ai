@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Menu, X, LogIn } from 'lucide-react';
+import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
+import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface NavbarProps {
@@ -12,6 +12,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [voiceAgentsDropdownOpen, setVoiceAgentsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,6 +84,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     { name: 'FAQ', href: '#faq' },
   ];
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setVoiceAgentsDropdownOpen(false);
+      }
+    };
+
+    if (voiceAgentsDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [voiceAgentsDropdownOpen]);
+
   return (
     <motion.header
       variants={{
@@ -95,11 +114,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
       <div className="container mx-auto px-6">
         <div className={`relative flex items-center justify-between rounded-full px-6 py-3 transition-all duration-300 ${scrolled ? 'bg-black/60 backdrop-blur-lg border border-white/10 shadow-lg' : 'bg-transparent'}`}>
             
-            {/* Logo */}
+            {/* Left Side: Webdesign Link */}
+            <div className="hidden md:flex items-center">
+              <motion.a
+                href="/webdesign"
+                onClick={(e) => { e.preventDefault(); navigate('/webdesign'); }}
+                className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
+                whileHover={{ scale: 1.05, color: '#fff' }}
+                aria-label="Zu Webdesign navigieren"
+              >
+                Webdesign
+              </motion.a>
+            </div>
+
+            {/* Center: Logo */}
             <motion.a 
                 href="/" 
                 onClick={(e) => { e.preventDefault(); navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="flex items-center gap-2 text-white font-display font-bold text-xl z-50 tracking-wide group"
+                className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-white font-display font-bold text-xl z-50 tracking-wide group"
                 whileHover={{ scale: 1.05 }}
             >
                 <img 
@@ -109,24 +141,54 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 />
             </motion.a>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-8" aria-label="Hauptnavigation">
-                {navLinks.map((link) => (
-                    <motion.a 
-                        key={link.name} 
-                        href={link.href}
-                        onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, link.href)}
-                        className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
-                        whileHover={{ scale: 1.05, color: '#fff' }}
-                        aria-label={`Zu ${link.name} navigieren`}
-                    >
-                        {link.name}
-                    </motion.a>
-                ))}
-            </nav>
+            {/* Right Side: Voice Agents Dropdown + Buttons */}
+            <div className="hidden md:flex items-center gap-4 ml-auto">
+              {/* Voice Agents Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <motion.button
+                  onClick={() => setVoiceAgentsDropdownOpen(!voiceAgentsDropdownOpen)}
+                  onMouseEnter={() => setVoiceAgentsDropdownOpen(true)}
+                  className="flex items-center gap-1 text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer px-3 py-2 rounded-lg hover:bg-white/5"
+                  whileHover={{ scale: 1.05 }}
+                  aria-label="Voice Agents Menü"
+                  aria-haspopup="true"
+                >
+                  Voice Agents
+                  <ChevronDown 
+                    size={16} 
+                    className={`transition-transform duration-200 ${voiceAgentsDropdownOpen ? 'rotate-180' : ''}`}
+                  />
+                </motion.button>
 
-            {/* Right Side: Login to Studio */}
-            <div className="hidden md:flex items-center gap-4">
+                <AnimatePresence>
+                  {voiceAgentsDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      onMouseLeave={() => setVoiceAgentsDropdownOpen(false)}
+                      className="absolute top-full right-0 mt-2 w-48 bg-black/95 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl py-2 z-50"
+                    >
+                      {navLinks.map((link) => (
+                        <motion.a
+                          key={link.name}
+                          href={link.href}
+                          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                            scrollToSection(e, link.href);
+                            setVoiceAgentsDropdownOpen(false);
+                          }}
+                          className="block px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                          whileHover={{ x: 4 }}
+                          aria-label={`Zu ${link.name} navigieren`}
+                        >
+                          {link.name}
+                        </motion.a>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
                 <Button
                   onClick={handleStart}
                   variant="primary"
@@ -155,8 +217,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 </Button>
             </div>
 
-            {/* Mobile: Login Button + Toggle */}
+            {/* Mobile: Webdesign + Login Button + Toggle */}
             <div className="md:hidden flex items-center gap-3">
+              <motion.a
+                href="/webdesign"
+                onClick={(e) => { e.preventDefault(); navigate('/webdesign'); setMobileMenuOpen(false); }}
+                className="text-sm font-medium text-white"
+                aria-label="Zu Webdesign navigieren"
+              >
+                Webdesign
+              </motion.a>
                 <Button
                   onClick={handleStart}
                   variant="primary"
@@ -187,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     className="text-white z-50"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
-                    aria-expanded={mobileMenuOpen ? "true" : "false"}
+                    {...(mobileMenuOpen && { 'aria-expanded': true })}
                 >
                     {mobileMenuOpen ? <X /> : <Menu />}
                 </button>
@@ -199,6 +269,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   className="absolute top-0 right-0 w-full h-screen bg-black flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
                   aria-label="Hauptnavigation"
                 >
+                    <div className="text-xl font-semibold text-gray-400 mb-4">Voice Agents</div>
                     {navLinks.map((link) => (
                         <a 
                             key={link.name} 

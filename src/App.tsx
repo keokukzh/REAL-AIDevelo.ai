@@ -11,6 +11,7 @@ const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m =>
 const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const PaymentSuccessPage = React.lazy(() => import('./pages/PaymentSuccessPage').then(m => ({ default: m.PaymentSuccessPage })));
 const EnterpriseContactPage = React.lazy(() => import('./pages/EnterpriseContactPage').then(m => ({ default: m.EnterpriseContactPage })));
+const WebdesignPage = React.lazy(() => import('./pages/WebdesignPage').then(m => ({ default: m.WebdesignPage })));
 const CalendarCallbackPage = React.lazy(() => import('./pages/CalendarCallbackPage').then(m => ({ default: m.CalendarCallbackPage })));
 const AuthCallbackPage = React.lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage').then(m => ({ default: m.ImpressumPage })));
@@ -78,6 +79,11 @@ function App() {
                     <Route path="/enterprise" element={
                       <Suspense fallback={<LoadingSpinner />}>
                         <EnterpriseContactPage />
+                      </Suspense>
+                    } />
+                    <Route path="/webdesign" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <WebdesignPage />
                       </Suspense>
                     } />
                     <Route path="/calendar/:provider/callback" element={

@@ -91,6 +91,7 @@ import testRoutes from './routes/testRoutes';
 import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import supportRoutes from './routes/supportRoutes';
+import webdesignRoutes from './routes/webdesignRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import devCalendarRoutes from './routes/devCalendarRoutes';
 import devRagRoutes from './routes/devRagRoutes';
@@ -398,6 +399,7 @@ v1Router.use('/twilio', twilioRoutes);
 v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/support', supportRoutes);
+v1Router.use('/webdesign', webdesignRoutes);
 v1Router.use('/calendar', calendarRoutes);
 v1Router.use('/rag', ragRoutes); // Auth applied per-route
 v1Router.use('/analytics', analyticsRoutes); // Auth applied per-route
