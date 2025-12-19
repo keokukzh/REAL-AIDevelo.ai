@@ -46,7 +46,7 @@ export const SideNav: React.FC = () => {
 
   return (
     <nav 
-      className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50"
+      className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50 lg:translate-x-0 transition-transform duration-300"
       aria-label="Main navigation"
     >
       <div className="h-16 flex items-center justify-center px-6 border-b border-slate-800">

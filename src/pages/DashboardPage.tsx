@@ -431,10 +431,19 @@ export const DashboardPage = () => {
       {/* Side Navigation */}
       <SideNav />
 
+      {/* Skip to main content link for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+        aria-label="Zum Hauptinhalt springen"
+      >
+        Zum Hauptinhalt springen
+      </a>
+
       {/* Main Content */}
-      <main id="main-content" className="flex-1 ml-64 flex flex-col min-w-0" role="main">
+      <main id="main-content" className="flex-1 lg:ml-64 flex flex-col min-w-0" role="main" tabIndex={-1}>
         {/* Top Header */}
-        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
+        <header className="h-16 bg-background/80 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
           <nav aria-label="Breadcrumb" className="flex items-center gap-4">
             <ol className="flex items-center gap-3 text-gray-400" role="list">
               <li>
@@ -452,7 +461,7 @@ export const DashboardPage = () => {
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-8 max-w-[1600px] mx-auto w-full">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           {/* Setup Wizard (shown when setup_state != 'ready') */}
           {showWizard && (
             <div className="mb-8">
@@ -471,7 +480,7 @@ export const DashboardPage = () => {
                   <p className="text-gray-400 mt-2 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
                 </div>
               {lastRefresh && (
-                <output className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
+                <output className="text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
                   Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
                 </output>
               )}
@@ -480,7 +489,7 @@ export const DashboardPage = () => {
 
             {/* KPI Grid */}
             <section aria-label="Key Performance Indicators">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard 
                 label="Gesamtanrufe" 
                 value={kpis.totalCalls} 
@@ -512,7 +521,7 @@ export const DashboardPage = () => {
               </div>
             </section>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
               {/* Left Column (Calendar, Chart & Logs) */}
               <div className="xl:col-span-2 space-y-8">
                 {/* Calendar Card */}

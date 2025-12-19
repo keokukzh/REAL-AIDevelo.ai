@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const styles: Record<string, string> = {
     completed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    missed: "bg-red-500/20 text-red-400 border-red-500/30",
+    missed: "bg-swiss-red/20 text-red-400 border-red-500/30",
     voicemail: "bg-amber-500/20 text-amber-400 border-amber-500/30"
   };
   
@@ -22,10 +22,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const label = labels[status] || status;
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${style}`}>
-      {status === 'completed' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-      {status === 'missed' && <XCircle className="w-3 h-3 mr-1" />}
-      {label}
+    <span 
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors duration-200 ${style}`}
+      role="status"
+      aria-label={`Status: ${label}`}
+    >
+      {status === 'completed' && <CheckCircle2 className="w-3 h-3 mr-1" aria-hidden="true" />}
+      {status === 'missed' && <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />}
+      <span>{label}</span>
     </span>
   );
 };
