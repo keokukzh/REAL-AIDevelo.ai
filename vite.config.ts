@@ -16,9 +16,13 @@ export default defineConfig(({ mode }) => {
         sourcemap: false,
         rollupOptions: {
           output: {
+            format: 'es',
+            entryFileNames: 'assets/[name]-[hash].js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: 'assets/[name]-[hash].[ext]',
             manualChunks: (id) => {
-              // Core React - must be first
-              if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              // Core React - must be first and in its own chunk
+              if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
                 return 'react';
               }
               
@@ -79,9 +83,8 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, './src'),
-          'react': path.resolve(__dirname, './node_modules/react'),
-          'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
-        }
+        },
+        dedupe: ['react', 'react-dom'],
       },
       test: {
         environment: 'jsdom',
