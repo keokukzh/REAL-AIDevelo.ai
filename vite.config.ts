@@ -17,12 +17,17 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           output: {
             manualChunks: (id) => {
-              // Core React
+              // Core React - must be first
               if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
                 return 'react';
               }
               
-              // Framer Motion (animation library)
+              // lucide-react depends on React, bundle it with React-related packages
+              if (id.includes('node_modules/lucide-react')) {
+                return 'react';
+              }
+              
+              // Framer Motion (animation library) - depends on React
               if (id.includes('node_modules/framer-motion')) {
                 return 'motion';
               }
