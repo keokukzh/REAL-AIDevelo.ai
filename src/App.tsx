@@ -37,9 +37,10 @@ import { useCoreWebVitals } from './hooks/useCoreWebVitals';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 // In production, this will be null and tree-shaken out of the bundle
-const ReactQueryDevtools = import.meta.env.DEV && import.meta.env.MODE !== 'production'
-  ? React.lazy(() => import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })))
-  : null;
+// Use import.meta.env.PROD to ensure it's completely excluded from production builds
+const ReactQueryDevtools = import.meta.env.PROD 
+  ? null 
+  : React.lazy(() => import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })));
 
 // Toast Provider Component
 const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

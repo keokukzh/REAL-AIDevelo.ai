@@ -53,6 +53,11 @@ export default defineConfig(({ mode }) => {
                 return 'react-query';
               }
               
+              // Exclude ReactQueryDevtools from production bundle (uses eval)
+              if (id.includes('node_modules/@tanstack/react-query-devtools')) {
+                return null; // Don't include in any chunk
+              }
+              
               // Router
               if (id.includes('node_modules/react-router')) {
                 return 'router';

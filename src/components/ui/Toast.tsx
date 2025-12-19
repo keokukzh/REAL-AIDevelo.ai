@@ -54,7 +54,8 @@ export const ToastItem: React.FC<ToastProps> = ({ toast, onRemove }) => {
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         onClick={() => onRemove(toast.id)}
-        className="text-current opacity-70 hover:opacity-100 transition-opacity"
+        className="text-current opacity-90 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-current focus:ring-offset-2 focus:ring-offset-transparent rounded"
+        aria-label="Toast schliessen"
       >
         <X size={16} />
       </button>

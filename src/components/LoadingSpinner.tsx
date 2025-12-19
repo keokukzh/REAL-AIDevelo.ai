@@ -129,11 +129,11 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <span className="text-gray-300 text-sm font-medium">Loading</span>
+          <span className="text-gray-200 text-sm font-medium">{message}</span>
           <motion.span
-            className="text-gray-300 text-sm font-medium"
+            className="text-gray-200 text-sm font-medium"
             animate={{
-              opacity: [0.3, 1, 0.3],
+              opacity: [0.5, 1, 0.5],
             }}
             transition={{
               duration: 1.2,
