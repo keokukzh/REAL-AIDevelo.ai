@@ -38,8 +38,8 @@ export const NavLink: React.FC<NavLinkProps> = ({
   };
 
   const baseClasses = variant === 'link'
-    ? 'text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer'
-    : 'px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-slate-800/70 hover:text-white transition-all duration-200 border border-slate-700/50 hover:border-slate-600';
+    ? 'text-sm font-medium text-gray-300 hover:text-white transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1'
+    : 'px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-slate-800/70 hover:text-white transition-all duration-200 border border-slate-700/50 hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background min-h-[44px] min-w-[44px] flex items-center justify-center';
 
   const content = (
     <>
@@ -56,6 +56,8 @@ export const NavLink: React.FC<NavLinkProps> = ({
         onClick={handleClick}
         className={`${baseClasses} ${className}`}
         whileHover={{ scale: 1.05, color: '#fff' }}
+        whileFocus={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         aria-label={ariaLabel || label}
       >
         {content}
@@ -64,12 +66,15 @@ export const NavLink: React.FC<NavLinkProps> = ({
   }
 
   return (
-    <button
+    <motion.button
       onClick={handleClick}
       className={`${baseClasses} ${className}`}
       aria-label={ariaLabel || label}
+      whileHover={{ scale: 1.05 }}
+      whileFocus={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
       {content}
-    </button>
+    </motion.button>
   );
 };

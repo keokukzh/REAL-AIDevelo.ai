@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../config/navigation';
 import { apiRequest, ApiRequestError } from '../services/api';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/navigation/Breadcrumb';
+import { useNavigation } from '../hooks/useNavigation';
 import { 
     Phone, 
     Settings, 
@@ -101,10 +103,15 @@ const tabs: Tab[] = [
 export const AgentDetailsPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const nav = useNavigation();
     const [agent, setAgent] = useState<Agent | null>(null);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabId>('overview');
+    
+    // Get breadcrumbs for this page
+    const breadcrumbs = nav.getBreadcrumbs(location.pathname);
 
     useEffect(() => {
         if (id) {
@@ -197,10 +204,11 @@ export const AgentDetailsPage = () => {
     return (
         <div className="min-h-screen bg-background text-white">
             <header className="p-6 border-b border-white/10 flex items-center justify-between bg-surface/50 backdrop-blur-md sticky top-0 z-50 relative">
-                <div className="flex-1 flex items-center">
-                    <Button variant="outline" onClick={() => navigate('/dashboard')} className="p-2">
+                <div className="flex-1 flex items-center gap-4">
+                    <Button variant="outline" onClick={() => navigate(ROUTES.DASHBOARD)} className="p-2 min-h-[44px] min-w-[44px]">
                         <ArrowLeft size={20} />
                     </Button>
+                    <Breadcrumb items={breadcrumbs} currentLabel={agent.businessProfile.companyName || 'Agent Details'} className="hidden md:flex" />
                 </div>
                 <div className="flex-1 flex justify-center">
                     <img 

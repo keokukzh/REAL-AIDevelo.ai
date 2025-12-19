@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { SideNav } from '../components/dashboard/SideNav';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Card } from '../components/newDashboard/ui/Card';
@@ -6,6 +7,9 @@ import { Button } from '../components/newDashboard/ui/Button';
 import { StatusBadge } from '../components/newDashboard/StatusBadge';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
+import { PageHeader } from '../components/layout/PageHeader';
+import { useNavigation } from '../hooks/useNavigation';
+import { ROUTES } from '../config/navigation';
 import { apiClient } from '../services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '../components/ui/Toast';
@@ -30,6 +34,8 @@ import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 
 export const SettingsPage = () => {
   const { user } = useAuthContext();
+  const location = useLocation();
+  const nav = useNavigation();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
   const queryClient = useQueryClient();
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -37,6 +43,9 @@ export const SettingsPage = () => {
   const updateAgentConfig = useUpdateAgentConfig();
   const [elevenAgentId, setElevenAgentId] = useState<string>('');
   const [isSavingAgentId, setIsSavingAgentId] = useState(false);
+  
+  // Get breadcrumbs for this page
+  const breadcrumbs = nav.getBreadcrumbs(location.pathname);
 
   // Update last refresh time when data updates
   useEffect(() => {
@@ -358,6 +367,13 @@ export const SettingsPage = () => {
         </header>
 
         <div className="p-8 max-w-[1600px] mx-auto w-full">
+          <PageHeader
+            title="Einstellungen"
+            breadcrumbs={breadcrumbs}
+            description="Verwalten Sie Ihre Agent-Konfiguration, Kalender-Verbindungen und Telefon-Einstellungen"
+            showBackButton={true}
+            backButtonTo={ROUTES.DASHBOARD}
+          />
           <div className="space-y-8">
             {/* Account Section */}
             <Card title="Account" icon={Settings}>

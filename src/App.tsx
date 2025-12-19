@@ -32,6 +32,7 @@ import { queryClient } from './lib/react-query';
 import { ToastContainer, useToast } from './components/ui/Toast';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { DevQuickLogin } from './components/auth/DevQuickLogin';
+import { useRoutePrefetch } from './hooks/useRoutePrefetch';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 const ReactQueryDevtools = import.meta.env.DEV
@@ -56,8 +57,22 @@ function App() {
         <AuthProvider>
           <ToastProvider>
             <BrowserRouter>
-              <ScrollToTop />
-              <DevQuickLogin />
+              <AppContent />
+            </BrowserRouter>
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
+
+function AppContent() {
+  useRoutePrefetch();
+  
+  return (
+    <>
+      <ScrollToTop />
+      <DevQuickLogin />
               <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
                 <AnimatePresence mode='wait'>
                     <Routes>
@@ -185,16 +200,12 @@ function App() {
                     </Routes>
                 </AnimatePresence>
               </div>
-            </BrowserRouter>
-          </ToastProvider>
-        </AuthProvider>
-        {ReactQueryDevtools && (
-          <Suspense fallback={null}>
-            <ReactQueryDevtools initialIsOpen={false} />
-          </Suspense>
-        )}
-      </QueryClientProvider>
-    </ErrorBoundary>
+      {ReactQueryDevtools && (
+        <Suspense fallback={null}>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </Suspense>
+      )}
+    </>
   );
 }
 

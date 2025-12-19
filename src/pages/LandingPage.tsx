@@ -16,10 +16,13 @@ import { HowItWorks } from '../components/HowItWorks';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
 import { LeadCaptureForm } from '../components/LeadCaptureForm';
+import { SectionNav } from '../components/navigation/SectionNav';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuthContext();
 
   useEffect(() => {
     const state = location.state as { scrollTarget?: string } | null;
@@ -69,6 +72,7 @@ export const LandingPage = () => {
     <>
       <SEO />
       <Navbar onStartOnboarding={startOnboarding} />
+      <SectionNav variant="sticky" />
       <main>
         {/* 1. Hero with proper CTA */}
         <Hero onStartOnboarding={startOnboarding} />

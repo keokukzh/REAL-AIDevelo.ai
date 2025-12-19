@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 import { WebdesignContactForm } from '../components/WebdesignContactForm';
-import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon } from 'lucide-react';
+import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
+import { BackButton } from '../components/navigation/BackButton';
+import { ROUTES } from '../config/navigation';
 import { FeatureCard, ProcessStepCard, TechnologyBadge, PricingCard } from '../components/webdesign';
 
 interface Feature {
@@ -188,14 +190,11 @@ export const WebdesignPage = () => {
               >
                 Jetzt anfragen
               </Button>
-              <Button
-                onClick={() => navigate('/')}
+              <BackButton
+                to={ROUTES.HOME}
+                label="Zurück zur Startseite"
                 variant="outline"
-                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
-                aria-label="Zurück zur Startseite"
-              >
-                Zurück zur Startseite
-              </Button>
+              />
             </div>
           </motion.div>
         </div>
@@ -368,6 +367,48 @@ export const WebdesignPage = () => {
               </div>
 
               <WebdesignContactForm onSuccess={() => navigate('/')} />
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Related Links Section */}
+      <section 
+        id="related-links"
+        className="py-12 sm:py-20 bg-slate-950/30"
+        aria-labelledby="related-links-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl mx-auto text-center"
+          >
+            <h2 id="related-links-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-6">
+              Weitere Services
+            </h2>
+            <p className="text-gray-400 mb-8">
+              Entdecken Sie unsere anderen Angebote
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => navigate(ROUTES.HOME)}
+                variant="outline"
+                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
+                aria-label="Zu Voice Agents navigieren"
+              >
+                Voice Agents
+              </Button>
+              <Button
+                onClick={() => navigate(ROUTES.DASHBOARD)}
+                variant="outline"
+                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
+                aria-label="Zum Dashboard navigieren"
+              >
+                Dashboard
+              </Button>
             </div>
           </motion.div>
         </div>

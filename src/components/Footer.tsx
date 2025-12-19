@@ -20,11 +20,13 @@ export const Footer: React.FC = () => {
       return;
     }
     
+    // If not on landing page, navigate to home with section hash
     if (location.pathname !== '/') {
-        navigate(`/${href}`);
+        navigate('/', { state: { scrollTarget: href } });
         return;
     }
 
+    // Scroll to section on current page
     const section = document.querySelector(href);
     if (section) {
       const headerOffset = 80;
@@ -61,19 +63,64 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Produkt</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#features" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#features')} className="inline-block transition-colors cursor-pointer">Funktionen</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="#features" 
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#features')} 
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu Funktionen Sektion navigieren"
+                >
+                  Funktionen
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#industries" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#industries')} className="inline-block transition-colors cursor-pointer">Branchen</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="#industries" 
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#industries')} 
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu Branchen Sektion navigieren"
+                >
+                  Branchen
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#demo" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')} className="inline-block transition-colors cursor-pointer">Live Demo</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="#demo" 
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')} 
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu Live Demo Sektion navigieren"
+                >
+                  Live Demo
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#how-it-works" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#how-it-works')} className="inline-block transition-colors cursor-pointer">Ablauf</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="#how-it-works" 
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#how-it-works')} 
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu Ablauf Sektion navigieren"
+                >
+                  Ablauf
+                </motion.a>
               </li>
               <li>
-                <motion.a whileHover="hover" variants={linkVariants} href="#pricing" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#pricing')} className="inline-block transition-colors cursor-pointer">Preise</motion.a>
+                <motion.a 
+                  whileHover="hover" 
+                  variants={linkVariants} 
+                  href="#pricing" 
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#pricing')} 
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu Preise Sektion navigieren"
+                >
+                  Preise
+                </motion.a>
               </li>
             </ul>
           </div>
@@ -87,7 +134,8 @@ export const Footer: React.FC = () => {
                   variants={linkVariants} 
                   href="/impressum" 
                   onClick={(e) => { e.preventDefault(); navigate('/impressum'); }}
-                  className="inline-block transition-colors cursor-pointer"
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zum Impressum navigieren"
                 >
                   Impressum
                 </motion.a>
@@ -98,7 +146,8 @@ export const Footer: React.FC = () => {
                   variants={linkVariants} 
                   href="/datenschutz" 
                   onClick={(e) => { e.preventDefault(); navigate('/datenschutz'); }}
-                  className="inline-block transition-colors cursor-pointer"
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zur Datenschutzerklärung navigieren"
                 >
                   Datenschutz
                 </motion.a>
@@ -109,7 +158,8 @@ export const Footer: React.FC = () => {
                   variants={linkVariants} 
                   href="/agb" 
                   onClick={(e) => { e.preventDefault(); navigate('/agb'); }}
-                  className="inline-block transition-colors cursor-pointer"
+                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  aria-label="Zu den AGB navigieren"
                 >
                   AGB
                 </motion.a>
@@ -121,7 +171,15 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Kontakt</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>Zürich, Schweiz</li>
-              <li><a href="mailto:hello@aidevelo.ai" className="hover:text-white transition-colors">hello@aidevelo.ai</a></li>
+              <li>
+                <a 
+                  href="mailto:hello@aidevelo.ai" 
+                  className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] inline-flex items-center"
+                  aria-label="E-Mail an hello@aidevelo.ai senden"
+                >
+                  hello@aidevelo.ai
+                </a>
+              </li>
             </ul>
           </div>
         </div>

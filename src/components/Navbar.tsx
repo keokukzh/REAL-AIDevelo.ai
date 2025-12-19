@@ -41,6 +41,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
   };
 
   const isWebdesignPage = location.pathname === ROUTES.WEBDESIGN;
+  
+  // Determine active routes for highlighting
+  const isActiveRoute = (path: string) => {
+    if (path === ROUTES.HOME) {
+      return location.pathname === ROUTES.HOME;
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const isWebdesignActive = isActiveRoute(ROUTES.WEBDESIGN);
+  const isVoiceAgentsActive = isActiveRoute(ROUTES.HOME);
 
   return (
     <motion.header
@@ -63,6 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   label={NAVIGATION_ITEMS.WEBDESIGN.label}
                   variant="link"
                   ariaLabel={NAVIGATION_ITEMS.WEBDESIGN.ariaLabel}
+                  className={isWebdesignActive ? 'text-white font-semibold' : ''}
                 />
               </div>
 
@@ -107,6 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 variant="link"
                 scrollToTop={true}
                 ariaLabel={NAVIGATION_ITEMS.VOICE_AGENTS.ariaLabel}
+                className={isVoiceAgentsActive ? 'text-white font-semibold' : ''}
               />
               
               {/* Voice Agents Dropdown (for section links) */}
@@ -114,10 +127,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <motion.button
                   onClick={() => setVoiceAgentsDropdownOpen(!voiceAgentsDropdownOpen)}
                   onMouseEnter={() => setVoiceAgentsDropdownOpen(true)}
-                  className="flex items-center gap-1 text-sm font-medium text-white hover:text-white transition-colors cursor-pointer px-3 py-2 rounded-lg hover:bg-white/10 bg-white/5 border border-white/10"
+                  className="flex items-center gap-1 text-sm font-medium text-white hover:text-white transition-all duration-200 cursor-pointer px-3 py-2 rounded-lg hover:bg-white/10 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black/60"
                   whileHover={{ scale: 1.05 }}
+                  whileFocus={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   aria-label="Voice Agents Sektionen Menü"
                   aria-haspopup="true"
+                  aria-expanded={voiceAgentsDropdownOpen}
                 >
                   <ChevronDown 
                     size={16} 
@@ -261,45 +277,59 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     <LogIn size={14} />
                     <span>Login</span>
                 </Button>
-                <button 
-                    className="text-white z-50"
+                <motion.button 
+                    className="text-white z-50 p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black/60 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
-                    {...(mobileMenuOpen && { 'aria-expanded': true })}
+                    aria-expanded={mobileMenuOpen}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    whileFocus={{ scale: 1.05 }}
                 >
-                    {mobileMenuOpen ? <X /> : <Menu />}
-                </button>
+                    {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </motion.button>
             </div>
 
             {/* Mobile Menu */}
-            {mobileMenuOpen && (
-                <nav 
-                  className="absolute top-0 right-0 w-full h-screen bg-black flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.nav 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-0 right-0 w-full h-screen bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
                   aria-label="Hauptnavigation"
                 >
-                    <a 
+                    <motion.a 
                         href={ROUTES.HOME}
                         onClick={(e) => { 
                           e.preventDefault(); 
                           nav.goToHome();
                           setMobileMenuOpen(false);
                         }}
-                        className="text-2xl font-bold text-white hover:text-accent cursor-pointer"
+                        className="text-2xl font-bold text-white hover:text-accent cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-2 py-1"
                         aria-label="Zur Voice Agents Hauptseite navigieren"
+                        whileHover={{ scale: 1.05, x: 4 }}
+                        whileFocus={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                     >
                         Voice Agents
-                    </a>
+                    </motion.a>
                     <div className="text-xl font-semibold text-gray-400 mb-4">Sektionen</div>
                     {SECTION_LINKS.map((link) => (
-                        <a 
+                        <motion.a 
                             key={link.name} 
                             href={link.href}
                             onClick={(e) => handleSectionClick(e, link.href)}
-                            className="text-2xl font-bold text-white hover:text-accent cursor-pointer"
+                            className="text-2xl font-bold text-white hover:text-accent cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-2 py-1 min-h-[44px] flex items-center"
                             aria-label={`Zu ${link.name} navigieren`}
+                            whileHover={{ scale: 1.05, x: 4 }}
+                            whileFocus={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
                             {link.name}
-                        </a>
+                        </motion.a>
                     ))}
                     <Button 
                       onClick={() => nav.goToDashboard()} 
@@ -327,8 +357,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     >
                       Onboarding starten
                     </Button>
-                </nav>
-            )}
+                </motion.nav>
+              )}
+            </AnimatePresence>
         </div>
       </div>
     </motion.header>

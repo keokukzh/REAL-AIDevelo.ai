@@ -75,3 +75,178 @@ export type NavigationItem = typeof NAVIGATION_ITEMS[keyof typeof NAVIGATION_ITE
  * Type for route paths
  */
 export type RoutePath = typeof ROUTES[keyof typeof ROUTES];
+
+/**
+ * Route metadata for breadcrumbs, titles, and navigation context
+ */
+export interface RouteMeta {
+  title: string;
+  breadcrumb: string;
+  group: 'public' | 'dashboard' | 'legal' | 'auth' | 'callback';
+  parent?: string | null;
+  requiresAuth?: boolean;
+}
+
+/**
+ * Route metadata configuration
+ * Defines hierarchy and context for all routes
+ */
+export const ROUTE_META: Record<string, RouteMeta> = {
+  [ROUTES.HOME]: {
+    title: 'Voice Agents',
+    breadcrumb: 'Voice Agents',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.WEBDESIGN]: {
+    title: 'Webdesign',
+    breadcrumb: 'Webdesign',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.DASHBOARD]: {
+    title: 'Dashboard',
+    breadcrumb: 'Dashboard',
+    group: 'dashboard',
+    parent: null,
+    requiresAuth: true,
+  },
+  [ROUTES.LOGIN]: {
+    title: 'Login',
+    breadcrumb: 'Login',
+    group: 'auth',
+    parent: null,
+  },
+  [ROUTES.ONBOARDING]: {
+    title: 'Onboarding',
+    breadcrumb: 'Onboarding',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.CHECKOUT]: {
+    title: 'Checkout',
+    breadcrumb: 'Checkout',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.PAYMENT_SUCCESS]: {
+    title: 'Zahlung erfolgreich',
+    breadcrumb: 'Zahlung erfolgreich',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.ENTERPRISE]: {
+    title: 'Enterprise Kontakt',
+    breadcrumb: 'Enterprise',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.VOICE_EDIT]: {
+    title: 'Voice bearbeiten',
+    breadcrumb: 'Voice bearbeiten',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.CALLS]: {
+    title: 'Anrufprotokoll',
+    breadcrumb: 'Anrufprotokoll',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.ANALYTICS]: {
+    title: 'Analytics',
+    breadcrumb: 'Analytics',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.KNOWLEDGE_BASE]: {
+    title: 'Knowledge Base',
+    breadcrumb: 'Knowledge Base',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.CALENDAR]: {
+    title: 'Kalender',
+    breadcrumb: 'Kalender',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.SETTINGS]: {
+    title: 'Einstellungen',
+    breadcrumb: 'Einstellungen',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.AUTH_CALLBACK]: {
+    title: 'Authentifizierung',
+    breadcrumb: 'Authentifizierung',
+    group: 'callback',
+    parent: null,
+  },
+  [ROUTES.IMPRESSUM]: {
+    title: 'Impressum',
+    breadcrumb: 'Impressum',
+    group: 'legal',
+    parent: null,
+  },
+  [ROUTES.DATENSCHUTZ]: {
+    title: 'Datenschutz',
+    breadcrumb: 'Datenschutz',
+    group: 'legal',
+    parent: null,
+  },
+  [ROUTES.AGB]: {
+    title: 'AGB',
+    breadcrumb: 'AGB',
+    group: 'legal',
+    parent: null,
+  },
+};
+
+/**
+ * Get route metadata for a given path
+ * @param path Route path
+ * @returns Route metadata or null if not found
+ */
+export const getRouteMeta = (path: string): RouteMeta | null => {
+  // Handle dynamic routes (e.g., /dashboard/agents/:id)
+  if (path.startsWith('/dashboard/agents/')) {
+    const parts = path.split('/');
+    if (parts.length === 4 && parts[3] !== 'edit') {
+      return {
+        title: 'Agent Details',
+        breadcrumb: 'Agent Details',
+        group: 'dashboard',
+        parent: ROUTES.DASHBOARD,
+        requiresAuth: true,
+      };
+    } else if (parts.length === 5 && parts[4] === 'edit') {
+      return {
+        title: 'Agent bearbeiten',
+        breadcrumb: 'Agent bearbeiten',
+        group: 'dashboard',
+        parent: ROUTES.AGENT_DETAILS(parts[3]),
+        requiresAuth: true,
+      };
+    }
+  }
+  
+  // Handle calendar callback routes
+  if (path.startsWith('/calendar/') && path.includes('/callback')) {
+    return {
+      title: 'Kalender Verbindung',
+      breadcrumb: 'Kalender Verbindung',
+      group: 'callback',
+      parent: ROUTES.CALENDAR,
+      requiresAuth: true,
+    };
+  }
+  
+  return ROUTE_META[path] || null;
+};
