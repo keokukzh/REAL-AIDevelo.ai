@@ -113,36 +113,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     >
       <div className="container mx-auto px-6">
         <div className={`relative flex items-center justify-between rounded-full px-6 py-3 transition-all duration-300 ${scrolled ? 'bg-black/60 backdrop-blur-lg border border-white/10 shadow-lg' : 'bg-transparent'}`}>
-            
-            {/* Left Side: Webdesign Link */}
-            <div className="hidden md:flex items-center">
-              <motion.a
-                href="/webdesign"
-                onClick={(e) => { e.preventDefault(); navigate('/webdesign'); }}
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
-                whileHover={{ scale: 1.05, color: '#fff' }}
-                aria-label="Zu Webdesign navigieren"
-              >
-                Webdesign
-              </motion.a>
-            </div>
+            {/* Grid Layout for Perfect Centering */}
+            <div className="hidden md:grid grid-cols-3 w-full items-center">
+              {/* Left Side: Webdesign Link */}
+              <div className="flex items-center justify-start">
+                <motion.a
+                  href="/webdesign"
+                  onClick={(e) => { e.preventDefault(); navigate('/webdesign'); }}
+                  className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
+                  whileHover={{ scale: 1.05, color: '#fff' }}
+                  aria-label="Zu Webdesign navigieren"
+                >
+                  Webdesign
+                </motion.a>
+              </div>
 
-            {/* Center: Logo */}
-            <motion.a 
-                href="/" 
-                onClick={(e) => { e.preventDefault(); navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 text-white font-display font-bold text-xl z-50 tracking-wide group"
-                whileHover={{ scale: 1.05 }}
-            >
-                <img 
-                  src="/main-logo.png" 
-                  alt="AIDevelo.ai" 
-                  className="h-8 w-auto object-contain"
-                />
-            </motion.a>
+              {/* Center: Logo - Perfectly Centered */}
+              <div className="flex items-center justify-center">
+                <motion.a 
+                    href="/" 
+                    onClick={(e) => { e.preventDefault(); navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="flex items-center gap-2 text-white font-display font-bold text-xl tracking-wide group"
+                    whileHover={{ scale: 1.05 }}
+                >
+                    <img 
+                      src="/main-logo.png" 
+                      alt="AIDevelo.ai" 
+                      className="h-8 w-auto object-contain"
+                    />
+                </motion.a>
+              </div>
 
-            {/* Right Side: Voice Agents Dropdown + Buttons */}
-            <div className="hidden md:flex items-center gap-4 ml-auto">
+              {/* Right Side: Voice Agents Dropdown + Buttons */}
+              <div className="flex items-center gap-4 justify-end">
               {/* Voice Agents Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <motion.button
@@ -215,6 +218,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     <LogIn size={16} />
                     <span>Login</span>
                 </Button>
+              </div>
             </div>
 
             {/* Mobile: Webdesign + Login Button + Toggle */}
