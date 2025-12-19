@@ -1,5 +1,6 @@
 import { WorkflowExecution, Workflow } from '../types.js';
 import { WorkflowMonitor } from './WorkflowMonitor.js';
+import axios from 'axios';
 
 export interface Alert {
   name: string;
@@ -184,15 +185,119 @@ export class AlertManager {
         console.log(`[FILE ALERT: ${alertName}] ${message}`);
         break;
       case 'slack':
-        // Slack webhook integration can be added
-        console.log(`[SLACK ALERT: ${alertName}] ${message}`);
+        await this.sendSlackNotification(message, alertName);
         break;
       case 'email':
-        // Email integration can be added
-        console.log(`[EMAIL ALERT: ${alertName}] ${message}`);
+        await this.sendEmailNotification(message, alertName);
         break;
       default:
         console.log(`[ALERT: ${alertName}] ${message}`);
+    }
+  }
+
+  /**
+   * Send Slack notification via webhook
+   */
+  private async sendSlackNotification(message: string, alertName: string): Promise<void> {
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+    
+    if (!webhookUrl) {
+      console.warn('[ALERT] SLACK_WEBHOOK_URL not configured. Skipping Slack notification.');
+      return;
+    }
+
+    try {
+      await axios.post(webhookUrl, {
+        text: message,
+        username: 'Workflow Orchestrator',
+        icon_emoji: ':gear:',
+        channel: process.env.SLACK_CHANNEL || undefined
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000 // 10 second timeout
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[ALERT] Failed to send Slack notification: ${errorMessage}`);
+      throw new Error(`Slack notification failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Send email notification
+   */
+  private async sendEmailNotification(message: string, alertName: string): Promise<void> {
+    const emailConfig = {
+      smtp: {
+        host: process.env.EMAIL_SMTP_HOST || process.env.SMTP_HOST,
+        port: parseInt(process.env.EMAIL_SMTP_PORT || process.env.SMTP_PORT || '587', 10),
+        secure: process.env.EMAIL_SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_SMTP_USER || process.env.SMTP_USER,
+          pass: process.env.EMAIL_SMTP_PASSWORD || process.env.SMTP_PASSWORD
+        }
+      },
+      from: process.env.EMAIL_FROM || 'workflow-orchestrator@localhost',
+      to: process.env.EMAIL_TO || '',
+      subject: `[Workflow Alert] ${alertName}`
+    };
+
+    // Check if email is configured
+    if (!emailConfig.to) {
+      console.warn('[ALERT] EMAIL_TO not configured. Skipping email notification.');
+      return;
+    }
+
+    // Try to use nodemailer if available, otherwise use simple SMTP
+    try {
+      // Dynamic import to avoid requiring nodemailer as a dependency
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport(emailConfig.smtp);
+      
+      await transporter.sendMail({
+        from: emailConfig.from,
+        to: emailConfig.to,
+        subject: emailConfig.subject,
+        text: message,
+        html: `<pre>${message}</pre>`
+      });
+    } catch (error) {
+      // Fallback: Try SendGrid API if configured
+      const sendGridApiKey = process.env.SENDGRID_API_KEY;
+      if (sendGridApiKey) {
+        try {
+          await axios.post(
+            'https://api.sendgrid.com/v3/mail/send',
+            {
+              personalizations: [{ to: [{ email: emailConfig.to }] }],
+              from: { email: emailConfig.from },
+              subject: emailConfig.subject,
+              content: [
+                { type: 'text/plain', value: message },
+                { type: 'text/html', value: `<pre>${message}</pre>` }
+              ]
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${sendGridApiKey}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 10000
+            }
+          );
+        } catch (sendGridError) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`[ALERT] Failed to send email via SendGrid: ${errorMessage}`);
+          throw new Error(`Email notification failed: ${errorMessage}`);
+        }
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[ALERT] Failed to send email: ${errorMessage}`);
+        console.warn('[ALERT] Install nodemailer or configure SENDGRID_API_KEY for email support');
+        throw new Error(`Email notification failed: ${errorMessage}`);
+      }
     }
   }
 

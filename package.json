@@ -26,6 +26,9 @@
     "workflow:monitor": "tsx workflows/cli/cli.ts monitor",
     "workflow:history": "tsx workflows/cli/cli.ts history",
     "workflow:status": "tsx workflows/cli/cli.ts status",
+    "workflow:serve": "tsx workflows/cli/cli.ts serve",
+    "workflow:create": "tsx workflows/cli/cli.ts create",
+    "workflow:generate": "tsx workflows/cli/cli.ts generate",
     "lint:changed": "node scripts/lint-changed.mjs",
     "lint:api-prefix": "node scripts/check-api-prefix.mjs"
   },
@@ -40,6 +43,7 @@
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",
     "chalk": "^5.6.2",
+    "chokidar": "^3.6.0",
     "clsx": "^2.1.1",
     "commander": "^14.0.2",
     "date-fns": "^4.1.0",

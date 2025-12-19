@@ -14,7 +14,7 @@ export interface WorkflowTrigger {
 export interface WorkflowTask {
   id: string;
   name: string;
-  type: 'shell' | 'http' | 'docker' | 'javascript' | 'python' | 'conditional' | 'parallel' | 'loop';
+  type: 'shell' | 'http' | 'docker' | 'javascript' | 'python' | 'conditional' | 'parallel' | 'loop' | 'data_processor' | 'database';
   command?: string;
   depends_on?: string[];
   timeout?: number;
@@ -76,6 +76,30 @@ export interface WorkflowTask {
   items?: unknown[];
   item?: string; // Variable name for current item
   stop_on_failure?: boolean;
+  
+  // Data processor task specific
+  input?: {
+    type: 'file' | 'data';
+    path: string;
+  };
+  processor?: {
+    type: 'javascript' | 'python';
+    script: string;
+  };
+  output?: {
+    type: 'file' | 'data';
+    path: string;
+  };
+  
+  // Database task specific
+  config?: {
+    connection?: string;
+    connectionString?: string;
+    operation?: 'query' | 'migration' | 'transaction';
+    query?: string | string[];
+    migrations_path?: string;
+    rollback_on_failure?: boolean;
+  };
 }
 
 export interface Workflow {

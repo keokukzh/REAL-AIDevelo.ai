@@ -1,0 +1,17 @@
+[Unit]
+Description=Workflow Orchestrator Service
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/path/to/project
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/node /path/to/project/node_modules/.bin/tsx /path/to/project/workflows/cli/cli.ts serve --port 3000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

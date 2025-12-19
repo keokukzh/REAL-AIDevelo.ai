@@ -3,6 +3,9 @@ import { ShellTask } from '../tasks/ShellTask.js';
 import { HttpTask } from '../tasks/HttpTask.js';
 import { NodeTask } from '../tasks/NodeTask.js';
 import { DockerTask } from '../tasks/DockerTask.js';
+import { PythonTask } from '../tasks/PythonTask.js';
+import { DataProcessorTask } from '../tasks/DataProcessorTask.js';
+import { DatabaseTask } from '../tasks/DatabaseTask.js';
 import { Parser } from 'expr-eval';
 
 /**
@@ -54,11 +57,19 @@ export class TaskExecutor {
           result = await HttpTask.execute(task, this.environment);
           break;
         case 'javascript':
-        case 'python':
           result = await NodeTask.execute(task, this.environment);
+          break;
+        case 'python':
+          result = await PythonTask.execute(task, this.environment);
           break;
         case 'docker':
           result = await DockerTask.execute(task, this.environment);
+          break;
+        case 'data_processor':
+          result = await DataProcessorTask.execute(task, this.environment);
+          break;
+        case 'database':
+          result = await DatabaseTask.execute(task, this.environment);
           break;
         case 'conditional':
           result = await this.executeConditionalTask(task);

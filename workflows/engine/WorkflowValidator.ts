@@ -84,7 +84,7 @@ export class WorkflowValidator {
     if (!t.type || typeof t.type !== 'string') {
       errors.push(`${prefix}: Task must have a "type" field (string)`);
     } else {
-      const validTypes = ['shell', 'http', 'docker', 'javascript', 'python', 'conditional', 'parallel', 'loop'];
+      const validTypes = ['shell', 'http', 'docker', 'javascript', 'python', 'conditional', 'parallel', 'loop', 'data_processor', 'database'];
       if (!validTypes.includes(t.type)) {
         errors.push(`${prefix}: Task type "${t.type}" is not valid. Must be one of: ${validTypes.join(', ')}`);
       }
@@ -105,6 +105,36 @@ export class WorkflowValidator {
 
     if (t.type === 'javascript' && !t.script) {
       errors.push(`${prefix}: JavaScript task must have a "script" field`);
+    }
+
+    if (t.type === 'python' && !t.script) {
+      errors.push(`${prefix}: Python task must have a "script" field`);
+    }
+
+    if (t.type === 'data_processor') {
+      if (!(t as any).input) {
+        errors.push(`${prefix}: Data processor task must have an "input" field`);
+      }
+      if (!(t as any).processor) {
+        errors.push(`${prefix}: Data processor task must have a "processor" field`);
+      }
+      if (!(t as any).output) {
+        errors.push(`${prefix}: Data processor task must have an "output" field`);
+      }
+    }
+
+    if (t.type === 'database') {
+      if (!(t as any).config) {
+        errors.push(`${prefix}: Database task must have a "config" field`);
+      } else {
+        const config = (t as any).config;
+        if (!config.connection && !config.connectionString && !process.env.DATABASE_URL) {
+          errors.push(`${prefix}: Database task must have connection string in config or DATABASE_URL environment variable`);
+        }
+        if (!config.query && !config.migrations_path) {
+          errors.push(`${prefix}: Database task must have either "query" or "migrations_path" in config`);
+        }
+      }
     }
 
     if (t.type === 'conditional') {

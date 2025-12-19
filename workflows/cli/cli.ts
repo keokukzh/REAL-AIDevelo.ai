@@ -10,6 +10,8 @@ import { AlertManager } from '../monitoring/AlertManager.js';
 import { WorkflowValidator } from '../engine/WorkflowValidator.js';
 import { Workflow } from '../types.js';
 import { DbExecutionStore } from '../monitoring/DbExecutionStore.js';
+import { WebhookTrigger } from '../triggers/WebhookTrigger.js';
+import { FileChangeTrigger } from '../triggers/FileChangeTrigger.js';
 import cron from 'node-cron';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -319,6 +321,310 @@ program
         console.log(chalk.gray(`    Duration: ${(task.duration / 1000).toFixed(2)}s`));
       }
     });
+  });
+
+/**
+ * Serve webhook server
+ */
+program
+  .command('serve')
+  .description('Start webhook server for workflow execution')
+  .option('-p, --port <port>', 'Port to listen on', '3000')
+  .option('-w, --workflow <workflow>', 'Workflow file path')
+  .option('-P, --path <path>', 'Webhook path (e.g., /trigger/deploy)', '/webhook')
+  .action(async (options: { port?: string; workflow?: string; path?: string }) => {
+    const port = parseInt(options.port || '3000', 10);
+    const webhookTrigger = new WebhookTrigger(port, executionStore, monitor, alertManager);
+
+    if (options.workflow && options.path) {
+      webhookTrigger.registerWorkflow(options.path, options.workflow);
+    } else {
+      // Scan workflows directory for webhook-triggered workflows
+      try {
+        const definitionsDir = path.join(process.cwd(), 'workflows', 'definitions');
+        const files = await fs.readdir(definitionsDir);
+        
+        for (const file of files) {
+          if (file.endsWith('.json')) {
+            const workflowPath = path.join(definitionsDir, file);
+            const workflow = await orchestrator.loadWorkflow(workflowPath);
+            
+            if (workflow.trigger.type === 'webhook' && workflow.trigger.config?.webhook) {
+              webhookTrigger.registerWorkflow(workflow.trigger.config.webhook, workflowPath);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(chalk.yellow('Could not scan workflows directory:', error instanceof Error ? error.message : String(error)));
+      }
+    }
+
+    try {
+      await webhookTrigger.start();
+      console.log(chalk.green(`\n✓ Webhook server started on port ${port}`));
+      console.log(chalk.gray('Press Ctrl+C to stop\n'));
+      
+      // Keep process alive
+      process.on('SIGINT', async () => {
+        console.log(chalk.yellow('\nStopping webhook server...'));
+        await webhookTrigger.stop();
+        process.exit(0);
+      });
+    } catch (error) {
+      console.error(chalk.red(`Failed to start webhook server: ${error instanceof Error ? error.message : String(error)}`));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Create a new workflow from template
+ */
+program
+  .command('create')
+  .description('Create a new workflow from template')
+  .requiredOption('-n, --name <name>', 'Workflow name')
+  .option('-t, --template <template>', 'Template type (web-app, ci-cd, scheduled, custom)', 'custom')
+  .option('-o, --output <output>', 'Output file path')
+  .action(async (options: { name: string; template?: string; output?: string }) => {
+    const templates: Record<string, Workflow> = {
+      'web-app': {
+        name: options.name,
+        version: '1.0.0',
+        description: 'Web application deployment workflow',
+        trigger: { type: 'manual' },
+        tasks: [
+          {
+            id: 'build',
+            name: 'Build application',
+            type: 'shell',
+            command: 'npm run build',
+            timeout: 600000
+          },
+          {
+            id: 'test',
+            name: 'Run tests',
+            type: 'shell',
+            command: 'npm run test',
+            depends_on: ['build'],
+            timeout: 300000
+          },
+          {
+            id: 'deploy',
+            name: 'Deploy to production',
+            type: 'shell',
+            command: 'npm run deploy',
+            depends_on: ['test'],
+            timeout: 600000
+          }
+        ]
+      },
+      'ci-cd': {
+        name: options.name,
+        version: '1.0.0',
+        description: 'CI/CD pipeline workflow',
+        trigger: { type: 'manual' },
+        tasks: [
+          {
+            id: 'lint',
+            name: 'Lint code',
+            type: 'shell',
+            command: 'npm run lint',
+            timeout: 300000
+          },
+          {
+            id: 'test',
+            name: 'Run tests',
+            type: 'shell',
+            command: 'npm run test',
+            depends_on: ['lint'],
+            timeout: 300000
+          },
+          {
+            id: 'build',
+            name: 'Build application',
+            type: 'shell',
+            command: 'npm run build',
+            depends_on: ['test'],
+            timeout: 600000
+          }
+        ]
+      },
+      'scheduled': {
+        name: options.name,
+        version: '1.0.0',
+        description: 'Scheduled maintenance workflow',
+        trigger: {
+          type: 'schedule',
+          config: {
+            schedule: '0 2 * * *' // Daily at 2 AM
+          }
+        },
+        tasks: [
+          {
+            id: 'cleanup',
+            name: 'Cleanup old files',
+            type: 'shell',
+            command: 'npm run cleanup',
+            timeout: 300000
+          }
+        ]
+      },
+      'custom': {
+        name: options.name,
+        version: '1.0.0',
+        description: 'Custom workflow',
+        trigger: { type: 'manual' },
+        tasks: [
+          {
+            id: 'task-1',
+            name: 'First Task',
+            type: 'shell',
+            command: 'echo "Hello World"',
+            timeout: 30000
+          }
+        ]
+      }
+    };
+
+    const template = templates[options.template || 'custom'];
+    if (!template) {
+      console.error(chalk.red(`Unknown template: ${options.template}`));
+      process.exit(1);
+    }
+
+    const outputPath = options.output || path.join(process.cwd(), 'workflows', 'definitions', `${options.name}.json`);
+    
+    try {
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, JSON.stringify(template, null, 2));
+      console.log(chalk.green(`✓ Workflow created: ${outputPath}`));
+    } catch (error) {
+      console.error(chalk.red(`Failed to create workflow: ${error instanceof Error ? error.message : String(error)}`));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Generate workflow from template type
+ */
+program
+  .command('generate')
+  .description('Generate workflow from template type')
+  .requiredOption('-t, --type <type>', 'Template type (ci-cd, web-app, scheduled)')
+  .option('-o, --output <output>', 'Output file path')
+  .option('-n, --name <name>', 'Workflow name')
+  .action(async (options: { type: string; output?: string; name?: string }) => {
+    const workflowName = options.name || `${options.type}-workflow`;
+    const outputPath = options.output || path.join(process.cwd(), 'workflows', 'definitions', `${workflowName}.json`);
+
+    // Use create command logic
+    const createOptions = {
+      name: workflowName,
+      template: options.type,
+      output: outputPath
+    };
+
+    // Reuse create command logic
+    const templates: Record<string, Workflow> = {
+      'web-app': {
+        name: workflowName,
+        version: '1.0.0',
+        description: 'Web application deployment workflow',
+        trigger: { type: 'manual' },
+        tasks: [
+          {
+            id: 'build',
+            name: 'Build application',
+            type: 'shell',
+            command: 'npm run build',
+            timeout: 600000
+          },
+          {
+            id: 'test',
+            name: 'Run tests',
+            type: 'shell',
+            command: 'npm run test',
+            depends_on: ['build'],
+            timeout: 300000
+          },
+          {
+            id: 'deploy',
+            name: 'Deploy to production',
+            type: 'shell',
+            command: 'npm run deploy',
+            depends_on: ['test'],
+            timeout: 600000
+          }
+        ]
+      },
+      'ci-cd': {
+        name: workflowName,
+        version: '1.0.0',
+        description: 'CI/CD pipeline workflow',
+        trigger: { type: 'manual' },
+        tasks: [
+          {
+            id: 'lint',
+            name: 'Lint code',
+            type: 'shell',
+            command: 'npm run lint',
+            timeout: 300000
+          },
+          {
+            id: 'test',
+            name: 'Run tests',
+            type: 'shell',
+            command: 'npm run test',
+            depends_on: ['lint'],
+            timeout: 300000
+          },
+          {
+            id: 'build',
+            name: 'Build application',
+            type: 'shell',
+            command: 'npm run build',
+            depends_on: ['test'],
+            timeout: 600000
+          }
+        ]
+      },
+      'scheduled': {
+        name: workflowName,
+        version: '1.0.0',
+        description: 'Scheduled maintenance workflow',
+        trigger: {
+          type: 'schedule',
+          config: {
+            schedule: '0 2 * * *'
+          }
+        },
+        tasks: [
+          {
+            id: 'cleanup',
+            name: 'Cleanup old files',
+            type: 'shell',
+            command: 'npm run cleanup',
+            timeout: 300000
+          }
+        ]
+      }
+    };
+
+    const template = templates[options.type];
+    if (!template) {
+      console.error(chalk.red(`Unknown template type: ${options.type}`));
+      console.log(chalk.gray('Available types: ci-cd, web-app, scheduled'));
+      process.exit(1);
+    }
+
+    try {
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, JSON.stringify(template, null, 2));
+      console.log(chalk.green(`✓ Workflow generated: ${outputPath}`));
+    } catch (error) {
+      console.error(chalk.red(`Failed to generate workflow: ${error instanceof Error ? error.message : String(error)}`));
+      process.exit(1);
+    }
   });
 
 // Parse command line arguments

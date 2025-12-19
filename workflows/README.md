@@ -5,14 +5,15 @@ Enterprise-grade workflow orchestration system for AIDevelo.ai that automates CI
 ## Features
 
 - **Dependency Management**: Automatic task dependency resolution and execution ordering
-- **Multiple Task Types**: Shell, HTTP, Docker, JavaScript/TypeScript execution
+- **Multiple Task Types**: Shell, HTTP, Docker, JavaScript/TypeScript, Python, Data Processor, Database
 - **Conditional Execution**: Run tasks based on conditions and environment variables
 - **Parallel Execution**: Execute independent tasks in parallel
 - **Retry Logic**: Automatic retry with configurable attempts and delays
 - **Monitoring**: Track execution history, metrics, and health reports
-- **Alerting**: Configurable alerts for failures and anomalies
-- **Scheduling**: Cron-based scheduling for automated workflows
-- **CLI Interface**: Comprehensive command-line interface
+- **Alerting**: Configurable alerts with Slack and Email integration
+- **Scheduling**: Cron-based scheduling and Systemd timers for automated workflows
+- **Triggers**: Webhook and file change triggers for event-driven workflows
+- **CLI Interface**: Comprehensive command-line interface with create, generate, and serve commands
 
 ## Quick Start
 
@@ -54,6 +55,29 @@ npm run workflow:status <execution-id>
 ```bash
 # Schedule a workflow (runs in foreground)
 npm run workflow:schedule workflows/definitions/scheduled-tasks.json -- --cron "0 */6 * * *"
+```
+
+### Webhook Server
+
+```bash
+# Start webhook server (auto-discovers workflows with webhook triggers)
+npm run workflow:serve
+
+# Start on custom port
+npm run workflow:serve -- --port 8080
+
+# Register specific workflow
+npm run workflow:serve -- --workflow workflows/definitions/my-workflow.json --path /webhook/deploy
+```
+
+### Creating Workflows
+
+```bash
+# Create workflow from template
+npm run workflow:create -- --name my-workflow --template ci-cd
+
+# Generate workflow from type
+npm run workflow:generate -- --type web-app --output workflows/definitions/web-app.json
 ```
 
 ## Workflow Definitions
@@ -219,6 +243,74 @@ Execute JavaScript/TypeScript files:
 }
 ```
 
+#### Python Task
+
+Execute Python scripts:
+
+```json
+{
+  "id": "process-data",
+  "name": "Process data with Python",
+  "type": "python",
+  "script": "scripts/process.py",
+  "timeout": 300,
+  "environment": {
+    "VIRTUAL_ENV": "/path/to/venv"
+  }
+}
+```
+
+**Note**: Python 3.x must be installed and available as `python3` or `python` in PATH. Virtual environments are supported via `VIRTUAL_ENV` environment variable.
+
+#### Data Processor Task
+
+Process files and data with JavaScript processors:
+
+```json
+{
+  "id": "process-files",
+  "name": "Process data files",
+  "type": "data_processor",
+  "input": {
+    "type": "file",
+    "path": "data/*.json"
+  },
+  "processor": {
+    "type": "javascript",
+    "script": "scripts/process-data.js"
+  },
+  "output": {
+    "type": "file",
+    "path": "processed/${input}.json"
+  }
+}
+```
+
+Supports JSON, CSV, and text file processing. The processor script receives input data via `INPUT_DATA` environment variable and should output JSON to stdout.
+
+#### Database Task
+
+Execute SQL queries and migrations:
+
+```json
+{
+  "id": "db-migration",
+  "name": "Run database migrations",
+  "type": "database",
+  "config": {
+    "connection": "${env.DATABASE_URL}",
+    "operation": "migration",
+    "migrations_path": "migrations/",
+    "rollback_on_failure": true
+  }
+}
+```
+
+Supported operations:
+- `query`: Execute a single SQL query
+- `migration`: Execute all SQL files in a directory (alphabetically)
+- `transaction`: Execute multiple queries in a transaction
+
 #### Conditional Task
 
 Execute based on conditions:
@@ -284,6 +376,57 @@ Iterate over items:
 }
 ```
 
+## Workflow Triggers
+
+### Webhook Trigger
+
+Execute workflows via HTTP webhooks:
+
+```json
+{
+  "name": "webhook-workflow",
+  "trigger": {
+    "type": "webhook",
+    "config": {
+      "webhook": "/trigger/deploy"
+    }
+  },
+  "tasks": [...]
+}
+```
+
+Start the webhook server:
+
+```bash
+npm run workflow:serve
+```
+
+The server will automatically discover workflows with webhook triggers and register them. Webhook payload is available via `WEBHOOK_PAYLOAD` environment variable.
+
+### File Change Trigger
+
+Execute workflows when files change:
+
+```json
+{
+  "name": "file-watch-workflow",
+  "trigger": {
+    "type": "file_change",
+    "config": {
+      "files": ["src/**/*.ts", "package.json"]
+    }
+  },
+  "tasks": [...]
+}
+```
+
+File change information is available via environment variables:
+- `CHANGED_FILE`: Full path to changed file
+- `FILE_EVENT`: Event type (add, change, unlink, etc.)
+- `FILE_NAME`: Basename of changed file
+- `FILE_DIR`: Directory of changed file
+- `FILE_EXT`: File extension
+
 ## CLI Commands
 
 ### `workflow run <workflow>`
@@ -293,6 +436,36 @@ Execute a workflow:
 ```bash
 npm run workflow:run workflows/definitions/ci-cd-workflow.json
 npm run workflow:run workflows/definitions/ci-cd-workflow.json -- --env DEPLOY_FRONTEND=true
+```
+
+### `workflow create`
+
+Create a new workflow from template:
+
+```bash
+npm run workflow:create -- --name my-workflow --template ci-cd
+npm run workflow:create -- --name custom-workflow --template custom --output workflows/definitions/custom.json
+```
+
+Available templates: `web-app`, `ci-cd`, `scheduled`, `custom`
+
+### `workflow generate`
+
+Generate workflow from template type:
+
+```bash
+npm run workflow:generate -- --type ci-cd --output workflows/definitions/ci.json
+npm run workflow:generate -- --type web-app --name my-app
+```
+
+### `workflow serve`
+
+Start webhook server:
+
+```bash
+npm run workflow:serve
+npm run workflow:serve -- --port 8080
+npm run workflow:serve -- --workflow workflows/definitions/deploy.json --path /webhook/deploy
 ```
 
 ### `workflow validate <workflow>`
@@ -389,6 +562,35 @@ Use the provided PowerShell script (run as Administrator):
 
 Or use Task Scheduler manually.
 
+### Systemd Timers (Linux)
+
+For Linux systems using systemd, use the provided setup script:
+
+```bash
+sudo ./workflows/examples/setup-systemd.sh
+```
+
+This creates:
+- `/etc/systemd/system/workflow-orchestrator.service` - Service file
+- `/etc/systemd/system/workflow-orchestrator.timer` - Timer file
+
+The timer runs every 5 minutes by default. Edit the timer file to customize the schedule.
+
+**Useful commands:**
+```bash
+# Check timer status
+systemctl status workflow-orchestrator.timer
+
+# View logs
+journalctl -u workflow-orchestrator.service -f
+
+# Stop timer
+systemctl stop workflow-orchestrator.timer
+
+# Disable timer
+systemctl disable workflow-orchestrator.timer
+```
+
 ## Environment Variables
 
 Workflows support environment variables:
@@ -444,6 +646,59 @@ The system automatically tracks:
 - **High Failure Rate**: Alert when success rate drops below 90%
 - **Long Duration**: Alert when execution exceeds 2x expected duration
 
+### Alert Channels
+
+#### Console (Default)
+
+Alerts are printed to console by default.
+
+#### Slack Integration
+
+Configure Slack webhook:
+
+```bash
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+export SLACK_CHANNEL="#deployments"  # Optional
+```
+
+Update workflow notifications:
+
+```json
+{
+  "notifications": {
+    "channels": ["slack"],
+    "on_completion": true,
+    "on_failure": true
+  }
+}
+```
+
+#### Email Integration
+
+Configure email via SMTP or SendGrid:
+
+**SMTP Configuration:**
+```bash
+export EMAIL_SMTP_HOST="smtp.example.com"
+export EMAIL_SMTP_PORT="587"
+export EMAIL_SMTP_USER="user@example.com"
+export EMAIL_SMTP_PASSWORD="password"
+export EMAIL_FROM="workflows@example.com"
+export EMAIL_TO="alerts@example.com"
+```
+
+**SendGrid Configuration:**
+```bash
+export SENDGRID_API_KEY="your-api-key"
+export EMAIL_FROM="workflows@example.com"
+export EMAIL_TO="alerts@example.com"
+```
+
+**Note**: For SMTP, install `nodemailer` as an optional dependency:
+```bash
+npm install nodemailer
+```
+
 ### Custom Alerts
 
 Configure alerts in `workflows/config.json`:
@@ -452,7 +707,7 @@ Configure alerts in `workflows/config.json`:
 {
   "alerts": {
     "enabled": true,
-    "channels": ["console", "file"]
+    "channels": ["console", "slack", "email"]
   }
 }
 ```
