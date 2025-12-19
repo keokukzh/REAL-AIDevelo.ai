@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { SideNav } from '../components/dashboard/SideNav';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Card } from '../components/newDashboard/ui/Card';
@@ -168,36 +168,36 @@ export const CalendarPage = () => {
     }
   };
 
-  // Handle create appointment from availability slot
-  const handleCreateFromSlot = (slot: { start: string; end: string }) => {
+  // Handle create appointment from availability slot (memoized)
+  const handleCreateFromSlot = useCallback((slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
     setSelectedEvent(undefined);
     setIsAvailabilityModalOpen(false);
     setIsEventModalOpen(true);
-  };
+  }, []);
 
-  // Handle event click
-  const handleEventClick = (event: CalendarEvent) => {
+  // Handle event click (memoized)
+  const handleEventClick = useCallback((event: CalendarEvent) => {
     setSelectedEvent(event);
     setSelectedSlot(undefined);
     setIsEventModalOpen(true);
-  };
+  }, []);
 
-  // Handle event edit
-  const handleEventEdit = (event: CalendarEvent) => {
+  // Handle event edit (memoized)
+  const handleEventEdit = useCallback((event: CalendarEvent) => {
     setSelectedEvent(event);
     setSelectedSlot(undefined);
     setIsEventModalOpen(true);
-  };
+  }, []);
 
-  // Handle event delete (will be handled by CalendarEventModal)
-  const handleEventDelete = () => {
+  // Handle event delete (will be handled by CalendarEventModal) (memoized)
+  const handleEventDelete = useCallback(() => {
     // Delete is handled in CalendarEventModal
     refetchEvents();
-  };
+  }, [refetchEvents]);
 
-  // Handle date click (create new event on that date)
-  const handleDateClick = (date: Date) => {
+  // Handle date click (create new event on that date) (memoized)
+  const handleDateClick = useCallback((date: Date) => {
     const start = new Date(date);
     start.setHours(9, 0, 0, 0);
     const end = new Date(start);
@@ -209,7 +209,7 @@ export const CalendarPage = () => {
     });
     setSelectedEvent(undefined);
     setIsEventModalOpen(true);
-  };
+  }, []);
 
   if (isLoading) {
     return (

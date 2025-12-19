@@ -241,6 +241,12 @@ export const CacheKeys = {
   // Tag-based invalidation patterns
   agentConfigByOrg: (orgId: string) => `agent:config:org:${orgId}:*`,
   locationByOrg: (orgId: string) => `location:org:${orgId}:*`,
+  
+  // Dashboard overview (user-specific)
+  dashboardOverview: (userId: string) => `dashboard:overview:${userId}`,
+  
+  // Pattern for invalidating all dashboard overviews (use with invalidate)
+  dashboardOverviewAll: () => 'dashboard:overview:*',
 };
 
 // Cache TTL constants (in seconds)
@@ -251,4 +257,5 @@ export const CacheTTL = {
   location: 10 * 60,          // 10 minutes
   calendarAvailability: 60,  // 1 minute
   elevenLabsVoices: 60 * 60,  // 1 hour
+  dashboardOverview: 30,      // 30 seconds (short TTL for near-real-time data)
 };

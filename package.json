@@ -30,7 +30,8 @@
     "workflow:create": "tsx workflows/cli/cli.ts create",
     "workflow:generate": "tsx workflows/cli/cli.ts generate",
     "lint:changed": "node scripts/lint-changed.mjs",
-    "lint:api-prefix": "node scripts/check-api-prefix.mjs"
+    "lint:api-prefix": "node scripts/check-api-prefix.mjs",
+    "analyze:bundle": "node scripts/analyze-bundle.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

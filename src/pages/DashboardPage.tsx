@@ -274,55 +274,7 @@ export const DashboardPage = () => {
     }
   };
 
-  // Handle phone connection
-  const handleConnectPhone = () => {
-    setIsPhoneConnectionOpen(true);
-  };
 
-  // Handle webhook status check - open modal
-  const handleCheckWebhook = () => {
-    setIsWebhookStatusOpen(true);
-  };
-
-  // Handle test agent
-  const handleTestAgent = () => {
-    setIsAgentTestOpen(true);
-  };
-
-  // Navigate to calls page
-  const handleViewCalls = () => {
-    navigate('/calls');
-  };
-
-  // Handle call click
-  const handleCallClick = (call: {
-    id: string;
-    callSid?: string;
-    direction: string;
-    from_e164: string | null;
-    to_e164: string | null;
-    started_at: string;
-    ended_at: string | null;
-    duration_sec: number | null;
-    outcome: string | null;
-    notes?: Record<string, unknown>;
-  }) => {
-    // Map to CallLog format
-    const callLog: CallLog = {
-      id: call.id,
-      callSid: call.callSid || call.id,
-      direction: call.direction,
-      from_e164: call.from_e164,
-      to_e164: call.to_e164,
-      started_at: call.started_at,
-      ended_at: call.ended_at,
-      duration_sec: call.duration_sec,
-      outcome: call.outcome,
-      notes: call.notes || {},
-    };
-    setSelectedCall(callLog);
-    setIsCallDetailsOpen(true);
-  };
 
   // Fetch today's and next few days' events for dashboard
   // IMPORTANT: Hooks must be called before any early returns
@@ -401,18 +353,67 @@ export const DashboardPage = () => {
   const isAgentActive = overview.agent_config.setup_state === 'ready';
   const showWizard = !isAgentActive;
 
-  // Map data for new UI
-  const kpis = mapOverviewToKPIs(overview);
-  const chartData = mapCallsToChartData(overview.recent_calls);
-  const recentCallsTableData = overview.recent_calls.map(mapCallToTableRow);
+  // Map data for new UI (memoized to prevent recalculation on every render)
+  const kpis = React.useMemo(() => mapOverviewToKPIs(overview), [overview]);
+  const chartData = React.useMemo(() => mapCallsToChartData(overview.recent_calls), [overview.recent_calls]);
+  const recentCallsTableData = React.useMemo(() => overview.recent_calls.map(mapCallToTableRow), [overview.recent_calls]);
 
-  // Determine system health status
-  const phoneHealth: 'ok' | 'error' | 'warning' = 
+  // Determine system health status (memoized)
+  const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
     overview.status.phone === 'connected' ? 'ok' : 
-    overview.status.phone === 'needs_compliance' ? 'warning' : 'error';
+    overview.status.phone === 'needs_compliance' ? 'warning' : 'error',
+    [overview.status.phone]
+  );
   
-  const calendarHealth: 'ok' | 'error' | 'warning' = 
-    overview.status.calendar === 'connected' ? 'ok' : 'error';
+  const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
+    overview.status.calendar === 'connected' ? 'ok' : 'error',
+    [overview.status.calendar]
+  );
+  
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleTestAgent = React.useCallback(() => {
+    setIsAgentTestOpen(true);
+  }, []);
+  
+  const handleConnectPhone = React.useCallback(() => {
+    setIsPhoneConnectionOpen(true);
+  }, []);
+  
+  const handleCheckWebhook = React.useCallback(() => {
+    setIsWebhookStatusOpen(true);
+  }, []);
+  
+  const handleViewCalls = React.useCallback(() => {
+    navigate('/calls');
+  }, [navigate]);
+  
+  const handleCallClick = React.useCallback((call: {
+    id: string;
+    callSid?: string;
+    direction: string;
+    from_e164: string | null;
+    to_e164: string | null;
+    started_at: string;
+    ended_at: string | null;
+    duration_sec: number | null;
+    outcome: string | null;
+    notes?: Record<string, unknown>;
+  }) => {
+    const callLog: CallLog = {
+      id: call.id,
+      callSid: call.callSid || call.id,
+      direction: call.direction,
+      from_e164: call.from_e164,
+      to_e164: call.to_e164,
+      started_at: call.started_at,
+      ended_at: call.ended_at,
+      duration_sec: call.duration_sec,
+      outcome: call.outcome,
+      notes: call.notes || {},
+    };
+    setSelectedCall(callLog);
+    setIsCallDetailsOpen(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">

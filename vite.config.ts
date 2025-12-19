@@ -11,14 +11,58 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       build: {
-        chunkSizeWarningLimit: 1200,
+        chunkSizeWarningLimit: 500, // Reduced from 1200KB to 500KB
         // Disable source maps in production to avoid eval() usage
         sourcemap: false,
         rollupOptions: {
           output: {
-            manualChunks: {
-              react: ['react', 'react-dom'],
-              motion: ['framer-motion'],
+            manualChunks: (id) => {
+              // Core React
+              if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+                return 'react';
+              }
+              
+              // Framer Motion (animation library)
+              if (id.includes('node_modules/framer-motion')) {
+                return 'motion';
+              }
+              
+              // Recharts (charting library - large)
+              if (id.includes('node_modules/recharts')) {
+                return 'recharts';
+              }
+              
+              // Three.js and related 3D libraries (large)
+              if (id.includes('node_modules/three') || 
+                  id.includes('node_modules/@react-three') ||
+                  id.includes('node_modules/@lottiefiles')) {
+                return 'three';
+              }
+              
+              // React Query (data fetching)
+              if (id.includes('node_modules/@tanstack/react-query')) {
+                return 'react-query';
+              }
+              
+              // Router
+              if (id.includes('node_modules/react-router')) {
+                return 'router';
+              }
+              
+              // Supabase client
+              if (id.includes('node_modules/@supabase')) {
+                return 'supabase';
+              }
+              
+              // Date utilities
+              if (id.includes('node_modules/date-fns')) {
+                return 'date-fns';
+              }
+              
+              // Other node_modules
+              if (id.includes('node_modules')) {
+                return 'vendor';
+              }
             },
           },
         },

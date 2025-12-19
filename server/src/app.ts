@@ -81,6 +81,7 @@ import {
 } from './middleware/security';
 import { timeoutMiddleware } from './middleware/timeout';
 import { cacheMiddleware } from './middleware/cache';
+import { queryMonitorMiddleware } from './middleware/queryMonitor';
 import { StructuredLoggingService } from './services/loggingService';
 import agentRoutes from './routes/agentRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
@@ -150,6 +151,9 @@ app.use(compression({
 // Request timeout middleware
 app.use(timeoutMiddleware);
 
+// Query performance monitoring
+app.use(queryMonitorMiddleware);
+
 // Logging
 app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 
@@ -159,8 +163,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Body Parser
-app.use(express.json({ limit: '10mb' })); // Limit payload size
+// Body Parser with size limits
+app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // Limit URL-encoded payload size
 
 // Ensure Content-Type is set for JSON responses (prevents CORB issues)
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -178,15 +183,34 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Response logging middleware (after body parser)
+// Response logging middleware with performance metrics (after body parser)
 app.use((req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
   
-  // Override res.end to log completion
+  // Store request timing for percentile calculation
+  (req as any).startTime = startTime;
+  
+  // Override res.end to log completion with performance metrics
   const originalEnd = res.end.bind(res);
   (res as any).end = function(chunk?: any, encoding?: BufferEncoding | (() => void), cb?: () => void) {
     const duration = Date.now() - startTime;
+    
+    // Log request completion
     StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
+    
+    // Add performance headers
+    res.setHeader('X-Response-Time', `${duration}ms`);
+    
+    // Log slow requests (>1s)
+    if (duration > 1000) {
+      console.warn('[Performance] Slow request detected', {
+        method: req.method,
+        path: req.path,
+        duration,
+        statusCode: res.statusCode,
+        requestId: req.headers['x-request-id'],
+      });
+    }
     
     // Handle Express res.end() overloads
     if (typeof encoding === 'function') {

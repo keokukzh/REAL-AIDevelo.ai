@@ -11,6 +11,7 @@ import { checkDbPreflight } from '../services/dbPreflight';
 import { InternalServerError, BadRequestError } from '../utils/errors';
 import { twilioService } from '../services/twilioService';
 import { z } from 'zod';
+import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
 const getBackendVersion = (): string => {
@@ -184,7 +185,7 @@ export const createDefaultAgent = async (
     });
   } catch (error) {
     // Generate request ID for tracking
-    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
     // Determine which step failed
     let failedStep = 'unknown';
@@ -249,20 +250,68 @@ export const getDashboardOverview = async (
 
     const { supabaseUserId, email } = req.supabaseUser;
 
+    // Check cache first (user-specific cache key)
+    const cacheKey = CacheKeys.dashboardOverview(supabaseUserId);
+    const cached = await cacheService.get<DashboardOverviewResponse>(cacheKey);
+    
+    if (cached) {
+      // Add cache hit header
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+      
+      return res.json({
+        success: true,
+        data: cached,
+      });
+    }
+
     // Reuse the same ensure logic as POST /api/agent/default
+    // These must remain sequential as they depend on each other
     const user = await ensureUserRow(supabaseUserId, email);
     const org = await ensureOrgForUser(supabaseUserId, email);
     const location = await ensureDefaultLocation(org.id);
     const agentConfig = await ensureAgentConfig(location.id);
 
-    // Load phone status and number
-    const { data: phoneData } = await supabaseAdmin
-      .from('phone_numbers')
-      .select('status, e164, customer_public_number, twilio_number_sid')
-      .eq('location_id', location.id)
-      .limit(1)
-      .maybeSingle();
+    // Determine agent status (depends on agentConfig)
+    const agentStatus: 'ready' | 'needs_setup' =
+      agentConfig.setup_state === 'ready' ? 'ready' : 'needs_setup';
 
+    // Parallelize independent queries for better performance
+    // All three queries depend only on location.id, so they can run in parallel
+    const [phoneResult, calendarResult, callsResult] = await Promise.all([
+      // Load phone status and number
+      supabaseAdmin
+        .from('phone_numbers')
+        .select('status, e164, customer_public_number, twilio_number_sid')
+        .eq('location_id', location.id)
+        .limit(1)
+        .maybeSingle(),
+      // Load calendar status and provider
+      supabaseAdmin
+        .from('google_calendar_integrations')
+        .select('id, provider, connected_email')
+        .eq('location_id', location.id)
+        .eq('provider', 'google')
+        .limit(1)
+        .maybeSingle(),
+      // Load recent calls
+      supabaseAdmin
+        .from('call_logs')
+        .select('id, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome')
+        .eq('location_id', location.id)
+        .order('started_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    const phoneData = phoneResult.data;
+    const calendarData = calendarResult.data;
+    const { data: recentCalls, error: callsError } = callsResult;
+
+    if (callsError) {
+      console.error('[DefaultAgentController] Error loading recent calls:', callsError);
+    }
+
+    // Process phone status
     const phoneStatus = phoneData?.status || 'not_connected';
     let phoneStatusEnum: 'not_connected' | 'connected' | 'needs_compliance' = 'not_connected';
     if (phoneStatus === 'connected') {
@@ -272,33 +321,9 @@ export const getDashboardOverview = async (
     }
     const phoneNumber = phoneData?.e164 || phoneData?.customer_public_number || null;
 
-    // Load calendar status and provider
-    const { data: calendarData } = await supabaseAdmin
-      .from('google_calendar_integrations')
-      .select('id, provider, connected_email')
-      .eq('location_id', location.id)
-      .eq('provider', 'google')
-      .limit(1)
-      .maybeSingle();
-
+    // Process calendar status
     const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
     const calendarProvider = calendarData?.provider || null;
-
-    // Determine agent status
-    const agentStatus: 'ready' | 'needs_setup' =
-      agentConfig.setup_state === 'ready' ? 'ready' : 'needs_setup';
-
-    // Load recent calls
-    const { data: recentCalls, error: callsError } = await supabaseAdmin
-      .from('call_logs')
-      .select('id, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome')
-      .eq('location_id', location.id)
-      .order('started_at', { ascending: false })
-      .limit(10);
-
-    if (callsError) {
-      console.error('[DefaultAgentController] Error loading recent calls:', callsError);
-    }
 
     // Calculate last activity (most recent call timestamp)
     const lastActivity = recentCalls && recentCalls.length > 0 
@@ -354,8 +379,12 @@ export const getDashboardOverview = async (
     // Validate response with Zod
     const validated = DashboardOverviewResponseSchema.parse(response);
 
+    // Cache the response (30s TTL for near-real-time data)
+    await cacheService.set(cacheKey, validated, CacheTTL.dashboardOverview);
+
     // Add backend version header (no secrets)
     res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+    res.setHeader('X-Cache', 'MISS');
 
     res.json({
       success: true,
@@ -363,7 +392,7 @@ export const getDashboardOverview = async (
     });
   } catch (error) {
     // Generate request ID for tracking
-    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
     // Determine which step failed
     let failedStep = 'unknown';

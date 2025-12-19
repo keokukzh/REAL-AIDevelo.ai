@@ -33,6 +33,7 @@ import { ToastContainer, useToast } from './components/ui/Toast';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { DevQuickLogin } from './components/auth/DevQuickLogin';
 import { useRoutePrefetch } from './hooks/useRoutePrefetch';
+import { useCoreWebVitals } from './hooks/useCoreWebVitals';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 const ReactQueryDevtools = import.meta.env.DEV
@@ -68,6 +69,15 @@ function App() {
 
 function AppContent() {
   useRoutePrefetch();
+  
+  // Track Core Web Vitals
+  useCoreWebVitals((metrics) => {
+    // In production, send to analytics service
+    if (import.meta.env.PROD) {
+      // Example: Send to analytics
+      // analytics.track('core_web_vitals', metrics);
+    }
+  });
   
   return (
     <>
