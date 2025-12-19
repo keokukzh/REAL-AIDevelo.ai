@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <motion.button
                   onClick={() => setVoiceAgentsDropdownOpen(!voiceAgentsDropdownOpen)}
                   onMouseEnter={() => setVoiceAgentsDropdownOpen(true)}
-                  className="flex items-center gap-1 text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer px-3 py-2 rounded-lg hover:bg-white/5"
+                  className="flex items-center gap-1 text-sm font-medium text-white hover:text-white transition-colors cursor-pointer px-3 py-2 rounded-lg hover:bg-white/10 bg-white/5 border border-white/10"
                   whileHover={{ scale: 1.05 }}
                   aria-label="Voice Agents Menü"
                   aria-haspopup="true"
@@ -212,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <Button
                   onClick={handleStart}
                   variant="primary"
-                  className="!px-4 !py-2 text-sm flex items-center gap-2"
+                  className="!px-4 !py-2 text-sm flex items-center gap-2 bg-white text-black hover:bg-gray-100 font-semibold"
                   aria-label="Onboarding starten"
                 >
                   Onboarding starten
@@ -220,7 +220,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <Button 
                   onClick={() => navigate('/dashboard')} 
                   variant="outline" 
-                  className="!px-4 !py-2 text-sm flex items-center gap-2"
+                  className="!px-4 !py-2 text-sm flex items-center gap-2 text-white border-white/40 hover:border-white/70"
                   aria-label="Login to Aidevelo Studio"
                 >
                     <img 
@@ -282,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <Button
                   onClick={handleStart}
                   variant="primary"
-                  className="!px-3 !py-2 text-xs flex items-center gap-1"
+                  className="!px-3 !py-2 text-xs flex items-center gap-1 bg-white text-black hover:bg-gray-100 font-semibold"
                   aria-label="Onboarding starten"
                 >
                   Onboarding
@@ -290,7 +290,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 <Button 
                   onClick={() => navigate('/dashboard')} 
                   variant="outline" 
-                  className="!px-3 !py-2 text-xs flex items-center gap-1"
+                  className="!px-3 !py-2 text-xs flex items-center gap-1 text-white border-white/40 hover:border-white/70"
                   aria-label="Login to Studio"
                 >
                     <img 
@@ -336,7 +336,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     <Button 
                       onClick={() => navigate('/dashboard')} 
                       variant="outline"
-                      className="w-full flex items-center justify-center gap-2"
+                      className="w-full flex items-center justify-center gap-2 text-white border-white/40 hover:border-white/70"
                       aria-label="Login to Studio"
                     >
                         <img 
@@ -354,7 +354,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     <Button
                       onClick={handleStart}
                       variant="primary"
-                      className="w-full flex items-center justify-center gap-2"
+                      className="w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-100"
                       aria-label="Onboarding starten"
                     >
                       Onboarding starten

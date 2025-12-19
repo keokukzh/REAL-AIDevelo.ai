@@ -183,7 +183,7 @@ export const WebdesignPage = () => {
               <Button
                 onClick={handleScrollToForm}
                 variant="primary"
-                className="bg-swiss-red hover:bg-red-700 text-white border-none min-h-[44px] min-w-[44px]"
+                className="bg-swiss-red hover:bg-red-700 text-white border-none min-h-[44px] min-w-[44px] font-semibold shadow-lg shadow-swiss-red/30"
                 aria-label="Zum Kontaktformular scrollen"
               >
                 Jetzt anfragen
@@ -191,7 +191,7 @@ export const WebdesignPage = () => {
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
-                className="min-h-[44px] min-w-[44px]"
+                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
                 aria-label="Zurück zur Startseite"
               >
                 Zurück zur Startseite

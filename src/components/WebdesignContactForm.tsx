@@ -336,7 +336,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
           type="submit"
           variant="primary"
           disabled={loading}
-          className="flex-1 bg-swiss-red hover:bg-red-700 text-white border-none"
+          className="flex-1 bg-swiss-red hover:bg-red-700 text-white border-none font-semibold shadow-lg shadow-swiss-red/30 min-h-[44px]"
         >
           {loading ? (
             <>
