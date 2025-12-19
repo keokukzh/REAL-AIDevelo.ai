@@ -1,16 +1,34 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 import { WebdesignContactForm } from '../components/WebdesignContactForm';
-import { Check, Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp } from 'lucide-react';
+import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
+import { FeatureCard, ProcessStepCard, TechnologyBadge, PricingCard } from '../components/webdesign';
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+interface ProcessStep {
+  number: string;
+  title: string;
+  description: string;
+}
+
+interface Technology {
+  name: string;
+  description: string;
+}
 
 export const WebdesignPage = () => {
   const navigate = useNavigate();
 
-  const features = [
+  const features = useMemo<Feature[]>(() => [
     {
       icon: Globe,
       title: 'Responsive Design',
@@ -56,9 +74,9 @@ export const WebdesignPage = () => {
       title: 'Conversion-Optimierung',
       description: 'Strategisch platzierte CTAs, A/B-Testing-ready und datengetriebene Optimierungen.',
     },
-  ];
+  ], []);
 
-  const processSteps = [
+  const processSteps = useMemo<ProcessStep[]>(() => [
     {
       number: '01',
       title: 'Konsultation',
@@ -79,27 +97,61 @@ export const WebdesignPage = () => {
       title: 'Testing & Launch',
       description: 'Umfassendes Testing auf allen Geräten, Performance-Optimierung und finaler Launch.',
     },
-  ];
+  ], []);
 
-  const technologies = [
+  const technologies = useMemo<Technology[]>(() => [
     { name: 'React', description: 'Moderne Frontend-Bibliothek' },
     { name: 'TypeScript', description: 'Typsichere Entwicklung' },
     { name: 'Tailwind CSS', description: 'Utility-First CSS Framework' },
     { name: 'Vite', description: 'Schneller Build-Tool' },
     { name: 'Responsive Design', description: 'Mobile-First Ansatz' },
     { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich' },
-  ];
+  ], []);
+
+  const pricingFeatures = useMemo(() => [
+    { text: 'Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.)' },
+    { text: 'Responsive Design (Mobile, Tablet, Desktop)' },
+    { text: 'Grundlegende SEO-Optimierung (Meta-Tags, Sitemap)' },
+    { text: 'Kontaktformular mit E-Mail-Benachrichtigung' },
+    { text: 'Social Media Integration (Links, Sharing)' },
+    { text: 'Schnelle Ladezeiten (Lighthouse Score 90+)' },
+    { text: 'Wartbarer, sauberer Code (TypeScript, React)' },
+    { text: '2-3 Wochen Umsetzungszeit' },
+  ], []);
+
+  const handleScrollToForm = () => {
+    const formSection = document.getElementById('contact-form');
+    if (formSection) {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      formSection.focus();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-white">
+      {/* Skip to main content link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        Zum Hauptinhalt springen
+      </a>
+      
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-32 pb-20">
+      <section 
+        id="hero"
+        className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20"
+        aria-labelledby="hero-heading"
+      >
         {/* Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" />
+        <div 
+          className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" 
+          aria-hidden="true"
+        />
         
-        <div className="container mx-auto px-6 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -114,32 +166,33 @@ export const WebdesignPage = () => {
             >
               <span className="text-sm font-semibold text-swiss-red">Professionelle Webentwicklung</span>
             </motion.div>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight">
+            <h1 
+              id="hero-heading"
+              className="text-[clamp(2rem,5vw,4.5rem)] font-bold font-display leading-tight tracking-tight"
+            >
               <span className="text-white">Website-Erstellung oder</span>
               <br />
               <span className="text-swiss-red">Redesign für 500 CHF</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-400 mt-6 max-w-3xl mx-auto">
+            <p className="text-[clamp(1rem,2.5vw,1.5rem)] text-gray-400 mt-6 max-w-3xl mx-auto leading-relaxed">
               Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles aus einer Hand.
               <br />
               <span className="text-white font-semibold">Perfekt für kleine und mittlere Unternehmen.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <Button
-                onClick={() => {
-                  const formSection = document.getElementById('contact-form');
-                  if (formSection) {
-                    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}
+                onClick={handleScrollToForm}
                 variant="primary"
-                className="bg-swiss-red hover:bg-red-700 text-white border-none"
+                className="bg-swiss-red hover:bg-red-700 text-white border-none min-h-[44px] min-w-[44px]"
+                aria-label="Zum Kontaktformular scrollen"
               >
                 Jetzt anfragen
               </Button>
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
+                className="min-h-[44px] min-w-[44px]"
+                aria-label="Zurück zur Startseite"
               >
                 Zurück zur Startseite
               </Button>
@@ -149,17 +202,21 @@ export const WebdesignPage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-slate-950/50">
-        <div className="container mx-auto px-6">
+      <section 
+        id="pricing"
+        className="py-12 sm:py-20 bg-slate-950/50"
+        aria-labelledby="pricing-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.8 }}
             className="max-w-4xl mx-auto"
           >
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
+              <h2 id="pricing-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
                 Transparente Preisgestaltung
               </h2>
               <p className="text-gray-400 text-lg">
@@ -167,79 +224,31 @@ export const WebdesignPage = () => {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-swiss-red/20 to-red-900/20 border-2 border-swiss-red/30 rounded-2xl p-8 md:p-12 relative overflow-hidden">
-              {/* Decorative Elements */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/5 rounded-full blur-3xl -z-0" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-900/5 rounded-full blur-3xl -z-0" />
-              
-              <div className="relative z-10">
-                <div className="text-center mb-8">
-                  <div className="text-6xl md:text-7xl font-bold font-display text-swiss-red mb-2">
-                    500 CHF
-                  </div>
-                  <p className="text-xl text-gray-300 mb-2">
-                    Einmalig - Alles inklusive
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Keine monatlichen Gebühren • Keine versteckten Kosten
-                  </p>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Responsive Design (Mobile, Tablet, Desktop)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Grundlegende SEO-Optimierung (Meta-Tags, Sitemap)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Kontaktformular mit E-Mail-Benachrichtigung</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Social Media Integration (Links, Sharing)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Schnelle Ladezeiten (Lighthouse Score 90+)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">Wartbarer, sauberer Code (TypeScript, React)</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300">2-3 Wochen Umsetzungszeit</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PricingCard
+              price="500 CHF"
+              subtitle="Einmalig - Alles inklusive"
+              disclaimer="Keine monatlichen Gebühren • Keine versteckten Kosten"
+              features={pricingFeatures}
+            />
           </motion.div>
         </div>
       </section>
 
       {/* Process Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
+      <section 
+        id="process"
+        className="py-12 sm:py-20"
+        aria-labelledby="process-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
+            <h2 id="process-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
               Unser Prozess
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
@@ -247,43 +256,36 @@ export const WebdesignPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-20">
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto mb-12 sm:mb-20 list-none" aria-label="Prozess-Schritte">
             {processSteps.map((step, index) => (
-              <motion.div
+              <ProcessStepCard
                 key={step.number}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="relative"
-              >
-                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 hover:border-swiss-red/50 transition-colors h-full">
-                  <div className="text-4xl font-bold text-swiss-red/30 mb-4">{step.number}</div>
-                  <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
-                </div>
-                {index < processSteps.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                    <div className="w-6 h-0.5 bg-swiss-red/30" />
-                  </div>
-                )}
-              </motion.div>
+                number={step.number}
+                title={step.title}
+                description={step.description}
+                isLast={index === processSteps.length - 1}
+                index={index}
+              />
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-slate-950/30">
-        <div className="container mx-auto px-6">
+      <section 
+        id="features"
+        className="py-12 sm:py-20 bg-slate-950/30"
+        aria-labelledby="features-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
+            <h2 id="features-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
               Professionelle Features
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
@@ -291,38 +293,35 @@ export const WebdesignPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto list-none" aria-label="Features">
             {features.map((feature, index) => (
-              <motion.div
+              <FeatureCard
                 key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 hover:border-swiss-red/50 transition-all hover:shadow-lg hover:shadow-swiss-red/10"
-              >
-                <div className="w-12 h-12 bg-swiss-red/20 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-swiss-red" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
-              </motion.div>
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                index={index}
+              />
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
       {/* Technologies Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
+      <section 
+        id="technologies"
+        className="py-12 sm:py-20"
+        aria-labelledby="technologies-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
+            <h2 id="technologies-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
               Moderne Technologien
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
@@ -330,37 +329,37 @@ export const WebdesignPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-5xl mx-auto">
+          <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 max-w-5xl mx-auto list-none" aria-label="Technologien">
             {technologies.map((tech, index) => (
-              <motion.div
+              <TechnologyBadge
                 key={tech.name}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 text-center hover:border-swiss-red/50 transition-colors"
-              >
-                <div className="font-semibold text-white mb-1">{tech.name}</div>
-                <div className="text-xs text-gray-400">{tech.description}</div>
-              </motion.div>
+                name={tech.name}
+                description={tech.description}
+                index={index}
+              />
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
       {/* Contact Form Section */}
-      <section id="contact-form" className="py-20 bg-slate-950/50">
-        <div className="container mx-auto px-6">
+      <section 
+        id="contact-form"
+        className="py-12 sm:py-20 bg-slate-950/50"
+        aria-labelledby="contact-heading"
+        tabIndex={-1}
+      >
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.8 }}
             className="max-w-3xl mx-auto"
           >
-            <div className="bg-surface/50 rounded-2xl border border-white/10 p-8 md:p-12">
+            <div className="bg-surface/50 rounded-2xl border border-white/10 p-6 sm:p-8 md:p-12">
               <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
+                <h2 id="contact-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
                   Jetzt anfragen
                 </h2>
                 <p className="text-gray-400 text-lg">

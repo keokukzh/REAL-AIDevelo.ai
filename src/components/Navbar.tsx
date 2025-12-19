@@ -131,15 +131,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
               {/* Center: Logo - Perfectly Centered */}
               <div className="flex items-center justify-center">
                 <motion.a 
-                    href="/" 
-                    onClick={(e) => { e.preventDefault(); navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    href={location.pathname === '/webdesign' ? '/webdesign' : '/'} 
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      if (location.pathname === '/webdesign') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        navigate('/'); 
+                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                      }
+                    }}
                     className="flex items-center gap-2 text-white font-display font-bold text-xl tracking-wide group"
                     whileHover={{ scale: 1.05 }}
+                    aria-label={location.pathname === '/webdesign' ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
                 >
                     <img 
-                      src="/main-logo.png" 
-                      alt="AIDevelo.ai" 
+                      src={location.pathname === '/webdesign' ? '/webdesign-logo-white.png' : '/main-logo.png'} 
+                      alt={location.pathname === '/webdesign' ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
                       className="h-8 w-auto object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        // Fallback to main logo if webdesign logo fails to load
+                        if (target.src.includes('webdesign-logo')) {
+                          target.src = '/main-logo.png';
+                          target.alt = 'AIDevelo.ai';
+                        }
+                      }}
                     />
                 </motion.a>
               </div>
@@ -221,8 +238,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
               </div>
             </div>
 
-            {/* Mobile: Webdesign + Login Button + Toggle */}
-            <div className="md:hidden flex items-center gap-3">
+            {/* Mobile: Logo + Webdesign + Login Button + Toggle */}
+            <div className="md:hidden flex items-center gap-3 flex-1">
+              {/* Mobile Logo */}
+              <motion.a 
+                href={location.pathname === '/webdesign' ? '/webdesign' : '/'} 
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  if (location.pathname === '/webdesign') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else {
+                    navigate('/'); 
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                  }
+                }}
+                className="flex items-center flex-shrink-0"
+                whileHover={{ scale: 1.05 }}
+                aria-label={location.pathname === '/webdesign' ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
+              >
+                <img 
+                  src={location.pathname === '/webdesign' ? '/webdesign-logo-white.png' : '/main-logo.png'} 
+                  alt={location.pathname === '/webdesign' ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
+                  className="h-6 w-auto object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    // Fallback to main logo if webdesign logo fails to load
+                    if (target.src.includes('webdesign-logo')) {
+                      target.src = '/main-logo.png';
+                      target.alt = 'AIDevelo.ai';
+                    }
+                  }}
+                />
+              </motion.a>
+              
               <motion.a
                 href="/webdesign"
                 onClick={(e) => { e.preventDefault(); navigate('/webdesign'); setMobileMenuOpen(false); }}
