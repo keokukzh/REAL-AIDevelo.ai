@@ -36,7 +36,8 @@ import { useRoutePrefetch } from './hooks/useRoutePrefetch';
 import { useCoreWebVitals } from './hooks/useCoreWebVitals';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
-const ReactQueryDevtools = import.meta.env.DEV
+// In production, this will be null and tree-shaken out of the bundle
+const ReactQueryDevtools = import.meta.env.DEV && import.meta.env.MODE !== 'production'
   ? React.lazy(() => import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })))
   : null;
 

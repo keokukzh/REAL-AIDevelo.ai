@@ -93,9 +93,16 @@ export const onRequest: PagesFunction<{ RENDER_API_ORIGIN?: string }> = async (c
     proxiedHeaders.delete('Access-Control-Allow-Headers');
     
     // Ensure Content-Type is set (prevents CORB)
-    if (!proxiedHeaders.has('Content-Type')) {
-      proxiedHeaders.set('Content-Type', 'application/json; charset=utf-8');
+    // Always set Content-Type for JSON responses to prevent CORB blocking
+    const contentType = proxiedHeaders.get('Content-Type') || 'application/json; charset=utf-8';
+    if (!contentType.includes('charset')) {
+      proxiedHeaders.set('Content-Type', `${contentType.split(';')[0]}; charset=utf-8`);
+    } else {
+      proxiedHeaders.set('Content-Type', contentType);
     }
+    
+    // Add X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
+    proxiedHeaders.set('X-Content-Type-Options', 'nosniff');
     
     // Add debug headers to verify proxy is active
     proxiedHeaders.set('x-aidevelo-proxy', '1');
