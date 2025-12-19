@@ -12,7 +12,13 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   fullScreen = false 
 }) => {
-  const sizeClasses = {
+  const logoSizeClasses = {
+    sm: 'w-12 h-12',
+    md: 'w-20 h-20',
+    lg: 'w-32 h-32'
+  };
+
+  const progressBarSizeClasses = {
     sm: 'w-48',
     md: 'w-64',
     lg: 'w-80'
@@ -25,8 +31,32 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   return (
     <div className={containerClass}>
       <div className="flex flex-col items-center gap-6">
+        {/* Animated Logo */}
+        <motion.div
+          className={`${logoSizeClasses[size]} relative`}
+          animate={{
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }}
+        >
+          <img 
+            src="/logo-thumbnail-white.png" 
+            alt="AIDevelo" 
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              // Fallback to studio logo if thumbnail not found
+              const target = e.target as HTMLImageElement;
+              target.src = '/logo-studio-white.png';
+            }}
+          />
+        </motion.div>
+
         {/* Progress Bar Container */}
-        <div className={`${sizeClasses[size]} relative`}>
+        <div className={`${progressBarSizeClasses[size]} relative`}>
           {/* Background Track */}
           <div className="w-full h-2 bg-slate-800/50 rounded-full overflow-hidden border border-slate-700/50">
             {/* Animated Fill */}
