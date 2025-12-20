@@ -51,8 +51,14 @@ export function useWebRTC(options: UseWebRTCOptions) {
   // Fetch FreeSWITCH config from backend
   useEffect(() => {
     const fetchConfig = async () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:53',message:'Config fetch started',data:{locationId,envProd:import.meta.env.PROD},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       try {
         const response = await apiClient.get<{ success: boolean; config?: any }>('/v1/test-call/config');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:56',message:'Config fetch response received',data:{success:response.data?.success,hasConfig:!!response.data?.config,config:response.data?.config},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         if (response.data?.success && response.data.config) {
           console.log('[useWebRTC] FreeSWITCH config loaded:', response.data.config);
           setFreeswitchConfig(response.data.config);
@@ -66,6 +72,9 @@ export function useWebRTC(options: UseWebRTCOptions) {
           status: error?.response?.status,
           data: error?.response?.data,
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:63',message:'Config fetch failed, using fallback',data:{errorMessage:error?.message,errorStatus:error?.response?.status,errorData:error?.response?.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         
         // Fallback to defaults based on environment
         const fallbackUrl = import.meta.env.PROD 
@@ -73,6 +82,9 @@ export function useWebRTC(options: UseWebRTCOptions) {
           : (import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443');
         
         console.warn('[useWebRTC] Using fallback config:', { wss_url: fallbackUrl });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:75',message:'Fallback config set',data:{fallbackUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         setFreeswitchConfig({
           wss_url: fallbackUrl,
           sip_username: `test_${locationId}`,
@@ -98,6 +110,9 @@ export function useWebRTC(options: UseWebRTCOptions) {
    * Connect to FreeSWITCH
    */
   const connect = useCallback(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:100',message:'Connect function called',data:{hasConfig:!!freeswitchConfig,rawWssUrl:freeswitchConfig?.wss_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+    // #endregion
     if (!freeswitchConfig) {
       setState(prev => ({
         ...prev,
@@ -132,13 +147,18 @@ export function useWebRTC(options: UseWebRTCOptions) {
         console.warn('[useWebRTC] IP address in server URL, using domain instead:', serverUrl);
       }
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:129',message:'Before UserAgent creation',data:{freeswitchWssUrl,hostname,serverUrl,sipUsername},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
+      
       const userAgent = new UserAgent({
         uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}`),
         transportOptions: {
           server: serverUrl,
-          // Disable Sec-WebSocket-Protocol header if FreeSWITCH doesn't support it
-          // Some FreeSWITCH configurations don't respond to this header
           connectionTimeout: 10,
+          // SIP.js automatically sends Sec-WebSocket-Protocol: sip
+          // FreeSWITCH must return this header for handshake to succeed
+          // If FreeSWITCH doesn't return it, the connection will fail
         },
         authorizationUsername: sipUsername,
         authorizationPassword: sipPassword,
@@ -151,14 +171,30 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       userAgentRef.current = userAgent;
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:156',message:'Before userAgent.start()',data:{serverUrl,hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
+
       // Connect
       await userAgent.start();
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:162',message:'After userAgent.start()',data:{transportState:userAgent.transport.state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
 
       // Register
       const registerer = new Registerer(userAgent);
       registererRef.current = registerer;
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:167',message:'Before registerer.register()',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
+
       await registerer.register();
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:171',message:'After registerer.register() - success',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
 
       setState(prev => ({
         ...prev,
@@ -167,6 +203,10 @@ export function useWebRTC(options: UseWebRTCOptions) {
       }));
     } catch (error: any) {
       console.error('[useWebRTC] Connect error:', error);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useWebRTC.ts:175',message:'Connect error caught',data:{errorMessage:error?.message,errorStack:error?.stack,errorName:error?.name,errorCode:error?.code,hasTransport:!!userAgentRef.current?.transport,transportState:userAgentRef.current?.transport?.state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3,H4,H6,H7'})}).catch(()=>{});
+      // #endregion
       
       // Provide more helpful error messages
       let errorMessage = 'Failed to connect to FreeSWITCH';
