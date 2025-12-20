@@ -777,6 +777,7 @@ export const SettingsPage = () => {
                       step="5"
                       value={bookingDurationMin}
                       onChange={(e) => setBookingDurationMin(parseInt(e.target.value, 10) || 30)}
+                      aria-label="Standard-Termindauer in Minuten"
                       className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                     />
                   </div>
@@ -887,6 +888,52 @@ export const SettingsPage = () => {
                 </div>
               </div>
             </Card>
+
+            {/* ElevenLabs Affiliate Section */}
+            {overview.elevenlabs_affiliate_link && (
+              <Card title="ElevenLabs Affiliate" icon={Info}>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                        Affiliate-Link
+                      </label>
+                      <p className="text-gray-400 text-sm mb-3">
+                        Teile diesen Link mit Kunden, um ElevenLabs-Accounts zu empfehlen. Du erhältst 22% Provision für 12 Monate.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={overview.elevenlabs_affiliate_link}
+                          readOnly
+                          className="flex-1 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white text-sm font-mono"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(overview.elevenlabs_affiliate_link || '');
+                            toast.success('Link in Zwischenablage kopiert');
+                          }}
+                        >
+                          Kopieren
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            window.open(overview.elevenlabs_affiliate_link || '', '_blank');
+                          }}
+                        >
+                          Öffnen
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* System Section */}
             <Card title="System" icon={Info}>

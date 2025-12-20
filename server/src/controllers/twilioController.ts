@@ -106,6 +106,18 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
   // Step 2: Use ElevenLabs register-call (replaces Media Streams)
   // This is the canonical approach per Stop Conditions: register-call must return TwiML
   
+  // Check for mock mode
+  if (process.env.ELEVENLABS_MOCK_MODE === 'true') {
+    const { getMockTwiML } = await import('../services/mockElevenLabsService');
+    logger.info('twilio.inbound.mock_mode', redact({
+      callSid,
+      locationId,
+    }), req);
+    const mockTwiml = getMockTwiML();
+    res.status(200).type('text/xml').send(mockTwiml);
+    return;
+  }
+  
   // Preconditions check
   if (!locationId) {
     logger.warn('twilio.inbound.location_not_resolved', redact({

@@ -915,6 +915,42 @@ export const DashboardPage = () => {
                     <HealthItem label="ElevenLabs TTS" status={overview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
                     <HealthItem label="Supabase DB" status="ok" />
                   </div>
+                  
+                  {/* ElevenLabs Credits Display */}
+                  {overview.elevenlabs_quota && (
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-400 uppercase tracking-wider font-display">ElevenLabs Credits</span>
+                        <span className={`text-xs font-semibold ${
+                          overview.elevenlabs_quota.status === 'critical' ? 'text-red-400' :
+                          overview.elevenlabs_quota.status === 'warning' ? 'text-yellow-400' :
+                          'text-green-400'
+                        }`}>
+                          {overview.elevenlabs_quota.remaining.toLocaleString()} / {overview.elevenlabs_quota.character_limit.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-800/50 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            overview.elevenlabs_quota.status === 'critical' ? 'bg-red-500' :
+                            overview.elevenlabs_quota.status === 'warning' ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(overview.elevenlabs_quota.percentageUsed, 100)}%` }}
+                        />
+                      </div>
+                      {overview.elevenlabs_quota.warning && (
+                        <p className="text-xs text-yellow-400 mt-2">
+                          ⚠️ {overview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht
+                        </p>
+                      )}
+                      {overview.elevenlabs_quota.status === 'critical' && (
+                        <p className="text-xs text-red-400 mt-2">
+                          🚨 Kritisch: {overview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht - Tests blockiert
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

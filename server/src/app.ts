@@ -449,6 +449,14 @@ if (process.env.NODE_ENV !== 'production') {
   v1Router.use('/dev/twilio', devTwilioRoutes); // Dev-only Twilio endpoints
 }
 v1Router.use('/onboarding', onboardingAIAssistantRoutes);
+// Apply quota check middleware to ElevenLabs endpoints
+import { elevenLabsQuotaCheck } from './middleware/elevenLabsQuotaCheck';
+
+// Create a sub-router for ElevenLabs endpoints that need quota checking
+const elevenLabsRouter = express.Router();
+elevenLabsRouter.use(elevenLabsQuotaCheck);
+elevenLabsRouter.post('/elevenlabs-stream-token', voiceAgentRoutes);
+
 v1Router.use('/voice-agent', voiceAgentRoutes);
 v1Router.use('/voice-agent/tools', toolWebhookRoutes);
 

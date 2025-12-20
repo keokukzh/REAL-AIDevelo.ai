@@ -74,6 +74,8 @@ const getOptionalEnvVars = () => ({
   // Scheduled Reports
   ENABLE_SCHEDULED_REPORTS: process.env.ENABLE_SCHEDULED_REPORTS || 'false',
   CRON_SECRET: process.env.CRON_SECRET || '',
+  // ElevenLabs Affiliate
+  ELEVENLABS_AFFILIATE_LINK: process.env.ELEVENLABS_AFFILIATE_LINK || process.env.ELEVENLABS_AFFILLIATE_LINK || '',
 });
 
 const validateEnv = () => {
@@ -223,6 +225,8 @@ export const config = {
   // Scheduled Reports
   enableScheduledReports: optionalEnvVars.ENABLE_SCHEDULED_REPORTS === 'true',
   cronSecret: optionalEnvVars.CRON_SECRET,
+  // ElevenLabs Affiliate
+  elevenLabsAffiliateLink: optionalEnvVars.ELEVENLABS_AFFILIATE_LINK,
   // Dev bypass auth (only in development/test)
   devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
   devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',

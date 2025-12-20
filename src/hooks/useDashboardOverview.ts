@@ -48,6 +48,16 @@ export interface DashboardOverview {
   calendar_connected_email?: string | null;
   last_activity?: string | null;
   gateway_health?: 'ok' | 'warning' | 'error';
+  elevenlabs_quota?: {
+    character_count: number;
+    character_limit: number;
+    percentageUsed: number;
+    remaining: number;
+    canUse: boolean;
+    warning: boolean;
+    status: 'ok' | 'warning' | 'critical';
+  } | null;
+  elevenlabs_affiliate_link?: string | null;
   _backendSha?: string; // Internal field for UI display
 }
 

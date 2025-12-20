@@ -180,6 +180,10 @@ const rateLimitConfig: Record<string, { windowMs: number; max: number }> = {
   '/api/agents': RATE_LIMITS.AGENTS,
   '/api/dashboard': RATE_LIMITS.DASHBOARD,
   
+  // ElevenLabs endpoints - strict limits to prevent cost overruns
+  '/api/voice-agent/elevenlabs-stream-token': { windowMs: 3600000, max: 5 }, // 5 per hour
+  '/api/agent/test-call': { windowMs: 86400000, max: 3 }, // 3 per day
+  
   // Health and public endpoints - lenient limits
   '/api/health': RATE_LIMITS.HEALTH,
   '/health': RATE_LIMITS.HEALTH,

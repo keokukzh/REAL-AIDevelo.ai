@@ -258,4 +258,6 @@ export const CacheTTL = {
   calendarAvailability: 60,  // 1 minute
   elevenLabsVoices: 60 * 60,  // 1 hour
   dashboardOverview: 30,      // 30 seconds (short TTL for near-real-time data)
+  agentVerification: 5 * 60,   // 5 minutes - ElevenLabs agent verification
+  signedUrl: 60,               // 1 minute - ElevenLabs signed URLs are temporary
 };

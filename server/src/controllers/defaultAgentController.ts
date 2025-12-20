@@ -13,6 +13,7 @@ import { twilioService } from '../services/twilioService';
 import { z } from 'zod';
 import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService';
 import { StructuredLoggingService } from '../services/loggingService';
+import { getElevenLabsQuota } from '../services/elevenLabsCostMonitor';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
 const getBackendVersion = (): string => {
@@ -74,6 +75,16 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
   calendar_connected_email: z.string().nullable().optional(),
   last_activity: z.string().nullable().optional(),
   gateway_health: z.enum(['ok', 'warning', 'error']).optional(),
+  elevenlabs_quota: z.object({
+    character_count: z.number(),
+    character_limit: z.number(),
+    percentageUsed: z.number(),
+    remaining: z.number(),
+    canUse: z.boolean(),
+    warning: z.boolean(),
+    status: z.enum(['ok', 'warning', 'critical']),
+  }).nullable().optional(),
+  elevenlabs_affiliate_link: z.string().nullable().optional(),
 });
 
 type DefaultAgentResponse = z.infer<typeof DefaultAgentResponseSchema>;
@@ -472,6 +483,23 @@ export const getDashboardOverview = async (
       gateway_health: gatewayHealth,
     };
 
+    // Fetch ElevenLabs quota (non-blocking, but include in response)
+    try {
+      const quota = await getElevenLabsQuota();
+      if (quota) {
+        (response as any).elevenlabs_quota = quota;
+      }
+    } catch (quotaError: any) {
+      // Log but don't fail the request
+      console.warn('[DefaultAgentController] Failed to fetch ElevenLabs quota:', quotaError.message);
+    }
+
+    // Add affiliate link from config (if available)
+    const { config } = await import('../config/env');
+    if (config.elevenLabsAffiliateLink) {
+      (response as any).elevenlabs_affiliate_link = config.elevenLabsAffiliateLink;
+    }
+
     // Validate response with Zod
     const validated = DashboardOverviewResponseSchema.parse(response);
 
@@ -569,6 +597,28 @@ export const testAgentCall = async (
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
+    }
+
+    // Check ElevenLabs quota before making test call
+    try {
+      const { elevenLabsQuotaCheck } = await import('../middleware/elevenLabsQuotaCheck');
+      // Create a mock response object to check quota
+      const mockRes = {
+        status: (code: number) => ({
+          json: (data: any) => {
+            if (code === 429) {
+              return next(new BadRequestError(data.message || 'ElevenLabs quota exceeded'));
+            }
+            return null;
+          },
+        }),
+        setHeader: () => {},
+      } as any;
+      
+      await elevenLabsQuotaCheck(req, mockRes, next);
+    } catch (quotaError: any) {
+      // If quota check fails, log but continue (fail-open)
+      console.warn('[testAgentCall] Quota check failed, continuing:', quotaError.message);
     }
 
     const { to } = req.body;
