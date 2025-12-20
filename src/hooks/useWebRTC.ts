@@ -81,12 +81,25 @@ export function useWebRTC(options: UseWebRTCOptions) {
    * Connect to FreeSWITCH
    */
   const connect = useCallback(async () => {
+    if (!freeswitchConfig) {
+      setState(prev => ({
+        ...prev,
+        error: 'FreeSWITCH configuration not loaded yet. Please wait...',
+        callStatus: 'error',
+      }));
+      return;
+    }
+
     try {
       setState(prev => ({ ...prev, error: null, callStatus: 'connecting' }));
 
+      // Extract hostname from WSS URL (remove wss:// and port if present)
+      const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0];
+      const port = freeswitchWssUrl.match(/:(\d+)/)?.[1] || '7443';
+
       // Create UserAgent
       const userAgent = new UserAgent({
-        uri: UserAgent.makeURI(`sip:${sipUsername}@${freeswitchWssUrl.replace('wss://', '')}`),
+        uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}:${port}`),
         transportOptions: {
           server: freeswitchWssUrl,
         },
@@ -123,7 +136,7 @@ export function useWebRTC(options: UseWebRTCOptions) {
         callStatus: 'error',
       }));
     }
-  }, [freeswitchWssUrl, sipUsername, sipPassword]);
+  }, [freeswitchConfig, freeswitchWssUrl, sipUsername, sipPassword]);
 
   /**
    * Start call to AI Agent
