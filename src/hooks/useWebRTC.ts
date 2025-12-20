@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { UserAgent, Registerer, Inviter, SessionState } from 'sip.js';
+import { apiClient } from '../services/apiClient';
 
 export interface WebRTCCallState {
   isConnected: boolean;
@@ -39,23 +40,42 @@ export function useWebRTC(options: UseWebRTCOptions) {
   const transcriptPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const callSidRef = useRef<string | null>(null);
 
-  // FreeSWITCH WebRTC settings
-  // In production, use same-origin WebSocket (will be proxied)
-  // In development, use localhost
-  const getFreeSWITCHWssUrl = () => {
-    if (import.meta.env.PROD) {
-      // Production: Use same-origin WebSocket (aidevelo.ai)
-      const hostname = window.location.hostname;
-      return `wss://${hostname}:7443`;
-    }
-    // Development: Use localhost
-    return import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443';
-  };
-  
-  const freeswitchWssUrl = getFreeSWITCHWssUrl();
-  const sipUsername = `test_${locationId}`;
-  const sipPassword = 'test123'; // Default test password
-  const extension = '1000'; // AI Agent extension
+  // FreeSWITCH WebRTC settings - fetch from backend
+  const [freeswitchConfig, setFreeswitchConfig] = useState<{
+    wss_url: string;
+    sip_username: string;
+    sip_password: string;
+    extension: string;
+  } | null>(null);
+
+  // Fetch FreeSWITCH config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiClient.get<{ success: boolean; config?: any }>('/v1/test-call/config');
+        if (response.data?.success && response.data.config) {
+          setFreeswitchConfig(response.data.config);
+        } else {
+          throw new Error('Invalid config response');
+        }
+      } catch (error) {
+        console.error('[useWebRTC] Failed to fetch FreeSWITCH config:', error);
+        // Fallback to defaults
+        setFreeswitchConfig({
+          wss_url: import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443',
+          sip_username: `test_${locationId}`,
+          sip_password: 'test123',
+          extension: '1000',
+        });
+      }
+    };
+    fetchConfig();
+  }, [locationId]);
+
+  const freeswitchWssUrl = freeswitchConfig?.wss_url || 'wss://localhost:7443';
+  const sipUsername = freeswitchConfig?.sip_username || `test_${locationId}`;
+  const sipPassword = freeswitchConfig?.sip_password || 'test123';
+  const extension = freeswitchConfig?.extension || '1000';
 
   /**
    * Connect to FreeSWITCH
