@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Mail, Briefcase } from 'lucide-react';
+import { Calendar, Mail, Briefcase, MessageSquare } from 'lucide-react';
 import { RevealSection } from './layout/RevealSection';
 
 interface Integration {
@@ -24,6 +24,11 @@ const integrations: Integration[] = [
     name: 'Calendly',
     icon: Calendar,
     description: 'Direkte Verbindung zu Calendly',
+  },
+  {
+    name: 'WhatsApp',
+    icon: MessageSquare,
+    description: 'WhatsApp Business Integration – gleicher Agent wie Telefon',
   },
   {
     name: 'CRM-Systeme',

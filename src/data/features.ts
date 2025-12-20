@@ -1,5 +1,5 @@
 import { Feature } from '../types';
-import { Phone, Calendar, Globe, Zap, Shield, PieChart } from 'lucide-react';
+import { Phone, Calendar, Globe, Zap, Shield, PieChart, MessageSquare } from 'lucide-react';
 
 export const features: Feature[] = [
   {
@@ -37,5 +37,11 @@ export const features: Feature[] = [
     title: "Analytics Dashboard",
     description: "Sehen Sie alle Anrufe, Transkripte und Terminbuchungen übersichtlich aufbereitet.",
     icon: PieChart
+  },
+  {
+    id: 7,
+    title: "Multichannel Pack",
+    description: "Ein Agent. Alle Kanäle. Webchat + WhatsApp nutzen dieselbe KI und Wissensbasis wie der Voice-Agent.",
+    icon: MessageSquare
   }
 ];

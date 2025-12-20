@@ -26,6 +26,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
     { key: 'numbers', label: 'Telefonnummern', values: { starter: '1', business: '2', premium: '3' } },
     { key: 'voices', label: 'Stimmen', values: { starter: '–', business: '1 Voice-Cloning', premium: '2 Voice-Cloning' } },
     { key: 'languages', label: 'Sprachen', values: { starter: 'DE', business: 'DE / EN', premium: 'DE / FR / IT / EN' } },
+    { key: 'multichannel', label: 'Multichannel (Webchat + WhatsApp)', values: { starter: 'Add-on', business: 'Add-on', premium: 'Add-on' } },
     { key: 'api', label: 'API & CRM', values: { starter: '–', business: '–', premium: 'API + CRM ready' } },
     { key: 'support', label: 'Support', values: { starter: 'E-Mail', business: 'CH Support', premium: 'Priority (Telefon & E-Mail)' } },
   ];
@@ -344,6 +345,64 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
                 </ul>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Multichannel Add-on Section */}
+        <div className="mt-16 bg-gradient-to-b from-slate-900/80 to-black border border-cyan-400/20 rounded-3xl p-8">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-semibold mb-4">
+              <span>NEU</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">Multichannel Pack</h3>
+            <p className="text-gray-400 mb-4">
+              Ein Agent. Alle Kanäle. Keine doppelte Pflege.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs mt-0.5">✓</div>
+              <div>
+                <p className="text-white font-medium">Webchat + WhatsApp</p>
+                <p className="text-gray-400 text-sm">Gleicher Agent-„Brain“ wie Telefon (Wissen, Verhalten, Tools)</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs mt-0.5">✓</div>
+              <div>
+                <p className="text-white font-medium">24/7 Chat & WhatsApp Antworten</p>
+                <p className="text-gray-400 text-sm">Inkl. Lead Capture & automatische Follow-ups</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs mt-0.5">✓</div>
+              <div>
+                <p className="text-white font-medium">Gesprächsprotokolle</p>
+                <p className="text-gray-400 text-sm">Alle Kontakte in einem Analytics-Dashboard</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs mt-0.5">✓</div>
+              <div>
+                <p className="text-white font-medium">Optional: Übergabe an Mensch</p>
+                <p className="text-gray-400 text-sm">Bei High-Intent oder komplexen Anfragen</p>
+              </div>
+            </div>
+          </div>
+          <div className="text-center">
+            <Button
+              variant="primary"
+              onClick={() => {
+                trackCTAClick('multichannel_activate', 'pricing');
+                window.location.href = '/dashboard/channels';
+              }}
+              className="px-6 py-3"
+            >
+              Multichannel aktivieren
+            </Button>
+            <p className="text-xs text-gray-500 mt-3">
+              Verfügbar als Add-on für alle Pläne. Kontaktieren Sie uns für Details.
+            </p>
           </div>
         </div>
 

@@ -17,6 +17,7 @@ const AuthCallbackPage = React.lazy(() => import('./pages/AuthCallbackPage').the
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage').then(m => ({ default: m.ImpressumPage })));
 const DatenschutzPage = React.lazy(() => import('./pages/DatenschutzPage').then(m => ({ default: m.DatenschutzPage })));
 const AGBPage = React.lazy(() => import('./pages/AGBPage').then(m => ({ default: m.AGBPage })));
+const DemoChatPage = React.lazy(() => import('./pages/DemoChatPage').then(m => ({ default: m.DemoChatPage })));
 const VoiceEditPage = React.lazy(() => import('./pages/VoiceEditPage').then(m => ({ default: m.VoiceEditPage })));
 const AgentDetailsPage = React.lazy(() => import('./pages/AgentDetailsPage').then(m => ({ default: m.AgentDetailsPage })));
 const AgentEditPage = React.lazy(() => import('./pages/AgentEditPage').then(m => ({ default: m.AgentEditPage })));
@@ -25,6 +26,7 @@ const CalendarPage = React.lazy(() => import('./pages/CalendarPage').then(m => (
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const KnowledgeBasePage = React.lazy(() => import('./pages/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const ChannelsPage = React.lazy(() => import('./pages/ChannelsPage').then(m => ({ default: m.ChannelsPage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -222,6 +224,13 @@ function AppContent() {
                         </Suspense>
                       </ProtectedRoute>
                     } />
+                    <Route path="/dashboard/channels" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                          <ChannelsPage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/knowledge-base" element={
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
@@ -249,6 +258,11 @@ function AppContent() {
                     <Route path="/agb" element={
                       <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <AGBPage />
+                      </Suspense>
+                    } />
+                    <Route path="/demo-chat" element={
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                        <DemoChatPage />
                       </Suspense>
                     } />
                     </Routes>

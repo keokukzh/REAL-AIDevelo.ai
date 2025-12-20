@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, PhoneCall, Settings, BookOpen, BarChart3, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, Calendar, PhoneCall, Settings, BookOpen, BarChart3, HelpCircle, MessageSquare } from 'lucide-react';
 import { NavItem } from '../newDashboard/NavItem';
 import { useDashboardOverview } from '../../hooks/useDashboardOverview';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -24,6 +24,9 @@ export const SideNav: React.FC = () => {
     }
     if (path === ROUTES.ANALYTICS) {
       return location.pathname === ROUTES.ANALYTICS;
+    }
+    if (path === ROUTES.CHANNELS) {
+      return location.pathname === ROUTES.CHANNELS;
     }
     return location.pathname.startsWith(path);
   };
@@ -105,6 +108,12 @@ export const SideNav: React.FC = () => {
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-6">
           Konfiguration
         </div>
+        <NavItem 
+          icon={MessageSquare} 
+          label="Kanäle" 
+          active={isActive(ROUTES.CHANNELS)} 
+          onClick={() => navigate(ROUTES.CHANNELS)} 
+        />
         <NavItem 
           icon={Settings} 
           label="Einstellungen" 
