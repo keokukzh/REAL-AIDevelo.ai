@@ -275,6 +275,10 @@ export async function ensureAgentConfig(
   goals_json: any;
   services_json: any;
   business_type: string | null;
+  greeting_template: string | null;
+  company_name: string | null;
+  booking_required_fields_json: any;
+  booking_default_duration_min: number;
 }> {
   // Check if agent config exists (use maybeSingle to avoid error if not found)
   const { data: existingConfig, error: findError } = await supabaseAdmin
@@ -312,6 +316,15 @@ export async function ensureAgentConfig(
   // Default Agent ID for immediate testing: agent_1601kcmqt4efe41bzwykaytm2yrj
   const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
 
+  // Get location name for default company_name
+  const { data: locationData } = await supabaseAdmin
+    .from('locations')
+    .select('name')
+    .eq('id', locationId)
+    .maybeSingle();
+  
+  const defaultCompanyName = locationData?.name || 'Unser Unternehmen';
+
   const { data: newConfig, error: createError } = await supabaseAdmin
     .from('agent_configs')
     .insert({
@@ -323,6 +336,10 @@ export async function ensureAgentConfig(
       goals_json: [],
       services_json: [],
       business_type: 'general',
+      greeting_template: `Grüezi, hier ist ${defaultCompanyName}. Wie kann ich Ihnen helfen?`,
+      company_name: defaultCompanyName,
+      booking_required_fields_json: ['name', 'phone', 'service', 'preferredTime', 'timezone'],
+      booking_default_duration_min: 30,
     })
     .select('*')
     .single();

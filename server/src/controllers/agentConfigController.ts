@@ -19,6 +19,10 @@ const UpdateAgentConfigSchema = z.object({
   setup_state: z.enum(['needs_persona', 'needs_business', 'needs_phone', 'needs_calendar', 'ready']).optional(),
   eleven_agent_id: z.string().optional().nullable(),
   admin_test_number: z.string().optional().nullable(),
+  greeting_template: z.string().optional().nullable(),
+  company_name: z.string().optional().nullable(),
+  booking_required_fields_json: z.array(z.string()).optional(),
+  booking_default_duration_min: z.number().int().min(5).max(480).optional(),
 }).strict();
 
 type UpdateAgentConfigRequest = z.infer<typeof UpdateAgentConfigSchema>;
@@ -35,6 +39,10 @@ const AgentConfigResponseSchema = z.object({
   services_json: z.any(),
   business_type: z.string().nullable(),
   admin_test_number: z.string().nullable().optional(),
+  greeting_template: z.string().nullable().optional(),
+  company_name: z.string().nullable().optional(),
+  booking_required_fields_json: z.array(z.string()).optional(),
+  booking_default_duration_min: z.number().optional(),
   updated_at: z.string().optional(),
 });
 
@@ -72,6 +80,10 @@ export const updateAgentConfig = async (
       'services_json',
       'eleven_agent_id',
       'admin_test_number',
+      'greeting_template',
+      'company_name',
+      'booking_required_fields_json',
+      'booking_default_duration_min',
     ] as const;
     const rawBody = (req.body ?? {}) as Record<string, unknown>;
     const whitelistedBody: Record<string, unknown> = {};
@@ -151,7 +163,7 @@ export const updateAgentConfig = async (
       .from('agent_configs')
       .update(updatePayload)
       .eq('id', agentConfig.id)
-      .select('id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, updated_at')
+      .select('id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, updated_at')
       .single();
 
     if (updateError) {
@@ -199,6 +211,12 @@ export const updateAgentConfig = async (
       services_json: updatedConfig.services_json || [],
       business_type: updatedConfig.business_type,
       admin_test_number: (updatedConfig as any).admin_test_number ?? null,
+      greeting_template: (updatedConfig as any).greeting_template ?? null,
+      company_name: (updatedConfig as any).company_name ?? null,
+      booking_required_fields_json: Array.isArray((updatedConfig as any).booking_required_fields_json)
+        ? (updatedConfig as any).booking_required_fields_json.filter((x: any) => typeof x === 'string')
+        : [],
+      booking_default_duration_min: (updatedConfig as any).booking_default_duration_min ?? 30,
       updated_at: (updatedConfig as any).updated_at,
     };
     const validatedResult = AgentConfigResponseSchema.safeParse(normalizedForResponse);

@@ -47,6 +47,7 @@ export interface DashboardOverview {
   calendar_provider?: string | null;
   calendar_connected_email?: string | null;
   last_activity?: string | null;
+  gateway_health?: 'ok' | 'warning' | 'error';
   _backendSha?: string; // Internal field for UI display
 }
 

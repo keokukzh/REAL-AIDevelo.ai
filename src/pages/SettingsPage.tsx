@@ -44,6 +44,25 @@ export const SettingsPage = () => {
   const [elevenAgentId, setElevenAgentId] = useState<string>('');
   const [isSavingAgentId, setIsSavingAgentId] = useState(false);
   
+  // New fields for agent configuration
+  const [companyName, setCompanyName] = useState<string>('');
+  const [greetingTemplate, setGreetingTemplate] = useState<string>('');
+  const [adminTestNumber, setAdminTestNumber] = useState<string>('');
+  const [bookingRequiredFields, setBookingRequiredFields] = useState<string[]>([]);
+  const [bookingDurationMin, setBookingDurationMin] = useState<number>(30);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  
+  // Available booking field options
+  const availableBookingFields = [
+    { id: 'name', label: 'Name' },
+    { id: 'phone', label: 'Telefonnummer' },
+    { id: 'email', label: 'E-Mail' },
+    { id: 'service', label: 'Service/Anliegen' },
+    { id: 'preferredTime', label: 'Wunschdatum/-zeit' },
+    { id: 'timezone', label: 'Zeitzone' },
+    { id: 'notes', label: 'Notizen/Details' },
+  ];
+  
   // Get breadcrumbs for this page
   const breadcrumbs = nav.getBreadcrumbs(location.pathname);
 
@@ -54,14 +73,21 @@ export const SettingsPage = () => {
     }
   }, [overview]);
 
-  // Initialize ElevenLabs Agent ID from overview
+  // Initialize agent config fields from overview
   useEffect(() => {
-    if (overview?.agent_config?.eleven_agent_id) {
-      setElevenAgentId(overview.agent_config.eleven_agent_id);
-    } else {
-      setElevenAgentId('');
+    if (overview?.agent_config) {
+      setElevenAgentId(overview.agent_config.eleven_agent_id || '');
+      setCompanyName((overview.agent_config as any).company_name || '');
+      setGreetingTemplate((overview.agent_config as any).greeting_template || '');
+      setAdminTestNumber((overview.agent_config as any).admin_test_number || '');
+      setBookingRequiredFields(
+        Array.isArray((overview.agent_config as any).booking_required_fields_json)
+          ? (overview.agent_config as any).booking_required_fields_json
+          : ['name', 'phone', 'service', 'preferredTime', 'timezone']
+      );
+      setBookingDurationMin((overview.agent_config as any).booking_default_duration_min || 30);
     }
-  }, [overview?.agent_config?.eleven_agent_id]);
+  }, [overview?.agent_config]);
 
   // Handle calendar OAuth postMessage events
   useEffect(() => {
@@ -308,27 +334,65 @@ export const SettingsPage = () => {
     }
   };
   
-  // Handle ElevenLabs Agent ID save
-  const handleSaveAgentId = async () => {
+  // Handle saving all agent config fields
+  const handleSaveAgentConfig = async () => {
     if (!overview?.agent_config) {
       toast.error('Agent-Konfiguration nicht gefunden');
       return;
     }
 
-    setIsSavingAgentId(true);
+    setIsSavingConfig(true);
     try {
       await updateAgentConfig.mutateAsync({
         eleven_agent_id: elevenAgentId.trim() || null,
+        company_name: companyName.trim() || null,
+        greeting_template: greetingTemplate.trim() || null,
+        admin_test_number: adminTestNumber.trim() || null,
+        booking_required_fields_json: bookingRequiredFields,
+        booking_default_duration_min: bookingDurationMin,
       });
-      toast.success('ElevenLabs Agent ID erfolgreich gespeichert');
+      
+      toast.success('Agent-Konfiguration gespeichert');
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
     } catch (error: unknown) {
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Agent ID');
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Agent-Konfiguration');
       toast.error(errorMsg);
     } finally {
-      setIsSavingAgentId(false);
+      setIsSavingConfig(false);
     }
+  };
+
+  // Handle ElevenLabs Agent ID save (legacy - kept for backward compatibility)
+  const handleSaveAgentId = async () => {
+    await handleSaveAgentConfig();
+  };
+  
+  // Toggle booking required field
+  const toggleBookingField = (fieldId: string) => {
+    setBookingRequiredFields(prev => {
+      if (prev.includes(fieldId)) {
+        return prev.filter(id => id !== fieldId);
+      } else {
+        return [...prev, fieldId];
+      }
+    });
+  };
+  
+  // Move field up/down in order
+  const moveBookingField = (fieldId: string, direction: 'up' | 'down') => {
+    setBookingRequiredFields(prev => {
+      const index = prev.indexOf(fieldId);
+      if (index === -1) return prev;
+      
+      const newFields = [...prev];
+      if (direction === 'up' && index > 0) {
+        [newFields[index - 1], newFields[index]] = [newFields[index], newFields[index - 1]];
+      } else if (direction === 'down' && index < newFields.length - 1) {
+        [newFields[index], newFields[index + 1]] = [newFields[index + 1], newFields[index]];
+      }
+      return newFields;
+    });
   };
 
   if (isLoading) {
@@ -563,6 +627,181 @@ export const SettingsPage = () => {
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* Company Name */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Building className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Firmenname
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Der Name deines Unternehmens, der in Begrüßungen verwendet wird.
+                    </p>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="z.B. AIDevelo"
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Greeting Template */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Bot className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Begrüßungstext
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Der Text, mit dem der Agent Anrufer begrüßt. Verwende <code className="text-blue-400">{'{{company_name}}'}</code> als Platzhalter für den Firmennamen.
+                    </p>
+                    <textarea
+                      value={greetingTemplate}
+                      onChange={(e) => setGreetingTemplate(e.target.value)}
+                      placeholder="z.B. Grüezi, hier ist {{company_name}}. Wie kann ich Ihnen helfen?"
+                      rows={3}
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Admin Test Number */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Test-Telefonnummer
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Deine Telefonnummer für Testanrufe (E.164 Format, z.B. +41791234567). 
+                      Diese wird beim "Agent testen" verwendet.
+                    </p>
+                    <input
+                      type="tel"
+                      value={adminTestNumber}
+                      onChange={(e) => setAdminTestNumber(e.target.value)}
+                      placeholder="+41791234567"
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Booking Required Fields */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Pflichtfelder für Terminbuchung
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Welche Angaben muss der Agent zwingend erfassen, bevor er einen Termin bucht?
+                    </p>
+                    <div className="space-y-2">
+                      {availableBookingFields.map((field) => {
+                        const isSelected = bookingRequiredFields.includes(field.id);
+                        const fieldIndex = bookingRequiredFields.indexOf(field.id);
+                        return (
+                          <label
+                            key={field.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-blue-500/20 border-blue-500/50'
+                                : 'bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleBookingField(field.id)}
+                              className="w-4 h-4 text-blue-500 focus:ring-blue-500/50 rounded"
+                            />
+                            <span className="flex-1 text-white text-sm">{field.label}</span>
+                            {isSelected && fieldIndex >= 0 && (
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    moveBookingField(field.id, 'up');
+                                  }}
+                                  disabled={fieldIndex === 0}
+                                  className="px-2 py-1 text-xs bg-slate-700/50 hover:bg-slate-600/50 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title="Nach oben"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    moveBookingField(field.id, 'down');
+                                  }}
+                                  disabled={fieldIndex === bookingRequiredFields.length - 1}
+                                  className="px-2 py-1 text-xs bg-slate-700/50 hover:bg-slate-600/50 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title="Nach unten"
+                                >
+                                  ↓
+                                </button>
+                              </div>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {bookingRequiredFields.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        Reihenfolge: {bookingRequiredFields.map(id => availableBookingFields.find(f => f.id === id)?.label).join(' → ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Booking Default Duration */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Standard-Termindauer (Minuten)
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Standarddauer für gebuchte Termine in Minuten.
+                    </p>
+                    <input
+                      type="number"
+                      min="5"
+                      max="480"
+                      step="5"
+                      value={bookingDurationMin}
+                      onChange={(e) => setBookingDurationMin(parseInt(e.target.value, 10) || 30)}
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Save All Config Button */}
+                <div className="pt-4 border-t border-slate-700/50">
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveAgentConfig}
+                    disabled={isSavingConfig || !overview?.agent_config}
+                    className="w-full"
+                  >
+                    {isSavingConfig ? (
+                      <>
+                        <LoadingSpinner className="w-4 h-4 mr-2" />
+                        Speichern...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Alle Einstellungen speichern
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </Card>

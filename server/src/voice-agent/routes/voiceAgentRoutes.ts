@@ -296,25 +296,39 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       });
     }
 
-    // Resolve eleven_agent_id from agent_configs table
-    // agentId might be agent_configs.id, so we need to get the eleven_agent_id
+    // Resolve eleven_agent_id and locationId from agent_configs table
+    // agentId might be agent_configs.id, so we need to get the eleven_agent_id and location_id
     let elevenAgentId: string | null = null;
+    let locationId: string | null = null;
 
-    // Try to get eleven_agent_id from agent_configs table
+    // Try to get eleven_agent_id and location_id from agent_configs table
     const { data: agentConfig } = await supabaseAdmin
       .from('agent_configs')
-      .select('eleven_agent_id')
+      .select('eleven_agent_id, location_id')
       .eq('id', agentId)
       .maybeSingle();
 
     if (agentConfig?.eleven_agent_id) {
       elevenAgentId = agentConfig.eleven_agent_id;
-      } else {
-        // If agentId is already an eleven_agent_id, use it directly
-        // Otherwise, use default or fail
-        const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
-        elevenAgentId = defaultAgentId;
+      locationId = agentConfig.location_id;
+    } else {
+      // If agentId is already an eleven_agent_id, use it directly
+      // Otherwise, use default or fail
+      const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+      elevenAgentId = defaultAgentId;
+      
+      // Try to resolve locationId from customerId (which might be locationId)
+      if (customerId) {
+        const { data: locationCheck } = await supabaseAdmin
+          .from('locations')
+          .select('id')
+          .eq('id', customerId)
+          .maybeSingle();
+        if (locationCheck) {
+          locationId = customerId;
+        }
       }
+    }
 
     if (!elevenAgentId) {
       return res.status(400).json({
@@ -420,13 +434,30 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
     }
 
+    // Build conversation initiation data for browser parity with phone calls
+    let conversationInitData: any = null;
+    if (locationId) {
+      try {
+        const { loadConversationInitContext, buildConversationInitData } = await import('../utils/conversationInitBuilder');
+        const initContext = await loadConversationInitContext(locationId, {
+          testMode: true, // Browser test mode
+        });
+        conversationInitData = await buildConversationInitData(initContext);
+      } catch (initError: any) {
+        console.warn('[VoiceAgentRoutes] Failed to build conversation init data:', initError.message);
+        // Continue without init data (agent will use defaults)
+      }
+    }
+
     console.log('[VoiceAgentRoutes] Generated stream token', {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
       elevenAgentId,
       customerId,
+      locationId: locationId || 'none',
       wsUrlPrefix: wsUrl.substring(0, 80) + '...',
       source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+      hasInitData: !!conversationInitData,
     });
 
     res.json({
@@ -436,6 +467,7 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
         agentId: elevenAgentId, // Return the actual ElevenLabs agent ID
         customerId,
         voiceId: voiceId || undefined,
+        conversation_initiation_client_data: conversationInitData || undefined,
       },
     });
   } catch (error: any) {

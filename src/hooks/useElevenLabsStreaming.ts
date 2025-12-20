@@ -7,6 +7,7 @@ interface StreamConfig {
   agentId: string;
   voiceId?: string;
   duration?: number;
+  conversationInitData?: any; // conversation_initiation_client_data from backend
 }
 
 interface StreamMessage {
@@ -31,7 +32,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   // Get WebSocket URL from backend
   const getStreamUrl = useCallback(async () => {
     try {
-      const response = await apiRequest<{ data: { wsUrl: string; agentId: string; customerId: string; voiceId?: string } }>('/voice-agent/elevenlabs-stream-token', {
+      const response = await apiRequest<{ data: { wsUrl: string; agentId: string; customerId: string; voiceId?: string; conversation_initiation_client_data?: any } }>('/voice-agent/elevenlabs-stream-token', {
         method: 'POST',
         data: {
           customerId: config.customerId,
@@ -40,9 +41,12 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         },
       });
       
-      // Store the actual ElevenLabs agent ID for conversation initialization
+      // Store the actual ElevenLabs agent ID and conversation init data
       if (response.data.agentId) {
         (config as any).elevenAgentId = response.data.agentId;
+      }
+      if (response.data.conversation_initiation_client_data) {
+        (config as any).conversationInitData = response.data.conversation_initiation_client_data;
       }
       
       return response.data.wsUrl;
@@ -75,8 +79,27 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         setIsLoading(false);
         reconnectAttemptRef.current = 0;
         
-        // Note: With signed URL or agent_id in URL, we don't need to send conversation_initiation
-        // The connection is already initialized with the agent_id in the URL
+        // Send conversation_initiation_client_data immediately after connection
+        // This ensures browser test parity with phone calls (same dynamic variables, greeting, etc.)
+        const initData = (config as any).conversationInitData;
+        if (initData && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({
+              type: 'conversation_initiation_client_data',
+              ...initData,
+            }));
+            logger.debug('[ElevenLabs] Sent conversation_initiation_client_data', {
+              hasDynamicVars: !!initData.dynamic_variables,
+              hasConfigOverride: !!initData.conversation_config_override,
+            });
+          } catch (initError) {
+            logger.error('[ElevenLabs] Failed to send conversation_initiation_client_data', initError instanceof Error ? initError : new Error(String(initError)));
+            // Continue anyway - agent will use defaults
+          }
+        } else {
+          logger.debug('[ElevenLabs] No conversation_initiation_client_data available, using agent defaults');
+        }
+        
         logger.debug('[ElevenLabs] WebSocket connected, ready for conversation');
       };
 

@@ -12,6 +12,7 @@ interface AgentTestModalProps {
   agentConfigId?: string;
   locationId?: string;
   elevenAgentId?: string | null;
+  adminTestNumber?: string | null;
 }
 
 type CallStatus = 'idle' | 'initiated' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer';
@@ -21,14 +22,22 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   onClose, 
   agentConfigId,
   locationId,
-  elevenAgentId 
+  elevenAgentId,
+  adminTestNumber 
 }) => {
   const [testMode, setTestMode] = useState<'info' | 'streaming'>('info');
-  const [testPhoneNumber, setTestPhoneNumber] = useState('');
+  const [testPhoneNumber, setTestPhoneNumber] = useState(adminTestNumber || '');
   const [isMakingCall, setIsMakingCall] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [callSid, setCallSid] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Update test phone number when adminTestNumber prop changes
+  useEffect(() => {
+    if (adminTestNumber) {
+      setTestPhoneNumber(adminTestNumber);
+    }
+  }, [adminTestNumber]);
 
   // Check if we have the required data for streaming
   const canStream = !!locationId && !!agentConfigId;

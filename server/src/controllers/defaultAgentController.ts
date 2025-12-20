@@ -43,6 +43,10 @@ const DefaultAgentResponseSchema = z.object({
     goals_json: z.array(z.string()),
     services_json: z.any(),
     business_type: z.string().nullable(),
+    greeting_template: z.string().nullable().optional(),
+    company_name: z.string().nullable().optional(),
+    booking_required_fields_json: z.array(z.string()).optional(),
+    booking_default_duration_min: z.number().optional(),
   }),
   status: z.object({
     agent: z.enum(['ready', 'needs_setup']),
@@ -69,6 +73,7 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
   calendar_provider: z.string().nullable().optional(),
   calendar_connected_email: z.string().nullable().optional(),
   last_activity: z.string().nullable().optional(),
+  gateway_health: z.enum(['ok', 'warning', 'error']).optional(),
 });
 
 type DefaultAgentResponse = z.infer<typeof DefaultAgentResponseSchema>;
@@ -191,6 +196,12 @@ export const createDefaultAgent = async (
         goals_json: agentConfig.goals_json,
         services_json: agentConfig.services_json,
         business_type: agentConfig.business_type,
+        greeting_template: (agentConfig as any).greeting_template ?? null,
+        company_name: (agentConfig as any).company_name ?? null,
+        booking_required_fields_json: Array.isArray((agentConfig as any).booking_required_fields_json)
+          ? (agentConfig as any).booking_required_fields_json
+          : [],
+        booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
       },
       status: {
         agent: agentStatus,
@@ -385,6 +396,20 @@ export const getDashboardOverview = async (
     }
     const phoneNumber = phoneData?.e164 || phoneData?.customer_public_number || null;
 
+    // Compute Twilio Gateway health
+    // Green when: phone connected + Twilio creds present + webhook URL configured
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
+    const hasTwilioCreds = !!(process.env.TWILIO_AUTH_TOKEN || (process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET));
+    const hasWebhookUrl = !!publicBaseUrl;
+    const expectedWebhookUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/inbound` : null;
+    
+    let gatewayHealth: 'ok' | 'warning' | 'error' = 'error';
+    if (phoneStatusEnum === 'connected' && hasTwilioCreds && hasWebhookUrl) {
+      gatewayHealth = 'ok';
+    } else if (phoneStatusEnum === 'connected' || hasTwilioCreds) {
+      gatewayHealth = 'warning'; // Partial setup
+    }
+
     // Process calendar status
     const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
     const calendarProvider = calendarData?.provider || null;
@@ -417,6 +442,12 @@ export const getDashboardOverview = async (
         goals_json: agentConfig.goals_json,
         services_json: agentConfig.services_json,
         business_type: agentConfig.business_type,
+        greeting_template: (agentConfig as any).greeting_template ?? null,
+        company_name: (agentConfig as any).company_name ?? null,
+        booking_required_fields_json: Array.isArray((agentConfig as any).booking_required_fields_json)
+          ? (agentConfig as any).booking_required_fields_json
+          : [],
+        booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
       },
       status: {
         agent: agentStatus,
@@ -438,6 +469,7 @@ export const getDashboardOverview = async (
       calendar_provider: calendarProvider,
       calendar_connected_email: calendarData?.connected_email || null,
       last_activity: lastActivity,
+      gateway_health: gatewayHealth,
     };
 
     // Validate response with Zod
@@ -566,6 +598,18 @@ export const testAgentCall = async (
       return next(new BadRequestError('No connected phone number found. Please connect a phone number first.'));
     }
 
+    // Get agent config to check for admin_test_number
+    const { data: agentConfig } = await supabaseAdmin
+      .from('agent_configs')
+      .select('admin_test_number')
+      .eq('location_id', location.id)
+      .maybeSingle();
+
+    // Use admin_test_number if provided, otherwise use the 'to' parameter
+    const targetNumber = (agentConfig?.admin_test_number && agentConfig.admin_test_number.trim()) 
+      ? agentConfig.admin_test_number.trim() 
+      : to;
+
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     if (!publicBaseUrl) {
       return next(new InternalServerError('PUBLIC_BASE_URL not configured'));
@@ -573,8 +617,8 @@ export const testAgentCall = async (
 
     const voiceUrl = `${publicBaseUrl}/api/twilio/voice/inbound`;
 
-    // Make the call via Twilio
-    const callResult = await twilioService.makeCall(phoneData.e164, to, voiceUrl);
+    // Make the call via Twilio (from connected number to targetNumber)
+    const callResult = await twilioService.makeCall(phoneData.e164, targetNumber, voiceUrl);
 
     // Create a call log entry
     const { error: insertError } = await supabaseAdmin.from('call_logs').insert({
@@ -582,13 +626,14 @@ export const testAgentCall = async (
       call_sid: callResult.sid,
       direction: 'outbound',
       from_e164: phoneData.e164,
-      to_e164: to,
+      to_e164: targetNumber,
       started_at: new Date().toISOString(),
       outcome: callResult.status,
       notes_json: {
         testCall: true,
         initiatedBy: email || 'unknown',
         agentTest: true,
+        usedAdminTestNumber: !!agentConfig?.admin_test_number,
       },
     });
 
@@ -602,7 +647,8 @@ export const testAgentCall = async (
       location_id: location.id,
       call_sid: callResult.sid,
       from: phoneData.e164,
-      to,
+      to: targetNumber,
+      usedAdminTestNumber: !!agentConfig?.admin_test_number,
       status: callResult.status,
     });
 
@@ -613,6 +659,7 @@ export const testAgentCall = async (
         status: callResult.status,
         from: callResult.from,
         to: callResult.to,
+        usedAdminTestNumber: !!agentConfig?.admin_test_number,
       },
     });
   } catch (error) {

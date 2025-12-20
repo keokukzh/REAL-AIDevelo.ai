@@ -110,6 +110,7 @@ import cronRoutes from './routes/cronRoutes';
 import scheduledReportsRoutes from './routes/scheduledReportsRoutes';
 import onboardingAIAssistantRoutes from './routes/onboardingAIAssistantRoutes';
 import voiceAgentRoutes, { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
+import toolWebhookRoutes from './voice-agent/routes/toolWebhookRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import telephonyRoutes from './routes/telephonyRoutes';
 import phoneRoutes from './routes/phoneRoutes';
@@ -449,6 +450,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 v1Router.use('/onboarding', onboardingAIAssistantRoutes);
 v1Router.use('/voice-agent', voiceAgentRoutes);
+v1Router.use('/voice-agent/tools', toolWebhookRoutes);
 
 // Versioned API mount and compatibility shim
 app.use('/api/v1', attachApiVersionHeader, v1Router);

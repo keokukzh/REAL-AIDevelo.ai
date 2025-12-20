@@ -319,11 +319,14 @@ export const DashboardPage = () => {
   const recentCallsTableData = React.useMemo(() => overview?.recent_calls ? overview.recent_calls.map(mapCallToTableRow) : [], [overview?.recent_calls]);
 
   // Determine system health status (memoized)
-  const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
-    overview?.status?.phone === 'connected' ? 'ok' : 
-    overview?.status?.phone === 'needs_compliance' ? 'warning' : 'error',
-    [overview?.status?.phone]
-  );
+  const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => {
+    // Use gateway_health from backend if available (more accurate)
+    if (overview?.gateway_health) {
+      return overview.gateway_health;
+    }
+    // Fallback to phone status-based health
+    return overview?.status?.phone === 'connected' ? 'ok' : overview?.status?.phone === 'needs_compliance' ? 'warning' : 'error';
+  }, [overview?.gateway_health, overview?.status?.phone]);
   
   const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
     overview?.status?.calendar === 'connected' ? 'ok' : 'error',
@@ -935,6 +938,7 @@ export const DashboardPage = () => {
         agentConfigId={overview.agent_config.id}
         locationId={overview.location.id}
         elevenAgentId={overview.agent_config.eleven_agent_id}
+        adminTestNumber={(overview.agent_config as any).admin_test_number || null}
       />
 
       <PhoneConnectionModal

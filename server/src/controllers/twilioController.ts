@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { logger, serializeError, redact } from '../utils/logger';
+import axios from 'axios';
+import { config } from '../config/env';
+import { loadConversationInitContext, buildConversationInitData } from '../voice-agent/utils/conversationInitBuilder';
 
 function escapeXml(value: string): string {
   return value
@@ -25,9 +28,8 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
   const callSid = req.body.CallSid || 'unknown';
   const from = req.body.From || '';
   const to = req.body.To || '';
-  const enableMediaStreams = process.env.ENABLE_MEDIA_STREAMS === 'true';
 
-  // Step 1: Upsert call_logs early to ensure locationId is available for WebSocket handler
+  // Step 1: Upsert call_logs early to ensure locationId is available
   let locationId: string | null = null;
   try {
     if (to) {
@@ -101,75 +103,118 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
     // Continue even if call log upsert fails
   }
 
-  // Feature Flag: Use Media Streams if enabled, otherwise fallback to TwiML without stream
-  if (enableMediaStreams) {
-    // Step 3: Preconditions check
-    const publicBaseUrl = process.env.PUBLIC_BASE_URL;
-    const streamToken = process.env.TWILIO_STREAM_TOKEN;
-    let fallbackReason: string | null = null;
-
-    if (!publicBaseUrl) {
-      fallbackReason = 'PUBLIC_BASE_URL not configured';
-    } else if (!streamToken) {
-      fallbackReason = 'TWILIO_STREAM_TOKEN not configured';
-    } else if (!locationId) {
-      fallbackReason = `locationId not resolvable for to=${to}`;
-    } else {
-      // Check if agent_configs.eleven_agent_id exists
-      try {
-        const { data: agentConfig } = await supabaseAdmin
-          .from('agent_configs')
-          .select('eleven_agent_id')
-          .eq('location_id', locationId)
-          .maybeSingle();
-
-        if (!agentConfig?.eleven_agent_id) {
-          fallbackReason = `eleven_agent_id missing for locationId=${locationId}`;
-        }
-      } catch (error: any) {
-        fallbackReason = `Error checking agent config: ${error.message}`;
-      }
-    }
-
-    if (fallbackReason) {
-      logger.warn('twilio.inbound.preflight_failed', redact({
-        callSid,
-        locationId,
-        reason: fallbackReason,
-      }), req);
-      const fallbackTwiml = buildTwiML(
-        `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
-      );
-      res.status(200).type('text/xml').send(fallbackTwiml);
-      return;
-    }
-
-    // Step 2: Build TwiML with Stream Parameters
-    const wsBaseUrl = getWebSocketBaseUrl(req);
-    const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(callSid)}&token=${encodeURIComponent(streamToken!)}`; // streamToken is guaranteed to exist after precondition check
-
-    logger.info('twilio.inbound.media_streams_enabled', redact({
+  // Step 2: Use ElevenLabs register-call (replaces Media Streams)
+  // This is the canonical approach per Stop Conditions: register-call must return TwiML
+  
+  // Preconditions check
+  if (!locationId) {
+    logger.warn('twilio.inbound.location_not_resolved', redact({
       callSid,
-      locationId,
-      streamUrl,
+      to,
+      from,
     }), req);
-
-    const twiml = buildTwiML(
-      `  <Connect>\n    <Stream url="${escapeXml(streamUrl)}" track="both_tracks">\n      <Parameter name="to" value="${escapeXml(to)}" />\n      <Parameter name="from" value="${escapeXml(from)}" />\n      <Parameter name="callSid" value="${escapeXml(callSid)}" />\n    </Stream>\n  </Connect>`
+    const fallbackTwiml = buildTwiML(
+      `  <Say voice="alice">Entschuldigung, die Verbindung konnte nicht hergestellt werden. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
     );
+    res.status(200).type('text/xml').send(fallbackTwiml);
+    return;
+  }
 
-    res
-      .status(200)
-      .type('text/xml')
-      .send(twiml);
-  } else {
-    // Fallback: Simple TwiML without Media Streams
-    logger.info('twilio.inbound.media_streams_disabled', redact({
+  // Check ElevenLabs API key
+  const elevenLabsApiKey = config.elevenLabsApiKey;
+  if (!elevenLabsApiKey || !config.isElevenLabsConfigured) {
+    logger.error('twilio.inbound.elevenlabs_not_configured', new Error('ELEVENLABS_API_KEY not configured'), redact({
       callSid,
       locationId,
     }), req);
     const fallbackTwiml = buildTwiML(
-      `  <Say voice="alice">Hello, please leave a message after the beep.</Say>\n  <Hangup />`
+      `  <Say voice="alice">Entschuldigung, der Service ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
+    );
+    res.status(200).type('text/xml').send(fallbackTwiml);
+    return;
+  }
+
+  try {
+    // Load conversation initiation context
+    const initContext = await loadConversationInitContext(locationId, {
+      from,
+      to,
+      callSid,
+      testMode: false,
+    });
+
+    // Get agent ID (required for register-call)
+    const agentId = initContext.agentConfig.eleven_agent_id || process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+    
+    if (!agentId) {
+      throw new Error('ElevenLabs Agent ID not found');
+    }
+
+    // Build conversation initiation data
+    const conversationInitData = await buildConversationInitData(initContext);
+
+    // Call ElevenLabs register-call API
+    logger.info('twilio.inbound.registering_call', redact({
+      callSid,
+      locationId,
+      agentId,
+      from,
+      to,
+    }), req);
+
+    const registerCallResponse = await axios.post(
+      'https://api.elevenlabs.io/v1/convai/twilio/register-call',
+      {
+        agent_id: agentId,
+        from_number: from,
+        to_number: to,
+        direction: 'inbound',
+        conversation_initiation_client_data: conversationInitData,
+      },
+      {
+        headers: {
+          'xi-api-key': elevenLabsApiKey,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      }
+    );
+
+    // ElevenLabs returns TwiML directly as text/xml
+    const twiml = registerCallResponse.data;
+
+    if (typeof twiml !== 'string' || !twiml.includes('<Response>')) {
+      logger.error('twilio.inbound.invalid_twiml_response', new Error('Invalid TwiML from ElevenLabs'), redact({
+        callSid,
+        locationId,
+        responseType: typeof twiml,
+        responsePreview: String(twiml).substring(0, 200),
+      }), req);
+      throw new Error('Invalid TwiML response from ElevenLabs');
+    }
+
+    logger.info('twilio.inbound.register_call_success', redact({
+      callSid,
+      locationId,
+      agentId,
+      twimlLength: twiml.length,
+    }), req);
+
+    // Return TwiML directly to Twilio
+    res.status(200).type('text/xml').send(twiml);
+  } catch (error: any) {
+    logger.error('twilio.inbound.register_call_failed', error, redact({
+      callSid,
+      locationId,
+      from,
+      to,
+      errorMessage: error.message,
+      errorStatus: axios.isAxiosError(error) ? error.response?.status : undefined,
+    }), req);
+
+    // Fallback TwiML on error
+    const fallbackTwiml = buildTwiML(
+      `  <Say voice="alice">Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
     );
     res.status(200).type('text/xml').send(fallbackTwiml);
   }
