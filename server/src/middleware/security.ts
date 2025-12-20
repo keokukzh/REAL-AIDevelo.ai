@@ -136,8 +136,8 @@ export const helmetMiddleware = config.isProduction
             'https://*.supabase.co',
             'https://*.supabase.io',
             'wss://*.supabase.co',
-            'https://api.elevenlabs.io',
-            'wss://api.elevenlabs.io',
+            'https://*.elevenlabs.io', // Allow all ElevenLabs regional endpoints (api.elevenlabs.io, api.us.elevenlabs.io, etc.)
+            'wss://*.elevenlabs.io', // WebSocket connections to ElevenLabs
             'https://www.google-analytics.com', // GA4
             'https://www.googletagmanager.com', // GA4
             'https://plausible.io', // Plausible Analytics
