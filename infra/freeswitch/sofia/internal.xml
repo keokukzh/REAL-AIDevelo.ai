@@ -24,8 +24,12 @@
     <param name="codec-prefs" value="OPUS,G722,PCMU,PCMA"/>
     
     <!-- Authentication -->
+    <!-- For test calls, we accept any test_* user with password test123 -->
     <param name="auth-calls" value="true"/>
     <param name="auth-all-packets" value="false"/>
+    <!-- Accept calls from any IP for WebRTC -->
+    <param name="accept-blind-reg" value="true"/>
+    <param name="accept-blind-auth" value="true"/>
     
     <!-- NAT Settings -->
     <param name="aggressive-nat-detection" value="true"/>
