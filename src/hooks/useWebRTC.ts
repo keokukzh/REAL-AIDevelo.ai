@@ -290,7 +290,7 @@ export function useWebRTC(options: UseWebRTCOptions) {
         isCalling: false,
       }));
     }
-  }, [connect, extension, freeswitchWssUrl]);
+  }, [connect, extension, freeswitchWssUrl, locationId, agentId]);
 
   /**
    * End call
