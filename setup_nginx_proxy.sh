@@ -37,7 +37,7 @@ http {
     }
 
     server {
-        listen 8080;
+        listen 8082;  # Changed from 8080 (FreeSWITCH uses it)
         server_name freeswitch.aidevelo.ai;
 
         location / {
@@ -80,7 +80,7 @@ credentials-file: /root/.cloudflared/c7580385-88ce-474b-b8bd-9bea4d52b296.json
 
 ingress:
   - hostname: freeswitch.aidevelo.ai
-    service: http://localhost:8080
+    service: http://localhost:8082
   - service: http_status:404
 EOF
 
