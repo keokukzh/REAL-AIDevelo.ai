@@ -1,12 +1,14 @@
 -- FreeSWITCH Lua script for AI Agent call controller
 -- This script handles the turn-based conversation loop
+-- IMPORTANT: When called from dialplan, session is already available via freeswitch.Session()
 
 local uuid = argv[1]
 local location_id = argv[2] or "default"
 local agent_id = argv[3] or "default"
 
--- Get the session object - this is critical for keeping the call alive
-local session = freeswitch.Session(uuid)
+-- Get the session object - CRITICAL: Use freeswitch.Session() to get current session from dialplan
+-- When called via "lua" application from dialplan, this gets the active call session
+local session = freeswitch.Session()
 local api = freeswitch.API()
 
 -- Use PUBLIC_BASE_URL or BACKEND_URL environment variable, fallback to Render URL
@@ -21,13 +23,14 @@ end
 
 log(string.format("Starting call controller: location_id=%s, agent_id=%s", location_id, agent_id))
 
--- Verify session is valid
+-- Verify session is valid - when called from dialplan, session should always exist
 if not session then
-  log("ERROR: Could not get session for UUID: " .. tostring(uuid))
+  log("ERROR: Could not get session from dialplan context!")
   return
 end
 
-log("Session obtained successfully, call will be answered by dialplan")
+-- Verify session is answered (dialplan should have called "answer" before this script)
+log("Session obtained successfully from dialplan context")
 
 -- Step 1: Notify backend that call started
 local function notify_backend(event, data)
@@ -121,66 +124,36 @@ local function record_utterance()
   
   local record_path = "/tmp/utterance_" .. uuid .. "_" .. os.time() .. ".wav"
   
-  -- Use session:recordFile for non-blocking recording (better for WebRTC)
-  -- This method is more suitable for keeping the call alive
+  -- Use session:recordFile - this is the correct method for dialplan scripts
+  -- It records audio and blocks until recording is complete or max_duration reached
   log("Starting recording with session:recordFile...")
   
   local record_success, record_err = pcall(function()
     -- session:recordFile(path, max_duration, silence_threshold, silence_duration)
-    -- Returns immediately, recording happens in background
+    -- This is BLOCKING and will wait for silence or max_duration
     session:recordFile(record_path, max_utterance_duration, 200, 500)
   end)
   
   if not record_success then
     log("Session recordFile failed: " .. tostring(record_err))
-    -- Fallback to api:execute
-    log("Falling back to api:execute record_session...")
+    -- Try alternative: use session:execute with record_session
+    log("Trying alternative recording method...")
     record_success, record_err = pcall(function()
-      return api:execute("record_session", string.format("%s %d 200 500", record_path, max_utterance_duration))
+      session:execute("record_session", string.format("%s %d 200 500", record_path, max_utterance_duration))
     end)
     if not record_success then
-      log("Fallback recording also failed: " .. tostring(record_err))
+      log("Alternative recording also failed: " .. tostring(record_err))
       return nil
-    end
-    -- api:execute is blocking, so wait a bit
-    freeswitch.msleep(500)
-  else
-    -- session:recordFile is non-blocking, wait for recording to complete
-    log("Recording started, waiting for completion...")
-    freeswitch.msleep(500) -- Initial wait
-    
-    local max_wait = max_utterance_duration * 1000 + 3000 -- Add 3 seconds buffer
-    local elapsed = 500
-    local file_ready = false
-    
-    while elapsed < max_wait and not file_ready do
-      freeswitch.msleep(300)
-      elapsed = elapsed + 300
-      
-      -- Check if file exists and has reasonable size (> 1000 bytes = ~0.1 seconds of audio)
-      local file = io.open(record_path, "rb")
-      if file then
-        file:seek("end")
-        local size = file:seek()
-        file:close()
-        
-        if size > 1000 then
-          file_ready = true
-          log(string.format("Recording complete: %d bytes", size))
-          break
-        end
-      end
-    end
-    
-    if not file_ready then
-      log("Warning: Recording may not have captured audio, but continuing anyway")
     end
   end
   
-  -- Check if file exists
+  -- Wait a moment for file to be written
+  freeswitch.msleep(500)
+  
+  -- Check if file exists and has content
   local file = io.open(record_path, "rb")
   if not file then
-    log("Recording file does not exist")
+    log("Recording file does not exist after recording")
     return nil
   end
   
@@ -324,7 +297,7 @@ local success, err = pcall(function()
     if not audio_path then
       log("Failed to record utterance, continuing with fallback")
       local speak_success = pcall(function()
-        session:speak("flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
+        session:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
       end)
       if not speak_success then
         api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
@@ -341,7 +314,7 @@ local success, err = pcall(function()
       if not response_audio_url then
         log("Failed to process turn, playing fallback")
         local speak_success = pcall(function()
-          session:speak("flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
+          session:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
         end)
         if not speak_success then
           api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
@@ -352,7 +325,7 @@ local success, err = pcall(function()
         if not play_success then
           log("Failed to play response, trying fallback")
           local speak_success = pcall(function()
-            session:speak("flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
+            session:execute("speak", "flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
           end)
           if not speak_success then
             api:execute("speak", "flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
@@ -377,7 +350,7 @@ if not success then
   -- Play error message
   pcall(function()
     local speak_success = pcall(function()
-      session:speak("flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+      session:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
     end)
     if not speak_success then
       api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")

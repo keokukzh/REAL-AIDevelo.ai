@@ -63,6 +63,11 @@ export default defineConfig(({ mode }) => {
                 return 'router';
               }
               
+              // SIP.js (WebRTC library) - separate chunk to avoid circular dependencies
+              if (id.includes('node_modules/sip.js')) {
+                return 'sipjs';
+              }
+              
               // Supabase client
               if (id.includes('node_modules/@supabase')) {
                 return 'supabase';
