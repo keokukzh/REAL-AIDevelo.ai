@@ -94,25 +94,40 @@ local function record_utterance()
   
   local record_path = "/tmp/utterance_" .. uuid .. "_" .. os.time() .. ".wav"
   
-  -- Record with silence detection
-  api:execute("record_session", record_path .. " " .. max_utterance_duration .. " 200 500")
+  -- Use detect_speech for better WebRTC compatibility
+  -- Format: detect_speech <grammar> <engine> <timeout> <result_var>
+  -- We'll use a simple recording approach instead
+  -- Record with max duration and silence detection
+  local record_cmd = string.format("record_session %s %d 200 500", record_path, max_utterance_duration)
+  local result = api:executeString(record_cmd)
   
-  -- Wait a bit for recording to start
-  freeswitch.msleep(500)
+  log("Record command result: " .. tostring(result))
   
-  -- Wait for recording to complete or timeout
-  local timeout = max_utterance_duration * 1000
+  -- Wait for file to be created and have content
+  local max_wait = max_utterance_duration * 1000 + 2000 -- Add 2 seconds buffer
   local elapsed = 0
-  while elapsed < timeout do
-    freeswitch.msleep(100)
-    elapsed = elapsed + 100
-    -- Check if file exists and has content
+  local file_ready = false
+  
+  while elapsed < max_wait and not file_ready do
+    freeswitch.msleep(200)
+    elapsed = elapsed + 200
+    
+    -- Check if file exists and has reasonable size (> 1000 bytes = ~0.1 seconds of audio)
     local file = io.open(record_path, "rb")
     if file then
+      file:seek("end")
+      local size = file:seek()
       file:close()
-      -- Check file size (if > 0, recording might be done)
-      -- For now, just wait for timeout or use silence detection
+      
+      if size > 1000 then
+        file_ready = true
+        log(string.format("Recording complete: %d bytes", size))
+      end
     end
+  end
+  
+  if not file_ready then
+    log("Warning: Recording may not have captured audio, but continuing anyway")
   end
   
   return record_path
@@ -211,45 +226,56 @@ local function play_response(audio_url)
 end
 
 -- Main conversation loop
-notify_backend("start", {})
-
-play_greeting()
-
-local turn = 0
-while turn < max_turns do
-  turn = turn + 1
-  log(string.format("Turn %d/%d", turn, max_turns))
+local success, err = pcall(function()
+  notify_backend("start", {})
   
-  -- Record utterance
-  local audio_path = record_utterance()
-  if not audio_path then
-    log("Failed to record utterance")
-    break
-  end
+  play_greeting()
   
-  -- Process turn (ASR + LLM + TTS)
-  local response_audio_url = process_turn(audio_path)
-  
-  -- Cleanup utterance file
-  os.remove(audio_path)
-  
-  if not response_audio_url then
-    log("Failed to process turn, playing fallback")
-    api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
-  else
-    -- Play response
-    if not play_response(response_audio_url) then
-      log("Failed to play response")
-      break
+  local turn = 0
+  while turn < max_turns do
+    turn = turn + 1
+    log(string.format("Turn %d/%d", turn, max_turns))
+    
+    -- Record utterance
+    local audio_path = record_utterance()
+    if not audio_path then
+      log("Failed to record utterance, continuing with fallback")
+      api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
+      freeswitch.msleep(1000)
+      -- Continue loop instead of breaking
+    else
+      -- Process turn (ASR + LLM + TTS)
+      local response_audio_url = process_turn(audio_path)
+      
+      -- Cleanup utterance file
+      pcall(function() os.remove(audio_path) end)
+      
+      if not response_audio_url then
+        log("Failed to process turn, playing fallback")
+        api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
+      else
+        -- Play response
+        local play_success = play_response(response_audio_url)
+        if not play_success then
+          log("Failed to play response, trying fallback")
+          api:execute("speak", "flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
+        end
+      end
     end
+    
+    -- Small pause between turns
+    freeswitch.msleep(500)
   end
   
-  -- Small pause between turns
-  freeswitch.msleep(500)
-end
+  -- Notify backend that call ended
+  notify_backend("end", { turns = turn })
+end)
 
--- Notify backend that call ended
-notify_backend("end", { turns = turn })
+if not success then
+  log("Error in call controller: " .. tostring(err))
+  -- Play error message and continue
+  api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+end
 
 log("Call controller finished")
 
