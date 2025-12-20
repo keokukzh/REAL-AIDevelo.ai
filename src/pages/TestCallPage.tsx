@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { Phone, PhoneOff, Mic, MicOff, Loader } from 'lucide-react';
+import { Phone, PhoneOff, Loader } from 'lucide-react';
 
 export const TestCallPage: React.FC = () => {
   const locationId = useLocationId();
