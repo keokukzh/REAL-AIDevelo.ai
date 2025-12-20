@@ -622,7 +622,7 @@ router.post('/google/create-appointment', verifySupabaseAuth, async (req: Authen
  *         required: false
  *         schema:
  *           type: string
- *         description: Calendar ID (default: 'primary')
+ *         description: "Calendar ID (default: 'primary')"
  *     responses:
  *       200:
  *         description: Events retrieved successfully
