@@ -58,31 +58,38 @@ local function play_greeting()
   -- Request greeting audio from backend
   local greeting_url = string.format("%s/api/v1/freeswitch/greeting?location_id=%s&agent_id=%s", backend_url, location_id, agent_id)
   
-  -- Download greeting audio
+  -- Download greeting audio with error handling
   local http = require("socket.http")
   local ltn12 = require("ltn12")
   local response_body = {}
   
-  local result, status = http.request{
-    url = greeting_url,
-    method = "GET",
-    sink = ltn12.sink.table(response_body)
-  }
+  local success, result, status = pcall(function()
+    return http.request{
+      url = greeting_url,
+      method = "GET",
+      sink = ltn12.sink.table(response_body)
+    }
+  end)
   
-  if status == 200 then
+  if success and status == 200 and #response_body > 0 then
     local audio_path = "/tmp/greeting_" .. uuid .. ".wav"
     local file = io.open(audio_path, "wb")
     if file then
       file:write(table.concat(response_body))
       file:close()
       
-      -- Play audio
-      api:execute("playback", audio_path)
+      -- Play audio with error handling
+      local play_result = api:execute("playback", audio_path)
+      log("Greeting playback result: " .. tostring(play_result))
       
       -- Cleanup
-      os.remove(audio_path)
+      pcall(function() os.remove(audio_path) end)
+    else
+      log("Failed to write greeting file, using fallback")
+      api:execute("speak", "flite|kal|Grüezi, wie kann ich Ihnen helfen?")
     end
   else
+    log(string.format("Greeting download failed (status: %s), using fallback", tostring(status)))
     -- Fallback: Use FreeSWITCH text-to-speech
     api:execute("speak", "flite|kal|Grüezi, wie kann ich Ihnen helfen?")
   end
@@ -94,14 +101,19 @@ local function record_utterance()
   
   local record_path = "/tmp/utterance_" .. uuid .. "_" .. os.time() .. ".wav"
   
-  -- Use detect_speech for better WebRTC compatibility
-  -- Format: detect_speech <grammar> <engine> <timeout> <result_var>
-  -- We'll use a simple recording approach instead
   -- Record with max duration and silence detection
+  -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration>
   local record_cmd = string.format("record_session %s %d 200 500", record_path, max_utterance_duration)
   local result = api:executeString(record_cmd)
   
   log("Record command result: " .. tostring(result))
+  
+  -- Check if recording command failed
+  if result and string.match(tostring(result), "%-ERR") then
+    log("Recording command failed: " .. tostring(result))
+    -- Try alternative: use park and record
+    return nil
+  end
   
   -- Wait for file to be created and have content
   local max_wait = max_utterance_duration * 1000 + 2000 -- Add 2 seconds buffer
