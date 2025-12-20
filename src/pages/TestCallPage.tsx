@@ -165,7 +165,7 @@ export const TestCallPage: React.FC = () => {
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {transcript.map((entry, index) => (
                 <div
-                  key={index}
+                  key={`${entry.timestamp}-${index}`}
                   className={`p-3 rounded ${
                     entry.role === 'user'
                       ? 'bg-blue-500/20 border-l-4 border-blue-500'
