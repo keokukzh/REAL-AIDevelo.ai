@@ -1,18 +1,49 @@
-import { createClient } from '@supabase/supabase-js';
-import { config } from '../config/env';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = config.supabaseUrl;
-const supabaseServiceRoleKey = config.supabaseServiceRoleKey;
+// Lazy initialization function - only called when supabaseAdmin is first accessed
+function initializeSupabaseAdmin(): SupabaseClient {
+  // Try to import config, but fallback to process.env if config module isn't ready
+  let supabaseUrl: string | undefined;
+  let supabaseServiceRoleKey: string | undefined;
 
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+  try {
+    const { config } = require('../config/env');
+    supabaseUrl = config?.supabaseUrl;
+    supabaseServiceRoleKey = config?.supabaseServiceRoleKey;
+  } catch (error) {
+    // Config module not ready yet, use process.env directly
+    console.warn('[supabaseDb] Config module not ready, using process.env directly');
+  }
+
+  // Fallback to process.env if config values are not available
+  supabaseUrl = supabaseUrl || process.env.SUPABASE_URL;
+  supabaseServiceRoleKey = supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
 
+// Lazy singleton - only initialize when first accessed
+let supabaseAdminInstance: SupabaseClient | null = null;
+
 // Service Role Client (server-only, bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
+// Export as a getter to ensure lazy initialization
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!supabaseAdminInstance) {
+      supabaseAdminInstance = initializeSupabaseAdmin();
+    }
+    const client = supabaseAdminInstance;
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 });
 
