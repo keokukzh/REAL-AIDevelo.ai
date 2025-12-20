@@ -131,6 +131,9 @@ export function useWebRTC(options: UseWebRTCOptions) {
         uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}`),
         transportOptions: {
           server: serverUrl,
+          // Disable Sec-WebSocket-Protocol header if FreeSWITCH doesn't support it
+          // Some FreeSWITCH configurations don't respond to this header
+          connectionTimeout: 10,
         },
         authorizationUsername: sipUsername,
         authorizationPassword: sipPassword,

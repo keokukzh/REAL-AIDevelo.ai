@@ -136,6 +136,7 @@ services:
       - ./infra/freeswitch/dialplan:/etc/freeswitch/dialplan/default
       - ./infra/freeswitch/vars.xml:/etc/freeswitch/vars.xml
       - ./infra/freeswitch/scripts:/usr/share/freeswitch/scripts
+      - ./infra/freeswitch/sofia:/etc/freeswitch/sip_profiles  # Sofia profiles for WebSocket
       - ./data/recordings:/var/freeswitch/recordings
       - /tmp:/tmp  # For TTS audio files
     environment:

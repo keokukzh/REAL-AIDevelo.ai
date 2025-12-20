@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profile name="internal">
+  <settings>
+    <!-- SIP Settings -->
+    <param name="name" value="internal"/>
+    <param name="sip-ip" value="$${local_ip_v4}"/>
+    <param name="sip-port" value="5060"/>
+    <param name="dialplan" value="XML"/>
+    <param name="context" value="default"/>
+    <param name="rtp-ip" value="$${local_ip_v4}"/>
+    <param name="rtp-port-min" value="16384"/>
+    <param name="rtp-port-max" value="32768"/>
+    
+    <!-- WebSocket Support -->
+    <param name="ws-binding" value=":5066"/>
+    <param name="wss-binding" value=":7443"/>
+    
+    <!-- WebRTC Settings -->
+    <param name="rtp-ip" value="$${local_ip_v4}"/>
+    <param name="ext-rtp-ip" value="$${external_rtp_ip}"/>
+    <param name="ext-sip-ip" value="$${external_sip_ip}"/>
+    
+    <!-- Codecs -->
+    <param name="codec-prefs" value="OPUS,G722,PCMU,PCMA"/>
+    
+    <!-- Authentication -->
+    <param name="auth-calls" value="true"/>
+    <param name="auth-all-packets" value="false"/>
+    
+    <!-- NAT Settings -->
+    <param name="aggressive-nat-detection" value="true"/>
+    <param name="rtp-autoflush-during-bridge" value="true"/>
+    
+    <!-- Logging -->
+    <param name="log-auth-failures" value="true"/>
+    <param name="log-level" value="info"/>
+  </settings>
+</profile>
+
