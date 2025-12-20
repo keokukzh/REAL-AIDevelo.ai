@@ -130,9 +130,20 @@ export function useWebRTC(options: UseWebRTCOptions) {
       }));
     } catch (error: any) {
       console.error('[useWebRTC] Connect error:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to connect to FreeSWITCH';
+      if (error.message?.includes('1006') || error.message?.includes('closed')) {
+        errorMessage = 'FreeSWITCH server is not reachable. Please ensure FreeSWITCH is running and accessible at the configured URL.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Connection timeout. FreeSWITCH server may be down or unreachable.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setState(prev => ({
         ...prev,
-        error: error.message || 'Failed to connect to FreeSWITCH',
+        error: errorMessage,
         callStatus: 'error',
       }));
     }

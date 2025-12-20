@@ -59,6 +59,17 @@ export const TestCallPage: React.FC = () => {
     );
   }
 
+  if (!agentId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-gray-400 mb-4">Agent-Konfiguration wird geladen...</p>
+          <p className="text-sm text-gray-500">Bitte warten Sie einen Moment.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
       <div className="max-w-2xl w-full">
@@ -87,8 +98,14 @@ export const TestCallPage: React.FC = () => {
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">
-              {error}
+            <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">
+              <div className="font-semibold mb-2">Verbindungsfehler:</div>
+              <div className="mb-2">{error}</div>
+              <div className="text-xs text-red-300/80 mt-2">
+                <p>Hinweis: FreeSWITCH muss auf dem konfigurierten Server laufen.</p>
+                <p>Für lokale Tests: Stellen Sie sicher, dass FreeSWITCH auf localhost:7443 läuft.</p>
+                <p>Für Production: FreeSWITCH muss auf dem konfigurierten Host erreichbar sein.</p>
+              </div>
             </div>
           )}
         </div>
