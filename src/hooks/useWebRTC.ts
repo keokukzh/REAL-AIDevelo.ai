@@ -221,28 +221,63 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       // Handle session state changes
       inviter.stateChange.addListener((newState: SessionState) => {
-        console.log('[useWebRTC] Session state:', newState);
+        console.log('[useWebRTC] Session state:', newState, SessionState[newState]);
         
-        if (newState === SessionState.Established) {
-          setState(prev => ({
-            ...prev,
-            isInCall: true,
-            callStatus: 'active',
-            isCalling: false,
-          }));
-
-          // Start polling for transcript
-          startTranscriptPolling();
-        } else if (newState === SessionState.Terminated) {
-          setState(prev => ({
-            ...prev,
-            isInCall: false,
-            callStatus: 'ended',
-            isCalling: false,
-          }));
-
-          stopTranscriptPolling();
+        // Handle all session states
+        switch (newState) {
+          case SessionState.Initial:
+            console.log('[useWebRTC] Call initializing...');
+            setState(prev => ({ ...prev, callStatus: 'connecting' }));
+            break;
+            
+          case SessionState.Establishing:
+            console.log('[useWebRTC] Call establishing...');
+            setState(prev => ({ ...prev, callStatus: 'ringing' }));
+            break;
+            
+          case SessionState.Established:
+            console.log('[useWebRTC] Call established!');
+            setState(prev => ({
+              ...prev,
+              isInCall: true,
+              callStatus: 'active',
+              isCalling: false,
+            }));
+            // Start polling for transcript
+            startTranscriptPolling();
+            break;
+            
+          case SessionState.Terminating:
+            console.log('[useWebRTC] Call terminating...');
+            setState(prev => ({ ...prev, callStatus: 'ending' }));
+            break;
+            
+          case SessionState.Terminated:
+            console.log('[useWebRTC] Call terminated');
+            setState(prev => ({
+              ...prev,
+              isInCall: false,
+              callStatus: 'ended',
+              isCalling: false,
+            }));
+            stopTranscriptPolling();
+            break;
+            
+          default:
+            console.log('[useWebRTC] Unknown session state:', newState);
         }
+      });
+      
+      // Also listen for progress events
+      inviter.on('progress', () => {
+        console.log('[useWebRTC] Call progress (180 Ringing)');
+        setState(prev => ({ ...prev, callStatus: 'ringing' }));
+      });
+      
+      // Listen for accepted events
+      inviter.on('accepted', () => {
+        console.log('[useWebRTC] Call accepted (200 OK)');
+        setState(prev => ({ ...prev, callStatus: 'active', isInCall: true, isCalling: false }));
       });
 
       // Invite
