@@ -1,11 +1,11 @@
 -- Ensure rag_documents table exists with all required columns
 -- This migration consolidates all previous migrations and ensures the table is complete
 
--- Create table if it doesn't exist
+-- Create table if it doesn't exist (without foreign keys to avoid dependency issues)
 CREATE TABLE IF NOT EXISTS rag_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id UUID REFERENCES agents(id) ON DELETE CASCADE,
-  location_id UUID REFERENCES locations(id) ON DELETE CASCADE,
+  agent_id UUID, -- Optional, no FK constraint (agents table may not exist)
+  location_id UUID, -- Will add FK constraint later if locations table exists
   name TEXT,
   title TEXT,
   file_path TEXT,
@@ -29,12 +29,25 @@ CREATE TABLE IF NOT EXISTS rag_documents (
 -- Add missing columns if they don't exist
 DO $$
 BEGIN
-  -- location_id
+  -- agent_id (optional, no FK constraint)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rag_documents' AND column_name = 'agent_id'
+  ) THEN
+    ALTER TABLE rag_documents ADD COLUMN agent_id UUID;
+  END IF;
+
+  -- location_id (add FK constraint only if locations table exists)
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'rag_documents' AND column_name = 'location_id'
   ) THEN
-    ALTER TABLE rag_documents ADD COLUMN location_id UUID REFERENCES locations(id) ON DELETE CASCADE;
+    -- Check if locations table exists before adding FK
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') THEN
+      ALTER TABLE rag_documents ADD COLUMN location_id UUID REFERENCES locations(id) ON DELETE CASCADE;
+    ELSE
+      ALTER TABLE rag_documents ADD COLUMN location_id UUID;
+    END IF;
   END IF;
 
   -- title
@@ -145,10 +158,27 @@ END $$;
 ALTER TABLE rag_documents
   ADD CONSTRAINT rag_documents_source_check CHECK (source IN ('upload', 'text', 'url'));
 
--- Create indexes if they don't exist
-CREATE INDEX IF NOT EXISTS idx_rag_documents_location_id ON rag_documents(location_id);
-CREATE INDEX IF NOT EXISTS idx_rag_documents_location_status ON rag_documents(location_id, status);
-CREATE INDEX IF NOT EXISTS idx_rag_documents_agent_id ON rag_documents(agent_id);
+-- Create indexes if they don't exist (only if columns exist)
+DO $$
+BEGIN
+  -- location_id index
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rag_documents' AND column_name = 'location_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_rag_documents_location_id ON rag_documents(location_id);
+    CREATE INDEX IF NOT EXISTS idx_rag_documents_location_status ON rag_documents(location_id, status);
+  END IF;
+  
+  -- agent_id index (only if column exists)
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rag_documents' AND column_name = 'agent_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_rag_documents_agent_id ON rag_documents(agent_id);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_rag_documents_status ON rag_documents(status);
 CREATE INDEX IF NOT EXISTS idx_rag_documents_created_at ON rag_documents(created_at);
 
