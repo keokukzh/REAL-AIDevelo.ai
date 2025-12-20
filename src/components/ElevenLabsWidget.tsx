@@ -8,23 +8,28 @@ import { useEffect } from 'react';
  */
 export const ElevenLabsWidget: React.FC = () => {
   useEffect(() => {
+    const w = globalThis.window;
+    const __canDebugLog = w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1';
+
     // Load the ElevenLabs widget script if not already loaded
     const scriptId = 'elevenlabs-convai-widget';
     if (document.getElementById(scriptId)) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H1_H3',
-          location: 'src/components/ElevenLabsWidget.tsx:alreadyLoaded',
-          message: 'ElevenLabs widget script already present',
-          data: { scriptId },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
+      if (__canDebugLog) {
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'debug-session',
+            runId: 'pre-fix',
+            hypothesisId: 'H1_H3',
+            location: 'src/components/ElevenLabsWidget.tsx:alreadyLoaded',
+            message: 'ElevenLabs widget script already present',
+            data: { scriptId },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
       // #endregion
       return; // Script already loaded
     }
@@ -37,37 +42,41 @@ export const ElevenLabsWidget: React.FC = () => {
 
     script.addEventListener('load', () => {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H1_H3',
-          location: 'src/components/ElevenLabsWidget.tsx:scriptLoad',
-          message: 'ElevenLabs widget script loaded',
-          data: { src: script.src },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
+      if (__canDebugLog) {
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'debug-session',
+            runId: 'pre-fix',
+            hypothesisId: 'H1_H3',
+            location: 'src/components/ElevenLabsWidget.tsx:scriptLoad',
+            message: 'ElevenLabs widget script loaded',
+            data: { src: script.src },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
       // #endregion
     });
 
     script.addEventListener('error', () => {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H1_H3',
-          location: 'src/components/ElevenLabsWidget.tsx:scriptError',
-          message: 'ElevenLabs widget script failed to load',
-          data: { src: script.src },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
+      if (__canDebugLog) {
+        fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'debug-session',
+            runId: 'pre-fix',
+            hypothesisId: 'H1_H3',
+            location: 'src/components/ElevenLabsWidget.tsx:scriptError',
+            message: 'ElevenLabs widget script failed to load',
+            data: { src: script.src },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
       // #endregion
     });
     

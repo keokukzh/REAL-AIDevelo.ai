@@ -10,8 +10,12 @@ import './styles/dashboard.css';
 
 // #region agent log
 // Runtime CSP + CORB diagnostics (no secrets)
-if (typeof window !== 'undefined') {
-  window.addEventListener('securitypolicyviolation', (e) => {
+if (globalThis.window) {
+  const w = globalThis.window;
+  const __canDebugLog = w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1';
+
+  w.addEventListener('securitypolicyviolation', (e) => {
+    if (!__canDebugLog) return;
     fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,9 +40,10 @@ if (typeof window !== 'undefined') {
     }).catch(() => {});
   });
 
-  window.addEventListener(
+  w.addEventListener(
     'error',
     (e) => {
+      if (!__canDebugLog) return;
       fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,7 +66,8 @@ if (typeof window !== 'undefined') {
     true
   );
 
-  window.addEventListener('unhandledrejection', (e) => {
+  w.addEventListener('unhandledrejection', (e) => {
+    if (!__canDebugLog) return;
     const reason = (e as any).reason;
     fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
       method: 'POST',
