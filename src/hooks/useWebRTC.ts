@@ -84,9 +84,12 @@ export function useWebRTC(options: UseWebRTCOptions) {
     fetchConfig();
   }, [locationId]);
 
-  // Remove port from WSS URL if present (Cloudflare Tunnel handles port)
+  // Remove port from WSS URL in production (Cloudflare Tunnel handles port)
+  // Keep port for localhost (development)
   const rawWssUrl = freeswitchConfig?.wss_url || 'wss://localhost:7443';
-  const freeswitchWssUrl = rawWssUrl.replace(/:(\d+)$/, ''); // Remove port for production (Cloudflare Tunnel)
+  const freeswitchWssUrl = rawWssUrl.includes('localhost') 
+    ? rawWssUrl  // Keep port for localhost
+    : rawWssUrl.replace(/:(\d+)$/, ''); // Remove port for production (Cloudflare Tunnel)
   const sipUsername = freeswitchConfig?.sip_username || `test_${locationId}`;
   const sipPassword = freeswitchConfig?.sip_password || 'test123';
   const extension = freeswitchConfig?.extension || '1000';
