@@ -5,22 +5,23 @@
   <!-- Extension 1000: AI Agent Demo (for test calls) -->
   <extension name="ai-agent-demo">
     <condition field="destination_number" expression="^1000$">
-      <!-- Extract location_id and agent_id from variables (set by caller or default) -->
-      <action application="set" data="location_id=${location_id:-default}"/>
-      <action application="set" data="agent_id=${agent_id:-default}"/>
-      
       <!-- Answer the call -->
       <action application="answer"/>
       
-      <!-- Set API hangup hook to notify backend when call ends -->
-      <action application="set" data="api_hangup_hook=luarun /usr/share/freeswitch/scripts/notify_hangup.lua ${uuid} ${location_id} ${agent_id}"/>
+      <!-- Play greeting using FreeSWITCH TTS -->
+      <action application="speak" data="flite|kal|Hallo! Sie sind mit dem Test-Agent verbunden. Bitte sprechen Sie nach dem Signal."/>
       
-      <!-- Start call session in backend via HTTP -->
-      <action application="set" data="call_controller_url=${call_controller_url:-http://aidevelo:5000/api/freeswitch/call/start}"/>
-      <action application="curl" data="${call_controller_url} POST location_id=${location_id}&amp;agent_id=${agent_id}&amp;call_sid=${uuid}"/>
+      <!-- Play beep -->
+      <action application="playback" data="tone_stream://%(500,500,800)"/>
       
-      <!-- Execute call controller Lua script -->
-      <action application="lua" data="call_controller.lua ${uuid} ${location_id} ${agent_id}"/>
+      <!-- Echo back audio (for testing - user can hear themselves) -->
+      <action application="echo"/>
+      
+      <!-- Keep call active for 60 seconds -->
+      <action application="sleep" data="60000"/>
+      
+      <!-- Hangup -->
+      <action application="hangup"/>
     </condition>
   </extension>
   
