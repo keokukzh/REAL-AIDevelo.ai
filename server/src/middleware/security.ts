@@ -138,9 +138,9 @@ export const helmetMiddleware = config.isProduction
             'wss://*.supabase.co',
             'https://*.elevenlabs.io', // Allow all ElevenLabs regional endpoints (api.elevenlabs.io, api.us.elevenlabs.io, etc.)
             'wss://*.elevenlabs.io', // WebSocket connections to ElevenLabs
-            'wss://aidevelo.ai:*', // FreeSWITCH WebSocket connections (production, with port)
+            'wss://aidevelo.ai:7443', // FreeSWITCH WebSocket connections (production, specific port)
+            'ws://aidevelo.ai:7443', // FreeSWITCH WebSocket connections (production, non-SSL, specific port)
             'wss://*.aidevelo.ai:*', // FreeSWITCH WebSocket connections (production subdomains, with port)
-            'ws://aidevelo.ai:*', // FreeSWITCH WebSocket connections (production, non-SSL, with port)
             'ws://*.aidevelo.ai:*', // FreeSWITCH WebSocket connections (production subdomains, non-SSL, with port)
             'wss://localhost:*', // FreeSWITCH WebSocket connections (development)
             'ws://localhost:*', // FreeSWITCH WebSocket connections (development, non-SSL)
