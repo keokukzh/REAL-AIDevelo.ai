@@ -287,12 +287,18 @@ local success, err = pcall(function()
   
   -- Notify backend that call ended
   notify_backend("end", { turns = turn })
+  
+  -- Keep call alive for a moment before ending
+  freeswitch.msleep(1000)
 end)
 
 if not success then
   log("Error in call controller: " .. tostring(err))
-  -- Play error message and continue
-  api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+  -- Play error message
+  pcall(function()
+    api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+    freeswitch.msleep(2000)
+  end)
 end
 
 log("Call controller finished")

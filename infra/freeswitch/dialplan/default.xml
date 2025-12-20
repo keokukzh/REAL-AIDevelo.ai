@@ -27,7 +27,11 @@
       
       <!-- Execute call controller Lua script -->
       <!-- This script uses OWN agent: ASR → LLM → TTS -->
+      <!-- Use park to keep call alive while Lua script runs -->
+      <action application="park"/>
       <action application="lua" data="call_controller.lua ${uuid} ${location_id} ${agent_id}"/>
+      <!-- Keep call alive - Lua script will handle hangup -->
+      <action application="sleep" data="1000"/>
     </condition>
   </extension>
   
