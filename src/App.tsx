@@ -99,6 +99,7 @@ function AppContent() {
   return (
     <>
       <ScrollToTop />
+      <ElevenLabsWidget />
       <DevQuickLogin />
               <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
                 <AnimatePresence mode='wait'>
