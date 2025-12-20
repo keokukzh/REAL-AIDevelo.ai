@@ -89,14 +89,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                         nav.goToHome();
                       }
                     }}
-                    className="flex items-center gap-2 text-white font-display font-bold text-xl tracking-wide group"
+                    className="flex items-center gap-2 text-white font-display font-bold text-xl tracking-wide group relative"
                     whileHover={{ scale: 1.05 }}
                     aria-label={isWebdesignPage ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
                 >
                     <img 
                       src={isWebdesignPage ? '/webdesign-logo-white.png' : '/main-logo.png'} 
                       alt={isWebdesignPage ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
-                      className="h-8 w-auto object-contain"
+                      className="h-8 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(0,224,255,0.5)]"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         // Fallback to main logo if webdesign logo fails to load
@@ -223,10 +223,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             <AnimatePresence>
               {mobileMenuOpen && (
                 <motion.nav 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, x: '100%' }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: '100%' }}
+                  transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
                   className="absolute top-0 right-0 w-full h-screen bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
                   aria-label="Hauptnavigation"
                 >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
+import { FloatingInput } from './ui/FloatingInput';
 import { demoService, DemoRequest } from '../services/demoService';
 import { Loader2, CheckCircle2, AlertCircle, Calendar, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { trackFormStart, trackFormSubmit, trackCTAClick } from '../lib/analytics';
@@ -168,38 +169,40 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
             transition={{ duration: 0.3 }}
             className="space-y-4"
           >
-            <div className="space-y-1">
-              <label htmlFor="lead-name" className="text-sm text-gray-300">Ihr Name *</label>
-              <input
-                id="lead-name"
-                required
-                value={formData.name}
-                onChange={handleChange('name')}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none"
-                placeholder="Max Muster"
-              />
-            </div>
+            <FloatingInput
+              id="lead-name"
+              label="Ihr Name"
+              required
+              value={formData.name}
+              onChange={handleChange('name')}
+              showSuccess={!!formData.name && !error}
+            />
 
-            <div className="space-y-1">
-              <label htmlFor="lead-email" className="text-sm text-gray-300">E-Mail-Adresse *</label>
-              <input
-                id="lead-email"
-                required
-                type="email"
-                value={formData.email}
-                onChange={handleChange('email')}
-                autoComplete="email"
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none"
-                placeholder="ihre@email.ch"
-              />
-            </div>
+            <FloatingInput
+              id="lead-email"
+              label="E-Mail-Adresse"
+              type="email"
+              required
+              value={formData.email}
+              onChange={handleChange('email')}
+              autoComplete="email"
+              showSuccess={!!formData.email && !error}
+            />
 
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-300 text-sm">
-                <AlertCircle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-300 text-sm"
+                >
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Button
               type="button"
@@ -221,40 +224,30 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
             className="space-y-4"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label htmlFor="lead-company" className="text-sm text-gray-300">Firma</label>
-                <input
-                  id="lead-company"
-                  value={formData.company}
-                  onChange={handleChange('company')}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none"
-                  placeholder="Muster AG"
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="lead-phone" className="text-sm text-gray-300">Telefon</label>
-                <input
-                  id="lead-phone"
-                  value={formData.phone}
-                  onChange={handleChange('phone')}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none"
-                  placeholder="+41 44 123 45 67"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="lead-usecase" className="text-sm text-gray-300">Kurz Ihr Use Case *</label>
-              <textarea
-                id="lead-usecase"
-                value={formData.useCase}
-                onChange={handleChange('useCase')}
-                rows={3}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-white focus:border-accent outline-none resize-none"
-                placeholder="Z.B. Terminbuchung für Praxis, Öffnungszeiten, gewünschte Sprachen..."
-                required
+              <FloatingInput
+                id="lead-company"
+                label="Firma"
+                value={formData.company}
+                onChange={handleChange('company')}
+              />
+              <FloatingInput
+                id="lead-phone"
+                label="Telefon"
+                value={formData.phone}
+                onChange={handleChange('phone')}
               />
             </div>
+
+            <FloatingInput
+              id="lead-usecase"
+              label="Kurz Ihr Use Case"
+              as="textarea"
+              required
+              value={formData.useCase}
+              onChange={handleChange('useCase')}
+              rows={3}
+              helperText="Z.B. Terminbuchung für Praxis, Öffnungszeiten, gewünschte Sprachen..."
+            />
 
             {error && (
               <div className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-300 text-sm">

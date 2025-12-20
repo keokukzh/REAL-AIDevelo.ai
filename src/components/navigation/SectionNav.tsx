@@ -94,7 +94,7 @@ export const SectionNav: React.FC<SectionNavProps> = ({
                   href={link.href}
                   onClick={(e) => handleSectionClick(e, link.href)}
                   className={`
-                    inline-block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    relative inline-block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
                     focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black
                     min-h-[44px] min-w-[44px] flex items-center justify-center
                     ${
@@ -110,6 +110,15 @@ export const SectionNav: React.FC<SectionNavProps> = ({
                   whileTap={{ scale: 0.95 }}
                 >
                   {link.name}
+                  {/* Active indicator underline */}
+                  {isActive && (
+                    <motion.span
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+                      layoutId="activeSection"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
                 </motion.a>
               </li>
             );

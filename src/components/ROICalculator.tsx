@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, PhoneMissed, DollarSign } from 'lucide-react';
+import { CountUp } from './ui/CountUp';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import { RevealSection } from './layout/RevealSection';
 
 export const ROICalculator: React.FC = () => {
   const [missedCalls, setMissedCalls] = useState(3);
   const [customerValue, setCustomerValue] = useState(150);
+  const prefersReducedMotion = useReducedMotion();
 
   // Assumptions: 1 in 3 missed calls could have been a client. 
   // Monthly loss = (Missed Calls * 30 * ConversionRate 0.33) * CustomerValue
@@ -12,14 +16,14 @@ export const ROICalculator: React.FC = () => {
   const yearlyLoss = monthlyLoss * 12;
 
   return (
-    <section className="py-20 bg-gradient-to-b from-black to-surface/50 border-t border-white/5">
+    <RevealSection className="py-20 bg-gradient-to-b from-black to-surface/50 border-t border-white/5 section-spacing">
       <div className="container mx-auto px-6 max-w-5xl">
-        <div className="text-center mb-12">
+        <RevealSection className="text-center mb-12" staggerDelay={0.05}>
           <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">
             Was kostet Sie ein <span className="text-red-500">verpasster Anruf?</span>
           </h2>
           <p className="text-gray-400 text-lg">Rechnen Sie selbst. Die meisten KMUs unterschätzen den Verlust massiv.</p>
-        </div>
+        </RevealSection>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
           
@@ -78,14 +82,15 @@ export const ROICalculator: React.FC = () => {
                 <div className="text-gray-400 font-medium mb-2">Ihr möglicher Umsatzverlust pro Jahr</div>
                 <motion.div 
                     key={yearlyLoss}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    initial={prefersReducedMotion ? {} : { scale: 0.8, opacity: 0 }}
+                    animate={prefersReducedMotion ? {} : { scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
                     className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500"
                 >
-                    {yearlyLoss.toLocaleString('de-CH')} CHF
+                    <CountUp end={yearlyLoss} prefix="" suffix=" CHF" duration={1500} />
                 </motion.div>
                 <div className="text-sm text-gray-500 mt-2">
-                    (~{monthlyLoss.toLocaleString('de-CH')} CHF / Monat)
+                    (~<CountUp end={monthlyLoss} prefix="" suffix=" CHF / Monat" duration={1200} />)
                 </div>
              </div>
 
@@ -109,6 +114,6 @@ export const ROICalculator: React.FC = () => {
           </div>
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

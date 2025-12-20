@@ -18,6 +18,7 @@ import { Footer } from '../components/Footer';
 import { LeadCaptureForm } from '../components/LeadCaptureForm';
 import { SectionNav } from '../components/navigation/SectionNav';
 import { Integrations } from '../components/Integrations';
+import { RevealSection } from '../components/layout/RevealSection';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export const LandingPage = () => {
@@ -102,7 +103,7 @@ export const LandingPage = () => {
         <DemoSection onStartOnboarding={startOnboarding} />
         
         {/* Lead Capture Form for demo requests */}
-        <section id="lead-capture" className="py-20 bg-gradient-to-b from-black via-slate-950 to-black relative overflow-hidden">
+        <RevealSection id="lead-capture" className="py-20 bg-gradient-to-b from-black via-slate-950 to-black relative overflow-hidden section-spacing">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
           <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start relative z-10">
             <div className="space-y-4">
@@ -124,7 +125,7 @@ export const LandingPage = () => {
             </div>
             <LeadCaptureForm />
           </div>
-        </section>
+        </RevealSection>
 
         {/* 7. Pricing with Recommendation */}
         <Pricing onStartOnboarding={startOnboarding} onOpenLeadCapture={scrollToLeadCapture} />

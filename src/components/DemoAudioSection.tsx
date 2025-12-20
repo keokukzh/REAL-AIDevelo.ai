@@ -1,28 +1,24 @@
 import React from 'react';
 import { Play, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { RevealSection } from './layout/RevealSection';
 
 export function DemoAudioSection() {
   return (
-    <section className="py-24 bg-surface border-y border-white/5 relative overflow-hidden">
+    <RevealSection className="py-24 bg-surface border-y border-white/5 relative overflow-hidden section-spacing">
         {/* Background Gradients */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl -z-10" />
 
       <div className="container mx-auto px-4 max-w-5xl text-center">
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-16"
-        >
+        <RevealSection className="mb-16" staggerDelay={0.05}>
             <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
             Hören Sie den <span className="text-accent">Unterschied</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Unsere Voice Agents klingen so menschlich, dass Ihre Kunden den Unterschied nicht bemerken werden. Überzeugen Sie sich selbst.
             </p>
-        </motion.div>
+        </RevealSection>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <AudioCard 
@@ -30,25 +26,22 @@ export function DemoAudioSection() {
             subtitle="Perfekt für lokale KMU"
             file="/audio/demo_de.mp3" 
             flag="🇨🇭"
-            delay={0.1}
           />
           <AudioCard 
             title="Français (Suisse)" 
             subtitle="Pour la Romandie"
             file="/audio/demo_fr.mp3" 
             flag="🇫🇷"
-            delay={0.2}
           />
           <AudioCard 
             title="Italiano (Svizzera)" 
             subtitle="Per il Ticino"
             file="/audio/demo_it.mp3" 
             flag="🇮🇹"
-            delay={0.3}
           />
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 }
 
@@ -57,18 +50,17 @@ interface AudioCardProps {
     subtitle: string;
     file: string;
     flag: string;
-    delay: number;
 }
 
-function AudioCard({ title, subtitle, file, flag, delay }: AudioCardProps) {
+function AudioCard({ title, subtitle, file, flag }: AudioCardProps) {
   return (
-    <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
-        viewport={{ once: true }}
-        className="bg-background p-6 rounded-2xl border border-white/10 hover:border-accent/50 transition-all group text-left"
-    >
+    <div className="bg-background p-6 rounded-2xl border border-white/10 hover:border-transparent transition-all group text-left hover:-translate-y-2 hover:shadow-xl hover:shadow-accent/10 relative">
+      {/* Gradient border on hover */}
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent/30 via-primary/20 to-accent/30 p-[1px]">
+          <div className="h-full w-full rounded-2xl bg-background" />
+        </div>
+      </div>
       <div className="flex items-start justify-between mb-6">
         <div>
             <div className="text-4xl mb-2">{flag}</div>
@@ -86,6 +78,6 @@ function AudioCard({ title, subtitle, file, flag, delay }: AudioCardProps) {
             Ihr Browser unterstützt dieses Audio-Element nicht.
           </audio>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
 
   const linkVariants = {
-    hover: { x: 5, color: '#00E0FF' }
+    hover: prefersReducedMotion ? {} : { x: 4, color: '#00E0FF' }
   };
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -65,61 +67,96 @@ export const Footer: React.FC = () => {
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="#features" 
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#features')} 
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Funktionen Sektion navigieren"
                 >
-                  Funktionen
+                  <span className="relative z-10">Funktionen</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="#industries" 
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#industries')} 
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Branchen Sektion navigieren"
                 >
-                  Branchen
+                  <span className="relative z-10">Branchen</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="#demo" 
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')} 
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Live Demo Sektion navigieren"
                 >
-                  Live Demo
+                  <span className="relative z-10">Live Demo</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="#how-it-works" 
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#how-it-works')} 
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Ablauf Sektion navigieren"
                 >
-                  Ablauf
+                  <span className="relative z-10">Ablauf</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="#pricing" 
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#pricing')} 
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Preise Sektion navigieren"
                 >
-                  Preise
+                  <span className="relative z-10">Preise</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
             </ul>
@@ -131,37 +168,58 @@ export const Footer: React.FC = () => {
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="/impressum" 
                   onClick={(e) => { e.preventDefault(); navigate('/impressum'); }}
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zum Impressum navigieren"
                 >
-                  Impressum
+                  <span className="relative z-10">Impressum</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="/datenschutz" 
                   onClick={(e) => { e.preventDefault(); navigate('/datenschutz'); }}
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zur Datenschutzerklärung navigieren"
                 >
-                  Datenschutz
+                  <span className="relative z-10">Datenschutz</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
               <li>
                 <motion.a 
                   whileHover="hover" 
-                  variants={linkVariants} 
+                  variants={linkVariants}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   href="/agb" 
                   onClick={(e) => { e.preventDefault(); navigate('/agb'); }}
-                  className="inline-block transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center"
+                  className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu den AGB navigieren"
                 >
-                  AGB
+                  <span className="relative z-10">AGB</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
                 </motion.a>
               </li>
             </ul>
@@ -172,13 +230,21 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-gray-400">
               <li>Zürich, Schweiz</li>
               <li>
-                <a 
+                <motion.a 
                   href="mailto:hello@aidevelo.ai" 
-                  className="hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] inline-flex items-center"
+                  whileHover={prefersReducedMotion ? {} : { x: 4, color: '#00E0FF' }}
+                  transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  className="hover:text-accent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] inline-flex items-center group relative"
                   aria-label="E-Mail an hello@aidevelo.ai senden"
                 >
-                  hello@aidevelo.ai
-                </a>
+                  <span className="relative z-10">hello@aidevelo.ai</span>
+                  <motion.span
+                    className="absolute left-0 bottom-0 h-0.5 bg-accent origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
+                  />
+                </motion.a>
               </li>
             </ul>
           </div>

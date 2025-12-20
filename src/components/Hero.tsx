@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { HeroBackground } from './hero/HeroBackground';
 import { HeroPhone } from './hero/HeroPhone';
+import { HeroWaveAnimation } from './animations/HeroWaveAnimation';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { trackCTAClick } from '../lib/analytics';
 
 interface HeroProps {
@@ -14,6 +16,20 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
   const { scrollY } = useScroll();
   const yContent = useTransform(scrollY, [0, 500], [0, 100]);
+  const prefersReducedMotion = useReducedMotion();
+  
+  // Split headline for kinetic typography
+  const headlineWords = useMemo(() => [
+    'Ihr',
+    '24/7',
+    'Teamqualifizierer'
+  ], []);
+  
+  const subheadlineWords = useMemo(() => [
+    'für',
+    'Schweizer',
+    'KMUs'
+  ], []);
 
   const scrollToDemo = () => {
     const demoSection = document.getElementById('demo');
@@ -73,12 +89,54 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
                 <span className="text-xs font-semibold tracking-wide text-slate-300 uppercase">Jetzt live: Schweizerdeutsch v2.0</span>
               </div>
               
-              {/* Heading */}
+              {/* Heading with Kinetic Typography */}
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-display leading-tight tracking-tight drop-shadow-2xl">
-                <span className="text-white">Ihr 24/7 Teamqualifizierer</span>
+                <span className="text-white inline-flex flex-wrap gap-x-2">
+                  {headlineWords.map((word, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: prefersReducedMotion ? 0 : 0.5,
+                        delay: prefersReducedMotion ? 0 : i * 0.1,
+                        ease: [0.19, 1, 0.22, 1]
+                      }}
+                      className="inline-block"
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </span>
                 <br />
-                <span className="gradient-text">für Schweizer KMUs</span>
+                <span className="gradient-text inline-flex flex-wrap gap-x-2">
+                  {subheadlineWords.map((word, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: prefersReducedMotion ? 0 : 0.5,
+                        delay: prefersReducedMotion ? 0 : (headlineWords.length + i) * 0.1,
+                        ease: [0.19, 1, 0.22, 1]
+                      }}
+                      className="inline-block"
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </span>
               </h1>
+              
+              {/* Floating Voice Wave Visualization */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: prefersReducedMotion ? 0 : 0.6, duration: 0.5 }}
+                className="mt-6"
+              >
+                <HeroWaveAnimation />
+              </motion.div>
               
               {/* Subheading */}
               <div className="text-lg md:text-xl text-slate-300 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
@@ -145,36 +203,63 @@ export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection
             <motion.div 
                initial={{ opacity: 0, scale: 0.9, x: 20 }}
                animate={{ opacity: 1, scale: 1, x: 0 }}
-               transition={{ duration: 0.8, delay: 0.2 }}
+               transition={{ duration: prefersReducedMotion ? 0 : 0.8, delay: prefersReducedMotion ? 0 : 0.2 }}
                className="relative lg:h-[700px] flex items-center justify-center perspective-1000"
             >
-                {/* Glow Effect behind Phone */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 rounded-full blur-[80px] -z-10" />
+                {/* Breathing Glow Effect behind Phone */}
+                <motion.div 
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 rounded-full blur-[80px] -z-10"
+                  animate={prefersReducedMotion ? {} : {
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.4, 0.3]
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
                 
-                <HeroPhone />
+                {/* Phone with subtle float animation */}
+                <motion.div
+                  animate={prefersReducedMotion ? {} : {
+                    y: [0, -10, 0]
+                  }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <HeroPhone />
+                </motion.div>
 
                 {/* Floating Elements (Decorations) */}
-                <motion.div 
-                    animate={{ y: [0, -20, 0] }}
-                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-                    className="absolute top-20 right-10 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl hidden lg:block"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-xs font-mono text-slate-300">Termin gebucht: 14:30</span>
-                    </div>
-                </motion.div>
+                {!prefersReducedMotion && (
+                  <>
+                    <motion.div 
+                        animate={{ y: [0, -20, 0] }}
+                        transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                        className="absolute top-20 right-10 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl hidden lg:block"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-xs font-mono text-slate-300">Termin gebucht: 14:30</span>
+                        </div>
+                    </motion.div>
 
-                <motion.div 
-                    animate={{ y: [0, 20, 0] }}
-                    transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-40 -left-10 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl hidden lg:block"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                        <span className="text-xs font-mono text-slate-300">Anruf transkribiert</span>
-                    </div>
-                </motion.div>
+                    <motion.div 
+                        animate={{ y: [0, 20, 0] }}
+                        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 1 }}
+                        className="absolute bottom-40 -left-10 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl hidden lg:block"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                            <span className="text-xs font-mono text-slate-300">Anruf transkribiert</span>
+                        </div>
+                    </motion.div>
+                  </>
+                )}
 
             </motion.div>
 

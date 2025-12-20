@@ -1,0 +1,169 @@
+/* AIDevelo Design Tokens - CSS Variables */
+/* These variables complement Tailwind config for dynamic theming */
+
+:root {
+  /* Primary Colors */
+  --color-background: #0E0E0E;
+  --color-surface: #111827;
+  --color-primary: #1A73E8;
+  --color-accent: #00E0FF;
+  --color-swiss-red: #DA291C;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #00E0FF;
+
+  /* Gray Scale */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+  --color-gray-950: #030712;
+
+  /* Spacing (8pt grid) */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+  --spacing-3xl: 4rem;     /* 64px */
+  --spacing-4xl: 6rem;     /* 96px */
+  --spacing-5xl: 8rem;     /* 128px */
+
+  /* Typography */
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* Shadows - Elevation System */
+  --shadow-elevation-0: none;
+  --shadow-elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-elevation-5: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+
+  /* Glow Effects */
+  --glow-accent: 0 0 20px rgba(0, 224, 255, 0.3);
+  --glow-primary: 0 0 20px rgba(26, 115, 232, 0.3);
+  --glow-red: 0 0 20px rgba(218, 41, 28, 0.3);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+
+  /* Animation Durations */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+  --duration-slowest: 800ms;
+
+  /* Animation Easing */
+  --easing-ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --easing-ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --easing-ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* Glass/Blur Effects */
+  --glass-light: rgba(255, 255, 255, 0.05);
+  --glass-medium: rgba(255, 255, 255, 0.1);
+  --glass-heavy: rgba(255, 255, 255, 0.15);
+
+  /* Container Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+  --container-max: 1280px; /* max-w-7xl equivalent */
+}
+
+/* Utility Classes for Gradients */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(135deg, var(--color-accent) 0%, #38BDF8 100%);
+}
+
+.bg-gradient-surface {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+}
+
+/* Glass Morphism Utilities */
+.glass-light {
+  background: var(--glass-light);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-medium {
+  background: var(--glass-medium);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.glass-heavy {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+}
+
+/* Elevation Utilities */
+.elevation-0 {
+  box-shadow: var(--shadow-elevation-0);
+}
+
+.elevation-1 {
+  box-shadow: var(--shadow-elevation-1);
+}
+
+.elevation-2 {
+  box-shadow: var(--shadow-elevation-2);
+}
+
+.elevation-3 {
+  box-shadow: var(--shadow-elevation-3);
+}
+
+.elevation-4 {
+  box-shadow: var(--shadow-elevation-4);
+}
+
+.elevation-5 {
+  box-shadow: var(--shadow-elevation-5);
+}
+
+/* Section Spacing Rhythm */
+.section-spacing {
+  padding-top: var(--spacing-2xl);
+  padding-bottom: var(--spacing-2xl);
+}
+
+@media (min-width: 768px) {
+  .section-spacing {
+    padding-top: var(--spacing-3xl);
+    padding-bottom: var(--spacing-3xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-spacing {
+    padding-top: var(--spacing-4xl);
+    padding-bottom: var(--spacing-4xl);
+  }
+}

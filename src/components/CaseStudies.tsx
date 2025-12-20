@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Clock, Star, MapPin, Quote } from 'lucide-react';
+import { RevealSection } from './layout/RevealSection';
 
 const cases = [
   {
@@ -57,18 +58,11 @@ const cases = [
   }
 ];
 
-const CaseCard: React.FC<{ data: typeof cases[0], index: number }> = ({ data, index }) => {
+const CaseCard: React.FC<{ data: typeof cases[0] }> = ({ data }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.1 }}
-      whileHover={{ y: -5 }}
-      className="group relative bg-surface/30 border border-white/5 rounded-3xl overflow-hidden hover:border-white/20 transition-all duration-300 flex flex-col h-full"
-    >
+    <div className="group relative bg-surface/30 border border-white/5 rounded-3xl overflow-hidden hover:border-white/20 transition-all duration-300 flex flex-col h-full hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10">
       {/* Header Image Area */}
-      <div className="h-32 w-full relative overflow-hidden">
+      <div className="h-32 w-full relative overflow-hidden z-10">
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
         <img 
           src={data.image} 
@@ -118,18 +112,18 @@ const CaseCard: React.FC<{ data: typeof cases[0], index: number }> = ({ data, in
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
 export const CaseStudies: React.FC = () => {
   return (
-    <section className="py-24 bg-black relative">
+    <RevealSection className="py-24 bg-black relative section-spacing">
       {/* Background Gradient */}
       <div className="absolute right-0 top-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16 max-w-3xl mx-auto">
+        <RevealSection className="text-center mb-16 max-w-3xl mx-auto" staggerDelay={0.05}>
           <div className="inline-block px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-accent mb-4">
             Erfolgsgeschichten
           </div>
@@ -139,14 +133,14 @@ export const CaseStudies: React.FC = () => {
           <p className="text-gray-400 text-lg">
             Sehen Sie, wie Unternehmen ihre Prozesse automatisiert und den Umsatz gesteigert haben.
           </p>
-        </div>
+        </RevealSection>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cases.map((item, index) => (
-            <CaseCard key={index} data={item} index={index} />
+            <CaseCard key={index} data={item} />
           ))}
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

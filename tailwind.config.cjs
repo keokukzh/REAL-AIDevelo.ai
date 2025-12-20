@@ -21,6 +21,32 @@ module.exports = {
         primary: '#1A73E8',
         accent: '#00E0FF',
         'swiss-red': '#DA291C',
+        // Semantic colors
+        success: '#10B981',
+        warning: '#F59E0B',
+        error: '#EF4444',
+        info: '#00E0FF',
+        // Gray scale (full range)
+        gray: {
+          50: '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
+          950: '#030712',
+        },
+      },
+      // Gradient utilities
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, #1A73E8 0%, #00E0FF 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #00E0FF 0%, #38BDF8 100%)',
+        'gradient-surface': 'linear-gradient(180deg, rgba(17,24,39,0.8) 0%, rgba(15,23,42,0.9) 100%)',
+        'gradient-hero': 'linear-gradient(135deg, rgba(26,115,232,0.1) 0%, rgba(0,224,255,0.1) 100%)',
       },
       // Spacing scale (4px base unit)
       spacing: {
@@ -91,10 +117,12 @@ module.exports = {
         'normal': '200ms',
         'slow': '300ms',
         'slower': '500ms',
+        'slowest': '800ms',
       },
       transitionTimingFunction: {
         'ease-in-out-back': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'ease-out-expo': 'cubic-bezier(0.19, 1, 0.22, 1)',
+        'ease-out-cubic': 'cubic-bezier(0.33, 1, 0.68, 1)',
       },
       animation: {
         'blob': 'blob 7s infinite',

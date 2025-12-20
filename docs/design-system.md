@@ -103,18 +103,88 @@ Spacing scale based on 4px base unit:
 - **glow-accent**: Cyan glow effect
 - **glow-primary**: Blue glow effect
 - **glow-red**: Red glow effect
+- **glow-success**: Green glow effect
+
+#### Gradients
+- **gradient-primary**: `linear-gradient(135deg, #1A73E8 0%, #00E0FF 100%)` - Primary to accent gradient
+- **gradient-accent**: `linear-gradient(135deg, #00E0FF 0%, #38BDF8 100%)` - Accent gradient
+- **gradient-surface**: `linear-gradient(180deg, rgba(17,24,39,0.8) 0%, rgba(15,23,42,0.9) 100%)` - Surface gradient
+- **gradient-hero**: `linear-gradient(135deg, rgba(26,115,232,0.1) 0%, rgba(0,224,255,0.1) 100%)` - Hero background gradient
+
+**Usage:**
+```tsx
+<div className="bg-gradient-primary">...</div>
+<div className="bg-gradient-accent">...</div>
+```
+
+#### Glass Morphism
+- **glass-light**: `rgba(255,255,255,0.05) backdrop-blur-xl` - Subtle glass effect
+- **glass-medium**: `rgba(255,255,255,0.1) backdrop-blur-2xl` - Medium glass effect
+- **glass-heavy**: `rgba(255,255,255,0.15) backdrop-blur-2xl` - Strong glass effect
+
+**Usage:**
+```tsx
+<div className="glass-light">...</div>
+<div className="glass-medium">...</div>
+```
+
+#### Elevation System
+- **elevation-0**: No shadow
+- **elevation-1**: Subtle elevation (cards at rest)
+- **elevation-2**: Medium elevation (hovered cards)
+- **elevation-3**: High elevation (modals, dropdowns)
+- **elevation-4**: Very high elevation (overlays)
+- **elevation-5**: Maximum elevation (full-screen modals)
+
+**Usage:**
+```tsx
+<div className="elevation-2">...</div>
+```
+
+### CSS Variables
+
+All design tokens are also available as CSS variables in `src/styles/design-tokens.css`:
+
+```css
+/* Colors */
+--color-primary: #1A73E8;
+--color-accent: #00E0FF;
+--color-success: #10B981;
+/* ... */
+
+/* Spacing */
+--spacing-xs: 0.25rem;
+--spacing-sm: 0.5rem;
+/* ... */
+
+/* Shadows */
+--shadow-elevation-1: ...;
+--shadow-elevation-2: ...;
+/* ... */
+```
+
+**Usage:**
+```css
+.custom-element {
+  background: var(--color-primary);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-elevation-2);
+}
+```
 
 ### Animations
 
 #### Durations
-- **fast**: 150ms - Quick transitions
-- **normal**: 200ms - Standard transitions
-- **slow**: 300ms - Smooth transitions
-- **slower**: 500ms - Deliberate transitions
+- **fast**: 150ms - Quick transitions (hover states, microinteractions)
+- **normal**: 200ms - Standard transitions (default)
+- **slow**: 300ms - Smooth transitions (card hovers, reveals)
+- **slower**: 500ms - Deliberate transitions (section transitions)
+- **slowest**: 800ms - Signature hero motion only
 
 #### Easing
-- **ease-in-out-back**: Bouncy animations
-- **ease-out-expo**: Smooth deceleration
+- **ease-in-out-back**: `cubic-bezier(0.68, -0.55, 0.265, 1.55)` - Bouncy animations (buttons, cards)
+- **ease-out-expo**: `cubic-bezier(0.19, 1, 0.22, 1)` - Smooth deceleration (default, section reveals)
+- **ease-out-cubic**: `cubic-bezier(0.33, 1, 0.68, 1)` - Quick microinteractions
 
 #### Keyframe Animations
 - **fade-in**: Fade in animation

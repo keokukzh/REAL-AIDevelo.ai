@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Mic } from 'lucide-react';
+import { RevealSection } from './layout/RevealSection';
 
 interface DemoSectionProps {
   onStartOnboarding?: () => void;
@@ -41,19 +42,13 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
   }, [isPlaying]);
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden" id="demo">
+    <RevealSection className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden section-spacing" id="demo">
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
       
       <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         
         {/* Mock Phone UI */}
-        <motion.div 
-           initial={{ opacity: 0, x: -50 }}
-           whileInView={{ opacity: 1, x: 0 }}
-           viewport={{ once: true }}
-           transition={{ duration: 0.8 }}
-           className="relative flex justify-center"
-        >
+        <div className="relative flex justify-center">
           <div className="relative w-[320px] h-[640px] bg-black rounded-[3rem] border-4 border-gray-800 shadow-2xl p-4 overflow-hidden z-10 ring-1 ring-white/10">
             {/* Dynamic Island */}
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-20"></div>
@@ -135,15 +130,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
 
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Description */}
         <div className="space-y-8">
-           <motion.div
-             initial={{ opacity: 0, y: 30 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-           >
+           <div>
              <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">
                Terminbuchung in <br />
                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">30 Sekunden</span>
@@ -174,11 +165,11 @@ export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) =
                  Termin buchen
                </a>
              </div>
-           </motion.div>
+           </div>
         </div>
 
       </div>
-    </section>
+    </RevealSection>
   );
 };
 

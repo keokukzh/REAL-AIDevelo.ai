@@ -4,6 +4,7 @@ import App from './App';
 import { HelmetProvider } from 'react-helmet-async';
 import { initSentry } from './lib/sentry';
 import './index.css';
+import './styles/design-tokens.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
 

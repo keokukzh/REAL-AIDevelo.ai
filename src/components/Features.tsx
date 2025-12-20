@@ -2,17 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { features } from '../data/features';
 import { Feature } from '../types';
+import { RevealSection } from './layout/RevealSection';
 
-const FeatureCard: React.FC<{ feature: Feature; index: number }> = ({ feature, index }) => {
+const FeatureCard: React.FC<{ feature: Feature }> = ({ feature }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -5 }}
-      className="group relative p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-accent/30 hover:bg-white/10 transition-all duration-300 backdrop-blur-md overflow-hidden"
-    >
+    <div className="group relative p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-transparent hover:bg-white/10 transition-all duration-300 backdrop-blur-md overflow-hidden hover:-translate-y-2 hover:shadow-xl hover:shadow-accent/10">
+      {/* Gradient border on hover */}
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent/30 via-primary/20 to-accent/30 p-[1px]">
+          <div className="h-full w-full rounded-2xl bg-white/5" />
+        </div>
+      </div>
       <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
       <div className="relative z-10">
@@ -23,40 +23,29 @@ const FeatureCard: React.FC<{ feature: Feature; index: number }> = ({ feature, i
         <h3 className="text-xl font-bold text-white mb-3 font-display">{feature.title}</h3>
         <p className="text-gray-400 leading-relaxed">{feature.description}</p>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
 export const Features: React.FC = () => {
   return (
-    <section className="py-24 relative" id="features">
+    <RevealSection className="py-24 relative section-spacing" id="features">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16 max-w-2xl mx-auto">
-          <motion.h2 
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-             className="text-3xl md:text-5xl font-bold font-display mb-6"
-          >
+        <RevealSection className="text-center mb-16 max-w-2xl mx-auto" staggerDelay={0.05}>
+          <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
             Mehr als nur ein <span className="text-accent">Anrufbeantworter</span>.
-          </motion.h2>
-          <motion.p 
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-             transition={{ delay: 0.2 }}
-             className="text-gray-400 text-lg"
-          >
+          </h2>
+          <p className="text-gray-400 text-lg">
             Ein kompletter Voice Agent, der Ihr Geschäft skaliert und Prozesse automatisiert.
-          </motion.p>
-        </div>
+          </p>
+        </RevealSection>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <FeatureCard key={feature.id} feature={feature} index={index} />
+          {features.map((feature) => (
+            <FeatureCard key={feature.id} feature={feature} />
           ))}
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

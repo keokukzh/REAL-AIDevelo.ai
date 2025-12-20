@@ -1,6 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Briefcase, Building2, Stethoscope, Scissors, Utensils, Wrench, Shield, CheckCircle2 } from 'lucide-react';
+import { RevealSection } from './layout/RevealSection';
+import { useReducedMotion as useReducedMotionHook } from '../hooks/useReducedMotion';
 
 const LogoItem: React.FC<{ Icon: any, name: string }> = ({ Icon, name }) => (
   <div className="flex items-center gap-2 text-gray-400 mx-8 hover:text-white transition-colors cursor-default">
@@ -10,6 +12,9 @@ const LogoItem: React.FC<{ Icon: any, name: string }> = ({ Icon, name }) => (
 );
 
 export const TrustSection: React.FC = () => {
+  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
+  const prefersReducedMotion = useReducedMotionHook();
+  
   const logos = [
     { Icon: Scissors, name: "Barbershop Zürich" },
     { Icon: Building2, name: "Meier Immobilien AG" },
@@ -29,17 +34,13 @@ export const TrustSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 border-y border-white/5 bg-black/50 backdrop-blur-sm relative z-20">
+    <RevealSection className="py-16 border-y border-white/5 bg-black/50 backdrop-blur-sm relative z-20">
       <div className="container mx-auto px-6">
         {/* Trust Badges Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
           {trustBadges.map((badge, idx) => (
-            <motion.div
+            <div
               key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
               className={`flex flex-col items-center justify-center gap-2 px-4 py-3 rounded-xl border ${badge.border} ${badge.bg} backdrop-blur-sm`}
             >
               {badge.icon ? (
@@ -50,7 +51,7 @@ export const TrustSection: React.FC = () => {
               <span className={`text-xs font-medium text-center ${badge.color}`}>
                 {badge.text}
               </span>
-            </motion.div>
+            </div>
           ))}
         </div>
 
@@ -60,19 +61,28 @@ export const TrustSection: React.FC = () => {
             Bereits eingesetzt von modernen Unternehmen in der Schweiz
           </p>
           <p className="text-lg font-semibold text-white">
-            Bereits <span className="text-accent">50+ KMUs</span> vertrauen uns
+            Bereits <span className="text-accent"><CountUp end={50} suffix="+" /> KMUs</span> vertrauen uns
           </p>
         </div>
       
         {/* Company Logos Carousel */}
-        <div className="relative flex overflow-hidden group">
-          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />
+        <div 
+          className="relative flex overflow-hidden group"
+          onMouseEnter={() => !prefersReducedMotion && setIsMarqueePaused(true)}
+          onMouseLeave={() => setIsMarqueePaused(false)}
+        >
+          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
           
           <motion.div 
             className="flex whitespace-nowrap"
-            animate={{ x: [0, -1000] }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            animate={prefersReducedMotion || isMarqueePaused ? {} : { x: [0, -1000] }}
+            transition={{ 
+              duration: 30, 
+              repeat: Infinity, 
+              ease: "linear",
+              repeatDelay: 0
+            }}
           >
             {[...logos, ...logos, ...logos].map((logo, idx) => (
               <LogoItem key={idx} Icon={logo.Icon} name={logo.name} />
@@ -80,6 +90,6 @@ export const TrustSection: React.FC = () => {
           </motion.div>
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

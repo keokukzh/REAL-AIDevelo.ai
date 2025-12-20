@@ -4,6 +4,7 @@ import { Scissors, Stethoscope, Car, Home, Wrench, Heart, Briefcase } from 'luci
 import { Button } from './ui/Button';
 import { IndustryDemoPreview } from './IndustryDemoPreview';
 import { getIndustryDemo } from '../data/industryDemos';
+import { RevealSection } from './layout/RevealSection';
 
 interface IndustryTabsProps {
   onStartOnboarding?: (industry?: string) => void;
@@ -79,12 +80,12 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
   const [activeTab, setActiveTab] = useState(industries[0]);
 
   return (
-    <section className="py-24 bg-black relative" id="industries">
+    <RevealSection className="py-24 bg-black relative section-spacing" id="industries">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-12">
+        <RevealSection className="text-center mb-12" staggerDelay={0.05}>
            <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">Versteht <span className="text-accent">Ihr Business.</span></h2>
            <p className="text-gray-400">Keine generische Lösung. Wählen Sie Ihre Branche:</p>
-        </div>
+        </RevealSection>
 
         {/* Tabs Navigation */}
         <div className="flex flex-wrap justify-center gap-4 mb-12">
@@ -171,6 +172,6 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
             </motion.div>
         </AnimatePresence>
       </div>
-    </section>
+    </RevealSection>
   );
 };

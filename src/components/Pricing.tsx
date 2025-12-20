@@ -1,9 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 import { Check, Star } from 'lucide-react';
 import { Button } from './ui/Button';
 import { pricingPlans } from '../data/pricing';
 import { trackCTAClick } from '../lib/analytics';
+import { RevealSection } from './layout/RevealSection';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface PricingProps {
   onStartOnboarding?: () => void;
@@ -43,12 +46,12 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
   };
 
   return (
-    <section className="py-24 relative overflow-hidden" id="pricing">
+    <RevealSection className="py-24 relative overflow-hidden section-spacing" id="pricing">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
+        <RevealSection className="text-center mb-16" staggerDelay={0.05}>
           <h2 className="text-4xl md:text-5xl font-bold font-display mb-4">Preise für Schweizer KMU.</h2>
           <p className="text-gray-400 mb-6">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
           
@@ -94,7 +97,7 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
               </p>
             </div>
           </motion.div>
-        </div>
+        </RevealSection>
 
         {/* 3+1 Layout: 3 Plans oben, Enterprise darunter */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
@@ -119,12 +122,20 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
                   onKeyDown={(e) => handleKeyDown(e, plan.id)}
                   role="button"
                   tabIndex={0}
-                  className={`relative p-8 rounded-3xl flex flex-col cursor-pointer transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  className={`group relative p-8 rounded-3xl flex flex-col cursor-pointer transition-all duration-300 ease-out-expo focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:outline-none ${
                     isHighlighted
-                      ? 'bg-gradient-to-b from-gray-800 to-black border-2 border-cyan-400/60 shadow-[0_0_80px_rgba(34,211,238,0.4)] hover:scale-105 hover:shadow-[0_0_100px_rgba(34,211,238,0.5)] order-first md:order-none'
-                      : 'bg-slate-900/80 border border-slate-800 backdrop-blur-md hover:border-slate-700'
+                      ? 'bg-gradient-to-b from-gray-800 to-black border-2 border-cyan-400/60 shadow-[0_0_80px_rgba(34,211,238,0.4)] hover:scale-105 hover:-translate-y-2 hover:shadow-[0_0_100px_rgba(34,211,238,0.5)] order-first md:order-none'
+                      : 'bg-slate-900/80 border border-slate-800 backdrop-blur-md hover:border-transparent hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/20'
                   }`}
                 >
+                  {/* Gradient border on hover for non-highlighted cards */}
+                  {!isHighlighted && (
+                    <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/30 via-accent/20 to-primary/30 p-[1px]">
+                        <div className="h-full w-full rounded-3xl bg-slate-900/80" />
+                      </div>
+                    </div>
+                  )}
                   {/* Badges */}
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
                     {isHighlighted && plan.badge && (
@@ -288,16 +299,26 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
-                {comparisonRows.map((row) => (
-                  <tr key={row.key}>
+              <tbody ref={tableRef} className="divide-y divide-slate-800">
+                {comparisonRows.map((row, index) => (
+                  <motion.tr
+                    key={row.key}
+                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                    animate={isTableInView && !prefersReducedMotion ? { opacity: 1, y: 0 } : {}}
+                    transition={{
+                      duration: 0.3,
+                      delay: prefersReducedMotion ? 0 : index * 0.05,
+                      ease: [0.19, 1, 0.22, 1]
+                    }}
+                    className="hover:bg-white/5 transition-colors duration-200"
+                  >
                     <td className="py-3 pr-4 text-gray-300">{row.label}</td>
                     {regularPlans.map((p) => (
                       <td key={p.id} className="py-3 px-4">
                         {row.values[p.id as RegularPlanId]}
                       </td>
                     ))}
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
@@ -330,6 +351,6 @@ export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadC
           </p>
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

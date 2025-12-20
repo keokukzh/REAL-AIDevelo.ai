@@ -54,13 +54,20 @@ export const NavLink: React.FC<NavLinkProps> = ({
       <motion.a
         href={to}
         onClick={handleClick}
-        className={`${baseClasses} ${className}`}
+        className={`${baseClasses} ${className} relative`}
         whileHover={{ scale: 1.05, color: '#fff' }}
         whileFocus={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label={ariaLabel || label}
       >
         {content}
+        {/* Animated underline on hover */}
+        <motion.span
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent origin-left"
+          initial={{ scaleX: 0 }}
+          whileHover={{ scaleX: 1 }}
+          transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
+        />
       </motion.a>
     );
   }

@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Settings, CalendarCheck, Zap } from 'lucide-react';
+import { RevealSection } from './layout/RevealSection';
 
 export const HowItWorks: React.FC = () => {
   const steps = [
@@ -22,23 +22,18 @@ export const HowItWorks: React.FC = () => {
   ];
 
   return (
-    <section className="py-24 bg-black relative z-10" id="how-it-works">
+    <RevealSection className="py-24 bg-black relative z-10 section-spacing" id="how-it-works">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
+        <RevealSection className="text-center mb-16" staggerDelay={0.05}>
           <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">In 3 Schritten zum <span className="text-primary">Autopiloten</span></h2>
           <p className="text-gray-400">Keine komplexe IT-Integration notwendig.</p>
-        </div>
+        </RevealSection>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, index) => (
-            <motion.div
+            <div
               key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -5 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.2 }}
-              className="relative p-8 rounded-2xl bg-surface/50 border border-white/5 hover:bg-surface hover:border-primary/30 transition-all duration-300 group"
+              className="relative p-8 rounded-2xl bg-surface/50 border border-white/5 hover:bg-surface hover:border-primary/30 transition-all duration-300 group hover:-translate-y-2"
             >
               {/* Connector Line */}
               {index < steps.length - 1 && (
@@ -51,10 +46,10 @@ export const HowItWorks: React.FC = () => {
               
               <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
               <p className="text-gray-400">{step.desc}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
-    </section>
+    </RevealSection>
   );
 };

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus } from 'lucide-react';
 import { faqs } from '../data/faq';
 import { FaqItem } from '../types';
+import { RevealSection } from './layout/RevealSection';
 
 const AccordionItem: React.FC<{ item: FaqItem, isOpen: boolean, onClick: () => void }> = ({ item, isOpen, onClick }) => {
   return (
@@ -72,12 +73,12 @@ export const FAQ: React.FC = () => {
   };
 
   return (
-    <section className="py-24 bg-surface/30" id="faq">
+    <RevealSection className="py-24 bg-surface/30 section-spacing" id="faq">
       <div className="container mx-auto px-6 max-w-5xl">
-        <div className="text-center mb-12">
+        <RevealSection className="text-center mb-12" staggerDelay={0.05}>
           <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">Häufig gestellte Fragen</h2>
           <p className="text-gray-400">Die wichtigsten Fragen auf einen Blick</p>
-        </div>
+        </RevealSection>
         
         {/* Top 5 FAQs - Prominent */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
@@ -104,6 +105,6 @@ export const FAQ: React.FC = () => {
           </div>
         )}
       </div>
-    </section>
+    </RevealSection>
   );
 };
