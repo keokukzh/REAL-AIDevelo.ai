@@ -33,6 +33,7 @@ export function VoiceAgentStreamingUI({
 
   const [callActive, setCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track call duration
   useEffect(() => {
@@ -53,21 +54,46 @@ export function VoiceAgentStreamingUI({
 
   const handleStartCall = async () => {
     try {
+      // Start listening immediately to enable audio playback (required for browser autoplay policy)
+      // This ensures the AudioContext is activated by user interaction
       await connect();
       setCallActive(true);
       setCallDuration(0);
+      
+      // Auto-start listening after a short delay to ensure WebSocket is ready
+      // This allows the agent to speak immediately
+      setTimeout(() => {
+        startListening().catch((err) => {
+          console.warn('[VoiceAgentStreamingUI] Auto-start listening failed (user can start manually):', err);
+        });
+      }, 500);
     } catch (err) {
       console.error('Failed to start call:', err);
     }
   };
 
   const handleEndCall = () => {
+    // Clear auto-start timeout if still pending
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+      autoStartTimeoutRef.current = null;
+    }
+    
     stopListening();
     disconnect();
     setCallActive(false);
     setCallDuration(0);
     onClose?.();
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">

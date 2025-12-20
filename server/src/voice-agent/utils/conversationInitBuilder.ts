@@ -110,6 +110,7 @@ export async function buildConversationInitData(
   }
 
   // Build conversation config override (optional first message)
+  // IMPORTANT: first_message triggers the agent to speak immediately
   const conversationConfigOverride: ConversationInitiationClientData['conversation_config_override'] = {
     agent: {
       first_message: greeting,

@@ -11,7 +11,7 @@ interface StreamConfig {
 }
 
 interface StreamMessage {
-  type: 'conversation_initiation' | 'audio_out' | 'user_transcript' | 'server_mid' | 'client_mid';
+  type: 'conversation_initiation' | 'conversation_initiation_metadata' | 'audio' | 'audio_out' | 'user_transcript' | 'agent_response' | 'server_mid' | 'client_mid';
   [key: string]: any;
 }
 
@@ -73,24 +73,43 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       // Connect to ElevenLabs WebSocket
       const ws = new WebSocket(wsUrl);
 
-      ws.onopen = () => {
+      ws.onopen = async () => {
         logger.debug('[ElevenLabs] WebSocket connected');
         setIsConnected(true);
         setIsLoading(false);
         reconnectAttemptRef.current = 0;
+        
+        // Initialize AudioContext immediately (required for browser autoplay policy)
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        
+        // Resume AudioContext if suspended (required for autoplay)
+        if (audioContextRef.current.state === 'suspended') {
+          try {
+            await audioContextRef.current.resume();
+            logger.debug('[ElevenLabs] AudioContext resumed on connection');
+          } catch (resumeError) {
+            logger.warn('[ElevenLabs] Could not resume AudioContext (may require user interaction)', resumeError instanceof Error ? resumeError : new Error(String(resumeError)));
+          }
+        }
         
         // Send conversation_initiation_client_data immediately after connection
         // This ensures browser test parity with phone calls (same dynamic variables, greeting, etc.)
         const initData = (config as any).conversationInitData;
         if (initData && ws.readyState === WebSocket.OPEN) {
           try {
-            ws.send(JSON.stringify({
+            // Ensure proper message format for ElevenLabs
+            const initMessage = {
               type: 'conversation_initiation_client_data',
               ...initData,
-            }));
+            };
+            
+            ws.send(JSON.stringify(initMessage));
             logger.debug('[ElevenLabs] Sent conversation_initiation_client_data', {
               hasDynamicVars: !!initData.dynamic_variables,
               hasConfigOverride: !!initData.conversation_config_override,
+              messageType: initMessage.type,
             });
           } catch (initError) {
             logger.error('[ElevenLabs] Failed to send conversation_initiation_client_data', initError instanceof Error ? initError : new Error(String(initError)));
@@ -194,12 +213,24 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   }, [getStreamUrl]);
 
   // Handle incoming audio from ElevenLabs
-  const handleAudioMessage = useCallback((audioBlob: Blob) => {
+  const handleAudioMessage = useCallback(async (audioBlob: Blob) => {
+    // Ensure AudioContext is created and resumed (required for browser autoplay policy)
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
 
     const audioContext = audioContextRef.current;
+    
+    // Resume AudioContext if suspended (required for autoplay)
+    if (audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume();
+        logger.debug('[ElevenLabs] AudioContext resumed');
+      } catch (resumeError) {
+        logger.error('[ElevenLabs] Failed to resume AudioContext', resumeError instanceof Error ? resumeError : new Error(String(resumeError)));
+      }
+    }
+
     const reader = new FileReader();
 
     reader.onload = async (e) => {
@@ -212,9 +243,18 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
         source.start(0);
+        
+        logger.debug('[ElevenLabs] Audio played', {
+          duration: audioBuffer.duration,
+          sampleRate: audioBuffer.sampleRate,
+        });
       } catch (err) {
         logger.error('[ElevenLabs] Failed to play audio', err instanceof Error ? err : new Error(String(err)));
       }
+    };
+
+    reader.onerror = (error) => {
+      logger.error('[ElevenLabs] FileReader error', error instanceof Error ? error : new Error(String(error)));
     };
 
     reader.readAsArrayBuffer(audioBlob);
@@ -224,26 +264,73 @@ export function useElevenLabsStreaming(config: StreamConfig) {
   const handleMessage = useCallback((message: StreamMessage) => {
     switch (message.type) {
       case 'conversation_initiation':
-        logger.debug('[ElevenLabs] Conversation initialized');
+      case 'conversation_initiation_metadata':
+        logger.debug('[ElevenLabs] Conversation initialized', {
+          conversationId: (message as any).conversation_id,
+          agentOutputFormat: (message as any).agent_output_audio_format,
+          userInputFormat: (message as any).user_input_audio_format,
+        });
         break;
 
       case 'user_transcript':
         setTranscript(message.transcript || '');
+        logger.debug('[ElevenLabs] User transcript', { transcript: message.transcript });
+        break;
+
+      case 'agent_response':
+        logger.debug('[ElevenLabs] Agent response', { response: (message as any).response });
         break;
 
       case 'server_mid':
         logger.debug('[ElevenLabs] Server MID', { mid: message.mid });
         break;
 
+      case 'audio':
+        // Handle base64-encoded audio (alternative format)
+        if ((message as any).audio) {
+          try {
+            const audioData = atob((message as any).audio);
+            const arrayBuffer = new ArrayBuffer(audioData.length);
+            const view = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < audioData.length; i++) {
+              view[i] = audioData.charCodeAt(i);
+            }
+            const blob = new Blob([arrayBuffer], { type: 'audio/pcm' });
+            handleAudioMessage(blob);
+          } catch (audioError) {
+            logger.error('[ElevenLabs] Failed to decode base64 audio', audioError instanceof Error ? audioError : new Error(String(audioError)));
+          }
+        }
+        break;
+
       default:
-        logger.debug('[ElevenLabs] Message', { type: message.type });
+        logger.debug('[ElevenLabs] Message', { type: message.type, message });
     }
-  }, []);
+  }, [handleAudioMessage]);
 
   // Start microphone input
   const startListening = useCallback(async () => {
     try {
       setError(null);
+
+      // Ensure AudioContext is created and resumed first (required for audio playback)
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
+          sampleRate: 16000,
+        });
+      }
+
+      const audioContext = audioContextRef.current;
+      
+      // Resume AudioContext if suspended (required for autoplay)
+      if (audioContext.state === 'suspended') {
+        try {
+          await audioContext.resume();
+          logger.debug('[ElevenLabs] AudioContext resumed for microphone');
+        } catch (resumeError) {
+          logger.warn('[ElevenLabs] Could not resume AudioContext', resumeError instanceof Error ? resumeError : new Error(String(resumeError)));
+        }
+      }
 
       // Check if microphone permission is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -257,6 +344,7 @@ export function useElevenLabsStreaming(config: StreamConfig) {
               echoCancellation: true,
               noiseSuppression: true,
               autoGainControl: true,
+              sampleRate: 16000, // Match ElevenLabs expected format
             },
           });
         } catch (mediaError: any) {
@@ -270,13 +358,6 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         }
       }
 
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 16000,
-        });
-      }
-
-      const audioContext = audioContextRef.current;
       const mediaStream = mediaStreamRef.current;
 
       // Create audio processing chain
@@ -290,14 +371,23 @@ export function useElevenLabsStreaming(config: StreamConfig) {
 
         // Send audio to WebSocket
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // Convert Float32Array to Int16Array (PCM format expected by ElevenLabs)
+          const int16Array = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            // Clamp to [-1, 1] and convert to 16-bit integer
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          
           // Convert to base64 for transmission
-          const audioData = new Uint8Array(
-            inputData.length > 0 ? inputData : new Float32Array(1)
+          const base64Audio = btoa(
+            String.fromCharCode.apply(null, Array.from(int16Array) as any)
           );
+          
           wsRef.current.send(
             JSON.stringify({
-              type: 'user_audio',
-              audio: btoa(String.fromCharCode.apply(null, Array.from(audioData) as any)),
+              type: 'audio',
+              audio: base64Audio,
             })
           );
         }
@@ -308,10 +398,12 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       processor.connect(audioContext.destination);
 
       setIsListening(true);
+      logger.debug('[ElevenLabs] Microphone listening started');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to access microphone';
       setError(message);
       setIsListening(false);
+      logger.error('[ElevenLabs] Failed to start listening', err instanceof Error ? err : new Error(String(err)));
     }
   }, []);
 
