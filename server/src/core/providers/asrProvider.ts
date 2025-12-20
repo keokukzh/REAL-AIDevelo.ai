@@ -39,6 +39,7 @@ export class FasterWhisperProvider implements ASRProvider {
   async transcribe(audio: Buffer, language?: string): Promise<ASRTranscriptionResult> {
     try {
       const axios = require('axios');
+      // Convert Buffer to base64 string
       const audioBase64 = audio.toString('base64');
 
       const response = await axios.post(
@@ -90,7 +91,10 @@ export class OpenAIWhisperProvider implements ASRProvider {
 
     try {
       // OpenAI Whisper expects a File-like object
-      const file = new File([audio], 'audio.wav', { type: 'audio/wav' });
+      // Convert Buffer to Uint8Array, then to Blob, then to File
+      const uint8Array = new Uint8Array(audio);
+      const blob = new Blob([uint8Array], { type: 'audio/wav' });
+      const file = new File([blob], 'audio.wav', { type: 'audio/wav' });
       
       const response = await this.client.audio.transcriptions.create({
         file: file,

@@ -4,7 +4,7 @@ import { logger, redact } from '../../utils/logger';
 export interface Conversation {
   id: string;
   location_id: string;
-  channel: 'webchat' | 'whatsapp';
+  channel: 'webchat' | 'whatsapp' | 'voice';
   external_user_id: string;
   created_at: string;
   last_message_at: string;
@@ -14,7 +14,7 @@ export interface ConversationMessage {
   id: string;
   conversation_id: string;
   location_id: string;
-  channel: 'webchat' | 'whatsapp';
+  channel: 'webchat' | 'whatsapp' | 'voice';
   role: 'user' | 'assistant' | 'system';
   text: string;
   external_message_id: string | null;
@@ -28,7 +28,7 @@ export class ConversationRepository {
    */
   async getOrCreateConversation(
     locationId: string,
-    channel: 'webchat' | 'whatsapp',
+    channel: 'webchat' | 'whatsapp' | 'voice',
     externalUserId: string
   ): Promise<Conversation> {
     // Try to find existing conversation
@@ -110,7 +110,7 @@ export class ConversationRepository {
   async saveMessage(
     conversationId: string,
     locationId: string,
-    channel: 'webchat' | 'whatsapp',
+    channel: 'webchat' | 'whatsapp' | 'voice',
     role: 'user' | 'assistant' | 'system',
     text: string,
     externalMessageId?: string,
@@ -154,7 +154,7 @@ export class ConversationRepository {
    * Check if a message with external_message_id already exists (for idempotency)
    */
   async messageExists(
-    channel: 'webchat' | 'whatsapp',
+    channel: 'webchat' | 'whatsapp' | 'voice',
     externalMessageId: string
   ): Promise<boolean> {
     const { data, error } = await supabaseAdmin

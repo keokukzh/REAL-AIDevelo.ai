@@ -13,6 +13,7 @@ export interface PromptContext {
   ragContextText?: string; // New: formatted RAG context from contextBuilder
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   tools?: Array<{ name: string; description: string }>;
+  channelInstructions?: string; // Channel-specific prompt instructions
 }
 
 /**

@@ -145,7 +145,13 @@ export class AgentCore {
 
       // Inject channel-specific prompt into context
       if (channelPrompt) {
-        promptContext.channelInstructions = channelPrompt;
+        (promptContext as any).channelInstructions = channelPrompt;
+        // For voice, append channel instructions to RAG context text
+        if (channel === 'voice' && promptContext.ragContextText) {
+          promptContext.ragContextText = promptContext.ragContextText + '\n\n' + channelPrompt;
+        } else if (channel === 'voice') {
+          promptContext.ragContextText = channelPrompt;
+        }
       }
 
       // Step 8: Get LLM response

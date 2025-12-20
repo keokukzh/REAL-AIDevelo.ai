@@ -80,13 +80,14 @@ export class ProvisioningService {
       if (existingAgentConfig) {
         agentConfigId = existingAgentConfig.id;
 
-        // Update voice_profile_id if not set
-        if (!existingAgentConfig.voice_profile_id) {
-          await supabaseAdmin
-            .from('agent_configs')
-            .update({ voice_profile_id: voiceProfileId })
-            .eq('id', agentConfigId);
-        }
+      // Update voice_profile_id if not set
+      const existingConfig = existingAgentConfig as any;
+      if (!existingConfig.voice_profile_id) {
+        await supabaseAdmin
+          .from('agent_configs')
+          .update({ voice_profile_id: voiceProfileId })
+          .eq('id', agentConfigId);
+      }
 
         logger.info('provisioning.agent_config_exists', redact({ locationId, agentConfigId }));
       } else {
