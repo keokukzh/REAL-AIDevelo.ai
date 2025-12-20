@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
-import { VoiceAgentStreamingUI } from './VoiceAgentStreamingUI';
 import { AlertCircle, Phone, Info, Loader, CheckCircle, XCircle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { toast } from '../ui/Toast';
@@ -25,7 +25,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   elevenAgentId,
   adminTestNumber 
 }) => {
-  const [testMode, setTestMode] = useState<'info' | 'streaming'>('info');
+  const navigate = useNavigate();
   const [testPhoneNumber, setTestPhoneNumber] = useState(adminTestNumber || '');
   const [isMakingCall, setIsMakingCall] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
@@ -39,12 +39,13 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
     }
   }, [adminTestNumber]);
 
-  // Check if we have the required data for streaming
-  const canStream = !!locationId && !!agentConfigId;
+  // Check if we have the required data for testing
+  const canTest = !!locationId && !!agentConfigId;
 
-  const handleStartTest = () => {
-    if (canStream) {
-      setTestMode('streaming');
+  const handleStartBrowserTest = () => {
+    if (canTest) {
+      onClose();
+      navigate('/dashboard/test-call');
     }
   };
 
@@ -54,7 +55,6 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       setCallStatus('idle');
       setCallSid(null);
       setTestPhoneNumber('');
-      setTestMode('info');
     }
   }, [isOpen]);
 
@@ -110,42 +110,26 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   };
 
   const handleClose = () => {
-    setTestMode('info');
     setTestPhoneNumber('');
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Agent testen" size="lg">
-      {testMode === 'info' ? (
-        <div className="space-y-4">
-          {!canStream ? (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
-              <div>
-                <h3 className="text-sm font-semibold text-yellow-300 mb-1">
-                  Agent-Test wird noch implementiert
-                </h3>
-                <p className="text-xs text-yellow-200/80">
-                  Die Testanruf-Funktion wird in einer zukünftigen Version verfügbar sein. 
-                  Du kannst den Agent über die zugewiesene Telefonnummer testen.
-                </p>
-              </div>
+      <div className="space-y-4">
+        {!canTest ? (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
+            <div>
+              <h3 className="text-sm font-semibold text-yellow-300 mb-1">
+                Agent-Konfiguration fehlt
+              </h3>
+              <p className="text-xs text-yellow-200/80">
+                Bitte vervollständige zuerst die Agent-Konfiguration, um den Agent testen zu können.
+              </p>
             </div>
-          ) : !elevenAgentId ? (
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3">
-              <Info className="text-blue-400 mt-0.5" size={20} />
-              <div>
-                <h3 className="text-sm font-semibold text-blue-300 mb-1">
-                  ElevenLabs Agent nicht konfiguriert
-                </h3>
-                <p className="text-xs text-blue-200/80">
-                  Der Agent benötigt eine ElevenLabs Agent ID, um getestet werden zu können.
-                  Bitte vervollständige zuerst die Agent-Konfiguration.
-                </p>
-              </div>
-            </div>
-          ) : (
+          </div>
+        ) : (
             <div className="space-y-4">
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                 <div className="flex items-center gap-3 mb-3">
@@ -220,56 +204,22 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                   )}
                 </div>
 
-                {/* Streaming Test (Alternative) */}
+                {/* Browser Test (WebRTC) */}
                 <div className="pt-4 border-t border-gray-700">
                   <p className="text-xs text-gray-400 mb-3">
-                    Oder teste den Agent direkt im Browser:
+                    Oder teste den Agent direkt im Browser mit WebRTC:
                   </p>
                   <button
-                    onClick={handleStartTest}
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded font-medium hover:bg-gray-600 transition-colors"
+                    onClick={handleStartBrowserTest}
+                    className="w-full px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors"
                   >
-                    Browser-Test starten
+                    Browser-Test starten (WebRTC)
                   </button>
                 </div>
               </div>
             </div>
           )}
         </div>
-      ) : (
-        <div className="space-y-4">
-          {canStream && locationId && agentConfigId && elevenAgentId ? (
-            <VoiceAgentStreamingUI
-              customerId={`test-${Date.now()}`}
-              agentId={agentConfigId}
-              voiceId={elevenAgentId || undefined}
-              onClose={handleClose}
-            />
-          ) : (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
-              <Info className="text-yellow-400 mt-0.5" size={20} />
-              <div>
-                <h3 className="text-sm font-semibold text-yellow-300 mb-1">
-                  ElevenLabs Agent ID fehlt
-                </h3>
-                <p className="text-xs text-yellow-200/80 mb-3">
-                  Der Agent benötigt eine ElevenLabs Agent ID, um getestet werden zu können.
-                  Bitte konfiguriere die Agent ID in den Einstellungen.
-                </p>
-                <button
-                  onClick={() => {
-                    handleClose();
-                    window.location.href = '/dashboard/settings';
-                  }}
-                  className="text-xs text-yellow-300 hover:text-yellow-200 underline"
-                >
-                  Zu Einstellungen gehen →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </Modal>
   );
 };
