@@ -256,7 +256,9 @@
     <!-- <param name="accept-blind-reg" value="true"/> -->
 
     <!-- accept any authentication without actually checking (not a good feature for most people) -->
-    <!-- <param name="accept-blind-auth" value="true"/> -->
+    <param name="accept-blind-auth" value="true"/>
+    <!-- Accept calls from unregistered users (for WebRTC test calls) -->
+    <param name="accept-unregistered-calls" value="true"/>
 
     <!-- suppress CNG on this profile or per call with the 'suppress_cng' variable -->
     <!-- <param name="suppress-cng" value="true"/> -->
@@ -276,7 +278,8 @@
     <!--<param name="NDLB-broken-auth-hash" value="true"/>-->
     <!-- add a ;received="<ip>:<port>" to the contact when replying to register for nat handling -->
     <!--<param name="NDLB-received-in-nat-reg-contact" value="true"/>-->
-    <param name="auth-calls" value="$${internal_auth_calls}"/>
+    <!-- Disable auth-calls when accept-unregistered-calls is enabled (for WebRTC test calls) -->
+    <param name="auth-calls" value="false"/>
     <!-- Force subscription requests to require authentication -->
     <param name="auth-subscriptions" value="true"/>
     <!-- Force the user and auth-user to match. -->
