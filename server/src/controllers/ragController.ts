@@ -196,11 +196,17 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       StructuredLoggingService.error('Error querying documents', new Error(error.message || 'Unknown error'), { error, locationId }, req);
       
       // Check if table exists or schema issue
-      if (error.code === 'PGRST204' || error.message?.includes('relation') || error.message?.includes('does not exist') || error.message?.includes('Could not find')) {
+      if (error.code === 'PGRST204' || 
+          error.code === '42P01' || 
+          error.message?.includes('relation') || 
+          error.message?.includes('does not exist') || 
+          error.message?.includes('Could not find') ||
+          error.message?.includes('table') ||
+          error.message?.includes('migration')) {
         return res.status(500).json({
           success: false,
           error: 'Database schema error',
-          message: 'rag_documents table may not exist. Please run migrations.',
+          message: 'The rag_documents table may not exist or is missing required columns. Please run database migrations.',
         });
       }
       // Check for permission/RLS issues
@@ -209,6 +215,14 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
           success: false,
           error: 'Permission denied',
           message: 'Unable to access rag_documents table. Please check RLS policies.',
+        });
+      }
+      // Check for column missing errors
+      if (error.message?.includes('column') || error.code === '42703') {
+        return res.status(500).json({
+          success: false,
+          error: 'Database schema error',
+          message: 'The rag_documents table is missing required columns. Please run database migrations.',
         });
       }
       return res.status(500).json({
