@@ -104,14 +104,20 @@ local function record_utterance()
   -- Record with max duration and silence detection
   -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration>
   local record_cmd = string.format("record_session %s %d 200 500", record_path, max_utterance_duration)
-  local result = api:executeString(record_cmd)
+  local success, result = pcall(function()
+    return api:executeString(record_cmd)
+  end)
+  
+  if not success then
+    log("Recording command threw error: " .. tostring(result))
+    return nil
+  end
   
   log("Record command result: " .. tostring(result))
   
   -- Check if recording command failed
-  if result and string.match(tostring(result), "%-ERR") then
+  if result and (string.match(tostring(result), "%-ERR") or string.match(tostring(result), "error")) then
     log("Recording command failed: " .. tostring(result))
-    -- Try alternative: use park and record
     return nil
   end
   
