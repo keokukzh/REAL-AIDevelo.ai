@@ -6,25 +6,13 @@
 import React, { useState, useEffect } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
-import { apiClient } from '../services/apiClient';
+import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { Phone, PhoneOff, Mic, MicOff, Loader } from 'lucide-react';
 
 export const TestCallPage: React.FC = () => {
   const locationId = useLocationId();
-  const [agentId, setAgentId] = useState<string | undefined>();
-
-  // Load agent ID for location
-  useEffect(() => {
-    if (locationId) {
-      apiClient.get(`/agents/config?location_id=${locationId}`)
-        .then((response: any) => {
-          if (response.data?.id) {
-            setAgentId(response.data.id);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [locationId]);
+  const { data: overview } = useDashboardOverview();
+  const agentId = overview?.agent_config?.id;
 
   const {
     isConnected,
