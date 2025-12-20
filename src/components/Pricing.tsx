@@ -18,6 +18,9 @@ type RegularPlanId = 'starter' | 'business' | 'premium';
 export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadCapture }) => {
   const regularPlans = pricingPlans.filter(p => p.id !== 'enterprise');
   const enterprisePlan = pricingPlans.find(p => p.id === 'enterprise');
+  const prefersReducedMotion = useReducedMotion();
+  const tableRef = useRef<HTMLTableSectionElement>(null);
+  const isTableInView = useInView(tableRef, { once: true, amount: 0.3 });
   const comparisonRows: { key: string; label: string; values: Record<RegularPlanId, string> }[] = [
     { key: 'calls', label: 'Anrufe / Monat', values: { starter: '120', business: '350', premium: '800' } },
     { key: 'numbers', label: 'Telefonnummern', values: { starter: '1', business: '2', premium: '3' } },
