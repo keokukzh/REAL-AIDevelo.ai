@@ -49,6 +49,53 @@ export const TestCallPage: React.FC = () => {
     }
   }, [isInCall]);
 
+  // Render main action button based on connection and call state
+  const renderMainButton = () => {
+    if (!isConnected) {
+      return (
+        <button
+          onClick={connect}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
+        >
+          <Phone className="w-4 h-4" />
+          Mit FreeSWITCH verbinden
+        </button>
+      );
+    }
+
+    if (!isInCall) {
+      return (
+        <button
+          onClick={startCall}
+          disabled={isCalling}
+          className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isCalling ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Verbinde...
+            </>
+          ) : (
+            <>
+              <Phone className="w-4 h-4" />
+              Test Call starten
+            </>
+          )}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={endCall}
+        className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
+      >
+        <PhoneOff className="w-4 h-4" />
+        Call beenden
+      </button>
+    );
+  };
+
   if (!locationId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -112,41 +159,7 @@ export const TestCallPage: React.FC = () => {
 
         {/* Controls */}
         <div className="flex gap-4 justify-center mb-8">
-          {!isConnected ? (
-            <button
-              onClick={connect}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
-            >
-              <Phone className="w-4 h-4" />
-              Mit FreeSWITCH verbinden
-            </button>
-          ) : !isInCall ? (
-            <button
-              onClick={startCall}
-              disabled={isCalling}
-              className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCalling ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Verbinde...
-                </>
-              ) : (
-                <>
-                  <Phone className="w-4 h-4" />
-                  Test Call starten
-                </>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={endCall}
-              className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
-            >
-              <PhoneOff className="w-4 h-4" />
-              Call beenden
-            </button>
-          )}
+          {renderMainButton()}
 
           {isConnected && (
             <button
