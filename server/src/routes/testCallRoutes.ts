@@ -121,16 +121,21 @@ router.get('/:sessionId/recording', verifySupabaseAuth, async (req: Authenticate
 router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     // Get FreeSWITCH WebSocket URL from environment or use default
-    // In production, this should point to the actual FreeSWITCH server
-    // For now, use localhost for development or configured URL for production
+    // In production, this should point to the actual FreeSWITCH server via Cloudflare Tunnel
     const freeswitchWssUrl = process.env.FREESWITCH_WSS_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? 'wss://aidevelo.ai:7443' 
+        ? 'wss://freeswitch.aidevelo.ai'  // Changed from aidevelo.ai:7443 to freeswitch.aidevelo.ai
         : 'wss://localhost:7443');
     
     const sipUsername = `test_${req.supabaseUser?.supabaseUserId || 'anonymous'}`;
     const sipPassword = process.env.FREESWITCH_TEST_PASSWORD || 'test123';
     const extension = process.env.FREESWITCH_TEST_EXTENSION || '1000';
+
+    logger.info('test_call.config_requested', {
+      freeswitchWssUrl,
+      hasEnvVar: !!process.env.FREESWITCH_WSS_URL,
+      nodeEnv: process.env.NODE_ENV,
+    });
 
     res.json({
       success: true,
@@ -142,8 +147,14 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
       },
     });
   } catch (error: any) {
-    logger.error('test_call.config_error', error);
-    res.status(500).json({ error: error.message });
+    logger.error('test_call.config_error', error, {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 

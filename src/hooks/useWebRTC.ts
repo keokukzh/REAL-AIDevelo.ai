@@ -54,15 +54,27 @@ export function useWebRTC(options: UseWebRTCOptions) {
       try {
         const response = await apiClient.get<{ success: boolean; config?: any }>('/v1/test-call/config');
         if (response.data?.success && response.data.config) {
+          console.log('[useWebRTC] FreeSWITCH config loaded:', response.data.config);
           setFreeswitchConfig(response.data.config);
         } else {
           throw new Error('Invalid config response');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[useWebRTC] Failed to fetch FreeSWITCH config:', error);
-        // Fallback to defaults
+        console.error('[useWebRTC] Error details:', {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+        });
+        
+        // Fallback to defaults based on environment
+        const fallbackUrl = import.meta.env.PROD 
+          ? 'wss://freeswitch.aidevelo.ai'
+          : (import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443');
+        
+        console.warn('[useWebRTC] Using fallback config:', { wss_url: fallbackUrl });
         setFreeswitchConfig({
-          wss_url: import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443',
+          wss_url: fallbackUrl,
           sip_username: `test_${locationId}`,
           sip_password: 'test123',
           extension: '1000',

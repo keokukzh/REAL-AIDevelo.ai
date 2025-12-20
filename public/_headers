@@ -4,7 +4,7 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(self), camera=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://*.elevenlabs.io wss://*.elevenlabs.io wss://aidevelo.ai:7443 ws://aidevelo.ai:7443 wss://*.aidevelo.ai:* ws://*.aidevelo.ai:* wss://localhost:* ws://localhost:*; frame-src 'self' https://*.supabase.co; media-src 'self' blob:;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://*.elevenlabs.io wss://*.elevenlabs.io wss://freeswitch.aidevelo.ai wss://aidevelo.ai:7443 ws://aidevelo.ai:7443 wss://localhost:7443 ws://localhost:7443; frame-src 'self' https://*.supabase.co; media-src 'self' blob:;
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
