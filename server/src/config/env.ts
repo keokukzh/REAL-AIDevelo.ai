@@ -13,6 +13,7 @@ const requiredEnvVars = [
 ] as const;
 
 // Additional required variables for production runtime
+// Note: TWILIO_AUTH_TOKEN or TWILIO_API_KEY_SECRET must be set (validated in validateEnv)
 const productionRequiredEnvVars = [
   'ELEVENLABS_API_KEY',
   'ELEVENLABS_WEBHOOK_SECRET',
@@ -21,8 +22,8 @@ const productionRequiredEnvVars = [
   // STRIPE/PAYMENT REMOVED - No longer required
   // 'STRIPE_SECRET_KEY',
   // 'STRIPE_WEBHOOK_SECRET',
-  'TWILIO_AUTH_TOKEN',
   'TWILIO_STREAM_TOKEN',
+  // TWILIO_AUTH_TOKEN or TWILIO_API_KEY_SECRET (validated separately)
 ];
 
 // Optional env vars (with defaults) - computed after validateEnv sets defaults
@@ -43,6 +44,9 @@ const getOptionalEnvVars = () => ({
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
   TWILIO_STREAM_TOKEN: process.env.TWILIO_STREAM_TOKEN || '',
+  // Twilio API Key (optional, preferred over Auth Token for better security)
+  TWILIO_API_KEY_SID: process.env.TWILIO_API_KEY_SID || '',
+  TWILIO_API_KEY_SECRET: process.env.TWILIO_API_KEY_SECRET || '',
   // LEGACY: REDIS_URL - Not currently used, kept for future use
   REDIS_URL: process.env.REDIS_URL || '',
   // OPTIONAL: OTEL_EXPORTER_OTLP_ENDPOINT - Observability endpoint
@@ -113,6 +117,23 @@ const validateEnv = () => {
     if (missing.length > 0) {
       StructuredLoggingService.error(`Missing required environment variables for production: ${missing.join(', ')}. The server will exit. Please configure these in your production environment (do not commit them in git).`, new Error('Missing required environment variables'));
       process.exit(1);
+    }
+
+    // Validate Twilio credentials: either TWILIO_AUTH_TOKEN or (TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET) must be set
+    const hasAuthToken = !!(process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_AUTH_TOKEN !== '' && !process.env.TWILIO_AUTH_TOKEN.includes('placeholder'));
+    const hasApiKey = !!(process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET && 
+                        process.env.TWILIO_API_KEY_SID !== '' && process.env.TWILIO_API_KEY_SECRET !== '' &&
+                        !process.env.TWILIO_API_KEY_SID.includes('placeholder') && !process.env.TWILIO_API_KEY_SECRET.includes('placeholder'));
+    
+    if (!hasAuthToken && !hasApiKey) {
+      StructuredLoggingService.error('Missing Twilio credentials for production. Either set TWILIO_AUTH_TOKEN or set both TWILIO_API_KEY_SID and TWILIO_API_KEY_SECRET. The server will exit.', new Error('Missing Twilio credentials'));
+      process.exit(1);
+    }
+    
+    if (hasApiKey) {
+      StructuredLoggingService.info('Twilio API Key authentication configured (recommended)');
+    } else if (hasAuthToken) {
+      StructuredLoggingService.info('Twilio Auth Token configured (consider using API Keys for better security)');
     }
 
     // Validate TOKEN_ENCRYPTION_KEY in production (should be set by now if auto-generated)
@@ -191,6 +212,8 @@ export const config = {
   googleOAuthRedirectUrl: optionalEnvVars.GOOGLE_OAUTH_REDIRECT_URL,
   twilioAuthToken: optionalEnvVars.TWILIO_AUTH_TOKEN,
   twilioStreamToken: optionalEnvVars.TWILIO_STREAM_TOKEN,
+  twilioApiKeySid: optionalEnvVars.TWILIO_API_KEY_SID,
+  twilioApiKeySecret: optionalEnvVars.TWILIO_API_KEY_SECRET,
   // SMTP Email
   smtpHost: optionalEnvVars.SMTP_HOST,
   smtpPort: optionalEnvVars.SMTP_PORT,

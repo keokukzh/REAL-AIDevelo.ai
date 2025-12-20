@@ -32,6 +32,7 @@ interface TwilioCallResponse {
 class TwilioService {
   /**
    * Get Twilio Account SID from environment
+   * This is the base Account SID (AC...), required for API calls even when using API Keys
    * @returns Account SID or empty string if not configured
    */
   private getAccountSid(): string {
@@ -40,32 +41,52 @@ class TwilioService {
 
   /**
    * Get Twilio Auth Token from config
-   * @returns Auth token
+   * Prefers API Key Secret if available, otherwise falls back to Auth Token
+   * @returns Auth token or API Key Secret
    */
   private getAuthToken(): string {
+    // Prefer API Key Secret for better security (if configured)
+    if (config.twilioApiKeySecret) {
+      return config.twilioApiKeySecret;
+    }
     return config.twilioAuthToken;
   }
 
   /**
+   * Get Twilio Account SID or API Key SID
+   * Prefers API Key SID if available, otherwise falls back to Account SID
+   * @returns Account SID or API Key SID
+   */
+  private getAccountSidOrApiKey(): string {
+    // Prefer API Key SID for better security (if configured)
+    if (config.twilioApiKeySid) {
+      return config.twilioApiKeySid;
+    }
+    return this.getAccountSid();
+  }
+
+  /**
    * Get Twilio API base URL
+   * Always uses Account SID (AC...) for the URL, even when authenticating with API Key
    * @returns Base URL for Twilio API
    * @throws {InternalServerError} If Account SID not configured
    */
   private getBaseUrl(): string {
     const accountSid = this.getAccountSid();
     if (!accountSid) {
-      throw new InternalServerError('TWILIO_ACCOUNT_SID not configured');
+      throw new InternalServerError('TWILIO_ACCOUNT_SID not configured (required even when using API Keys)');
     }
     return `https://api.twilio.com/2010-04-01/Accounts/${accountSid}`;
   }
 
   /**
    * Get HTTP Basic Auth credentials for Twilio API
-   * @returns Object with username (Account SID) and password (Auth Token)
+   * Uses API Key (SID + Secret) if available, otherwise falls back to Account SID + Auth Token
+   * @returns Object with username (Account SID or API Key SID) and password (Auth Token or API Key Secret)
    */
   private getAuth(): { username: string; password: string } {
     return {
-      username: this.getAccountSid(),
+      username: this.getAccountSidOrApiKey(),
       password: this.getAuthToken(),
     };
   }
