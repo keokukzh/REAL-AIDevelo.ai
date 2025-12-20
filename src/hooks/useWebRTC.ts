@@ -200,23 +200,29 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       // Request microphone permission and check availability
       try {
+        // First, request permission by trying to get user media
+        // This will prompt the user for permission if not already granted
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        
+        // After permission is granted, enumerate devices to verify microphone is available
         const devices = await navigator.mediaDevices.enumerateDevices();
         const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        
+        // Stop the stream immediately - we just needed permission
+        stream.getTracks().forEach(track => track.stop());
         
         if (audioInputs.length === 0) {
           throw new Error('Kein Mikrofon gefunden. Bitte stellen Sie sicher, dass ein Mikrofon angeschlossen ist.');
         }
-
-        // Request permission by trying to get user media
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        // Stop the stream immediately - we just needed permission
-        stream.getTracks().forEach(track => track.stop());
-        console.log('[useWebRTC] Microphone permission granted');
+        
+        console.log('[useWebRTC] Microphone permission granted, found', audioInputs.length, 'audio input(s)');
       } catch (error: any) {
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
           throw new Error('Mikrofon-Berechtigung verweigert. Bitte erlauben Sie den Zugriff auf Ihr Mikrofon in den Browser-Einstellungen.');
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
           throw new Error('Kein Mikrofon gefunden. Bitte stellen Sie sicher, dass ein Mikrofon angeschlossen ist.');
+        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+          throw new Error('Mikrofon wird bereits von einer anderen Anwendung verwendet. Bitte schließen Sie andere Anwendungen.');
         } else {
           throw new Error(`Mikrofon-Fehler: ${error.message || 'Unbekannter Fehler'}`);
         }
