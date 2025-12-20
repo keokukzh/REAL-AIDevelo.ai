@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Briefcase, Building2, Stethoscope, Scissors, Utensils, Wrench, Shield, CheckCircle2 } from 'lucide-react';
 import { RevealSection } from './layout/RevealSection';
 import { useReducedMotion as useReducedMotionHook } from '../hooks/useReducedMotion';
+import { CountUp } from './ui/CountUp';
 
 const LogoItem: React.FC<{ Icon: any, name: string }> = ({ Icon, name }) => (
   <div className="flex items-center gap-2 text-gray-400 mx-8 hover:text-white transition-colors cursor-default">
