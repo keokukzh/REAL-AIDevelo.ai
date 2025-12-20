@@ -5,7 +5,10 @@ local uuid = argv[1]
 local location_id = argv[2] or "default"
 local agent_id = argv[3] or "default"
 
+-- Get the session object - this is critical for keeping the call alive
+local session = freeswitch.Session(uuid)
 local api = freeswitch.API()
+
 -- Use PUBLIC_BASE_URL or BACKEND_URL environment variable, fallback to Render URL
 local backend_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("BACKEND_URL") or "https://real-aidevelo-ai.onrender.com"
 local max_turns = 20
@@ -17,6 +20,14 @@ local function log(message)
 end
 
 log(string.format("Starting call controller: location_id=%s, agent_id=%s", location_id, agent_id))
+
+-- Verify session is valid
+if not session or not session:ready() then
+  log("ERROR: Session not ready or invalid!")
+  return
+end
+
+log("Session is ready, call answered successfully")
 
 -- Step 1: Notify backend that call started
 local function notify_backend(event, data)
@@ -101,44 +112,66 @@ local function record_utterance()
   
   local record_path = "/tmp/utterance_" .. uuid .. "_" .. os.time() .. ".wav"
   
-  -- Use api:execute with record_session
-  -- record_session is blocking and will record until max_duration or silence detected
-  -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration> [aleg|bleg|both]
-  log("Starting recording with record_session...")
+  -- Use session:recordFile for non-blocking recording (better for WebRTC)
+  -- This method is more suitable for keeping the call alive
+  log("Starting recording with session:recordFile...")
   
-  local record_success, record_result = pcall(function()
-    -- Try with aleg first (audio leg - what user says)
-    return api:execute("record_session", string.format("%s %d 200 500 aleg", record_path, max_utterance_duration))
+  local record_success, record_err = pcall(function()
+    -- session:recordFile(path, max_duration, silence_threshold, silence_duration)
+    -- Returns immediately, recording happens in background
+    session:recordFile(record_path, max_utterance_duration, 200, 500)
   end)
   
-  if not record_success or (record_result and string.match(tostring(record_result), "%-ERR")) then
-    log("Recording with aleg failed, trying without aleg parameter")
-    record_success, record_result = pcall(function()
+  if not record_success then
+    log("Session recordFile failed: " .. tostring(record_err))
+    -- Fallback to api:execute
+    log("Falling back to api:execute record_session...")
+    record_success, record_err = pcall(function()
       return api:execute("record_session", string.format("%s %d 200 500", record_path, max_utterance_duration))
     end)
+    if not record_success then
+      log("Fallback recording also failed: " .. tostring(record_err))
+      return nil
+    end
+    -- api:execute is blocking, so wait a bit
+    freeswitch.msleep(500)
+  else
+    -- session:recordFile is non-blocking, wait for recording to complete
+    log("Recording started, waiting for completion...")
+    freeswitch.msleep(500) -- Initial wait
+    
+    local max_wait = max_utterance_duration * 1000 + 3000 -- Add 3 seconds buffer
+    local elapsed = 500
+    local file_ready = false
+    
+    while elapsed < max_wait and not file_ready do
+      freeswitch.msleep(300)
+      elapsed = elapsed + 300
+      
+      -- Check if file exists and has reasonable size (> 1000 bytes = ~0.1 seconds of audio)
+      local file = io.open(record_path, "rb")
+      if file then
+        file:seek("end")
+        local size = file:seek()
+        file:close()
+        
+        if size > 1000 then
+          file_ready = true
+          log(string.format("Recording complete: %d bytes", size))
+          break
+        end
+      end
+    end
+    
+    if not file_ready then
+      log("Warning: Recording may not have captured audio, but continuing anyway")
+    end
   end
   
-  if not record_success then
-    log("Recording command threw error: " .. tostring(record_result))
-    return nil
-  end
-  
-  log("Record command result: " .. tostring(record_result))
-  
-  -- Check if recording command failed
-  if record_result and (string.match(tostring(record_result), "%-ERR") or string.match(tostring(record_result), "error") or string.match(tostring(record_result), "failed")) then
-    log("Recording command failed: " .. tostring(record_result))
-    return nil
-  end
-  
-  -- record_session is blocking, so it should have completed by now
-  -- But wait a bit to ensure file is written
-  freeswitch.msleep(500)
-  
-  -- Check if file exists and has content
+  -- Check if file exists
   local file = io.open(record_path, "rb")
   if not file then
-    log("Recording file does not exist after record_session")
+    log("Recording file does not exist")
     return nil
   end
   

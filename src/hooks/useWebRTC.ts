@@ -438,7 +438,15 @@ export function useWebRTC(options: UseWebRTCOptions) {
    */
   const endCall = useCallback(async () => {
     if (sessionRef.current) {
-      await sessionRef.current.bye();
+      // Only call bye() if session is in Established state
+      if (sessionRef.current.state === SessionState.Established) {
+        try {
+          await sessionRef.current.bye();
+        } catch (error: any) {
+          // Silently handle errors if session is already terminated
+          console.warn('[useWebRTC] Session termination failed:', error.message);
+        }
+      }
       sessionRef.current = null;
     }
 
@@ -450,7 +458,7 @@ export function useWebRTC(options: UseWebRTCOptions) {
       callStatus: 'ended',
       isCalling: false,
     }));
-  }, []);
+  }, [stopTranscriptPolling]);
 
   /**
    * Disconnect from FreeSWITCH
@@ -524,7 +532,12 @@ export function useWebRTC(options: UseWebRTCOptions) {
     return () => {
       stopTranscriptPolling();
       if (sessionRef.current) {
-        sessionRef.current.bye().catch(console.error);
+        // Only call bye() if session is in Established state
+        if (sessionRef.current.state === SessionState.Established) {
+          sessionRef.current.bye().catch((err: any) => {
+            console.warn('[useWebRTC] Cleanup bye() failed:', err.message);
+          });
+        }
       }
       if (registererRef.current) {
         registererRef.current.unregister().catch(console.error);
