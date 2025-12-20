@@ -189,9 +189,25 @@ export const TestCallPage: React.FC = () => {
 
         {/* Help Text */}
         {!isInCall && (
-          <div className="mt-8 text-center text-gray-400 text-sm">
-            <p>Verbinden Sie sich mit FreeSWITCH und starten Sie einen Test-Call.</p>
-            <p className="mt-2">Der Agent wird Ihre Sprache transkribieren und antworten.</p>
+          <div className="mt-8 space-y-4">
+            <div className="text-center text-gray-400 text-sm">
+              <p>Verbinden Sie sich mit FreeSWITCH und starten Sie einen Test-Call.</p>
+              <p className="mt-2">Der Agent wird Ihre Sprache transkribieren und antworten.</p>
+            </div>
+            
+            {/* Info Box for Production */}
+            {import.meta.env.PROD && !isConnected && (
+              <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-300 text-sm">
+                <div className="font-semibold mb-2">⚠️ FreeSWITCH in Production</div>
+                <p className="text-xs text-yellow-200/80">
+                  FreeSWITCH ist für Production noch nicht eingerichtet. 
+                  Für lokale Tests können Sie FreeSWITCH mit <code className="bg-yellow-500/20 px-1 rounded">docker-compose up freeswitch</code> starten.
+                </p>
+                <p className="text-xs text-yellow-200/80 mt-2">
+                  Die WebRTC-Test-Funktion ist derzeit nur für lokale Entwicklung verfügbar.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
