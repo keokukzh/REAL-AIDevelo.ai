@@ -106,34 +106,47 @@ local function record_utterance()
   -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration> [aleg|bleg|both]
   local record_cmd = string.format("record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
   
-  -- Use bgapi (background API) to record asynchronously to avoid blocking
-  -- This prevents the call from ending prematurely
-  local session = freeswitch.Session(uuid)
-  if not session then
-    log("Failed to get session for recording")
-    return nil
-  end
+  -- Use detect_speech with record_session for better WebRTC compatibility
+  -- detect_speech will record until speech is detected or timeout
+  -- This is better than record_session alone for WebRTC calls
+  log("Starting speech detection and recording...")
   
-  -- Start recording using session:record() method (non-blocking)
-  local record_success, record_err = pcall(function()
-    -- Use session:record() which is non-blocking and better for WebRTC
-    session:recordFile(record_path, max_utterance_duration, 200, 500)
+  -- Try using detect_speech first (better for WebRTC)
+  local detect_success, detect_result = pcall(function()
+    -- detect_speech records audio until speech is detected or timeout
+    -- Format: detect_speech <grammar> <engine> <timeout> <result_var>
+    -- We'll use a simple approach: record with detect_speech
+    local detect_cmd = string.format("detect_speech %s %s %d %s", 
+      "default", "pocketsphinx", max_utterance_duration, "detect_result")
+    return api:executeString(detect_cmd)
   end)
   
-  if not record_success then
-    log("Session record failed: " .. tostring(record_err))
-    -- Fallback: try api:execute with bgapi (background)
-    local bgapi_cmd = string.format("bgapi record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
-    local api_success, api_result = pcall(function()
-      return api:executeString(bgapi_cmd)
-    end)
-    if not api_success then
-      log("Background recording also failed: " .. tostring(api_result))
-      return nil
-    end
-    log("Background recording started: " .. tostring(api_result))
+  if detect_success and detect_result and not string.match(tostring(detect_result), "%-ERR") then
+    log("Speech detection started: " .. tostring(detect_result))
+    -- Wait for speech detection to complete
+    freeswitch.msleep(max_utterance_duration * 1000 + 1000)
   else
-    log("Session recording started successfully")
+    log("Speech detection not available, using record_session")
+    -- Fallback: use record_session (blocking, but should work)
+    local record_success, record_result = pcall(function()
+      -- Use executeString with full command
+      local record_cmd = string.format("record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
+      return api:executeString(record_cmd)
+    end)
+    
+    if not record_success then
+      log("Recording command threw error: " .. tostring(record_result))
+      -- Try without aleg parameter
+      record_success, record_result = pcall(function()
+        local record_cmd = string.format("record_session %s %d 200 500", record_path, max_utterance_duration)
+        return api:executeString(record_cmd)
+      end)
+      if not record_success then
+        log("Alternative recording also failed: " .. tostring(record_result))
+        return nil
+      end
+    end
+    log("Record command executed: " .. tostring(record_result))
   end
   
   -- Wait for file to be created and have content
