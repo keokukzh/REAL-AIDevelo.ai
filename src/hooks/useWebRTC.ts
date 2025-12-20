@@ -107,15 +107,30 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       // Extract hostname from WSS URL (remove wss:// and port if present)
       // For SIP URI, we only need the hostname, not the port
-      const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0].split('/')[0];
+      // IMPORTANT: If URL contains IP address, convert to domain name for CSP compliance
+      let hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0].split('/')[0];
+      
+      // If hostname is an IP address, use domain instead (for CSP compliance)
+      // This ensures we always use freeswitch.aidevelo.ai instead of IP
+      if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        hostname = 'freeswitch.aidevelo.ai';
+        console.warn('[useWebRTC] IP address detected in WSS URL, using domain instead:', hostname);
+      }
 
       // Create UserAgent
       // SIP URI should be: sip:username@domain (no port)
       // The port is only used for the WebSocket transport (server option)
+      // IMPORTANT: Use domain name for server URL (not IP) for CSP compliance
+      let serverUrl = freeswitchWssUrl;
+      if (freeswitchWssUrl.includes('91.99.202.18')) {
+        serverUrl = 'wss://freeswitch.aidevelo.ai';
+        console.warn('[useWebRTC] IP address in server URL, using domain instead:', serverUrl);
+      }
+      
       const userAgent = new UserAgent({
         uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}`),
         transportOptions: {
-          server: freeswitchWssUrl,
+          server: serverUrl,
         },
         authorizationUsername: sipUsername,
         authorizationPassword: sipPassword,

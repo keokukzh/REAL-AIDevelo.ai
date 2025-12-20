@@ -139,6 +139,8 @@ export const helmetMiddleware = config.isProduction
             'https://*.elevenlabs.io', // Allow all ElevenLabs regional endpoints (api.elevenlabs.io, api.us.elevenlabs.io, etc.)
             'wss://*.elevenlabs.io', // WebSocket connections to ElevenLabs
             'wss://freeswitch.aidevelo.ai', // FreeSWITCH WebSocket via Cloudflare Tunnel (production, standard HTTPS port)
+            'wss://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket
+            'ws://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket (non-SSL)
             'wss://aidevelo.ai:7443', // FreeSWITCH WebSocket connections (production, specific port - fallback)
             'ws://aidevelo.ai:7443', // FreeSWITCH WebSocket connections (production, non-SSL, specific port - fallback)
             'wss://localhost:7443', // FreeSWITCH WebSocket connections (development)
