@@ -6,10 +6,20 @@ local uuid = argv[1]
 local location_id = argv[2] or "default"
 local agent_id = argv[3] or "default"
 
--- Get the session object - CRITICAL: Use freeswitch.Session() to get current session from dialplan
--- When called via "lua" application from dialplan, this gets the active call session
-local session = freeswitch.Session()
+-- Get the session object - CRITICAL: Use UUID to get session when called with arguments
+-- When called via "lua" application from dialplan with UUID argument, use freeswitch.Session(uuid)
+local session = nil
 local api = freeswitch.API()
+
+-- Try to get session by UUID first (when called with arguments)
+if uuid then
+  session = freeswitch.Session(uuid)
+end
+
+-- Fallback: Try to get current session from dialplan context (when called without arguments)
+if not session then
+  session = freeswitch.Session()
+end
 
 -- Use PUBLIC_BASE_URL or BACKEND_URL environment variable, fallback to Render URL
 local backend_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("BACKEND_URL") or "https://real-aidevelo-ai.onrender.com"
@@ -18,19 +28,30 @@ local max_utterance_duration = 10 -- seconds
 
 -- Log function
 local function log(message)
-  freeswitch.consoleLog("INFO", string.format("[CallController] %s: %s\n", uuid, message))
+  freeswitch.consoleLog("INFO", string.format("[CallController] %s: %s\n", uuid or "unknown", message))
 end
 
 log(string.format("Starting call controller: location_id=%s, agent_id=%s", location_id, agent_id))
 
--- Verify session is valid - when called from dialplan, session should always exist
+-- Verify session is valid
 if not session then
-  log("ERROR: Could not get session from dialplan context!")
+  log("ERROR: Could not get session! UUID: " .. tostring(uuid))
   return
 end
 
--- Verify session is answered (dialplan should have called "answer" before this script)
-log("Session obtained successfully from dialplan context")
+-- Verify session is ready/answered
+local session_ready = false
+local ready_check_success, ready_result = pcall(function()
+  -- Try to check if session is ready by getting a variable
+  local test_var = session:getVariable("caller_id_number")
+  session_ready = (test_var ~= nil)
+end)
+
+if not session_ready then
+  log("WARNING: Session may not be ready, but continuing anyway")
+else
+  log("Session obtained successfully and is ready")
+end
 
 -- Step 1: Notify backend that call started
 local function notify_backend(event, data)
