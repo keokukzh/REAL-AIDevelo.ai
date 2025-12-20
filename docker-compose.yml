@@ -142,7 +142,8 @@ services:
     environment:
       - FS_EVENT_SOCKET=0.0.0.0:8021
       - FS_EVENT_SOCKET_PASSWORD=${FREESWITCH_ESL_PASSWORD:-ClueCon}
-      - BACKEND_URL=http://aidevelo:5000
+      - BACKEND_URL=${PUBLIC_BASE_URL:-https://real-aidevelo-ai.onrender.com}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-https://real-aidevelo-ai.onrender.com}
     command: ["freeswitch", "-nc", "-nf", "-nonat", "-c"]
     networks:
       - default
