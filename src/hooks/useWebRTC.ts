@@ -207,7 +207,7 @@ export function useWebRTC(options: UseWebRTCOptions) {
         throw new Error('Invalid target URI');
       }
 
-      // Create Inviter
+      // Create Inviter with custom headers to pass location_id and agent_id to FreeSWITCH
       const inviter = new Inviter(userAgent, targetURI, {
         sessionDescriptionHandlerOptions: {
           constraints: {
@@ -215,6 +215,12 @@ export function useWebRTC(options: UseWebRTCOptions) {
             video: false,
           },
         },
+        // Pass location_id and agent_id via SIP headers
+        // FreeSWITCH will extract these as variables: ${sip_h_X-Location-Id}
+        extraHeaders: [
+          `X-Location-Id: ${locationId}`,
+          agentId ? `X-Agent-Id: ${agentId}` : null,
+        ].filter(Boolean) as string[],
       });
 
       sessionRef.current = inviter;

@@ -6,8 +6,11 @@
   <!-- Uses own agent: ASR → LLM → TTS (NO ElevenLabs!) -->
   <extension name="ai-agent-demo">
     <condition field="destination_number" expression="^1000$">
-      <!-- Extract location_id and agent_id from variables (set by caller or default) -->
+      <!-- Extract location_id and agent_id from SIP headers or variables -->
+      <!-- SIP headers are available as ${sip_h_X-Location-Id} -->
+      <action application="set" data="location_id=${sip_h_X-Location-Id}"/>
       <action application="set" data="location_id=${location_id:-default}"/>
+      <action application="set" data="agent_id=${sip_h_X-Agent-Id}"/>
       <action application="set" data="agent_id=${agent_id:-default}"/>
       
       <!-- Answer the call -->
