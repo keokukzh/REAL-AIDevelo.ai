@@ -22,12 +22,12 @@ end
 log(string.format("Starting call controller: location_id=%s, agent_id=%s", location_id, agent_id))
 
 -- Verify session is valid
-if not session or not session:ready() then
-  log("ERROR: Session not ready or invalid!")
+if not session then
+  log("ERROR: Could not get session for UUID: " .. tostring(uuid))
   return
 end
 
-log("Session is ready, call answered successfully")
+log("Session obtained successfully, call will be answered by dialplan")
 
 -- Step 1: Notify backend that call started
 local function notify_backend(event, data)
@@ -89,9 +89,18 @@ local function play_greeting()
       file:write(table.concat(response_body))
       file:close()
       
-      -- Play audio with error handling
-      local play_result = api:execute("playback", audio_path)
-      log("Greeting playback result: " .. tostring(play_result))
+      -- Play audio using session:streamFile (better for keeping call alive)
+      local play_success, play_err = pcall(function()
+        session:streamFile(audio_path)
+      end)
+      
+      if not play_success then
+        log("Session streamFile failed, using api:execute: " .. tostring(play_err))
+        local play_result = api:execute("playback", audio_path)
+        log("Greeting playback result: " .. tostring(play_result))
+      else
+        log("Greeting played successfully via session:streamFile")
+      end
       
       -- Cleanup
       pcall(function() os.remove(audio_path) end)
@@ -267,14 +276,32 @@ local function play_response(audio_url)
       if file then
         file:write(table.concat(response_body))
         file:close()
-        api:execute("playback", audio_path)
+        
+        -- Use session:streamFile for better call handling
+        local play_success, play_err = pcall(function()
+          session:streamFile(audio_path)
+        end)
+        
+        if not play_success then
+          log("Session streamFile failed, using api:execute: " .. tostring(play_err))
+          api:execute("playback", audio_path)
+        end
+        
         os.remove(audio_path)
         return true
       end
     end
   else
-    -- Local file path
-    api:execute("playback", audio_url)
+    -- Local file path - use session:streamFile
+    local play_success, play_err = pcall(function()
+      session:streamFile(audio_url)
+    end)
+    
+    if not play_success then
+      log("Session streamFile failed, using api:execute: " .. tostring(play_err))
+      api:execute("playback", audio_url)
+    end
+    
     return true
   end
   
@@ -296,7 +323,12 @@ local success, err = pcall(function()
     local audio_path = record_utterance()
     if not audio_path then
       log("Failed to record utterance, continuing with fallback")
-      api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
+      local speak_success = pcall(function()
+        session:speak("flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
+      end)
+      if not speak_success then
+        api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht gehört. Bitte sprechen Sie.")
+      end
       freeswitch.msleep(1000)
       -- Continue loop instead of breaking
     else
@@ -308,13 +340,23 @@ local success, err = pcall(function()
       
       if not response_audio_url then
         log("Failed to process turn, playing fallback")
-        api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
+        local speak_success = pcall(function()
+          session:speak("flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
+        end)
+        if not speak_success then
+          api:execute("speak", "flite|kal|Entschuldigung, ich habe Sie nicht verstanden. Bitte wiederholen Sie.")
+        end
       else
         -- Play response
         local play_success = play_response(response_audio_url)
         if not play_success then
           log("Failed to play response, trying fallback")
-          api:execute("speak", "flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
+          local speak_success = pcall(function()
+            session:speak("flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
+          end)
+          if not speak_success then
+            api:execute("speak", "flite|kal|Entschuldigung, es gab ein Problem. Bitte versuchen Sie es erneut.")
+          end
         end
       end
     end
@@ -334,7 +376,12 @@ if not success then
   log("Error in call controller: " .. tostring(err))
   -- Play error message
   pcall(function()
-    api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+    local speak_success = pcall(function()
+      session:speak("flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+    end)
+    if not speak_success then
+      api:execute("speak", "flite|kal|Entschuldigung, es gab einen Fehler. Der Anruf wird beendet.")
+    end
     freeswitch.msleep(2000)
   end)
 end
