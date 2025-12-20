@@ -76,7 +76,6 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         location_id: locationId,
         title,
         original_file_name: fileName,
-        file_type: mimeType,
         mime_type: mimeType,
         source,
         raw_text: text.substring(0, 2 * 1024 * 1024), // Max 2MB
@@ -174,11 +173,14 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       locationId = resolution.locationId;
       StructuredLoggingService.debug(`List documents: resolved locationId=${locationId} from source=${resolution.source}`, { locationId, source: resolution.source }, req);
     } catch (error: any) {
-      StructuredLoggingService.error('Failed to resolve locationId', error instanceof Error ? error : new Error(String(error)), {}, req);
+      StructuredLoggingService.error('Failed to resolve locationId', error instanceof Error ? error : new Error(String(error)), { 
+        supabaseUserId,
+        email,
+      }, req);
       return res.status(400).json({
         success: false,
         error: 'locationId missing',
-        message: error.message || 'Unable to resolve locationId',
+        message: error.message || 'Unable to resolve locationId. Please ensure you are properly authenticated and have a location assigned.',
       });
     }
 
@@ -191,15 +193,29 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
 
     if (error) {
       console.error('[RAGController] Supabase error:', error);
+      StructuredLoggingService.error('Error querying documents', new Error(error.message || 'Unknown error'), { error, locationId }, req);
+      
       // Check if table exists or schema issue
       if (error.code === 'PGRST204' || error.message?.includes('relation') || error.message?.includes('does not exist') || error.message?.includes('Could not find')) {
-        return next(new InternalServerError('rag_documents table may not exist. Please run migrations.'));
+        return res.status(500).json({
+          success: false,
+          error: 'Database schema error',
+          message: 'rag_documents table may not exist. Please run migrations.',
+        });
       }
       // Check for permission/RLS issues
       if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('RLS')) {
-        return next(new InternalServerError('Unable to access rag_documents table. Please check RLS policies.'));
+        return res.status(403).json({
+          success: false,
+          error: 'Permission denied',
+          message: 'Unable to access rag_documents table. Please check RLS policies.',
+        });
       }
-      return next(new InternalServerError(`Failed to list documents: ${error.message || 'Unknown error'}`));
+      return res.status(500).json({
+        success: false,
+        error: 'Database error',
+        message: `Failed to list documents: ${error.message || 'Unknown error'}`,
+      });
     }
 
     res.json({

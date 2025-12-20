@@ -90,15 +90,40 @@ export const useRagDocuments = () => {
   const listQuery = useQuery<RagDocumentsListResponse['data'], Error>({
     queryKey: ['ragDocuments'],
     queryFn: async () => {
-      const response = await apiClient.get<RagDocumentsListResponse>('/rag/documents');
-      if (!response.data?.success || !response.data.data) {
-        throw new Error('Failed to load documents');
+      try {
+        const response = await apiClient.get<RagDocumentsListResponse>('/rag/documents');
+        if (!response.data?.success || !response.data.data) {
+          // Try to extract error message from response
+          const errorMsg = (response.data as any)?.error || (response.data as any)?.message || 'Failed to load documents';
+          throw new Error(errorMsg);
+        }
+        return response.data.data;
+      } catch (error: any) {
+        // Improve error messages
+        if (error.response?.data) {
+          const apiError = error.response.data;
+          if (apiError.error || apiError.message) {
+            throw new Error(apiError.message || apiError.error);
+          }
+        }
+        // Handle network errors
+        if (error.message?.includes('Network Error') || error.message?.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to server. Please check your connection.');
+        }
+        // Re-throw with original message
+        throw error;
       }
-      return response.data.data;
     },
     enabled: !isChecking && hasSession,
     staleTime: 30000, // 30 seconds
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error.message?.includes('locationId') || error.message?.includes('permission')) {
+        return false;
+      }
+      // Retry up to 2 times for other errors
+      return failureCount < 2;
+    },
   });
 
   // Get single document (with raw_text)

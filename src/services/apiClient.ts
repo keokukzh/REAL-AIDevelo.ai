@@ -76,6 +76,19 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Enhance error message with API response data if available
+    if (error.response?.data && typeof error.response.data === 'object') {
+      const apiError = error.response.data as any;
+      if (apiError.error || apiError.message) {
+        // Create a new error with the API error message
+        const enhancedError = new Error(apiError.message || apiError.error);
+        (enhancedError as any).response = error.response;
+        (enhancedError as any).config = error.config;
+        (enhancedError as any).isAxiosError = true;
+        return Promise.reject(enhancedError);
+      }
+    }
+
     return Promise.reject(error);
   }
 );

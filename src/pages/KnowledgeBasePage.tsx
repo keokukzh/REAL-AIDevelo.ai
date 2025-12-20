@@ -197,19 +197,48 @@ export const KnowledgeBasePage = () => {
             );
           }
           if (error) {
+            // Parse error message for better user feedback
+            let errorMessage = error.message || 'Unknown error';
+            let errorTitle = 'Error loading documents';
+            
+            // Check for specific error types
+            if (errorMessage.includes('locationId') || errorMessage.includes('location_id')) {
+              errorTitle = 'Location ID Error';
+              errorMessage = 'Unable to resolve your location. Please ensure you are properly authenticated and try again.';
+            } else if (errorMessage.includes('table') || errorMessage.includes('migration')) {
+              errorTitle = 'Database Error';
+              errorMessage = 'The knowledge base database may not be set up correctly. Please contact support.';
+            } else if (errorMessage.includes('permission') || errorMessage.includes('RLS')) {
+              errorTitle = 'Permission Error';
+              errorMessage = 'You do not have permission to access the knowledge base. Please contact your administrator.';
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+              errorTitle = 'Connection Error';
+              errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+            }
+            
             return (
               <div className="p-6 bg-red-500/20 border border-red-500/30 rounded-lg">
                 <div className="flex items-start gap-3">
                   <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-red-400 font-medium mb-1">Error loading documents</p>
-                    <p className="text-red-300 text-sm">{error.message || 'Unknown error'}</p>
-                    <button
-                      onClick={() => refetch()}
-                      className="mt-3 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-                    >
-                      Retry
-                    </button>
+                  <div className="flex-1">
+                    <p className="text-red-400 font-medium mb-1">{errorTitle}</p>
+                    <p className="text-red-300 text-sm mb-3">{errorMessage}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => refetch()}
+                        className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                      >
+                        Retry
+                      </button>
+                      {errorMessage.includes('locationId') && (
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 transition-colors"
+                        >
+                          Reload Page
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
