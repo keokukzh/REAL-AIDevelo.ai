@@ -106,9 +106,15 @@ export class CallSessionManager {
   async processTurn(
     callSid: string,
     audioBuffer: Buffer,
-    language?: string
+    language?: string,
+    locationId?: string
   ): Promise<ProcessTurnResult> {
-    const session = await this.getOrCreateSession(callSid, 'unknown'); // locationId will be set from DB
+    // First try to get existing session from DB (which has correct locationId)
+    // If not found and locationId provided, use it; otherwise fallback to 'unknown'
+    const session = await this.getOrCreateSession(
+      callSid, 
+      locationId || 'unknown'
+    );
 
     try {
       // Step 1: ASR - Transcribe audio
@@ -169,14 +175,22 @@ export class CallSessionManager {
         { language: 'de', speed: 1.0 }
       );
 
+      // Convert local file path to HTTP URL for FreeSWITCH
+      // Extract filename from path (e.g., /tmp/tts_123_abc.wav -> tts_123_abc.wav)
+      const path = require('path');
+      const filename = path.basename(audioPath);
+      const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://real-aidevelo-ai.onrender.com';
+      const audioUrl = `${publicBaseUrl}/api/v1/freeswitch/audio/${filename}`;
+
       logger.info('call_session.turn_complete', redact({
         callSid,
         audioPath,
+        audioUrl,
       }));
 
       return {
         text: agentResponse.text,
-        audioUrl: audioPath, // Local file path (FreeSWITCH can access)
+        audioUrl: audioUrl, // HTTP URL for FreeSWITCH to download
         transcription: transcription.text,
       };
     } catch (error: any) {
@@ -189,9 +203,15 @@ export class CallSessionManager {
         language: 'de',
       });
 
+      // Convert local file path to HTTP URL for FreeSWITCH
+      const path = require('path');
+      const filename = path.basename(audioPath);
+      const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://real-aidevelo-ai.onrender.com';
+      const audioUrl = `${publicBaseUrl}/api/v1/freeswitch/audio/${filename}`;
+
       return {
         text: fallbackText,
-        audioUrl: audioPath,
+        audioUrl: audioUrl, // HTTP URL for FreeSWITCH to download
         transcription: '',
       };
     }

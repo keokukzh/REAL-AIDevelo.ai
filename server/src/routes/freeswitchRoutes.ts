@@ -66,7 +66,8 @@ router.post('/call/process-turn', async (req: Request, res: Response) => {
     const audioBuffer = Buffer.from(audio, 'base64');
 
     // Process turn using CallSessionManager
-    const result = await callSessionManager.processTurn(call_sid, audioBuffer, 'de');
+    // Pass location_id to ensure correct session lookup
+    const result = await callSessionManager.processTurn(call_sid, audioBuffer, 'de', location_id);
 
     if (!result.transcription || result.transcription.trim().length === 0) {
       // No speech detected
@@ -149,6 +150,47 @@ router.get('/greeting', async (req: Request, res: Response) => {
     res.send(audio);
   } catch (error: any) {
     logger.error('freeswitch.greeting_error', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/freeswitch/audio/:fileId
+ * Serve TTS audio files for FreeSWITCH to download
+ */
+router.get('/audio/:fileId', async (req: Request, res: Response) => {
+  try {
+    const { fileId } = req.params;
+    
+    // Extract filename from fileId (format: tts_timestamp_random.wav)
+    // For security, only allow files that match TTS file pattern
+    if (!fileId.match(/^tts_\d+_[a-z0-9]+\.wav$/)) {
+      return res.status(400).json({ error: 'Invalid file ID format' });
+    }
+
+    const fs = require('fs').promises;
+    const path = require('path');
+    const tmpDir = process.env.TMP_DIR || '/tmp';
+    const filepath = path.join(tmpDir, fileId);
+
+    try {
+      const audioBuffer = await fs.readFile(filepath);
+      res.setHeader('Content-Type', 'audio/wav');
+      res.setHeader('Content-Length', audioBuffer.length.toString());
+      res.send(audioBuffer);
+      
+      // Cleanup: Delete file after serving (async, don't wait)
+      fs.unlink(filepath).catch(() => {
+        // Ignore cleanup errors
+      });
+    } catch (fileError: any) {
+      if (fileError.code === 'ENOENT') {
+        return res.status(404).json({ error: 'Audio file not found' });
+      }
+      throw fileError;
+    }
+  } catch (error: any) {
+    logger.error('freeswitch.audio_serve_error', error);
     res.status(500).json({ error: error.message });
   }
 });
