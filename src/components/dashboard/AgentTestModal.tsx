@@ -229,13 +229,35 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          {canStream && locationId && agentConfigId && (
+          {canStream && locationId && agentConfigId && elevenAgentId ? (
             <VoiceAgentStreamingUI
               customerId={`test-${Date.now()}`}
               agentId={agentConfigId}
               voiceId={elevenAgentId || undefined}
               onClose={handleClose}
             />
+          ) : (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
+              <Info className="text-yellow-400 mt-0.5" size={20} />
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-300 mb-1">
+                  ElevenLabs Agent ID fehlt
+                </h3>
+                <p className="text-xs text-yellow-200/80 mb-3">
+                  Der Agent benötigt eine ElevenLabs Agent ID, um getestet werden zu können.
+                  Bitte konfiguriere die Agent ID in den Einstellungen.
+                </p>
+                <button
+                  onClick={() => {
+                    handleClose();
+                    window.location.href = '/dashboard/settings';
+                  }}
+                  className="text-xs text-yellow-300 hover:text-yellow-200 underline"
+                >
+                  Zu Einstellungen gehen →
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
