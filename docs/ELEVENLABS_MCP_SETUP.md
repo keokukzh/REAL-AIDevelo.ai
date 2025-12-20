@@ -17,13 +17,36 @@ Model Context Protocol (MCP) is a standardized protocol that allows AI assistant
 
 ## Configuration
 
-### Step 1: Open Cursor Settings
+### Option 1: Automatic Setup (Recommended)
+
+Use the provided setup script to automatically configure MCP:
+
+```bash
+npm run mcp:setup
+```
+
+Or with explicit API key:
+
+```bash
+ELEVENLABS_API_KEY=your_key_here npm run mcp:setup
+```
+
+This will:
+- Read `ELEVENLABS_API_KEY` from environment variables
+- Create `.cursor/mcp.json` with the correct configuration
+- Ensure the `.cursor` directory exists
+
+**Note:** The script will use `ELEVENLABS_API_KEY` from your environment. If not set, it will show instructions.
+
+### Option 2: Manual Setup
+
+#### Step 1: Open Cursor Settings
 
 1. Open Cursor
 2. Go to **Settings** (or press `Ctrl+,` / `Cmd+,`)
 3. Navigate to **Features** → **Model Context Protocol** (or search for "MCP")
 
-### Step 2: Add ElevenLabs MCP Server
+#### Step 2: Add ElevenLabs MCP Server
 
 Add the following configuration to your MCP servers:
 

@@ -1,11 +1,34 @@
 # Quick Start: ElevenLabs MCP Setup
 
-## 1. Get Your API Key
+## Method 1: Automatic Setup (Easiest)
+
+1. **Set your API key:**
+   ```bash
+   # Windows PowerShell
+   $env:ELEVENLABS_API_KEY="your_key_here"
+   
+   # Windows CMD
+   set ELEVENLABS_API_KEY=your_key_here
+   
+   # macOS/Linux
+   export ELEVENLABS_API_KEY=your_key_here
+   ```
+
+2. **Run the setup script:**
+   ```bash
+   npm run mcp:setup
+   ```
+
+3. **Restart Cursor** - Done! ✅
+
+## Method 2: Manual Setup
+
+### 1. Get Your API Key
 
 1. Go to [ElevenLabs Dashboard](https://elevenlabs.io/app/settings/api-keys)
 2. Copy your API key (starts with `sk_`)
 
-## 2. Configure in Cursor
+### 2. Configure in Cursor
 
 1. Open Cursor Settings (`Ctrl+,` or `Cmd+,`)
 2. Search for "MCP" or go to **Features** → **Model Context Protocol**
