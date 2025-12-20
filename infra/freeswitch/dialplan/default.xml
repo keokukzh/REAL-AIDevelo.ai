@@ -20,7 +20,9 @@
       <action application="set" data="api_hangup_hook=luarun /usr/share/freeswitch/scripts/notify_hangup.lua ${uuid} ${location_id} ${agent_id}"/>
       
       <!-- Start call session in backend via HTTP -->
-      <action application="set" data="call_controller_url=${call_controller_url:-http://aidevelo:5000/api/freeswitch/call/start}"/>
+      <!-- Use PUBLIC_BASE_URL environment variable or fallback to Render URL -->
+      <action application="set" data="backend_url=${backend_url:-https://real-aidevelo-ai.onrender.com}"/>
+      <action application="set" data="call_controller_url=${backend_url}/api/v1/freeswitch/call/start"/>
       <action application="curl" data="${call_controller_url} POST location_id=${location_id}&amp;agent_id=${agent_id}&amp;call_sid=${uuid}"/>
       
       <!-- Execute call controller Lua script -->
@@ -44,7 +46,8 @@
   <extension name="inbound-did-routing">
     <condition field="destination_number" expression="^(\+?[0-9]+)$">
       <!-- Route to backend for DID -> location_id mapping -->
-      <action application="set" data="did_routing_url=${did_routing_url:-http://aidevelo:5000/api/freeswitch/did-routing}"/>
+      <action application="set" data="backend_url=${backend_url:-https://real-aidevelo-ai.onrender.com}"/>
+      <action application="set" data="did_routing_url=${backend_url}/api/v1/freeswitch/did-routing"/>
       <action application="set" data="location_id=${curl(${did_routing_url}?did=${destination_number})}"/>
       
       <!-- If location_id found, route to agent -->

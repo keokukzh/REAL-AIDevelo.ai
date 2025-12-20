@@ -6,7 +6,8 @@ local location_id = argv[2] or "default"
 local agent_id = argv[3] or "default"
 
 local api = freeswitch.API()
-local backend_url = os.getenv("BACKEND_URL") or "http://aidevelo:5000"
+-- Use PUBLIC_BASE_URL or BACKEND_URL environment variable, fallback to Render URL
+local backend_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("BACKEND_URL") or "https://real-aidevelo-ai.onrender.com"
 local max_turns = 20
 local max_utterance_duration = 10 -- seconds
 
@@ -21,7 +22,7 @@ log(string.format("Starting call controller: location_id=%s, agent_id=%s", locat
 local function notify_backend(event, data)
   local http = require("socket.http")
   local ltn12 = require("ltn12")
-  local url = string.format("%s/api/freeswitch/call/%s", backend_url, event)
+  local url = string.format("%s/api/v1/freeswitch/call/%s", backend_url, event)
   
   local response_body = {}
   local body = "call_sid=" .. uuid .. "&location_id=" .. location_id .. "&agent_id=" .. agent_id
@@ -55,7 +56,7 @@ local function play_greeting()
   log("Playing greeting")
   
   -- Request greeting audio from backend
-  local greeting_url = string.format("%s/api/freeswitch/greeting?location_id=%s&agent_id=%s", backend_url, location_id, agent_id)
+  local greeting_url = string.format("%s/api/v1/freeswitch/greeting?location_id=%s&agent_id=%s", backend_url, location_id, agent_id)
   
   -- Download greeting audio
   local http = require("socket.http")
@@ -148,7 +149,7 @@ local function process_turn(audio_path)
   })
   
   local response_body = {}
-  local url = string.format("%s/api/freeswitch/call/process-turn", backend_url)
+  local url = string.format("%s/api/v1/freeswitch/call/process-turn", backend_url)
   
   local result, status = http.request{
     url = url,
