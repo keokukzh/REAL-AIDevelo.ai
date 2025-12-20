@@ -101,90 +101,56 @@ local function record_utterance()
   
   local record_path = "/tmp/utterance_" .. uuid .. "_" .. os.time() .. ".wav"
   
-  -- Use detect_speech with record_session for better WebRTC compatibility
-  -- First, start recording using record_session with aleg (audio leg)
+  -- Use api:execute with record_session
+  -- record_session is blocking and will record until max_duration or silence detected
   -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration> [aleg|bleg|both]
-  local record_cmd = string.format("record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
+  log("Starting recording with record_session...")
   
-  -- Use detect_speech with record_session for better WebRTC compatibility
-  -- detect_speech will record until speech is detected or timeout
-  -- This is better than record_session alone for WebRTC calls
-  log("Starting speech detection and recording...")
-  
-  -- Try using detect_speech first (better for WebRTC)
-  local detect_success, detect_result = pcall(function()
-    -- detect_speech records audio until speech is detected or timeout
-    -- Format: detect_speech <grammar> <engine> <timeout> <result_var>
-    -- We'll use a simple approach: record with detect_speech
-    local detect_cmd = string.format("detect_speech %s %s %d %s", 
-      "default", "pocketsphinx", max_utterance_duration, "detect_result")
-    return api:executeString(detect_cmd)
+  local record_success, record_result = pcall(function()
+    -- Try with aleg first (audio leg - what user says)
+    return api:execute("record_session", string.format("%s %d 200 500 aleg", record_path, max_utterance_duration))
   end)
   
-  if detect_success and detect_result and not string.match(tostring(detect_result), "%-ERR") then
-    log("Speech detection started: " .. tostring(detect_result))
-    -- Wait for speech detection to complete
-    freeswitch.msleep(max_utterance_duration * 1000 + 1000)
-  else
-    log("Speech detection not available, using record_session")
-    -- Fallback: use record_session (blocking, but should work)
-    local record_success, record_result = pcall(function()
-      -- Use executeString with full command
-      local record_cmd = string.format("record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
-      return api:executeString(record_cmd)
+  if not record_success or (record_result and string.match(tostring(record_result), "%-ERR")) then
+    log("Recording with aleg failed, trying without aleg parameter")
+    record_success, record_result = pcall(function()
+      return api:execute("record_session", string.format("%s %d 200 500", record_path, max_utterance_duration))
     end)
-    
-    if not record_success then
-      log("Recording command threw error: " .. tostring(record_result))
-      -- Try without aleg parameter
-      record_success, record_result = pcall(function()
-        local record_cmd = string.format("record_session %s %d 200 500", record_path, max_utterance_duration)
-        return api:executeString(record_cmd)
-      end)
-      if not record_success then
-        log("Alternative recording also failed: " .. tostring(record_result))
-        return nil
-      end
-    end
-    log("Record command executed: " .. tostring(record_result))
   end
   
-  -- Wait for file to be created and have content
-  -- Give it time to start recording
+  if not record_success then
+    log("Recording command threw error: " .. tostring(record_result))
+    return nil
+  end
+  
+  log("Record command result: " .. tostring(record_result))
+  
+  -- Check if recording command failed
+  if record_result and (string.match(tostring(record_result), "%-ERR") or string.match(tostring(record_result), "error") or string.match(tostring(record_result), "failed")) then
+    log("Recording command failed: " .. tostring(record_result))
+    return nil
+  end
+  
+  -- record_session is blocking, so it should have completed by now
+  -- But wait a bit to ensure file is written
   freeswitch.msleep(500)
   
-  local max_wait = max_utterance_duration * 1000 + 3000 -- Add 3 seconds buffer
-  local elapsed = 500 -- Already waited 500ms
-  local file_ready = false
-  
-  while elapsed < max_wait and not file_ready do
-    freeswitch.msleep(300)
-    elapsed = elapsed + 300
-    
-    -- Check if file exists and has reasonable size (> 1000 bytes = ~0.1 seconds of audio)
-    local file = io.open(record_path, "rb")
-    if file then
-      file:seek("end")
-      local size = file:seek()
-      file:close()
-      
-      if size > 1000 then
-        file_ready = true
-        log(string.format("Recording complete: %d bytes", size))
-        break
-      end
-    end
+  -- Check if file exists and has content
+  local file = io.open(record_path, "rb")
+  if not file then
+    log("Recording file does not exist after record_session")
+    return nil
   end
   
-  if not file_ready then
-    log("Warning: Recording may not have captured audio, but continuing anyway")
-    -- Check if file exists at all
-    local file = io.open(record_path, "rb")
-    if not file then
-      log("Recording file does not exist, returning nil")
-      return nil
-    end
-    file:close()
+  file:seek("end")
+  local size = file:seek()
+  file:close()
+  
+  if size < 1000 then
+    log(string.format("Warning: Recording file is very small (%d bytes), may not have audio", size))
+    -- Still return the path, let backend handle empty audio
+  else
+    log(string.format("Recording complete: %d bytes", size))
   end
   
   return record_path
