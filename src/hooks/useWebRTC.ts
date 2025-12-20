@@ -40,7 +40,19 @@ export function useWebRTC(options: UseWebRTCOptions) {
   const callSidRef = useRef<string | null>(null);
 
   // FreeSWITCH WebRTC settings
-  const freeswitchWssUrl = process.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443';
+  // In production, use same-origin WebSocket (will be proxied)
+  // In development, use localhost
+  const getFreeSWITCHWssUrl = () => {
+    if (import.meta.env.PROD) {
+      // Production: Use same-origin WebSocket (aidevelo.ai)
+      const hostname = window.location.hostname;
+      return `wss://${hostname}:7443`;
+    }
+    // Development: Use localhost
+    return import.meta.env.VITE_FREESWITCH_WSS_URL || 'wss://localhost:7443';
+  };
+  
+  const freeswitchWssUrl = getFreeSWITCHWssUrl();
   const sipUsername = `test_${locationId}`;
   const sipPassword = 'test123'; // Default test password
   const extension = '1000'; // AI Agent extension

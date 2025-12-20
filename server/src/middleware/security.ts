@@ -138,6 +138,9 @@ export const helmetMiddleware = config.isProduction
             'wss://*.supabase.co',
             'https://*.elevenlabs.io', // Allow all ElevenLabs regional endpoints (api.elevenlabs.io, api.us.elevenlabs.io, etc.)
             'wss://*.elevenlabs.io', // WebSocket connections to ElevenLabs
+            'wss://*.aidevelo.ai', // FreeSWITCH WebSocket connections (production)
+            'wss://localhost:*', // FreeSWITCH WebSocket connections (development)
+            'ws://localhost:*', // FreeSWITCH WebSocket connections (development, non-SSL)
             'https://www.google-analytics.com', // GA4
             'https://www.googletagmanager.com', // GA4
             'https://plausible.io', // Plausible Analytics
