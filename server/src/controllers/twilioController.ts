@@ -192,6 +192,10 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
       }
     );
 
+    // Track character costs from response headers (per API reference)
+    const { extractElevenLabsCosts } = await import('../utils/elevenLabsCostTracking');
+    extractElevenLabsCosts(registerCallResponse, 'convai/twilio/register-call');
+
     // ElevenLabs returns TwiML directly as text/xml
     const twiml = registerCallResponse.data;
 

@@ -5,6 +5,7 @@ import { InternalServerError } from '../utils/errors';
 import { retryApiCall, isRetryableError } from '../utils/retry';
 import { API_TIMEOUTS } from '../config/constants';
 import { circuitBreakers } from '../utils/circuitBreaker';
+import { extractElevenLabsCosts } from '../utils/elevenLabsCostTracking';
 
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
@@ -94,6 +95,9 @@ export class ElevenLabsService {
         )
       );
 
+      // Track character costs from response headers (per API reference)
+      extractElevenLabsCosts(response, 'convai/agents/create');
+
       return response.data.agent_id;
     } catch (error) {
         // Detailed error logging
@@ -145,6 +149,9 @@ export class ElevenLabsService {
           )
         )
       );
+
+      // Track character costs from response headers (per API reference)
+      extractElevenLabsCosts(response, `text-to-speech/${voiceId}`);
 
       return Buffer.from(response.data);
     } catch (error) {

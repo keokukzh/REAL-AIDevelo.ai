@@ -184,6 +184,10 @@ export class VoicePipelineHandler {
         }
       );
 
+      // Track character costs from response headers (per API reference)
+      const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
+      extractElevenLabsCosts(response, `text-to-speech/${voiceAgentConfig.tts.defaultVoice}`);
+
       return Buffer.from(response.data);
     } catch (error) {
       console.error(`[VoicePipeline] TTS error: ${error}`);

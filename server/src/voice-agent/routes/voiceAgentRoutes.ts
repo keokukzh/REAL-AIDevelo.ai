@@ -393,6 +393,11 @@ router.post('/elevenlabs-stream-token', verifySupabaseAuth, elevenLabsQuotaCheck
           }
         );
 
+        // Track character costs from response headers (per API reference)
+        // Note: GET requests typically don't consume characters, but we track for completeness
+        const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
+        extractElevenLabsCosts(agentCheckResponse, `convai/agents/${elevenAgentId}`);
+
         if (agentCheckResponse.data) {
           agentVerified = true;
           agentName = agentCheckResponse.data.name || null;
@@ -459,6 +464,11 @@ router.post('/elevenlabs-stream-token', verifySupabaseAuth, elevenLabsQuotaCheck
             timeout: 10000,
           }
         );
+
+        // Track character costs from response headers (per API reference)
+        // Note: GET requests typically don't consume characters, but we track for completeness
+        const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
+        extractElevenLabsCosts(signedUrlResponse, 'convai/conversation/get-signed-url');
 
         if (signedUrlResponse.data?.signed_url) {
           wsUrl = signedUrlResponse.data.signed_url;
