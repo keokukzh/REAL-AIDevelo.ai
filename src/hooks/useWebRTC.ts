@@ -165,18 +165,50 @@ export function useWebRTC(options: UseWebRTCOptions) {
         },
       };
 
-      // Connect
+      // Connect - wait for transport to be ready
       await userAgent.start();
 
-      // Wait for transport to be connected (check UserAgent state)
-      // UserAgent state should be 'Started' when transport is connected
-      let attempts = 0;
-      while (userAgent.state !== 'Started' && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      
-      if (userAgent.state !== 'Started') {
+      // Wait for transport to be connected
+      // Use a Promise-based approach to wait for transport connection
+      let transportConnected = false;
+      const transportCheckPromise = new Promise<void>((resolve, reject) => {
+        const checkTransport = () => {
+          try {
+            // Check if transport exists and is connected
+            const transport = userAgent.transport;
+            if (transport && (transport.state === 'Connected' || transport.isConnected?.())) {
+              transportConnected = true;
+              resolve();
+              return;
+            }
+          } catch (e) {
+            // Transport might not be ready yet
+          }
+        };
+
+        // Check immediately
+        checkTransport();
+        if (transportConnected) return;
+
+        // Poll for connection (max 5 seconds)
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          checkTransport();
+          if (transportConnected) {
+            clearInterval(interval);
+            return;
+          }
+          if (attempts >= 50) {
+            clearInterval(interval);
+            reject(new Error('Transport-Verbindung konnte nicht hergestellt werden.'));
+          }
+        }, 100);
+      });
+
+      try {
+        await transportCheckPromise;
+      } catch (error: any) {
         throw new Error('Verbindung zu FreeSWITCH konnte nicht hergestellt werden. Bitte erneut versuchen.');
       }
 
@@ -230,15 +262,24 @@ export function useWebRTC(options: UseWebRTCOptions) {
       throw new Error('UserAgent nicht verfügbar. Bitte erneut verbinden.');
     }
 
-    // Check UserAgent state (should be 'Started' when connected)
-    if (userAgent.state !== 'Started') {
-      console.warn('[useWebRTC] UserAgent not started, reconnecting...');
+    // Check if transport is connected
+    const isTransportConnected = () => {
+      try {
+        const transport = userAgent.transport;
+        return transport && (transport.state === 'Connected' || transport.isConnected?.());
+      } catch {
+        return false;
+      }
+    };
+
+    if (!isTransportConnected()) {
+      console.warn('[useWebRTC] Transport not connected, reconnecting...');
       await connect();
       // Wait a bit for connection to stabilize
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Check again
-      if (userAgentRef.current?.state !== 'Started') {
+      if (!userAgentRef.current || !isTransportConnected()) {
         throw new Error('Verbindung zu FreeSWITCH konnte nicht hergestellt werden. Bitte erneut versuchen.');
       }
     }
@@ -285,9 +326,18 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       const userAgent = userAgentRef.current!;
       
-      // Double-check UserAgent is started before creating INVITE
-      if (userAgent.state !== 'Started') {
-        throw new Error('UserAgent-Verbindung verloren. Bitte erneut verbinden.');
+      // Double-check transport is connected before creating INVITE
+      const isTransportConnected = () => {
+        try {
+          const transport = userAgent.transport;
+          return transport && (transport.state === 'Connected' || transport.isConnected?.());
+        } catch {
+          return false;
+        }
+      };
+
+      if (!isTransportConnected()) {
+        throw new Error('Transport-Verbindung verloren. Bitte erneut verbinden.');
       }
       
       // Extract hostname for SIP URI (no port, no protocol)
