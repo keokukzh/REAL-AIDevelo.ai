@@ -1,78 +1,35 @@
-# 🎯 Finale Lösung: WebSocket-Verbindung
+root@ubuntu-4gb-nbg1-1:~/REAL-AIDevelo.ai# cd ~/REAL-AIDevelo.ai
+git pull
+cat infra/nginx/nginx.conf > /etc/nginx/nginx.conf
+nginx -t
+systemctl restart nginx
 
-## 🔍 Problem identifiziert
+# Cloudflare Tunnel Config aktualisieren
+cat > ~/.cloudflared/config.yml <<'EOF'
+tunnel: c7580385-88ce-474b-b8bd-9bea4d52b296
+credentials-file: /root/.cloudflared/c7580385-88ce-474b-b8bd-9bea4d52b296.json
 
-**Das Hauptproblem:**
-- FreeSWITCH erwartet **WebSocket-Upgrades über HTTP/HTTPS**, nicht direkt über TCP
-- Cloudflare Tunnel mit `tcp://localhost:7443` unterstützt **keine WebSocket-Upgrades**
-- FreeSWITCH Port 7443 ist ein **WSS (WebSocket Secure)** Port, der HTTP-Upgrade-Header benötigt
+ingress:
+  - hostname: freeswitch.aidevelo.ai
+    service: http://localhost:8082
+  - service: http_status:404
+EOF
 
-## ✅ Lösung implementiert
-
-**Nginx als WebSocket-Proxy:**
-
-1. **Nginx installiert** auf Port 8080
-2. **Nginx konfiguriert** als Reverse-Proxy zu FreeSWITCH (localhost:7443)
-3. **WebSocket-Upgrade-Header** werden von Nginx korrekt weitergeleitet
-4. **Cloudflare Tunnel** verwendet jetzt `http://localhost:8080` statt `tcp://localhost:7443`
-
-## 📋 Was das Script macht
-
-**`setup_nginx_proxy.sh`:**
-
-1. Installiert Nginx (falls nicht vorhanden)
-2. Erstellt Nginx-Config mit WebSocket-Support
-3. Startet Nginx
-4. Aktualisiert Cloudflare Tunnel Config:
-   ```yaml
-   ingress:
-     - hostname: freeswitch.aidevelo.ai
-       service: http://localhost:8080  # ← Jetzt HTTP statt TCP!
-   ```
-5. Startet Cloudflare Tunnel neu
-
-## 🧪 Testen
-
-**Nach dem Script (30 Sekunden warten):**
-
-1. Gehe zu: https://aidevelo.ai/dashboard/test-call
-2. Klicke auf: "Mit FreeSWITCH verbinden"
-3. Status sollte sein: **"Verbunden"** ✅
-
-## 🔧 Falls es nicht funktioniert
-
-**Prüfe auf Server:**
-```bash
-# Nginx Status
-systemctl status nginx
-
-# Nginx Logs
-tail -f /var/log/nginx/error.log
-
-# Cloudflare Tunnel Status
-systemctl status cloudflared
-
-# FreeSWITCH Status
-docker ps | grep freeswitch
-```
-
-**Prüfe Ports:**
-```bash
-# Nginx sollte auf 8080 lauschen
-netstat -tulpn | grep 8080
-
-# FreeSWITCH sollte auf 7443 lauschen
-netstat -tulpn | grep 7443
-```
-
-## ✅ Zusammenfassung
-
-**Vorher:**
-- Cloudflare Tunnel → `tcp://localhost:7443` ❌ (keine WebSocket-Upgrades)
-
-**Nachher:**
-- Cloudflare Tunnel → `http://localhost:8080` (Nginx) → `http://localhost:7443` (FreeSWITCH) ✅
-- Nginx handhabt WebSocket-Upgrades korrekt
-
-**Das sollte jetzt funktionieren!** 🎯
-
+systemctl restart cloudflared
+remote: Enumerating objects: 11, done.
+remote: Counting objects: 100% (11/11), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 6 (delta 3), reused 6 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 798 bytes | 159.00 KiB/s, done.
+From https://github.com/keokukzh/REAL-AIDevelo.ai
+   fbe9ca3..b16cc7d  main       -> origin/main
+Updating fbe9ca3..b16cc7d
+error: Your local changes to the following files would be overwritten by merge:
+        setup_nginx_proxy.sh
+Please commit your changes or stash them before you merge.
+Aborting
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+Job for nginx.service failed because the control process exited with error code.
+See "systemctl status nginx.service" and "journalctl -xeu nginx.service" for details.
+root@ubuntu-4gb-nbg1-1:~/REAL-AIDevelo.ai#

@@ -143,6 +143,7 @@ services:
       - FS_EVENT_SOCKET=0.0.0.0:8021
       - FS_EVENT_SOCKET_PASSWORD=${FREESWITCH_ESL_PASSWORD:-ClueCon}
       - BACKEND_URL=http://aidevelo:5000
+    command: ["freeswitch", "-nc", "-nf", "-nonat", "-c"]
     networks:
       - default
     restart: unless-stopped
