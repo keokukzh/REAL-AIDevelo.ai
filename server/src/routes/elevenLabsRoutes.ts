@@ -1,3 +1,8 @@
+/**
+ * @deprecated These routes are deprecated in favor of self-hosted voice agent.
+ * They are kept for backward compatibility but will be removed in a future version.
+ */
+
 import { Router } from 'express';
 import { getVoices, generateSpeech, testConnection } from '../controllers/elevenLabsController';
 

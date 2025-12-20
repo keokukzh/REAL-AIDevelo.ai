@@ -121,6 +121,9 @@ import privacyRoutes from './routes/privacyRoutes';
 import twilioRoutes from './routes/twilioRoutes';
 import webchatRoutes from './routes/webchatRoutes';
 import channelRoutes from './routes/channelRoutes';
+import freeswitchRoutes from './routes/freeswitchRoutes';
+import testCallRoutes from './routes/testCallRoutes';
+import provisionRoutes from './routes/provisionRoutes';
 import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
 import { createServer } from 'http';
 import axios from 'axios';
@@ -434,6 +437,9 @@ v1Router.use('/sync', requireAuth, syncRoutes);
 v1Router.use('/knowledge', requireAuth, knowledgeRoutes);
 v1Router.use('/privacy', privacyRoutes);
 v1Router.use('/twilio', twilioRoutes);
+v1Router.use('/freeswitch', freeswitchRoutes); // FreeSWITCH call control (no auth, internal service)
+v1Router.use('/test-call', testCallRoutes); // Test call endpoints (auth required)
+v1Router.use('/provision', provisionRoutes); // Provisioning endpoints (auth required)
 v1Router.use('/webchat', webchatRoutes); // Public widget endpoint (no auth, uses widgetKey)
 v1Router.use('/channels', channelRoutes); // Auth applied per-route
 v1Router.use('/auth', authRoutes);

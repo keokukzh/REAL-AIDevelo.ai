@@ -10,7 +10,7 @@ import { LLMResponse } from '../../voice-agent/types';
 
 export interface AgentCoreOptions {
   locationId: string;
-  channel: 'webchat' | 'whatsapp';
+  channel: 'webchat' | 'whatsapp' | 'voice';
   externalUserId: string;
   text: string;
   externalMessageId?: string;
@@ -135,14 +135,17 @@ export class AgentCore {
       }
 
       // Step 7: Channel-aware prompt adjustments
-      // For text channels, make responses shorter and more actionable
-      const channelPrompt = channel === 'whatsapp' || channel === 'webchat'
-        ? 'Antworte kurz und präzise. Verwende klare CTAs (z.B. "Termin buchen", "Rückruf anfordern").'
-        : '';
+      let channelPrompt = '';
+      if (channel === 'whatsapp' || channel === 'webchat') {
+        channelPrompt = 'Antworte kurz und präzise. Verwende klare CTAs (z.B. "Termin buchen", "Rückruf anfordern").';
+      } else if (channel === 'voice') {
+        // Voice-specific: Natural, conversational, shorter sentences
+        channelPrompt = 'Antworte natürlich und gesprächsweise. Verwende kurze Sätze. Sei freundlich und professionell. Wiederhole wichtige Informationen (z.B. Termindatum) zur Bestätigung.';
+      }
 
+      // Inject channel-specific prompt into context
       if (channelPrompt) {
-        // Append to system prompt (would need to modify buildSystemPrompt, but for now we'll handle in response)
-        // This is a simplified approach - in production, you might want to pass channel to prompt builder
+        promptContext.channelInstructions = channelPrompt;
       }
 
       // Step 8: Get LLM response

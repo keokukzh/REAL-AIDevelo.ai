@@ -14,12 +14,40 @@ services:
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5000}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5000,https://aidevelo.ai,https://www.aidevelo.ai}
-      # Stripe wird später integriert - erstmal nicht benötigt
-      # - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      # - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # Self-hosted services
+      - ASR_SERVICE_URL=http://asr-service:8000
+      - TTS_SERVICE_URL=http://tts-service:8000
+      - VLLM_BASE_URL=http://vllm:8000/v1
+      - VLLM_API_KEY=${VLLM_API_KEY:-dummy}
+      - ASR_PROVIDER=${ASR_PROVIDER:-faster_whisper}
+      - TTS_PROVIDER=${TTS_PROVIDER:-parler}
+      - LLM_PROVIDER=${LLM_PROVIDER:-vllm}
+      - TELEPHONY_ADAPTER=${TELEPHONY_ADAPTER:-freeswitch}
+      # FreeSWITCH
+      - FREESWITCH_ESL_HOST=freeswitch
+      - FREESWITCH_ESL_PORT=8021
+      - FREESWITCH_ESL_PASSWORD=${FREESWITCH_ESL_PASSWORD:-ClueCon}
+      # MinIO
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-recordings}
+      # Redis (optional, for queue)
+      - REDIS_URL=redis://redis:6379
+      # Qdrant
+      - QDRANT_URL=http://qdrant:6333
     env_file:
       - .env
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - minio
+      - qdrant
+      - asr-service
+      - tts-service
+      - vllm
+      - freeswitch
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
@@ -27,6 +55,189 @@ services:
       retries: 3
       start_period: 40s
     volumes:
-      # Optional: Mount for persistent data if needed
       - ./data:/app/data
+      - /tmp:/tmp  # For TTS audio files accessible by FreeSWITCH
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: aidevelo-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-aidevelo}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aidevelo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    container_name: aidevelo-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aidevelo-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  freeswitch:
+    image: freeswitch/freeswitch:latest
+    container_name: aidevelo-freeswitch
+    ports:
+      - "5060:5060/udp"   # SIP
+      - "5060:5060/tcp"   # SIP
+      - "7443:7443/tcp"   # WSS (WebRTC)
+      - "8080:8080/tcp"   # HTTP API
+      - "8081:8081/tcp"   # Event Socket
+      - "8021:8021/tcp"   # ESL (Event Socket Library)
+    volumes:
+      - ./infra/freeswitch/dialplan:/etc/freeswitch/dialplan/default
+      - ./infra/freeswitch/vars.xml:/etc/freeswitch/vars.xml
+      - ./infra/freeswitch/scripts:/usr/share/freeswitch/scripts
+      - ./data/recordings:/var/freeswitch/recordings
+      - /tmp:/tmp  # For TTS audio files
+    environment:
+      - FS_EVENT_SOCKET=0.0.0.0:8021
+      - FS_EVENT_SOCKET_PASSWORD=${FREESWITCH_ESL_PASSWORD:-ClueCon}
+      - BACKEND_URL=http://aidevelo:5000
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "fs_cli", "-x", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  asr-service:
+    build:
+      context: ./services/asr-service
+      dockerfile: Dockerfile
+    container_name: aidevelo-asr
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data/models:/app/models
+    environment:
+      - ASR_DEVICE=${ASR_DEVICE:-cpu}
+      - ASR_MODEL_SIZE=${ASR_MODEL_SIZE:-large-v3}
+    restart: unless-stopped
+    # Optional GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Model loading takes time
+
+  tts-service:
+    build:
+      context: ./services/tts-service
+      dockerfile: Dockerfile
+    container_name: aidevelo-tts
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./data/models:/app/models
+      - ./data/tts-cache:/app/cache
+      - /tmp:/tmp  # For audio files accessible by FreeSWITCH
+    environment:
+      - TTS_DEVICE=${TTS_DEVICE:-cpu}
+      - TTS_CACHE_DIR=/app/cache
+    restart: unless-stopped
+    # Optional GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Model loading takes time
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: aidevelo-vllm
+    command: --model ${VLLM_MODEL:-Qwen/Qwen2.5-7B-Instruct} --api-key ${VLLM_API_KEY:-dummy} --host 0.0.0.0 --port 8000
+    ports:
+      - "8003:8000"
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY:-dummy}
+    restart: unless-stopped
+    # GPU required for vLLM
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s  # Model loading takes time
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  qdrant_data:
 

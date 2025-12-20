@@ -321,11 +321,130 @@ class DeepSeekProvider implements LLMProviderInterface {
   }
 }
 
+class VLLMProvider implements LLMProviderInterface {
+  private client: OpenAI;
+
+  constructor() {
+    // vLLM is OpenAI-compatible
+    const baseURL = process.env.VLLM_BASE_URL || 'http://vllm:8000/v1';
+    const apiKey = process.env.VLLM_API_KEY || 'dummy';
+    
+    this.client = new OpenAI({
+      apiKey,
+      baseURL,
+      dangerouslyAllowBrowser: false,
+    });
+  }
+
+  async chat(
+    messages: LLMMessage[],
+    tools?: Array<{ name: string; description: string; parameters: any }>,
+    stream: boolean = false
+  ): Promise<LLMResponse | AsyncIterable<LLMResponse>> {
+    const formattedMessages = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    const toolDefinitions = tools?.map((tool) => ({
+      type: 'function' as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      },
+    }));
+
+    // Use model from env or default
+    const model = process.env.VLLM_MODEL || voiceAgentConfig.llm.model;
+
+    if (stream) {
+      const stream = await this.client.chat.completions.create({
+        model,
+        messages: formattedMessages as any,
+        tools: toolDefinitions,
+        stream: true,
+      });
+
+      return this.handleStream(stream);
+    }
+
+    const response = await this.client.chat.completions.create({
+      model,
+      messages: formattedMessages as any,
+      tools: toolDefinitions,
+    });
+
+    const choice = response.choices[0];
+    const message = choice.message;
+
+    const toolCalls: ToolCall[] | undefined = message.tool_calls?.map((tc) => {
+      if (tc.type === 'function') {
+        return {
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments),
+        };
+      }
+      return {
+        name: '',
+        arguments: {},
+      };
+    });
+
+    return {
+      content: message.content || '',
+      toolCalls,
+      finishReason: choice.finish_reason as any,
+    };
+  }
+
+  private async *handleStream(
+    stream: any
+  ): AsyncIterable<LLMResponse> {
+    let fullContent = '';
+    let toolCalls: ToolCall[] = [];
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      if (delta?.content) {
+        fullContent += delta.content;
+        yield {
+          content: fullContent,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        };
+      }
+      if (delta?.tool_calls) {
+        for (const toolCall of delta.tool_calls) {
+          const index = toolCall.index;
+          if (!toolCalls[index]) {
+            toolCalls[index] = {
+              name: toolCall.function?.name || '',
+              arguments: {},
+            };
+          }
+          if (toolCall.function?.arguments) {
+            try {
+              toolCalls[index].arguments = JSON.parse(
+                toolCalls[index].arguments
+                  ? JSON.stringify(toolCalls[index].arguments) +
+                      toolCall.function.arguments
+                  : toolCall.function.arguments
+              );
+            } catch {
+              // Partial JSON, continue accumulating
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 /**
  * Get LLM provider based on configuration
  */
 export function getLLMProvider(): LLMProviderInterface {
-  const provider = voiceAgentConfig.llm.provider;
+  const provider = (process.env.LLM_PROVIDER || voiceAgentConfig.llm.provider) as 'openai' | 'anthropic' | 'deepseek' | 'vllm';
 
   switch (provider) {
     case 'openai':
@@ -334,8 +453,15 @@ export function getLLMProvider(): LLMProviderInterface {
       return new AnthropicProvider();
     case 'deepseek':
       return new DeepSeekProvider();
+    case 'vllm':
+      return new VLLMProvider();
     default:
-      return new OpenAIProvider();
+      // Fallback: try vLLM first, then OpenAI
+      try {
+        return new VLLMProvider();
+      } catch {
+        return new OpenAIProvider();
+      }
   }
 }
 

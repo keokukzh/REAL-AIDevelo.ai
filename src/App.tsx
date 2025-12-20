@@ -27,6 +27,7 @@ const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => (
 const KnowledgeBasePage = React.lazy(() => import('./pages/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const ChannelsPage = React.lazy(() => import('./pages/ChannelsPage').then(m => ({ default: m.ChannelsPage })));
+const TestCallPage = React.lazy(() => import('./pages/TestCallPage').then(m => ({ default: m.TestCallPage })));
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -228,6 +229,13 @@ function AppContent() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                           <ChannelsPage />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/test-call" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                          <TestCallPage />
                         </Suspense>
                       </ProtectedRoute>
                     } />

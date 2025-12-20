@@ -62,6 +62,7 @@
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.10.1",
     "recharts": "^3.5.1",
+    "sip.js": "^0.21.0",
     "tailwind-merge": "^3.4.0",
     "three": "0.160.0",
     "uuid": "^13.0.0",

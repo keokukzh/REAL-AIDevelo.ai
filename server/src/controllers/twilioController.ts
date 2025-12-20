@@ -103,7 +103,8 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
     // Continue even if call log upsert fails
   }
 
-  // Step 2: Use ElevenLabs register-call (replaces Media Streams)
+    // Step 2: Use ElevenLabs register-call (replaces Media Streams)
+    // @deprecated This path is deprecated. Use self-hosted voice agent with FreeSWITCH instead.
   // This is the canonical approach per Stop Conditions: register-call must return TwiML
   
   // Check for mock mode

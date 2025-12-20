@@ -46,6 +46,9 @@ export interface BridgeSession {
 }
 
 /**
+ * @deprecated This service is deprecated in favor of self-hosted ASR/LLM/TTS services.
+ * It will be removed in a future version. Use the new self-hosted voice agent pipeline instead.
+ * 
  * ElevenLabs Bridge Service
  * Bridges Twilio Media Streams to ElevenLabs Conversational API
  */

@@ -2,21 +2,24 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// @deprecated ELEVENLABS_API_KEY is no longer required when using self-hosted voice agent
+// It is kept for backward compatibility with existing ElevenLabs integrations
 const requiredEnvVars = [
-  'ELEVENLABS_API_KEY',
+  // 'ELEVENLABS_API_KEY', // Deprecated - optional now
 ] as const;
 
 const validateEnv = () => {
   const missing = requiredEnvVars.filter(key => !process.env[key]);
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}\n` +
-      `Please check your .env file or environment configuration.`
+    // Only warn, don't throw (for backward compatibility)
+    console.warn(
+      `Optional environment variables not set: ${missing.join(', ')}\n` +
+      `These are only needed for ElevenLabs integration (deprecated).`
     );
   }
 };
 
-// Validate on import
+// Validate on import (non-blocking)
 validateEnv();
 
 export const voiceAgentConfig = {

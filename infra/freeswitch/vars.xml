@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<include>
+  <!-- FreeSWITCH Variables for AIDevelo Voice Agent -->
+  
+  <!-- Backend URL -->
+  <X-PRE-PROCESS cmd="set" data="backend_url=http://aidevelo:5000"/>
+  
+  <!-- Call Controller URL -->
+  <X-PRE-PROCESS cmd="set" data="call_controller_url=${backend_url}/api/freeswitch/call/start"/>
+  
+  <!-- DID Routing URL -->
+  <X-PRE-PROCESS cmd="set" data="did_routing_url=${backend_url}/api/freeswitch/did-routing"/>
+  
+  <!-- Default location and agent IDs (for test calls) -->
+  <X-PRE-PROCESS cmd="set" data="default_location_id=default"/>
+  <X-PRE-PROCESS cmd="set" data="default_agent_id=default"/>
+  
+  <!-- WebRTC Settings -->
+  <X-PRE-PROCESS cmd="set" data="external_rtp_ip=stun:stun.freeswitch.org"/>
+  <X-PRE-PROCESS cmd="set" data="external_sip_ip=stun:stun.freeswitch.org"/>
+  
+  <!-- Audio Settings -->
+  <X-PRE-PROCESS cmd="set" data="default_sample_rate=16000"/>
+  <X-PRE-PROCESS cmd="set" data="default_codec=PCMU"/>
+  
+</include>
