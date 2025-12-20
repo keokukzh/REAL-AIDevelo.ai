@@ -267,18 +267,6 @@ export function useWebRTC(options: UseWebRTCOptions) {
             console.log('[useWebRTC] Unknown session state:', newState);
         }
       });
-      
-      // Also listen for progress events
-      inviter.on('progress', () => {
-        console.log('[useWebRTC] Call progress (180 Ringing)');
-        setState(prev => ({ ...prev, callStatus: 'ringing' }));
-      });
-      
-      // Listen for accepted events
-      inviter.on('accepted', () => {
-        console.log('[useWebRTC] Call accepted (200 OK)');
-        setState(prev => ({ ...prev, callStatus: 'active', isInCall: true, isCalling: false }));
-      });
 
       // Invite
       await inviter.invite();

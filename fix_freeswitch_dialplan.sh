@@ -47,7 +47,11 @@ if [ ! -f "$DIALPLAN_FILE" ]; then
     exit 1
 fi
 
-echo "2. Copying dialplan to FreeSWITCH container..."
+echo "2. Creating dialplan directory if it doesn't exist..."
+docker exec aidevelo-freeswitch mkdir -p /usr/share/freeswitch/conf/dialplan/default
+echo ""
+
+echo "3. Copying dialplan to FreeSWITCH container..."
 docker cp "$DIALPLAN_FILE" aidevelo-freeswitch:/usr/share/freeswitch/conf/dialplan/default/00_default.xml
 
 # Verify file was copied
@@ -60,18 +64,18 @@ fi
 echo ""
 
 # Reload XML configuration
-echo "3. Reloading FreeSWITCH XML configuration..."
+echo "4. Reloading FreeSWITCH XML configuration..."
 docker exec aidevelo-freeswitch fs_cli -x "reloadxml" 2>&1
 sleep 2
 
 # Reload dialplan specifically
-echo "4. Reloading dialplan..."
+echo "5. Reloading dialplan..."
 docker exec aidevelo-freeswitch fs_cli -x "dialplan reload" 2>&1
 sleep 1
 echo ""
 
 # Verify extension 1000 is loaded
-echo "5. Verifying extension 1000 is loaded..."
+echo "6. Verifying extension 1000 is loaded..."
 DIALPLAN_CHECK=$(docker exec aidevelo-freeswitch fs_cli -x "xml_locate dialplan default 1000" 2>&1)
 if echo "$DIALPLAN_CHECK" | grep -q "1000"; then
     echo "✅ Extension 1000 found in dialplan"
@@ -83,17 +87,17 @@ fi
 echo ""
 
 # Show dialplan content
-echo "6. Dialplan content (extension 1000):"
+echo "7. Dialplan content (extension 1000):"
 docker exec aidevelo-freeswitch cat /usr/share/freeswitch/conf/dialplan/default/00_default.xml 2>&1 | grep -A 20 "1000" || echo "Could not show dialplan content"
 echo ""
 
 # Check FreeSWITCH status
-echo "7. FreeSWITCH Status:"
+echo "8. FreeSWITCH Status:"
 docker exec aidevelo-freeswitch fs_cli -x "status" 2>&1 | head -5
 echo ""
 
 # Check Sofia profile
-echo "8. Sofia Internal Profile:"
+echo "9. Sofia Internal Profile:"
 docker exec aidevelo-freeswitch fs_cli -x "sofia status profile internal" 2>&1 | head -5
 echo ""
 
