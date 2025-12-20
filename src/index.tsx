@@ -8,6 +8,82 @@ import './styles/design-tokens.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
 
+// #region agent log
+// Runtime CSP + CORB diagnostics (no secrets)
+if (typeof window !== 'undefined') {
+  window.addEventListener('securitypolicyviolation', (e) => {
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'pre-fix',
+        hypothesisId: 'H1_H2_H4',
+        location: 'src/index.tsx:securitypolicyviolation',
+        message: 'CSP violation',
+        data: {
+          effectiveDirective: (e as any).effectiveDirective,
+          violatedDirective: (e as any).violatedDirective,
+          blockedURI: (e as any).blockedURI,
+          sourceFile: (e as any).sourceFile,
+          lineNumber: (e as any).lineNumber,
+          columnNumber: (e as any).columnNumber,
+          sample: (e as any).sample ? String((e as any).sample).slice(0, 180) : undefined,
+          disposition: (e as any).disposition,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  });
+
+  window.addEventListener(
+    'error',
+    (e) => {
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'debug-session',
+          runId: 'pre-fix',
+          hypothesisId: 'H4',
+          location: 'src/index.tsx:window.error',
+          message: 'Window error event',
+          data: {
+            message: (e as any).message,
+            filename: (e as any).filename,
+            lineno: (e as any).lineno,
+            colno: (e as any).colno,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    },
+    true
+  );
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = (e as any).reason;
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'pre-fix',
+        hypothesisId: 'H4',
+        location: 'src/index.tsx:unhandledrejection',
+        message: 'Unhandled promise rejection',
+        data: {
+          name: reason?.name,
+          message: reason?.message,
+          stackHead: typeof reason?.stack === 'string' ? reason.stack.split('\n').slice(0, 4).join('\n') : undefined,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  });
+}
+// #endregion
+
 // Initialize Sentry before rendering app
 initSentry();
 

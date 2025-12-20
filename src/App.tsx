@@ -85,6 +85,28 @@ function AppContent() {
   // Track page views
   useEffect(() => {
     trackPageView(location.pathname);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'pre-fix',
+        hypothesisId: 'H1_H2_H3_H4',
+        location: 'src/App.tsx:routeChange',
+        message: 'Route change / env snapshot',
+        data: {
+          pathname: location.pathname,
+          mode: (import.meta as any).env?.MODE,
+          dev: !!(import.meta as any).env?.DEV,
+          prod: !!(import.meta as any).env?.PROD,
+          reactQueryDevtoolsEnabled: ReactQueryDevtools !== null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
   }, [location.pathname]);
   
   // Track Core Web Vitals
