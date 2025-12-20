@@ -106,12 +106,14 @@ export function useWebRTC(options: UseWebRTCOptions) {
       setState(prev => ({ ...prev, error: null, callStatus: 'connecting' }));
 
       // Extract hostname from WSS URL (remove wss:// and port if present)
-      const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0];
-      const port = freeswitchWssUrl.match(/:(\d+)/)?.[1] || '7443';
+      // For SIP URI, we only need the hostname, not the port
+      const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0].split('/')[0];
 
       // Create UserAgent
+      // SIP URI should be: sip:username@domain (no port)
+      // The port is only used for the WebSocket transport (server option)
       const userAgent = new UserAgent({
-        uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}:${port}`),
+        uri: UserAgent.makeURI(`sip:${sipUsername}@${hostname}`),
         transportOptions: {
           server: freeswitchWssUrl,
         },
