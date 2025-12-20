@@ -26,18 +26,40 @@ if (!fs.existsSync(CURSOR_DIR)) {
   fs.mkdirSync(CURSOR_DIR, { recursive: true });
 }
 
-// Get API key from environment
-const apiKey = process.env.ELEVENLABS_API_KEY;
+// Get API key from environment or .env file
+let apiKey = process.env.ELEVENLABS_API_KEY;
+
+// Try to read from .env file if not in environment
+if (!apiKey || apiKey === '' || apiKey.includes('<') || apiKey.includes('your-')) {
+  const envPath = path.join(__dirname, '..', 'server', '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const envMatch = envContent.match(/ELEVENLABS_API_KEY=(.+)/);
+    if (envMatch && envMatch[1]) {
+      apiKey = envMatch[1].trim();
+    }
+  }
+  
+  // Also try root .env
+  if (!apiKey || apiKey === '' || apiKey.includes('<') || apiKey.includes('your-')) {
+    const rootEnvPath = path.join(__dirname, '..', '.env');
+    if (fs.existsSync(rootEnvPath)) {
+      const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+      const envMatch = envContent.match(/ELEVENLABS_API_KEY=(.+)/);
+      if (envMatch && envMatch[1]) {
+        apiKey = envMatch[1].trim();
+      }
+    }
+  }
+}
 
 if (!apiKey || apiKey === '' || apiKey.includes('<') || apiKey.includes('your-')) {
   console.error('❌ ERROR: ELEVENLABS_API_KEY not set or invalid');
   console.error('');
-  console.error('Please set ELEVENLABS_API_KEY environment variable:');
-  console.error('  Windows PowerShell: $env:ELEVENLABS_API_KEY="your_key_here"');
-  console.error('  Windows CMD: set ELEVENLABS_API_KEY=your_key_here');
-  console.error('  macOS/Linux: export ELEVENLABS_API_KEY=your_key_here');
-  console.error('');
-  console.error('Or run: ELEVENLABS_API_KEY=your_key_here node scripts/setup-mcp.js');
+  console.error('Please set ELEVENLABS_API_KEY in one of these ways:');
+  console.error('  1. Environment variable: $env:ELEVENLABS_API_KEY="your_key_here"');
+  console.error('  2. In server/.env file: ELEVENLABS_API_KEY=your_key_here');
+  console.error('  3. In .env file: ELEVENLABS_API_KEY=your_key_here');
   console.error('');
   console.error('Get your API key from: https://elevenlabs.io/app/settings/api-keys');
   process.exit(1);
