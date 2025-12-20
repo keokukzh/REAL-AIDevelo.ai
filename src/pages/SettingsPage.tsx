@@ -266,6 +266,48 @@ export const SettingsPage = () => {
     }
   };
 
+  // Test ElevenLabs Agent ID
+  const [isTestingAgent, setIsTestingAgent] = useState(false);
+  const [agentTestResult, setAgentTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  
+  const handleTestAgentId = async () => {
+    if (!elevenAgentId.trim()) {
+      toast.warning('Bitte gib eine Agent ID ein');
+      return;
+    }
+    
+    setIsTestingAgent(true);
+    setAgentTestResult(null);
+    
+    try {
+      const { testElevenLabsAgent } = await import('../services/elevenLabsAgentService');
+      const result = await testElevenLabsAgent(elevenAgentId.trim(), overview?.location?.id);
+      
+      if (result.success && result.agentExists) {
+        setAgentTestResult({
+          success: true,
+          message: `Agent gefunden: ${result.agentName || elevenAgentId.trim()}`,
+        });
+        toast.success(`Agent gefunden: ${result.agentName || elevenAgentId.trim()}`);
+      } else {
+        setAgentTestResult({
+          success: false,
+          message: result.error || 'Agent nicht gefunden',
+        });
+        toast.error(result.error || 'Agent nicht gefunden');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Fehler beim Testen des Agents';
+      setAgentTestResult({
+        success: false,
+        message: errorMessage,
+      });
+      toast.error(errorMessage);
+    } finally {
+      setIsTestingAgent(false);
+    }
+  };
+  
   // Handle ElevenLabs Agent ID save
   const handleSaveAgentId = async () => {
     if (!overview?.agent_config) {
@@ -454,10 +496,32 @@ export const SettingsPage = () => {
                       <input
                         type="text"
                         value={elevenAgentId}
-                        onChange={(e) => setElevenAgentId(e.target.value)}
-                        placeholder="z.B. abc123def456..."
+                        onChange={(e) => {
+                          setElevenAgentId(e.target.value);
+                          setAgentTestResult(null); // Clear test result when ID changes
+                        }}
+                        placeholder="z.B. agent_1601kcmqt4efe41bzwykaytm2yrj"
                         className="flex-1 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                       />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestAgentId}
+                        disabled={isTestingAgent || !elevenAgentId.trim() || !overview?.agent_config}
+                        title="Test Agent ID (nur in Development verfügbar)"
+                      >
+                        {isTestingAgent ? (
+                          <>
+                            <LoadingSpinner className="w-4 h-4 mr-2" />
+                            Testen...
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="w-4 h-4 mr-2" />
+                            Testen
+                          </>
+                        )}
+                      </Button>
                       <Button
                         variant="primary"
                         size="sm"
@@ -477,6 +541,17 @@ export const SettingsPage = () => {
                         )}
                       </Button>
                     </div>
+                    {agentTestResult && (
+                      <div className={`mt-2 p-3 rounded-lg border ${
+                        agentTestResult.success 
+                          ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                          : 'bg-red-500/10 border-red-500/30 text-red-400'
+                      }`}>
+                        <p className="text-sm">
+                          {agentTestResult.success ? '✓' : '✗'} {agentTestResult.message}
+                        </p>
+                      </div>
+                    )}
                     {overview?.agent_config?.eleven_agent_id && (
                       <p className="text-green-400 text-xs mt-2">
                         ✓ Agent ID ist konfiguriert
