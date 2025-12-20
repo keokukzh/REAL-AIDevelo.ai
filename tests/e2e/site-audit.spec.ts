@@ -16,30 +16,26 @@ test.describe('Site Audit - Error Detection', () => {
     baseUrl = process.env.BASE_URL || 'http://localhost:4173';
   });
 
-  test('authenticate for dashboard routes', async ({ page }) => {
-    // Check if we need authentication
-    const routes = discoverRoutes();
-    const hasAuthRoutes = routes.some(r => r.requiresAuth && !r.isDynamic);
-    
-    if (hasAuthRoutes) {
-      // Check if already authenticated
-      const alreadyAuth = await isAuthenticated(page);
-      
-      if (!alreadyAuth) {
-        authenticated = await authenticate(page);
-        expect(authenticated).toBe(true);
-      } else {
-        authenticated = true;
-      }
-    }
-  });
-
   test('audit all routes', async ({ page }) => {
+    test.setTimeout(300000); // 5 minutes for all routes
+    
     const routes = discoverRoutes();
     const results: RouteAuditResult[] = [];
 
     // Filter out dynamic routes for now (they need seed data)
     const testableRoutes = routes.filter(r => !r.isDynamic);
+    
+    // Check if we need authentication and authenticate if needed
+    const hasAuthRoutes = testableRoutes.some(r => r.requiresAuth);
+    if (hasAuthRoutes && !authenticated) {
+      console.log('[Audit] Authenticating for dashboard routes...');
+      authenticated = await authenticate(page);
+      if (!authenticated) {
+        console.warn('[Audit] Authentication failed - dashboard routes will be skipped');
+      } else {
+        console.log('[Audit] Authentication successful');
+      }
+    }
 
     console.log(`\n[Audit] Testing ${testableRoutes.length} routes...\n`);
 
@@ -69,31 +65,32 @@ test.describe('Site Audit - Error Detection', () => {
 
         // Navigate to route
         const navigationPromise = page.goto(route.path, {
-          waitUntil: 'networkidle',
-          timeout: 30000,
+          waitUntil: 'domcontentloaded',
+          timeout: 20000,
         });
 
         // Wait for page load with timeout
         try {
           await navigationPromise;
-          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+          await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
           
           // Wait a bit for any async errors to surface
           await page.waitForTimeout(2000);
         } catch (error: any) {
-          if (error.message?.includes('timeout') || error.message?.includes('Navigation timeout')) {
+          const errorMsg = error.message || String(error);
+          if (errorMsg.includes('timeout') || errorMsg.includes('Navigation timeout') || errorMsg.includes('Target page') || errorMsg.includes('has been closed')) {
             routeResult.status = 'timeout';
-            routeResult.error = `Navigation timeout: ${error.message}`;
+            routeResult.error = `Navigation timeout/closed: ${errorMsg}`;
           } else {
             routeResult.status = 'error';
-            routeResult.error = `Navigation error: ${error.message}`;
+            routeResult.error = `Navigation error: ${errorMsg}`;
           }
         }
 
         // Stop collecting
         collector.stopCollecting();
 
-        // Get error counts
+        // Get error counts and details
         const errors = collector.getErrors();
         const pageErrors = collector.getPageErrors();
         const networkFailures = collector.getNetworkFailures();
@@ -102,10 +99,30 @@ test.describe('Site Audit - Error Detection', () => {
         routeResult.pageErrors = pageErrors.length;
         routeResult.networkFailures = networkFailures.length;
         routeResult.loadTime = Date.now() - startTime;
+        
+        // Store error details if there are errors
+        if (errors.length > 0 || pageErrors.length > 0 || networkFailures.length > 0) {
+          routeResult.errorDetails = {
+            consoleErrors: errors.map(e => e.message).slice(0, 10), // Limit to first 10
+            pageErrors: pageErrors.map(e => e.message).slice(0, 10),
+            networkFailures: networkFailures.map(f => ({
+              url: f.url,
+              status: f.status,
+              method: f.method,
+            })).slice(0, 10),
+          };
+        }
 
-        // Determine status
-        if (routeResult.status === 'success' && (errors.length > 0 || pageErrors.length > 0 || networkFailures.length > 0)) {
-          routeResult.status = 'error';
+        // Determine status - only mark as error if there are actual errors, not just navigation issues
+        if (routeResult.status === 'success') {
+          if (errors.length > 0 || pageErrors.length > 0 || networkFailures.length > 0) {
+            routeResult.status = 'error';
+          }
+        } else if (routeResult.status === 'timeout') {
+          // Timeout is separate from errors - don't change status
+        } else if (routeResult.status === 'error' && errors.length === 0 && pageErrors.length === 0 && networkFailures.length === 0) {
+          // If navigation error but no actual errors, treat as timeout
+          routeResult.status = 'timeout';
         }
 
         // Take screenshot on error

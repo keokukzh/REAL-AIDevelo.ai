@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-20T00:30:40.349Z",
+  "timestamp": "2025-12-20T00:40:23.378Z",
   "baseUrl": "http://localhost:4173",
   "routes": [
     {
@@ -8,7 +8,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 12705
+      "loadTime": 2345
     },
     {
       "path": "/webdesign",
@@ -16,7 +16,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 3026
+      "loadTime": 2090
     },
     {
       "path": "/enterprise",
@@ -24,7 +24,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2910
+      "loadTime": 2104
     },
     {
       "path": "/impressum",
@@ -32,7 +32,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2900
+      "loadTime": 2079
     },
     {
       "path": "/datenschutz",
@@ -40,7 +40,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2942
+      "loadTime": 2090
     },
     {
       "path": "/agb",
@@ -48,115 +48,310 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2911
+      "loadTime": 2120
     },
     {
       "path": "/login",
-      "status": "timeout",
+      "status": "success",
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "error": "Navigation timeout: page.waitForTimeout: Test timeout of 30000ms exceeded.",
-      "loadTime": 1765
+      "loadTime": 2072
     },
     {
       "path": "/onboarding",
-      "status": "error",
+      "status": "success",
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
-      "loadTime": 3
+      "loadTime": 2078
     },
     {
       "path": "/checkout",
-      "status": "error",
+      "status": "success",
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
-      "loadTime": 3
+      "loadTime": 2066
     },
     {
       "path": "/payment-success",
-      "status": "error",
+      "status": "success",
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
-      "loadTime": 3
+      "loadTime": 2083
     },
     {
       "path": "/dashboard",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 2,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 2,
+      "loadTime": 2351,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_dashboard.png"
     },
     {
       "path": "/calls",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 4,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 4,
+      "loadTime": 2070,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/calls?limit=20&offset=0",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/calls?limit=20&offset=0",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_calls.png"
     },
     {
       "path": "/analytics",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 8,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 8,
+      "loadTime": 2152,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/analytics/calls/summary?",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/analytics/calls/top-sources?limit=10",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/reports/scheduled",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/analytics/calls/summary?",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/analytics/calls/top-sources?limit=10",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/reports/scheduled",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_analytics.png"
     },
     {
       "path": "/knowledge-base",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 4,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 4,
+      "loadTime": 2058,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/rag/documents",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/rag/documents",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_knowledge-base.png"
     },
     {
       "path": "/dashboard/calendar",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 2,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 2,
+      "loadTime": 2077,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_dashboard_calendar.png"
     },
     {
       "path": "/dashboard/settings",
-      "status": "skipped",
-      "consoleErrors": 0,
+      "status": "error",
+      "consoleErrors": 2,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "networkFailures": 2,
+      "loadTime": 2133,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_dashboard_settings.png"
     },
     {
       "path": "/voice-edit",
-      "status": "skipped",
+      "status": "success",
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "error": "Authentication required but not available"
+      "loadTime": 2076
     },
     {
       "path": "/auth/callback",
       "status": "error",
-      "consoleErrors": 0,
+      "consoleErrors": 2,
       "pageErrors": 0,
-      "networkFailures": 0,
-      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
-      "loadTime": 3
+      "networkFailures": 2,
+      "loadTime": 2077,
+      "errorDetails": {
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE",
+          "Failed to load resource: net::ERR_EMPTY_RESPONSE"
+        ],
+        "pageErrors": [],
+        "networkFailures": [
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          },
+          {
+            "url": "http://localhost:5000/api/dashboard/overview",
+            "status": 0,
+            "method": "GET"
+          }
+        ]
+      },
+      "screenshot": "C:\\Users\\Aidevelo\\Desktop\\REAL-AIDevelo.ai\\reports\\screenshot-_auth_callback.png"
     }
   ],
   "summary": {
     "totalRoutes": 18,
-    "routesWithErrors": 4,
-    "totalErrors": 0,
+    "routesWithErrors": 7,
+    "totalErrors": 48,
     "totalWarnings": 0,
-    "totalNetworkFailures": 0
+    "totalNetworkFailures": 24
   }
 }

@@ -219,11 +219,18 @@ export class ErrorCollector {
    * Check if error should be filtered (third-party)
    */
   private shouldFilterError(message: string): boolean {
-    return this.thirdPartyErrorPatterns.some(pattern => pattern.test(message));
+    // Filter third-party errors
+    if (this.thirdPartyErrorPatterns.some(pattern => pattern.test(message))) {
+      return true;
+    }
+    
+    // Don't filter ERR_EMPTY_RESPONSE - we want to track backend connectivity issues
+    // but we'll handle them specially in the report
+    return false;
   }
 
   /**
-   * Check if network error should be filtered (third-party URLs)
+   * Check if network error should be filtered (third-party URLs or backend not running)
    */
   private shouldFilterNetworkError(url: string): boolean {
     const thirdPartyDomains = [
@@ -239,7 +246,22 @@ export class ErrorCollector {
 
     try {
       const urlObj = new URL(url);
-      return thirdPartyDomains.some(domain => urlObj.hostname.includes(domain));
+      
+      // Filter third-party domains
+      if (thirdPartyDomains.some(domain => urlObj.hostname.includes(domain))) {
+        return true;
+      }
+      
+      // Filter backend API errors if backend is not running (ERR_EMPTY_RESPONSE)
+      // This is expected in local dev when backend server is not started
+      // We'll still track them but mark them as "expected" in the report
+      if (urlObj.hostname === 'localhost' && urlObj.port === '5000' && urlObj.pathname.startsWith('/api/')) {
+        // Backend API - we'll track but not fail the audit if backend is not running
+        // The error details will show this is a backend connectivity issue
+        return false; // Don't filter - we want to see these errors
+      }
+      
+      return false;
     } catch {
       return false;
     }

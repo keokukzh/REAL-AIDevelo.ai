@@ -37,26 +37,42 @@ export async function authenticate(page: Page): Promise<boolean> {
     const password = process.env.E2E_TEST_PASSWORD || DEFAULT_TEST_PASSWORD;
 
     await page.goto('/login');
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
-    // Find email input
-    const emailInput = page.getByLabel(/email/i).or(page.locator('input[type="email"]')).first();
+    // Wait for form to be ready
+    await page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 10000 });
+
+    // Find and fill email input
+    const emailInput = page.locator('input[type="email"]').or(page.locator('input[name="email"]')).first();
     await emailInput.fill(email);
 
-    // Find and click login button
-    const loginButton = page.getByRole('button', { name: /login|anmelden|sign in/i }).first();
+    // Find and fill password input
+    const passwordInput = page.locator('input[type="password"]').or(page.locator('input[name="password"]')).first();
+    await passwordInput.fill(password);
+
+    // Find and click login button (wait for it to be enabled)
+    const loginButton = page.getByRole('button', { name: /anmelden|login|sign in/i }).first();
+    await loginButton.waitFor({ state: 'visible', timeout: 5000 });
     await loginButton.click();
 
-    // Wait for redirect to dashboard or error
-    await page.waitForURL(/\/dashboard|\/login/, { timeout: 15000 });
-
-    // Check if we're on dashboard
-    const currentUrl = page.url();
-    if (currentUrl.includes('/dashboard')) {
+    // Wait for navigation to dashboard
+    try {
+      await page.waitForURL(/\/dashboard/, { timeout: 20000 });
       console.log('[Auth] Successfully authenticated');
       return true;
-    } else {
-      console.warn('[Auth] Login failed - still on login page');
+    } catch (e) {
+      // Check if we're still on login page (login failed)
+      const currentUrl = page.url();
+      if (currentUrl.includes('/login')) {
+        console.warn('[Auth] Login failed - still on login page');
+        return false;
+      }
+      // Might have navigated somewhere else, check if dashboard
+      if (currentUrl.includes('/dashboard')) {
+        console.log('[Auth] Successfully authenticated');
+        return true;
+      }
+      console.warn('[Auth] Unexpected navigation after login:', currentUrl);
       return false;
     }
   } catch (error) {

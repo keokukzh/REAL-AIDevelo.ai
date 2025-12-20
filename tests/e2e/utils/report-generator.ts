@@ -12,6 +12,11 @@ export interface RouteAuditResult {
   screenshot?: string;
   loadTime?: number;
   error?: string;
+  errorDetails?: {
+    consoleErrors?: string[];
+    pageErrors?: string[];
+    networkFailures?: Array<{ url: string; status: number; method: string }>;
+  };
 }
 
 export interface AuditReport {
@@ -102,8 +107,22 @@ export function generateMarkdownReport(
   // Routes with errors
   const errorRoutes = results.filter(r => r.status === 'error' || r.consoleErrors > 0 || r.pageErrors > 0 || r.networkFailures > 0);
   
+  // Check if errors are all backend connectivity issues
+  const allBackendErrors = errorRoutes.every(route => {
+    if (!route.errorDetails?.networkFailures) return false;
+    return route.errorDetails.networkFailures.every(f => 
+      f.url.includes('localhost:5000') && f.status === 0
+    );
+  });
+  
   if (errorRoutes.length > 0) {
     markdown += `## Routes with Errors\n\n`;
+    
+    if (allBackendErrors) {
+      markdown += `⚠️ **Note:** All errors appear to be backend connectivity issues (ERR_EMPTY_RESPONSE from localhost:5000).\n`;
+      markdown += `This is expected if the backend server is not running. Start the backend with: \`cd server && npm run dev\`\n\n`;
+    }
+    
     errorRoutes.forEach(route => {
       markdown += `### ${route.path}\n\n`;
       markdown += `- **Status:** ${route.status}\n`;
@@ -111,6 +130,24 @@ export function generateMarkdownReport(
       if (route.pageErrors > 0) markdown += `- **Page Errors:** ${route.pageErrors}\n`;
       if (route.networkFailures > 0) markdown += `- **Network Failures:** ${route.networkFailures}\n`;
       if (route.error) markdown += `- **Error:** ${route.error}\n`;
+      
+      // Add error details
+      if (route.errorDetails) {
+        if (route.errorDetails.consoleErrors && route.errorDetails.consoleErrors.length > 0) {
+          markdown += `\n**Console Error Messages:**\n`;
+          route.errorDetails.consoleErrors.forEach((msg, i) => {
+            markdown += `${i + 1}. \`${msg.substring(0, 200)}${msg.length > 200 ? '...' : ''}\`\n`;
+          });
+        }
+        if (route.errorDetails.networkFailures && route.errorDetails.networkFailures.length > 0) {
+          markdown += `\n**Network Failures:**\n`;
+          route.errorDetails.networkFailures.forEach((f, i) => {
+            const isBackendError = f.url.includes('localhost:5000') && f.status === 0;
+            markdown += `${i + 1}. ${f.method} ${f.url} - Status: ${f.status}${isBackendError ? ' (Backend not running?)' : ''}\n`;
+          });
+        }
+      }
+      
       markdown += `\n`;
     });
   } else {
