@@ -175,7 +175,9 @@ export function useWebRTC(options: UseWebRTCOptions) {
       setState(prev => ({ ...prev, isCalling: true, callStatus: 'ringing' }));
 
       const userAgent = userAgentRef.current!;
-      const targetURI = UserAgent.makeURI(`sip:${extension}@${freeswitchWssUrl.replace('wss://', '')}`);
+      // Extract hostname for SIP URI (no port, no protocol)
+      const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0].split('/')[0];
+      const targetURI = UserAgent.makeURI(`sip:${extension}@${hostname}`);
 
       if (!targetURI) {
         throw new Error('Invalid target URI');
