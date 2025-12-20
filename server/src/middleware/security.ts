@@ -111,6 +111,8 @@ export const helmetMiddleware = config.isProduction
             "'unsafe-inline'", // Required for React
             'https://*.supabase.co',
             'https://fonts.googleapis.com',
+            'https://fonts.gstatic.com',
+            'https://unpkg.com', // ElevenLabs widget
             'https://www.googletagmanager.com', // GA4
             'https://plausible.io', // Plausible Analytics
           ],
