@@ -152,14 +152,43 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       userAgentRef.current = userAgent;
 
+      // Listen for transport state changes using UserAgent delegate
+      userAgent.delegate = {
+        onTransportError: (error: Error) => {
+          console.error('[useWebRTC] Transport error:', error);
+          setState(prev => ({
+            ...prev,
+            isConnected: false,
+            callStatus: 'error',
+            error: 'Verbindung zu FreeSWITCH verloren. Bitte erneut verbinden.',
+          }));
+        },
+      };
+
       // Connect
       await userAgent.start();
+
+      // Wait for transport to be connected (check UserAgent state)
+      // UserAgent state should be 'Started' when transport is connected
+      let attempts = 0;
+      while (userAgent.state !== 'Started' && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (userAgent.state !== 'Started') {
+        throw new Error('Verbindung zu FreeSWITCH konnte nicht hergestellt werden. Bitte erneut versuchen.');
+      }
 
       // Register
       const registerer = new Registerer(userAgent);
       registererRef.current = registerer;
 
+      // Wait for registration to complete
       await registerer.register();
+      
+      // Wait a bit for registration to settle
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       setState(prev => ({
         ...prev,
@@ -193,6 +222,32 @@ export function useWebRTC(options: UseWebRTCOptions) {
   const startCall = useCallback(async () => {
     if (!userAgentRef.current || !registererRef.current) {
       await connect();
+    }
+
+    // Verify UserAgent is still connected before starting call
+    const userAgent = userAgentRef.current;
+    if (!userAgent) {
+      throw new Error('UserAgent nicht verfügbar. Bitte erneut verbinden.');
+    }
+
+    // Check UserAgent state (should be 'Started' when connected)
+    if (userAgent.state !== 'Started') {
+      console.warn('[useWebRTC] UserAgent not started, reconnecting...');
+      await connect();
+      // Wait a bit for connection to stabilize
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Check again
+      if (userAgentRef.current?.state !== 'Started') {
+        throw new Error('Verbindung zu FreeSWITCH konnte nicht hergestellt werden. Bitte erneut versuchen.');
+      }
+    }
+    
+    // Also verify registerer is registered
+    if (!registererRef.current) {
+      console.warn('[useWebRTC] Registerer not available, reconnecting...');
+      await connect();
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     try {
@@ -229,6 +284,12 @@ export function useWebRTC(options: UseWebRTCOptions) {
       }
 
       const userAgent = userAgentRef.current!;
+      
+      // Double-check UserAgent is started before creating INVITE
+      if (userAgent.state !== 'Started') {
+        throw new Error('UserAgent-Verbindung verloren. Bitte erneut verbinden.');
+      }
+      
       // Extract hostname for SIP URI (no port, no protocol)
       const hostname = freeswitchWssUrl.replace(/^wss?:\/\//, '').split(':')[0].split('/')[0];
       const targetURI = UserAgent.makeURI(`sip:${extension}@${hostname}`);
