@@ -2,7 +2,9 @@
 <include>
   <!-- Default Directory for AIDevelo Voice Agent -->
   <!-- This directory accepts all test_* users for WebRTC test calls -->
+  <!-- FreeSWITCH will use this directory for authentication -->
   
+  <!-- Default domain (uses IP address) -->
   <domain name="$${domain}">
     <params>
       <param name="dial-string" value="{^^:sip_invite_domain=${dialed_domain}:presence_id=${dialed_user}@${dialed_domain}}${sofia_contact(*/${dialed_user}@${dialed_domain})},${verto_contact(${dialed_user}@${dialed_domain})}"/>
@@ -11,7 +13,8 @@
     <groups>
       <group name="default">
         <users>
-          <!-- Generic test user - accepts any test_* username -->
+          <!-- Generic test user - accepts any test_* username with password test123 -->
+          <!-- FreeSWITCH will match any username starting with 'test' -->
           <user id="test">
             <params>
               <param name="password" value="test123"/>
@@ -32,8 +35,8 @@
     </groups>
   </domain>
   
-  <!-- Accept any domain for test calls -->
-  <domain name="all">
+  <!-- Accept freeswitch.aidevelo.ai domain -->
+  <domain name="freeswitch.aidevelo.ai">
     <params>
       <param name="dial-string" value="{^^:sip_invite_domain=${dialed_domain}:presence_id=${dialed_user}@${dialed_domain}}${sofia_contact(*/${dialed_user}@${dialed_domain})},${verto_contact(${dialed_user}@${dialed_domain})}"/>
     </params>
@@ -41,7 +44,6 @@
     <groups>
       <group name="default">
         <users>
-          <!-- Accept any test_* user -->
           <user id="test">
             <params>
               <param name="password" value="test123"/>
