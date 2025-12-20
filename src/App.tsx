@@ -37,6 +37,7 @@ import { useCoreWebVitals } from './hooks/useCoreWebVitals';
 import { initScrollTracking, trackPageView } from './lib/analytics';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { ElevenLabsWidget } from './components/ElevenLabsWidget';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 // In production, this will be null and tree-shaken out of the bundle
