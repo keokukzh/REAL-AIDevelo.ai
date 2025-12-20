@@ -1,0 +1,162 @@
+{
+  "timestamp": "2025-12-20T00:30:40.349Z",
+  "baseUrl": "http://localhost:4173",
+  "routes": [
+    {
+      "path": "/",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 12705
+    },
+    {
+      "path": "/webdesign",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 3026
+    },
+    {
+      "path": "/enterprise",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 2910
+    },
+    {
+      "path": "/impressum",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 2900
+    },
+    {
+      "path": "/datenschutz",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 2942
+    },
+    {
+      "path": "/agb",
+      "status": "success",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "loadTime": 2911
+    },
+    {
+      "path": "/login",
+      "status": "timeout",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Navigation timeout: page.waitForTimeout: Test timeout of 30000ms exceeded.",
+      "loadTime": 1765
+    },
+    {
+      "path": "/onboarding",
+      "status": "error",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
+      "loadTime": 3
+    },
+    {
+      "path": "/checkout",
+      "status": "error",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
+      "loadTime": 3
+    },
+    {
+      "path": "/payment-success",
+      "status": "error",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
+      "loadTime": 3
+    },
+    {
+      "path": "/dashboard",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/calls",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/analytics",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/knowledge-base",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/dashboard/calendar",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/dashboard/settings",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/voice-edit",
+      "status": "skipped",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Authentication required but not available"
+    },
+    {
+      "path": "/auth/callback",
+      "status": "error",
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "networkFailures": 0,
+      "error": "Navigation error: page.goto: Target page, context or browser has been closed",
+      "loadTime": 3
+    }
+  ],
+  "summary": {
+    "totalRoutes": 18,
+    "routesWithErrors": 4,
+    "totalErrors": 0,
+    "totalWarnings": 0,
+    "totalNetworkFailures": 0
+  }
+}
