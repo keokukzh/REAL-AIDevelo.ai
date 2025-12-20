@@ -42,6 +42,7 @@
     "@lottiefiles/dotlottie-web": "^0.57.0",
     "@react-three/drei": "9.96.1",
     "@react-three/fiber": "8.15.14",
+    "@sentry/react": "^8.45.0",
     "@supabase/supabase-js": "^2.87.1",
     "@tanstack/react-query": "^5.64.2",
     "@types/uuid": "^10.0.0",
@@ -62,14 +63,14 @@
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.10.1",
     "recharts": "^3.5.1",
-    "sip.js": "^0.21.0",
+    "sip.js": "^0.21.2",
     "tailwind-merge": "^3.4.0",
     "three": "0.160.0",
-    "uuid": "^13.0.0",
-    "@sentry/react": "^8.45.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@tanstack/react-query-devtools": "^5.64.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -78,7 +79,6 @@
     "@types/node": "^22.14.0",
     "@types/react-dom": "^19.2.3",
     "@types/supertest": "^6.0.3",
-    "@tanstack/react-query-devtools": "^5.64.2",
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/coverage-v8": "^4.0.15",
     "@vitest/ui": "^4.0.15",
