@@ -21,12 +21,22 @@ function getDatabaseUrl(): string {
     return privateUrl;
   }
   
+  // Check if running inside Docker (check for DOCKER_CONTAINER env var or try to detect)
+  const isDocker = process.env.DOCKER_CONTAINER === 'true' || fs.existsSync('/.dockerenv');
+  
   // Local development fallback
   if (envUrl && envUrl.includes('localhost')) {
-    // If running inside docker the service name will be 'postgres'
-    return envUrl.replace('localhost', 'postgres');
+    // Keep localhost if running outside Docker
+    return envUrl;
   }
-  return envUrl || 'postgres://aidevelo:aidevelo@postgres:5432/aidevelo_dev';
+  
+  // Default: use localhost if not in Docker, postgres service name if in Docker
+  if (isDocker) {
+    return envUrl || 'postgres://aidevelo:aidevelo@postgres:5432/aidevelo_dev';
+  } else {
+    // Running locally, use localhost
+    return envUrl || 'postgres://aidevelo:aidevelo@localhost:5432/aidevelo_dev';
+  }
 }
 
 export async function runMigrations(): Promise<void> {

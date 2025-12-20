@@ -1,6 +1,15 @@
 -- Ensure rag_documents table exists with all required columns
 -- This migration consolidates all previous migrations and ensures the table is complete
 
+-- Ensure set_updated_at function exists (required for triggers)
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create table if it doesn't exist (without foreign keys to avoid dependency issues)
 CREATE TABLE IF NOT EXISTS rag_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

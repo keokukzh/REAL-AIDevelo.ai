@@ -2,8 +2,22 @@
 -- Supports both legacy agent_id and new location_id during transition
 
 -- Add location_id column (nullable for migration period)
-ALTER TABLE rag_documents
-  ADD COLUMN IF NOT EXISTS location_id UUID REFERENCES locations(id) ON DELETE CASCADE;
+-- Only add FK constraint if locations table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'rag_documents') THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rag_documents' AND column_name = 'location_id') THEN
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') THEN
+        ALTER TABLE rag_documents
+          ADD COLUMN location_id UUID REFERENCES locations(id) ON DELETE CASCADE;
+      ELSE
+        -- Add without FK constraint if locations table doesn't exist yet
+        ALTER TABLE rag_documents
+          ADD COLUMN location_id UUID;
+      END IF;
+    END IF;
+  END IF;
+END $$;
 
 -- Add raw_text column for storing extracted text (max ~2MB for MVP)
 ALTER TABLE rag_documents

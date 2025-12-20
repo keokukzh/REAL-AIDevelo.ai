@@ -4,21 +4,24 @@
 -- Fix: Column already exists in production, but schema.sql was missing it. This migration ensures consistency.
 
 -- Add business_type column if it doesn't exist (idempotent)
+-- Only run if agent_configs table exists
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_schema = 'public' 
-    AND table_name = 'agent_configs' 
-    AND column_name = 'business_type'
-  ) THEN
-    ALTER TABLE agent_configs 
-    ADD COLUMN business_type TEXT NOT NULL DEFAULT 'unknown';
-    
-    -- Update existing rows to have a default value
-    UPDATE agent_configs 
-    SET business_type = 'unknown' 
-    WHERE business_type IS NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_configs') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'agent_configs' 
+      AND column_name = 'business_type'
+    ) THEN
+      ALTER TABLE agent_configs 
+      ADD COLUMN business_type TEXT NOT NULL DEFAULT 'unknown';
+      
+      -- Update existing rows to have a default value
+      UPDATE agent_configs 
+      SET business_type = 'unknown' 
+      WHERE business_type IS NULL;
+    END IF;
   END IF;
 END $$;
 

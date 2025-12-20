@@ -93,10 +93,10 @@ services:
   minio:
     image: minio/minio:latest
     container_name: aidevelo-minio
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":9002"
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9002:9002"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -125,7 +125,7 @@ services:
       retries: 3
 
   freeswitch:
-    image: freeswitch/freeswitch:latest
+    image: signalwire/freeswitch:latest
     container_name: aidevelo-freeswitch
     ports:
       - "5060:5060/udp"   # SIP
