@@ -46,9 +46,16 @@ export function useElevenLabsStreaming(config: StreamConfig) {
       }
       
       return response.data.wsUrl;
-    } catch (err) {
+    } catch (err: any) {
       logger.error('[ElevenLabs] Failed to get stream URL', err instanceof Error ? err : new Error(String(err)));
-      throw new Error(`Failed to get stream URL: ${err}`);
+      
+      // Check if it's an "Agent not found" error from backend
+      if (err?.response?.data?.error === 'Agent not found' || err?.response?.status === 404) {
+        const errorMessage = err?.response?.data?.message || err?.response?.data?.error || 'Agent not found';
+        throw new Error(errorMessage);
+      }
+      
+      throw new Error(`Failed to get stream URL: ${err?.response?.data?.message || err?.message || String(err)}`);
     }
   }, [config]);
 
@@ -115,7 +122,10 @@ export function useElevenLabsStreaming(config: StreamConfig) {
         if (event.code === 3000) {
           // Agent does not exist
           const agentId = (config as any).elevenAgentId || 'unknown';
-          setError(`Agent not found: The AI agent you are trying to reach does not exist. Agent ID: ${agentId}. Please verify the Agent ID in Settings or contact support.`);
+          const errorMessage = event.reason 
+            ? `Agent not found: ${event.reason}. Agent ID: ${agentId}. Please verify the Agent ID in Settings (Dashboard → Settings → Agent-Konfiguration) or check your ElevenLabs dashboard.`
+            : `Agent not found: The AI agent you are trying to reach does not exist. Agent ID: ${agentId}. Please verify the Agent ID in Settings or contact support.`;
+          setError(errorMessage);
           logger.error('[ElevenLabs] Agent not found error', new Error('Agent not found'), {
             agentId,
             code: event.code,

@@ -323,8 +323,8 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
       });
     }
 
-    // Optional: Verify that the agent exists in ElevenLabs (non-blocking)
-    // The WebSocket connection itself will validate the agent, so this is just for better error messages
+    // Verify that the agent exists in ElevenLabs BEFORE creating WebSocket connection
+    // This provides better error messages upfront
     try {
       const agentCheckResponse = await axios.get(
         `https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(elevenAgentId)}`,
@@ -332,7 +332,7 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
           headers: {
             'xi-api-key': apiKey,
           },
-          timeout: 5000, // Shorter timeout, don't block if this fails
+          timeout: 5000,
         }
       );
 
@@ -343,16 +343,32 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
         });
       }
     } catch (error: any) {
-      // Don't fail if verification fails - let WebSocket connection handle validation
+      // If agent doesn't exist, return error immediately with helpful message
       if (axios.isAxiosError(error) && error.response?.status === 404) {
-        console.warn('[VoiceAgentRoutes] Agent verification failed (404), but continuing - WebSocket will validate:', {
+        console.error('[VoiceAgentRoutes] Agent not found in ElevenLabs:', {
           agentId: elevenAgentId,
-          message: 'Agent may not exist or API key may not have access. WebSocket connection will provide final validation.',
+          source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+          databaseAgentId: agentConfig?.eleven_agent_id || null,
+          defaultAgentId: process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj',
         });
-      } else {
-        console.warn('[VoiceAgentRoutes] Agent verification failed, continuing anyway:', error.message);
+        
+        return res.status(404).json({
+          success: false,
+          error: 'Agent not found',
+          message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
+          agentId: elevenAgentId,
+          source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+          suggestion: agentConfig?.eleven_agent_id 
+            ? 'The Agent ID from your database does not exist. Please update it in Settings.'
+            : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
+        });
       }
-      // Continue - don't block the request
+      
+      // For other errors (network, timeout), log but continue - WebSocket will validate
+      console.warn('[VoiceAgentRoutes] Agent verification failed (non-404), continuing anyway:', {
+        error: error.message,
+        status: axios.isAxiosError(error) ? error.response?.status : 'unknown',
+      });
     }
 
     // Get signed URL from ElevenLabs for secure connection
@@ -380,16 +396,22 @@ router.post('/elevenlabs-stream-token', async (req: Request, res: Response) => {
     } catch (signedUrlError: any) {
       // Check if this is an agent not found error
       if (axios.isAxiosError(signedUrlError) && signedUrlError.response?.status === 404) {
+        const errorData = signedUrlError.response?.data;
         console.error('[VoiceAgentRoutes] Agent not found when getting signed URL:', {
           agentId: elevenAgentId,
-          error: signedUrlError.response?.data,
+          error: errorData,
+          source: agentConfig?.eleven_agent_id ? 'database' : 'default',
           message: 'The specified agent ID does not exist in ElevenLabs. Please verify the agent ID in Settings or Render environment variables.',
         });
         return res.status(404).json({
           success: false,
           error: 'Agent not found',
-          message: `The AI agent you are trying to reach does not exist. Agent ID: ${elevenAgentId}. Please verify the Agent ID in Settings or contact support.`,
+          message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
           agentId: elevenAgentId,
+          source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+          suggestion: agentConfig?.eleven_agent_id 
+            ? 'The Agent ID from your database does not exist. Please update it in Settings.'
+            : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
         });
       }
       

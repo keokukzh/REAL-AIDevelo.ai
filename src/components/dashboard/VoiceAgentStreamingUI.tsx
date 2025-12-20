@@ -116,9 +116,15 @@ export function VoiceAgentStreamingUI({
         <div className="mb-6 w-full max-w-md">
           <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">
-              <strong>Error:</strong> {error}
-            </p>
+            <div className="flex-1">
+              <p className="text-sm text-red-700 font-semibold mb-1">Error:</p>
+              <p className="text-sm text-red-700">{error}</p>
+              {error.includes('Agent not found') && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 <strong>Tip:</strong> Go to Dashboard → Settings → Agent-Konfiguration to update the ElevenLabs Agent ID.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
