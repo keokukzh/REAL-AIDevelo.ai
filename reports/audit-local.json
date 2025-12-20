@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-20T00:40:23.378Z",
+  "timestamp": "2025-12-20T00:43:07.272Z",
   "baseUrl": "http://localhost:4173",
   "routes": [
     {
@@ -8,7 +8,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2345
+      "loadTime": 2530
     },
     {
       "path": "/webdesign",
@@ -16,7 +16,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2090
+      "loadTime": 2193
     },
     {
       "path": "/enterprise",
@@ -24,7 +24,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2104
+      "loadTime": 2221
     },
     {
       "path": "/impressum",
@@ -32,7 +32,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2079
+      "loadTime": 2191
     },
     {
       "path": "/datenschutz",
@@ -40,7 +40,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2090
+      "loadTime": 2201
     },
     {
       "path": "/agb",
@@ -48,7 +48,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2120
+      "loadTime": 2188
     },
     {
       "path": "/login",
@@ -56,7 +56,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2072
+      "loadTime": 2099
     },
     {
       "path": "/onboarding",
@@ -64,7 +64,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2078
+      "loadTime": 2128
     },
     {
       "path": "/checkout",
@@ -72,7 +72,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2066
+      "loadTime": 2135
     },
     {
       "path": "/payment-success",
@@ -80,7 +80,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2083
+      "loadTime": 2089
     },
     {
       "path": "/dashboard",
@@ -88,7 +88,7 @@
       "consoleErrors": 2,
       "pageErrors": 0,
       "networkFailures": 2,
-      "loadTime": 2351,
+      "loadTime": 2147,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -116,7 +116,7 @@
       "consoleErrors": 4,
       "pageErrors": 0,
       "networkFailures": 4,
-      "loadTime": 2070,
+      "loadTime": 2086,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -156,7 +156,7 @@
       "consoleErrors": 8,
       "pageErrors": 0,
       "networkFailures": 8,
-      "loadTime": 2152,
+      "loadTime": 2123,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -220,7 +220,7 @@
       "consoleErrors": 4,
       "pageErrors": 0,
       "networkFailures": 4,
-      "loadTime": 2058,
+      "loadTime": 2084,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -260,7 +260,7 @@
       "consoleErrors": 2,
       "pageErrors": 0,
       "networkFailures": 2,
-      "loadTime": 2077,
+      "loadTime": 2127,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -288,7 +288,7 @@
       "consoleErrors": 2,
       "pageErrors": 0,
       "networkFailures": 2,
-      "loadTime": 2133,
+      "loadTime": 2146,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",
@@ -316,7 +316,7 @@
       "consoleErrors": 0,
       "pageErrors": 0,
       "networkFailures": 0,
-      "loadTime": 2076
+      "loadTime": 2138
     },
     {
       "path": "/auth/callback",
@@ -324,7 +324,7 @@
       "consoleErrors": 2,
       "pageErrors": 0,
       "networkFailures": 2,
-      "loadTime": 2077,
+      "loadTime": 2149,
       "errorDetails": {
         "consoleErrors": [
           "Failed to load resource: net::ERR_EMPTY_RESPONSE",

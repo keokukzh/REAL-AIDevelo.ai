@@ -1,6 +1,6 @@
 # Site Audit Report
 
-**Generated:** 2025-12-20T00:40:23.380Z
+**Generated:** 2025-12-20T00:43:07.276Z
 **Base URL:** http://localhost:4173
 
 ## Summary
@@ -20,6 +20,9 @@
 
 ## Routes with Errors
 
+⚠️ **Note:** All errors appear to be backend connectivity issues (ERR_EMPTY_RESPONSE from localhost:5000).
+This is expected if the backend server is not running. Start the backend with: `cd server && npm run dev`
+
 ### /dashboard
 
 - **Status:** error
@@ -31,8 +34,8 @@
 2. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/dashboard/overview - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
 
 ### /calls
 
@@ -47,10 +50,10 @@
 4. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/calls?limit=20&offset=0 - Status: 0
-2. GET http://localhost:5000/api/dashboard/overview - Status: 0
-3. GET http://localhost:5000/api/calls?limit=20&offset=0 - Status: 0
-4. GET http://localhost:5000/api/dashboard/overview - Status: 0
+1. GET http://localhost:5000/api/calls?limit=20&offset=0 - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+3. GET http://localhost:5000/api/calls?limit=20&offset=0 - Status: 0 (Backend not running?)
+4. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
 
 ### /analytics
 
@@ -69,14 +72,14 @@
 8. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/analytics/calls/summary? - Status: 0
-3. GET http://localhost:5000/api/analytics/calls/top-sources?limit=10 - Status: 0
-4. GET http://localhost:5000/api/reports/scheduled - Status: 0
-5. GET http://localhost:5000/api/dashboard/overview - Status: 0
-6. GET http://localhost:5000/api/analytics/calls/summary? - Status: 0
-7. GET http://localhost:5000/api/analytics/calls/top-sources?limit=10 - Status: 0
-8. GET http://localhost:5000/api/reports/scheduled - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/analytics/calls/summary? - Status: 0 (Backend not running?)
+3. GET http://localhost:5000/api/analytics/calls/top-sources?limit=10 - Status: 0 (Backend not running?)
+4. GET http://localhost:5000/api/reports/scheduled - Status: 0 (Backend not running?)
+5. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+6. GET http://localhost:5000/api/analytics/calls/summary? - Status: 0 (Backend not running?)
+7. GET http://localhost:5000/api/analytics/calls/top-sources?limit=10 - Status: 0 (Backend not running?)
+8. GET http://localhost:5000/api/reports/scheduled - Status: 0 (Backend not running?)
 
 ### /knowledge-base
 
@@ -91,10 +94,10 @@
 4. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/rag/documents - Status: 0
-3. GET http://localhost:5000/api/dashboard/overview - Status: 0
-4. GET http://localhost:5000/api/rag/documents - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/rag/documents - Status: 0 (Backend not running?)
+3. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+4. GET http://localhost:5000/api/rag/documents - Status: 0 (Backend not running?)
 
 ### /dashboard/calendar
 
@@ -107,8 +110,8 @@
 2. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/dashboard/overview - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
 
 ### /dashboard/settings
 
@@ -121,8 +124,8 @@
 2. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/dashboard/overview - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
 
 ### /auth/callback
 
@@ -135,8 +138,8 @@
 2. `Failed to load resource: net::ERR_EMPTY_RESPONSE`
 
 **Network Failures:**
-1. GET http://localhost:5000/api/dashboard/overview - Status: 0
-2. GET http://localhost:5000/api/dashboard/overview - Status: 0
+1. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
+2. GET http://localhost:5000/api/dashboard/overview - Status: 0 (Backend not running?)
 
 ## All Routes Status
 
