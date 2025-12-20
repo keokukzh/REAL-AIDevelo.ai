@@ -129,10 +129,11 @@ router.post('/calendar', verifyElevenLabsWebhook, async (req: Request, res: Resp
 router.post('/*', verifyElevenLabsWebhook, async (req: Request, res: Response, next: NextFunction) => {
   const toolName = req.path.replace('/', '');
   
-  logger.warn('tool_webhook.unknown_tool', new Error(`Unknown tool requested: ${toolName}`), {
+  logger.warn('tool_webhook.unknown_tool', {
     toolName,
     body: JSON.stringify(req.body).substring(0, 200),
-  });
+    error: `Unknown tool requested: ${toolName}`,
+  }, req);
 
   res.status(404).json({
     success: false,
