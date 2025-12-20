@@ -106,29 +106,42 @@ local function record_utterance()
   -- Format: record_session <path> <max_duration> <silence_threshold> <silence_duration> [aleg|bleg|both]
   local record_cmd = string.format("record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
   
-  local success, result = pcall(function()
-    -- Use execute (not executeString) for better compatibility
-    return api:execute("record_session", string.format("%s %d 200 500 aleg", record_path, max_utterance_duration))
-  end)
-  
-  if not success then
-    log("Recording command threw error: " .. tostring(result))
-    -- Try without aleg parameter
-    success, result = pcall(function()
-      return api:execute("record_session", string.format("%s %d 200 500", record_path, max_utterance_duration))
-    end)
-    if not success then
-      log("Alternative recording also failed: " .. tostring(result))
-      return nil
-    end
+  -- Use bgapi (background API) to record asynchronously to avoid blocking
+  -- This prevents the call from ending prematurely
+  local session = freeswitch.Session(uuid)
+  if not session then
+    log("Failed to get session for recording")
+    return nil
   end
   
-  log("Record command executed, waiting for audio...")
+  -- Start recording using session:record() method (non-blocking)
+  local record_success, record_err = pcall(function()
+    -- Use session:record() which is non-blocking and better for WebRTC
+    session:recordFile(record_path, max_utterance_duration, 200, 500)
+  end)
+  
+  if not record_success then
+    log("Session record failed: " .. tostring(record_err))
+    -- Fallback: try api:execute with bgapi (background)
+    local bgapi_cmd = string.format("bgapi record_session %s %d 200 500 aleg", record_path, max_utterance_duration)
+    local api_success, api_result = pcall(function()
+      return api:executeString(bgapi_cmd)
+    end)
+    if not api_success then
+      log("Background recording also failed: " .. tostring(api_result))
+      return nil
+    end
+    log("Background recording started: " .. tostring(api_result))
+  else
+    log("Session recording started successfully")
+  end
   
   -- Wait for file to be created and have content
-  -- record_session is blocking, so we wait for the file to appear
+  -- Give it time to start recording
+  freeswitch.msleep(500)
+  
   local max_wait = max_utterance_duration * 1000 + 3000 -- Add 3 seconds buffer
-  local elapsed = 0
+  local elapsed = 500 -- Already waited 500ms
   local file_ready = false
   
   while elapsed < max_wait and not file_ready do
