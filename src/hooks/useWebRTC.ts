@@ -434,57 +434,8 @@ export function useWebRTC(options: UseWebRTCOptions) {
   }, [connect, extension, freeswitchWssUrl, locationId, agentId]);
 
   /**
-   * End call
-   */
-  const endCall = useCallback(async () => {
-    if (sessionRef.current) {
-      // Only call bye() if session is in Established state
-      if (sessionRef.current.state === SessionState.Established) {
-        try {
-          await sessionRef.current.bye();
-        } catch (error: any) {
-          // Silently handle errors if session is already terminated
-          console.warn('[useWebRTC] Session termination failed:', error.message);
-        }
-      }
-      sessionRef.current = null;
-    }
-
-    stopTranscriptPolling();
-
-    setState(prev => ({
-      ...prev,
-      isInCall: false,
-      callStatus: 'ended',
-      isCalling: false,
-    }));
-  }, [stopTranscriptPolling]);
-
-  /**
-   * Disconnect from FreeSWITCH
-   */
-  const disconnect = useCallback(async () => {
-    await endCall();
-
-    if (registererRef.current) {
-      await registererRef.current.unregister();
-      registererRef.current = null;
-    }
-
-    if (userAgentRef.current) {
-      await userAgentRef.current.stop();
-      userAgentRef.current = null;
-    }
-
-    setState(prev => ({
-      ...prev,
-      isConnected: false,
-      callStatus: 'idle',
-    }));
-  }, [endCall]);
-
-  /**
    * Poll for transcript updates
+   * IMPORTANT: Must be defined BEFORE endCall which depends on stopTranscriptPolling
    */
   const startTranscriptPolling = useCallback(() => {
     if (!callSidRef.current) return;
@@ -526,6 +477,58 @@ export function useWebRTC(options: UseWebRTCOptions) {
       transcriptPollIntervalRef.current = null;
     }
   }, []);
+
+  /**
+   * End call
+   * IMPORTANT: Must be defined AFTER stopTranscriptPolling
+   */
+  const endCall = useCallback(async () => {
+    if (sessionRef.current) {
+      // Only call bye() if session is in Established state
+      if (sessionRef.current.state === SessionState.Established) {
+        try {
+          await sessionRef.current.bye();
+        } catch (error: any) {
+          // Silently handle errors if session is already terminated
+          console.warn('[useWebRTC] Session termination failed:', error.message);
+        }
+      }
+      sessionRef.current = null;
+    }
+
+    stopTranscriptPolling();
+
+    setState(prev => ({
+      ...prev,
+      isInCall: false,
+      callStatus: 'ended',
+      isCalling: false,
+    }));
+  }, [stopTranscriptPolling]);
+
+  /**
+   * Disconnect from FreeSWITCH
+   * IMPORTANT: Must be defined AFTER endCall
+   */
+  const disconnect = useCallback(async () => {
+    await endCall();
+
+    if (registererRef.current) {
+      await registererRef.current.unregister();
+      registererRef.current = null;
+    }
+
+    if (userAgentRef.current) {
+      await userAgentRef.current.stop();
+      userAgentRef.current = null;
+    }
+
+    setState(prev => ({
+      ...prev,
+      isConnected: false,
+      callStatus: 'idle',
+    }));
+  }, [endCall]);
 
   // Cleanup on unmount
   useEffect(() => {
