@@ -3,6 +3,8 @@
  * Supports multiple TTS backends with unified interface
  */
 
+import { elevenLabsService } from '../../services/elevenLabsService';
+
 export interface TTSOptions {
   language?: string;
   speed?: number;
@@ -157,19 +159,68 @@ export class PiperTTSProvider implements TTSProvider {
 }
 
 /**
+ * ElevenLabs TTS Provider
+ * Uses ElevenLabs API for high-quality TTS
+ */
+export class ElevenLabsTTSProvider implements TTSProvider {
+  // Map voice presets to ElevenLabs voice IDs
+  private voicePresetMap: Record<string, string> = {
+    'SwissProfessionalDE': '21m00Tcm4TlvDq8ikWAM', // Rachel - professional
+    'FriendlyFemaleDE': 'EXAVITQu4vr4xnSDxMaL', // Sarah - friendly
+    'NeutralDE': '21m00Tcm4TlvDq8ikWAM', // Rachel - neutral
+  };
+
+  async synthesize(text: string, voicePreset: string, options?: TTSOptions): Promise<Buffer> {
+    try {
+      // Map voice preset to ElevenLabs voice ID
+      const voiceId = this.voicePresetMap[voicePreset] || '21m00Tcm4TlvDq8ikWAM';
+      
+      // Use multilingual model for German
+      const modelId = options?.language === 'de' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5';
+      
+      return await elevenLabsService.generateSpeech(text, voiceId, modelId);
+    } catch (error: any) {
+      throw new Error(`ElevenLabs TTS synthesis failed: ${error.message}`);
+    }
+  }
+}
+
+/**
  * Get TTS provider based on configuration
+ * Priority:
+ * 1. TTS_PROVIDER env var (if set)
+ * 2. TTS_SERVICE_URL env var (if set, use Parler/Piper)
+ * 3. ELEVENLABS_API_KEY (if set, use ElevenLabs)
+ * 4. Default: ElevenLabs (if API key available) or Parler (fallback)
  */
 export function getTTSProvider(): TTSProvider {
-  const provider = (process.env.TTS_PROVIDER || 'parler') as 'parler' | 'piper';
+  const explicitProvider = process.env.TTS_PROVIDER;
+  const ttsServiceUrl = process.env.TTS_SERVICE_URL;
+  const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
 
-  switch (provider) {
-    case 'parler':
-      return new ParlerTTSProvider();
-    case 'piper':
-      return new PiperTTSProvider();
-    default:
-      return new ParlerTTSProvider();
+  // If explicit provider is set, use it
+  if (explicitProvider === 'elevenlabs') {
+    return new ElevenLabsTTSProvider();
   }
+  if (explicitProvider === 'parler') {
+    return new ParlerTTSProvider();
+  }
+  if (explicitProvider === 'piper') {
+    return new PiperTTSProvider();
+  }
+
+  // If TTS_SERVICE_URL is set, use Parler/Piper
+  if (ttsServiceUrl) {
+    return new ParlerTTSProvider();
+  }
+
+  // If ElevenLabs API key is available, use ElevenLabs (default for production)
+  if (elevenLabsApiKey && elevenLabsApiKey !== '' && elevenLabsApiKey !== 'PLACEHOLDER_FOR_TESTING') {
+    return new ElevenLabsTTSProvider();
+  }
+
+  // Fallback to Parler (will fail if service not available, but that's expected)
+  return new ParlerTTSProvider();
 }
 
 export const ttsProvider = getTTSProvider();
