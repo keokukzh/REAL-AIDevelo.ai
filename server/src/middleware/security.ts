@@ -109,6 +109,7 @@ export const helmetMiddleware = config.isProduction
           scriptSrc: [
             "'self'",
             "'unsafe-inline'", // Required for React
+            "'unsafe-eval'",   // Required for some WebRTC/SIP libraries
             'https://*.supabase.co',
             'https://fonts.googleapis.com',
             'https://fonts.gstatic.com',
