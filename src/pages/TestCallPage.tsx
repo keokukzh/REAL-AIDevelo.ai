@@ -3,60 +3,53 @@
  * WebRTC softphone for testing voice agent
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { useAgentChat, ChatMessage } from '../hooks/useAgentChat';
 import { Phone, PhoneOff, Loader, MessageSquare, Mic } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
 
 type TestMode = 'voice' | 'chat';
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  toolCalls?: Array<{
+    name: string;
+    arguments: any;
+    result?: any;
+    error?: string;
+  }>;
+}
+
 export const TestCallPage: React.FC = () => {
+  // 1. All useState hooks first
+  const [mode, setMode] = useState<TestMode>('voice');
+  const [callDuration, setCallDuration] = useState(0);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSendingChatMessage, setIsSendingChatMessage] = useState(false);
+  const [chatCallSid, setChatCallSid] = useState<string | null>(null);
+  
+  // 2. All useRef hooks
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
+  // 3. Custom hooks that don't depend on component state
   const locationId = useLocationId();
   const { data: overview } = useDashboardOverview();
   const agentId = overview?.agent_config?.id;
 
-  const [mode, setMode] = useState<TestMode>('voice');
-  
-  // Chat mode hook
-  const {
-    messages: chatMessages,
-    input: chatInput,
-    setInput: setChatInput,
-    isSending: isSendingChatMessage,
-    sendMessage: sendChatMessage,
-    audioRef,
-  } = useAgentChat({
-    locationId: locationId || '',
-  });
-
-  const {
-    isConnected,
-    isCalling,
-    isInCall,
-    callStatus,
-    error,
-    transcript,
-    connect,
-    startCall,
-    endCall,
-    disconnect,
-  } = useWebRTC({
+  // 4. WebRTC hook
+  const webRTC = useWebRTC({
     locationId: locationId || '',
     agentId,
   });
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const [callDuration, setCallDuration] = useState(0);
-
+  // 5. useEffect hooks
   useEffect(() => {
-    if (isInCall) {
+    if (webRTC.isInCall) {
       const interval = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
@@ -64,36 +57,112 @@ export const TestCallPage: React.FC = () => {
     } else {
       setCallDuration(0);
     }
-  }, [isInCall]);
+  }, [webRTC.isInCall]);
 
-  // Handle Enter key in chat input
+  // 6. useCallback hooks - defined after all state is available
+  const sendChatMessage = useCallback(async () => {
+    if (!chatInput.trim() || !locationId || isSendingChatMessage) return;
+
+    setIsSendingChatMessage(true);
+    const messageText = chatInput.trim();
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      role: 'user',
+      text: messageText,
+      timestamp: new Date().toISOString(),
+    };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+
+    try {
+      // Generate call_sid if not exists
+      const effectiveCallSid = chatCallSid || `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      if (!chatCallSid) {
+        setChatCallSid(effectiveCallSid);
+      }
+
+      const response = await apiClient.post<{
+        success: boolean;
+        text: string;
+        audio_url: string;
+        toolCalls?: Array<{
+          name: string;
+          arguments: any;
+          result?: any;
+          error?: string;
+        }>;
+      }>('/v1/test-call/chat-message', {
+        location_id: locationId,
+        text: messageText,
+        call_sid: effectiveCallSid,
+      });
+
+      if (response.data.success) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          text: response.data.text,
+          timestamp: new Date().toISOString(),
+          toolCalls: response.data.toolCalls,
+        };
+        setChatMessages(prev => [...prev, assistantMessage]);
+
+        // Play audio response
+        if (response.data.audio_url && audioRef.current) {
+          audioRef.current.src = response.data.audio_url;
+          audioRef.current.play().catch(err => {
+            console.error('Failed to play audio:', err);
+          });
+        }
+      } else {
+        throw new Error('Failed to get response');
+      }
+    } catch (error: any) {
+      console.error('[TestCallPage] Chat message error:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
+      const errorMsg: ChatMessage = {
+        role: 'assistant',
+        text: `Fehler: ${errorMessage}`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsSendingChatMessage(false);
+    }
+  }, [chatInput, locationId, isSendingChatMessage, chatCallSid]);
+
   const handleChatInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (chatInput.trim()) {
-        sendChatMessage();
-      }
+      sendChatMessage();
     }
-  }, [chatInput, sendChatMessage]);
+  }, [sendChatMessage]);
 
-  // Get combined transcript (voice or chat) - use useMemo to avoid re-computation
+  // 7. useMemo hooks
   const combinedTranscript = useMemo(() => {
     if (mode === 'voice') {
-      return transcript;
+      return webRTC.transcript;
     }
     return chatMessages.map(msg => ({
       role: msg.role,
       text: msg.text,
       timestamp: msg.timestamp,
     }));
-  }, [mode, transcript, chatMessages]);
+  }, [mode, webRTC.transcript, chatMessages]);
+
+  // Helper function (not a hook)
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Render main action button based on connection and call state
   const renderMainButton = () => {
-    if (!isConnected) {
+    if (!webRTC.isConnected) {
       return (
         <button
-          onClick={connect}
+          onClick={webRTC.connect}
           className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
         >
           <Phone className="w-4 h-4" />
@@ -102,14 +171,14 @@ export const TestCallPage: React.FC = () => {
       );
     }
 
-    if (!isInCall) {
+    if (!webRTC.isInCall) {
       return (
         <button
-          onClick={startCall}
-          disabled={isCalling}
+          onClick={webRTC.startCall}
+          disabled={webRTC.isCalling}
           className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isCalling ? (
+          {webRTC.isCalling ? (
             <>
               <Loader className="w-4 h-4 animate-spin" />
               Verbinde...
@@ -126,7 +195,7 @@ export const TestCallPage: React.FC = () => {
 
     return (
       <button
-        onClick={endCall}
+        onClick={webRTC.endCall}
         className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
       >
         <PhoneOff className="w-4 h-4" />
@@ -196,28 +265,28 @@ export const TestCallPage: React.FC = () => {
             <div className="bg-white/5 rounded-lg p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-gray-400">Verbindungsstatus:</span>
-                <span className={`font-semibold ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
-                  {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                <span className={`font-semibold ${webRTC.isConnected ? 'text-green-500' : 'text-red-500'}`}>
+                  {webRTC.isConnected ? 'Verbunden' : 'Nicht verbunden'}
                 </span>
               </div>
 
-              {callStatus !== 'idle' && (
+              {webRTC.callStatus !== 'idle' && (
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-gray-400">Call Status:</span>
                   <span className="font-semibold text-blue-500">
-                    {callStatus === 'connecting' && 'Verbinde...'}
-                    {callStatus === 'ringing' && 'Klingelt...'}
-                    {callStatus === 'active' && `Aktiv (${formatDuration(callDuration)})`}
-                    {callStatus === 'ended' && 'Beendet'}
-                    {callStatus === 'error' && 'Fehler'}
+                    {webRTC.callStatus === 'connecting' && 'Verbinde...'}
+                    {webRTC.callStatus === 'ringing' && 'Klingelt...'}
+                    {webRTC.callStatus === 'active' && `Aktiv (${formatDuration(callDuration)})`}
+                    {webRTC.callStatus === 'ended' && 'Beendet'}
+                    {webRTC.callStatus === 'error' && 'Fehler'}
                   </span>
                 </div>
               )}
 
-              {error && (
+              {webRTC.error && (
                 <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">
                   <div className="font-semibold mb-2">Verbindungsfehler:</div>
-                  <div className="mb-2">{error}</div>
+                  <div className="mb-2">{webRTC.error}</div>
                   <div className="text-xs text-red-300/80 mt-2">
                     <p>Hinweis: FreeSWITCH muss auf dem konfigurierten Server laufen.</p>
                     <p>Für lokale Tests: Stellen Sie sicher, dass FreeSWITCH auf localhost:7443 läuft.</p>
@@ -231,9 +300,9 @@ export const TestCallPage: React.FC = () => {
             <div className="flex gap-4 justify-center mb-8">
               {renderMainButton()}
 
-              {isConnected && (
+              {webRTC.isConnected && (
                 <button
-                  onClick={disconnect}
+                  onClick={webRTC.disconnect}
                   className="flex items-center gap-2 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition"
                 >
                   Trennen
@@ -356,7 +425,7 @@ export const TestCallPage: React.FC = () => {
         )}
 
         {/* Help Text */}
-        {mode === 'voice' && !isInCall && (
+        {mode === 'voice' && !webRTC.isInCall && (
           <div className="mt-8 space-y-4">
             <div className="text-center text-gray-400 text-sm">
               <p>Verbinden Sie sich mit FreeSWITCH und starten Sie einen Test-Call.</p>
@@ -364,7 +433,7 @@ export const TestCallPage: React.FC = () => {
             </div>
             
             {/* Info Box for Production */}
-            {import.meta.env.PROD && !isConnected && (
+            {import.meta.env.PROD && !webRTC.isConnected && (
               <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-300 text-sm">
                 <div className="font-semibold mb-2">⚠️ FreeSWITCH in Production</div>
                 <p className="text-xs text-yellow-200/80">
