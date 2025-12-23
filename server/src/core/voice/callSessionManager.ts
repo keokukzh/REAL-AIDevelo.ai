@@ -45,59 +45,75 @@ export class CallSessionManager {
     let session = this.activeSessions.get(callSid);
 
     if (!session) {
-      // Try to load from DB
-      const { data: dbSession } = await supabaseAdmin
-        .from('call_sessions')
-        .select('*')
-        .eq('call_sid', callSid)
-        .maybeSingle();
-
-      if (dbSession) {
-        session = {
-          id: dbSession.id,
-          callSid: dbSession.call_sid,
-          locationId: dbSession.location_id,
-          agentId: dbSession.agent_id || undefined,
-          status: dbSession.status as any,
-          transcript: (dbSession.transcript_json as any[]) || [],
-          startedAt: new Date(dbSession.started_at),
-          endedAt: dbSession.ended_at ? new Date(dbSession.ended_at) : undefined,
-        };
-        this.activeSessions.set(callSid, session);
-      } else {
-        // Create new session
-        const { data: newSession, error } = await supabaseAdmin
+      try {
+        // Try to load from DB
+        const { data: dbSession } = await supabaseAdmin
           .from('call_sessions')
-          .insert({
-            call_sid: callSid,
-            location_id: locationId,
-            agent_id: agentId || null,
-            direction: 'test',
-            status: 'active',
-            transcript_json: [],
-          })
-          .select()
-          .single();
+          .select('*')
+          .eq('call_sid', callSid)
+          .maybeSingle();
 
-        if (error) {
-          throw new Error(`Failed to create call session: ${error.message}`);
+        if (dbSession) {
+          session = {
+            id: dbSession.id,
+            callSid: dbSession.call_sid,
+            locationId: dbSession.location_id,
+            agentId: dbSession.agent_id || undefined,
+            status: dbSession.status as any,
+            transcript: (dbSession.transcript_json as any[]) || [],
+            startedAt: new Date(dbSession.started_at),
+            endedAt: dbSession.ended_at ? new Date(dbSession.ended_at) : undefined,
+          };
+          this.activeSessions.set(callSid, session);
+        } else {
+          // Create new session
+          const { data: newSession, error: insertError } = await supabaseAdmin
+            .from('call_sessions')
+            .insert({
+              call_sid: callSid,
+              location_id: locationId,
+              agent_id: agentId || null,
+              direction: 'test',
+              status: 'active',
+              transcript_json: [],
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            throw insertError;
+          }
+
+          if (newSession) {
+            session = {
+              id: newSession.id,
+              callSid: newSession.call_sid,
+              locationId: newSession.location_id,
+              agentId: newSession.agent_id || undefined,
+              status: newSession.status as any,
+              transcript: [],
+              startedAt: new Date(newSession.started_at),
+            };
+            this.activeSessions.set(callSid, session);
+          }
         }
-
+      } catch (dbError) {
+        logger.warn('call_session.db_error_using_memory', { callSid, error: dbError instanceof Error ? dbError.message : String(dbError) });
+        // Database failed (e.g. table missing), fallback to in-memory only
         session = {
-          id: newSession.id,
-          callSid: newSession.call_sid,
-          locationId: newSession.location_id,
-          agentId: newSession.agent_id || undefined,
-          status: newSession.status as any,
+          id: `mem_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          callSid,
+          locationId: locationId || 'default',
+          agentId,
+          status: 'active',
           transcript: [],
-          startedAt: new Date(newSession.started_at),
+          startedAt: new Date(),
         };
-
         this.activeSessions.set(callSid, session);
       }
     }
 
-    return session;
+    return session!;
   }
 
   /**
