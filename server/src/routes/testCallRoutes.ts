@@ -72,7 +72,7 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
         ? 'wss://freeswitch.aidevelo.ai'  // Changed from aidevelo.ai:7443 to freeswitch.aidevelo.ai
         : 'wss://localhost:7443');
     
-    const sipUsername = `test_${req.supabaseUser?.supabaseUserId || 'anonymous'}`;
+    const sipUsername = 'test';
     const sipPassword = process.env.FREESWITCH_TEST_PASSWORD || 'test123';
     const extension = process.env.FREESWITCH_TEST_EXTENSION || '1000';
 
