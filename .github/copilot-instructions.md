@@ -1,30 +1,42 @@
 # Copilot Instructions – REAL-AIDevelo.ai
 
-## Big picture
-- Monorepo: React 19 + Vite frontend in `src/`, Express + TypeScript API in `server/`, plus a workflow orchestrator in `workflows/`.
-- API versioning: backend mounts routes at `/api/v1/*` and keeps `/api/*` as a deprecated compatibility shim (see `server/src/app.ts`).
-- Voice agent domain lives under `server/src/voice-agent/` (HTTP + WebSocket; ASR → LLM → TTS, with optional RAG/Qdrant).
+## Repo shape (monorepo)
+- Frontend: React 19 + Vite in `src/`
+- Backend API: Express + TypeScript in `server/`
+- Workflow orchestrator/CLI: `workflows/` (run via `npm run workflow:*`)
 
-## Day-to-day commands
-- Full dev stack (backend, frontend, Postgres, Redis, Qdrant, Jaeger): `docker compose -f docker-compose.dev.yml up`
-- Frontend only: `npm run dev` (Vite)
-- API only: `cd server && npm run dev`
+## Dev workflows (known-good commands)
+- Full stack (API + Postgres/Redis/Qdrant/Jaeger): `docker compose -f docker-compose.dev.yml up`
+- Frontend: `npm run dev`
+- API: `cd server && npm run dev`
 - Build: `npm run build` and `cd server && npm run build` (Node >= 20)
-- Tests: `npm run test:unit`, `npm run test:e2e` (Playwright); API tests: `cd server && npm run test:unit` / `npm run test:integration`
-- Migrations (compose runs this too): `cd server && npm run wait-and-migrate` (applies `server/db/migrations` in filename order)
+- Tests: `npm run test:unit`, `npm run test:e2e`; API tests: `cd server && npm run test:unit` / `npm run test:integration`
+- Legacy migrations helper: `cd server && npm run wait-and-migrate` (applies `server/db/migrations` in filename order)
 
-## Auth + request shape
-- Frontend auth uses Supabase (`src/contexts/AuthContext.tsx`). For protected API routes, send `Authorization: Bearer <Supabase access token>`; backend verifies via `server/src/middleware/supabaseAuth.ts`.
-- Dev shortcut: set `DEV_BYPASS_AUTH=true` (never production) to seed a user/org/location and bypass JWT verification (`server/src/middleware/devBypassAuth.ts`).
-- Frontend API calls go through Axios + `apiRequest()` (`src/services/api.ts`). Keep error responses shaped like `{ success: false, error: string }` so `ApiRequestError` behaves consistently.
+## API routing + versioning
+- The backend mounts the same router at both:
+	- `/api/v1/*` (preferred)
+	- `/api/*` (compatibility shim that adds a deprecation warning header)
+	See `server/src/app.ts`.
+- The frontend’s default `API_BASE_URL` is `/api` in production (same-origin for CSP) and `http://localhost:5000/api` in dev (see `src/services/apiBase.ts`).
+- Client calls should NOT include `/api` in the path (enforced by `npm run lint:api-prefix`); use paths like `/agents/123`.
 
-## Backend conventions
-- Prefer Supabase-backed flows for new work (e.g. default provisioning in `server/src/controllers/defaultAgentController.ts` + `server/src/services/supabaseDb.ts`). Legacy Postgres pool (`DATABASE_URL`) and the in-memory dev store (`server/src/services/db.ts`) still exist for older routes/demo flows.
-- Add new endpoints under the versioned router (mounted in `server/src/app.ts`) and return `{ success, data }` on success.
-- Twilio webhooks must validate `X-Twilio-Signature` using `server/src/middleware/verifyTwilioSignature.ts` (set `PUBLIC_BASE_URL` correctly behind proxies).
-- Payments/Stripe are legacy/removed (see `server/src/config/env.ts`); avoid introducing new Stripe flows even if some docs/tags still mention “payments”.
+## Auth (what’s actually used)
+- Frontend auth is Supabase (`src/contexts/AuthContext.tsx`), and `src/services/apiClient.ts` injects `Authorization: Bearer <access_token>`.
+- Backend auth for most protected routes is `verifySupabaseAuth` (`server/src/middleware/supabaseAuth.ts`).
+- Dev shortcut:
+	- Backend: `DEV_BYPASS_AUTH=true` (hard-disabled when `NODE_ENV=production`) seeds a user/org/location (`server/src/middleware/devBypassAuth.ts`).
+	- Frontend: set `VITE_DEV_BYPASS_AUTH=true` to send a dummy token (`src/services/apiClient.ts`).
+- Legacy JWT middleware still exists (`server/src/middleware/auth.ts`); prefer Supabase auth for new endpoints unless you’re extending legacy routes.
 
-## Useful entrypoints
-- Frontend routing: `src/App.tsx`
-- Backend bootstrap/middleware order: `server/src/app.ts`
-- Voice Agent routes + WS setup: `server/src/voice-agent/routes/voiceAgentRoutes.ts`
+## Response shapes (so the frontend error handling works)
+- Prefer `{ success: true, data }` on success and `{ success: false, error: string }` on errors so `src/services/api.ts` (`ApiRequestError`) surfaces errors consistently.
+
+## Voice agent (HTTP + WebSocket)
+- Voice agent domain: `server/src/voice-agent/` (RAG + realtime pipeline). HTTP routes live in `server/src/voice-agent/routes/voiceAgentRoutes.ts`.
+- WebSocket server is wired via `setupWebSocketServer()` called from `server/src/app.ts`.
+- RAG document endpoints are under `/rag` (`server/src/routes/ragRoutes.ts`); `/voice-agent/ingest` is marked legacy in code.
+
+## Integrations / gotchas
+- Twilio webhooks validate `X-Twilio-Signature` via `server/src/middleware/verifyTwilioSignature.ts`; set `PUBLIC_BASE_URL` correctly behind proxies.
+- Observability is optional: `server/src/config/observability.ts` dynamically requires OpenTelemetry packages and no-ops if they’re not installed.

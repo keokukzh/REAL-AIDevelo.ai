@@ -9,10 +9,15 @@ import sys
 import os
 import time
 
-# Hetzner API Credentials
-HETZNER_API_KEY = "n2HS64nnGwfUfgMowP3QNqCB6l7ST7S4ygeAIoiBhjikQljPjVotefXb8w5LrMFp"
-SERVER_IP = "91.99.202.18"
-SSH_KEY_PATH = os.path.expanduser("~/.ssh/id_ed25519")
+# Connection settings (do NOT hard-code secrets in repo)
+#
+# Required:
+#   - Set HETZNER_SERVER_IP (or edit the default) to your server's public IP
+#
+# Optional:
+#   - Set SSH_KEY_PATH to override the default key path
+SERVER_IP = os.getenv("HETZNER_SERVER_IP", "91.99.202.18")
+SSH_KEY_PATH = os.path.expanduser(os.getenv("SSH_KEY_PATH", "~/.ssh/id_ed25519"))
 
 def run_ssh_command(command):
     """Führt einen Befehl auf dem Hetzner Server aus"""

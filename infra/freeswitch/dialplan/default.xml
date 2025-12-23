@@ -8,9 +8,10 @@
     <condition field="destination_number" expression="^1000$">
       <!-- Extract location_id and agent_id from SIP headers or variables -->
       <!-- SIP headers are available as ${sip_h_X-Location-Id} -->
-      <action application="set" data="location_id=${sip_h_X-Location-Id}"/>
+      <!-- Preserve location_id/agent_id if already set upstream (e.g. DID routing) -->
+      <action application="set" data="location_id=${location_id:-${sip_h_X-Location-Id}}"/>
       <action application="set" data="location_id=${location_id:-default}"/>
-      <action application="set" data="agent_id=${sip_h_X-Agent-Id}"/>
+      <action application="set" data="agent_id=${agent_id:-${sip_h_X-Agent-Id}}"/>
       <action application="set" data="agent_id=${agent_id:-default}"/>
       
       <!-- Answer the call -->
@@ -52,12 +53,15 @@
       <action application="set" data="backend_url=${backend_url:-https://real-aidevelo-ai.onrender.com}"/>
       <action application="set" data="did_routing_url=${backend_url}/api/v1/freeswitch/did-routing"/>
       <action application="set" data="location_id=${curl(${did_routing_url}?did=${destination_number})}"/>
-      
+
       <!-- If location_id found, route to agent -->
-      <action application="transfer" data="1000 XML default" condition="${location_id(${location_id})}"/>
+      <condition field="${location_id}" expression="^.+$" break="on-true">
+        <action application="set" data="agent_id=${agent_id:-default}"/>
+        <action application="transfer" data="1000 XML default"/>
+      </condition>
       
       <!-- Otherwise, play error message -->
-      <action application="answer" condition="${!location_id(${location_id})}"/>
+      <action application="answer"/>
       <action application="playback" data="ivr/ivr-number_not_in_service.wav"/>
       <action application="hangup"/>
     </condition>

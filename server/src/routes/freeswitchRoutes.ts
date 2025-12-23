@@ -201,14 +201,19 @@ router.get('/audio/:fileId', async (req: Request, res: Response) => {
 
 /**
  * GET /api/freeswitch/did-routing
- * Route DID (phone number) to location_id
+ * Route DID (phone number) to location_id.
+ *
+ * IMPORTANT: This endpoint is consumed by FreeSWITCH dialplan via ${curl(url)}.
+ * It MUST return a plain text body (location_id) and should avoid non-empty JSON
+ * error bodies, otherwise FreeSWITCH will treat the error payload as a location_id.
  */
 router.get('/did-routing', async (req: Request, res: Response) => {
   try {
     const { did } = req.query;
 
-    if (!did) {
-      return res.status(400).json({ error: 'did (destination number) required' });
+    // Dialplan-friendly behavior: missing/invalid DID => empty body
+    if (!did || typeof did !== 'string') {
+      return res.status(200).type('text/plain').send('');
     }
 
     // Find location by phone number
@@ -219,13 +224,16 @@ router.get('/did-routing', async (req: Request, res: Response) => {
       .maybeSingle();
 
     if (phoneNumber?.location_id) {
-      res.json({ location_id: phoneNumber.location_id });
-    } else {
-      res.status(404).json({ error: 'Location not found for DID' });
+      return res.status(200).type('text/plain').send(String(phoneNumber.location_id));
     }
+
+    // No match: return empty body so dialplan can branch to "not in service"
+    return res.status(200).type('text/plain').send('');
   } catch (error: any) {
     logger.error('freeswitch.did_routing_error', error);
-    res.status(500).json({ error: error.message });
+    // Dialplan-friendly: on error, also return empty string.
+    // The error is still logged server-side for debugging.
+    res.status(200).type('text/plain').send('');
   }
 });
 

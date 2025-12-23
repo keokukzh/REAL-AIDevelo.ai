@@ -1,28 +1,27 @@
-# Render Environment Variables - Production Setup
+# Render Environment Variables (Production Setup)
 
-## ✅ Korrekte DATABASE_URL für Render
+This repo is designed so **secrets never live in git**.
 
-```
-postgresql://postgres:QPonMlqp8RAuw6GO@db.rckuwfcsqwwylffecwur.supabase.co:5432/postgres
-```
+## Required in Render → Environment
 
-## In Render setzen:
+### `DATABASE_URL` (optional / legacy)
+- Only needed if you still run legacy Postgres code paths or certain scripts.
+- Format (example):
+  - `postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres`
 
-1. **Render Dashboard** → Service **real-aidevelo-ai**
-2. **Environment** → **Add Environment Variable** (oder bestehende bearbeiten)
-3. **Key:** `DATABASE_URL`
-4. **Value:** `postgresql://postgres:QPonMlqp8RAuw6GO@db.rckuwfcsqwwylffecwur.supabase.co:5432/postgres`
-5. **Save Changes**
-6. Service wird automatisch neu gestartet
+### Supabase (required)
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-## ✅ Verifiziert
+### Voice providers / webhooks (required for production voice)
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_WEBHOOK_SECRET`
+- `TWILIO_STREAM_TOKEN`
 
-- ✅ Connection erfolgreich getestet
-- ✅ PostgreSQL 17.6
-- ✅ 8 Tabellen gefunden (agent_configs, call_logs, google_calendar_integrations, locations, organizations, etc.)
+## Recommended
+- `PUBLIC_BASE_URL` (needed for correct webhook signature validation behind proxies)
+- `WEB_ORIGIN` (CORS)
 
-## Wichtig:
-
-- ⚠️ **NIEMALS** diese URL in Git committen
-- ✅ Nur in Render Environment Variables speichern
-- ✅ Nach dem Setzen: Service wird automatisch neu gestartet
+## Quick validation
+- API health: `GET /health`
+- If auth routes fail with “Supabase not configured”, verify `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
