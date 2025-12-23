@@ -14,7 +14,6 @@
       <group name="default">
         <users>
           <!-- Generic test user - accepts any test_* username with password test123 -->
-          <!-- FreeSWITCH will match any username starting with 'test' -->
           <user id="test">
             <params>
               <param name="password" value="test123"/>
@@ -61,5 +60,4 @@
       </group>
     </groups>
   </domain>
-  
 </include>
