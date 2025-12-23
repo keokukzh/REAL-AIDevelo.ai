@@ -111,7 +111,7 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
  */
 router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { location_id, text, call_sid } = req.body;
+    const { location_id, text, call_sid, metadata } = req.body;
 
     if (!location_id || !text) {
       return res.status(400).json({
@@ -130,17 +130,27 @@ router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedReques
     }));
 
     // Step 1: Get agent response using AgentCore (same as voice mode)
-    const agentResponse = await agentCore.handleMessage({
-      locationId: location_id,
-      channel: 'voice', // Use voice channel for voice-optimized responses
-      externalUserId: `test_call_${effectiveCallSid}`,
-      text: text.trim(),
-      metadata: {
-        call_sid: effectiveCallSid,
-        test_call: true,
-        chat_mode: true,
-      },
-    });
+    let agentResponse;
+    try {
+      agentResponse = await agentCore.handleMessage({
+        locationId: location_id,
+        channel: 'voice', // Use voice channel for voice-optimized responses
+        externalUserId: `test_call_${effectiveCallSid}`,
+        text: text.trim(),
+        metadata: {
+          ...metadata,
+          call_sid: effectiveCallSid,
+          test_call: true,
+          chat_mode: true,
+        },
+      });
+    } catch (error: any) {
+      logger.error('test_call.agent_core_failed', error, redact({ location_id }));
+      return res.status(200).json({
+        success: false,
+        error: `AgentCore Fehler: ${error.message}. Bitte API-Keys prüfen.`
+      });
+    }
 
     // Step 2: Get voice preset for location
     const { data: agentConfig } = await supabaseAdmin
@@ -163,11 +173,26 @@ router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedReques
     }
 
     // Step 3: Generate TTS audio
-    const audioPath = await ttsService.synthesizeToFile(
-      agentResponse.text,
-      voicePreset,
-      { language: 'de', speed: 1.0 }
-    );
+    let audioPath;
+    try {
+      audioPath = await ttsService.synthesizeToFile(
+        agentResponse.text,
+        voicePreset,
+        { language: 'de', speed: 1.0 }
+      );
+    } catch (error: any) {
+      logger.error('test_call.tts_failed', error, redact({ location_id }));
+      // Non-fatal if chat mode: still return the text response
+      return res.json({
+        success: true,
+        data: {
+          text: agentResponse.text,
+          toolCalls: agentResponse.toolCalls,
+          audioUrl: null,
+          error: `TTS Fehler: ${error.message}`
+        }
+      });
+    }
 
     // Step 4: Convert local file path to HTTP URL
     const path = require('path');
