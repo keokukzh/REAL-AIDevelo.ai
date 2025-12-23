@@ -1,6 +1,6 @@
 -- FreeSWITCH Lua script for AI Agent call controller
 -- This script handles the turn-based conversation loop
--- This version uses NATIVE FreeSWITCH commands to avoid Lua module dependencies
+-- This version is SELF-CONTAINED and does not rely on external Lua modules or FreeSWITCH APIs for encoding
 
 local uuid = argv[1]
 local location_id = argv[2] or "default"
@@ -27,6 +27,21 @@ local function log(message)
   freeswitch.consoleLog("INFO", string.format("[CallController] %s: %s\n", uuid or "unknown", message))
 end
 
+-- Simple Base64 implementation
+local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local function base64_encode(data)
+    return ((data:gsub('.', function(x) 
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
 log(string.format("Starting call controller: location_id=%s, agent_id=%s", location_id, agent_id))
 
 if not session then
@@ -34,17 +49,12 @@ if not session then
   return
 end
 
--- Native Curl Helper
-local function native_curl_post(url, body)
-  local curl_cmd = string.format("%s POST %s", url, body)
-  return api:execute("curl", curl_cmd)
-end
-
 -- Step 1: Notify backend that call started
-local function notify_backend(event, data)
+local function notify_backend(event)
   local url = string.format("%s/api/v1/freeswitch/call/%s", backend_url, event)
   local body = string.format("call_sid=%s&location_id=%s&agent_id=%s", uuid, location_id, agent_id)
-  return native_curl_post(url, body)
+  local curl_cmd = string.format("%s POST %s", url, body)
+  return api:execute("curl", curl_cmd)
 end
 
 -- Step 2: Play greeting
@@ -53,20 +63,20 @@ local function play_greeting()
   local audio_path = "/tmp/greeting_" .. uuid .. ".wav"
   local greeting_url = string.format("%s/api/v1/freeswitch/greeting?location_id=%s&agent_id=%s", backend_url, location_id, agent_id)
   
-  -- Use native curl_download if available, otherwise native curl and local write
-  -- Many FS versions have mod_curl's curl_download
   log("Downloading greeting from: " .. greeting_url)
+  -- Use native curl_download
   api:execute("curl_download", greeting_url .. " " .. audio_path)
   
-  -- Check if file exists
   local f = io.open(audio_path, "r")
   if f then
     f:close()
     session:streamFile(audio_path)
     os.remove(audio_path)
+    return true
   else
-    log("Greeting download failed or curl_download not available, using fallback TTS")
+    log("Greeting download failed, using fallback TTS")
     session:execute("speak", "flite|kal|Grüezi! Willkommen bei A-I Develo. Wie kann ich Ihnen helfen?")
+    return false
   end
 end
 
@@ -90,35 +100,31 @@ end
 local function process_turn(audio_path)
   log("Processing turn...")
   
-  -- Encode to base64 using native FS command
-  local audio_base64 = api:execute("base64", "encode " .. audio_path)
-  if not audio_base64 or audio_base64 == "" then
-    log("Base64 encoding failed")
-    return nil
-  end
+  -- Read binary audio file
+  local f = io.open(audio_path, "rb")
+  if not f then return nil end
+  local audio_data = f:read("*all")
+  f:close()
   
-  -- Send to backend via native curl
-  -- Important: mod_curl POST with body requires the body as the 3rd argument if we want JSON
-  -- But native 'curl' command is simpler: curl <url> [POST|GET] [body] [content-type]
+  -- Encode to base64 using our simple implementation
+  local audio_base64 = base64_encode(audio_data)
+  
   local url = string.format("%s/api/v1/freeswitch/call/process-turn", backend_url)
   
-  -- Construct JSON manually to avoid 'json' dependency
+  -- Construct JSON manually
   local request_body = string.format('{"call_sid":"%s","location_id":"%s","agent_id":"%s","audio":"%s"}', 
     uuid, location_id, agent_id, audio_base64)
   
-  -- Save request body to temp file to avoid command line length limits for large base64
   local body_path = "/tmp/req_" .. uuid .. ".json"
   local bf = io.open(body_path, "w")
   if bf then
     bf:write(request_body)
     bf:close()
     
-    -- Use curl with file body: curl <url> POST @<path> application/json
     local response_text = api:execute("curl", url .. " POST @" .. body_path .. " application/json")
     os.remove(body_path)
     
     if response_text and response_text ~= "" then
-      -- Simple JSON extraction for audio_url
       local audio_url = string.match(response_text, '"audio_url"%s*:%s*"([^"]+)"')
       return audio_url
     end
@@ -128,8 +134,8 @@ local function process_turn(audio_path)
 end
 
 -- Main loop
-pcall(function()
-  notify_backend("start", "")
+local function main()
+  notify_backend("start")
   play_greeting()
   
   local turn = 0
@@ -144,7 +150,7 @@ pcall(function()
       
       if response_url then
         log("Playing response: " .. response_url)
-        local audio_path_resp = "/tmp/resp_" .. uuid .. ".wav"
+        local audio_path_resp = "/tmp/resp_" .. uuid .. "_" .. os.time() .. ".wav"
         
         if string.match(response_url, "^http") then
           api:execute("curl_download", response_url .. " " .. audio_path_resp)
@@ -163,7 +169,13 @@ pcall(function()
     end
   end
   
-  notify_backend("end", "")
-end)
+  notify_backend("end")
+end
+
+-- Run main with error handling
+local status, err = pcall(main)
+if not status then
+  log("CRITICAL ERROR in call controller: " .. tostring(err))
+end
 
 log("Call controller finished")
