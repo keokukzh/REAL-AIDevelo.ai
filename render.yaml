@@ -11,13 +11,6 @@ services:
         value: production
       - key: PORT
         value: 5000
-      # Required (set in Render dashboard):
-      # SUPABASE_URL
-      # SUPABASE_SERVICE_ROLE_KEY
-      - key: ELEVENLABS_API_KEY
-        value: # Required for voice output
-      - key: OPENAI_API_KEY
-        value: # Required for LLM and Transcription
       - key: LLM_PROVIDER
         value: openai
       - key: ASR_PROVIDER
@@ -26,15 +19,10 @@ services:
         value: elevenlabs
       - key: FREESWITCH_WSS_URL
         value: wss://freeswitch.aidevelo.ai
-      # Optional:
-      # FRONTEND_URL
-      # PUBLIC_BASE_URL
-      # ELEVENLABS_AGENT_ID_DEFAULT
-      # TWILIO_ACCOUNT_SID
-      # TWILIO_AUTH_TOKEN
-      # GOOGLE_OAUTH_CLIENT_ID
-      # GOOGLE_OAUTH_CLIENT_SECRET
-      # GOOGLE_CALENDAR_CLIENT_ID
-      # GOOGLE_CALENDAR_CLIENT_SECRET
-      # TOOL_SHARED_SECRET
-      # TOKEN_ENCRYPTION_KEY (auto-generated if missing, but set for persistence)
+      # Note: The following must be set in the Render Dashboard (Environment tab):
+      # OPENAI_API_KEY
+      # ELEVENLABS_API_KEY
+      # SUPABASE_URL
+      # SUPABASE_SERVICE_ROLE_KEY
+      # ELEVENLABS_WEBHOOK_SECRET
+      # TWILIO_STREAM_TOKEN

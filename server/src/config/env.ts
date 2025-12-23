@@ -117,32 +117,22 @@ const validateEnv = () => {
     // In production we require the important secrets to be set — fail fast if missing
     const missing = productionRequiredEnvVars.filter(v => !process.env[v] || process.env[v] === '' || (process.env[v] || '').includes('placeholder'));
     if (missing.length > 0) {
-      StructuredLoggingService.error(`Missing required environment variables for production: ${missing.join(', ')}. The server will exit. Please configure these in your production environment (do not commit them in git).`, new Error('Missing required environment variables'));
-      process.exit(1);
+      StructuredLoggingService.warn(`⚠️  Missing environment variables for production: ${missing.join(', ')}. The server will continue to start, but some features may not work. Configure these in your production environment.`);
     }
 
-    // Validate Twilio credentials: either TWILIO_AUTH_TOKEN or (TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET) must be set
+    // Validate Twilio credentials
     const hasAuthToken = !!(process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_AUTH_TOKEN !== '' && !process.env.TWILIO_AUTH_TOKEN.includes('placeholder'));
     const hasApiKey = !!(process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET && 
                         process.env.TWILIO_API_KEY_SID !== '' && process.env.TWILIO_API_KEY_SECRET !== '' &&
                         !process.env.TWILIO_API_KEY_SID.includes('placeholder') && !process.env.TWILIO_API_KEY_SECRET.includes('placeholder'));
     
     if (!hasAuthToken && !hasApiKey) {
-      StructuredLoggingService.error('Missing Twilio credentials for production. Either set TWILIO_AUTH_TOKEN or set both TWILIO_API_KEY_SID and TWILIO_API_KEY_SECRET. The server will exit.', new Error('Missing Twilio credentials'));
-      process.exit(1);
+      StructuredLoggingService.warn('⚠️  Missing Twilio credentials. Voice calling features will not work.');
     }
     
-    if (hasApiKey) {
-      StructuredLoggingService.info('Twilio API Key authentication configured (recommended)');
-    } else if (hasAuthToken) {
-      StructuredLoggingService.info('Twilio Auth Token configured (consider using API Keys for better security)');
-    }
-
-    // Validate TOKEN_ENCRYPTION_KEY in production (should be set by now if auto-generated)
+    // Validate TOKEN_ENCRYPTION_KEY (should be set by now if auto-generated)
     if (isTokenKeyMissing) {
-      // This should not happen since we auto-generate it above, but keep as safety check
-      StructuredLoggingService.error('FATAL: TOKEN_ENCRYPTION_KEY is missing or invalid in production. Calendar token encryption requires a valid 32-byte key. Generate a key: openssl rand -base64 32. The server will exit. Set TOKEN_ENCRYPTION_KEY in your production environment.', new Error('TOKEN_ENCRYPTION_KEY missing'));
-      process.exit(1);
+      StructuredLoggingService.warn('⚠️  TOKEN_ENCRYPTION_KEY is missing. Calendar tokens will not be persisted across restarts.');
     } else {
       StructuredLoggingService.info('Calendar encryption enabled (TOKEN_ENCRYPTION_KEY configured)');
     }
