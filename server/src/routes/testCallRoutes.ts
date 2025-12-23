@@ -60,63 +60,6 @@ router.post('/start', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
 });
 
 /**
- * GET /api/test-call/:sessionId/transcript
- * Get live transcript for test call
- */
-router.get('/:sessionId/transcript', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { sessionId } = req.params;
-
-    // Get call session by call_sid (sessionId is call_sid for WebRTC)
-    const { data: session } = await supabaseAdmin
-      .from('call_sessions')
-      .select('transcript_json')
-      .eq('call_sid', sessionId)
-      .maybeSingle();
-
-    if (!session) {
-      return res.status(404).json({ error: 'Call session not found' });
-    }
-
-    res.json({
-      success: true,
-      transcript: session.transcript_json || [],
-    });
-  } catch (error: any) {
-    logger.error('test_call.transcript_error', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * GET /api/test-call/:sessionId/recording
- * Get recording URL for test call
- */
-router.get('/:sessionId/recording', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { sessionId } = req.params;
-
-    const { data: session } = await supabaseAdmin
-      .from('call_sessions')
-      .select('recording_url')
-      .eq('call_sid', sessionId)
-      .maybeSingle();
-
-    if (!session) {
-      return res.status(404).json({ error: 'Call session not found' });
-    }
-
-    res.json({
-      success: true,
-      recording_url: session.recording_url || null,
-    });
-  } catch (error: any) {
-    logger.error('test_call.recording_error', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
  * GET /api/test-call/config
  * Get FreeSWITCH WebSocket configuration for test calls
  */
@@ -164,6 +107,7 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
  * POST /api/v1/test-call/chat-message
  * Handle chat message in test call (text input with voice response)
  * Agent responds with text + TTS audio (always voice mode)
+ * IMPORTANT: This route must be defined BEFORE parametrized routes like /:sessionId/*
  */
 router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -253,6 +197,64 @@ router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedReques
       success: false,
       error: error.message || 'Failed to process chat message',
     });
+  }
+});
+
+/**
+ * GET /api/test-call/:sessionId/transcript
+ * Get live transcript for test call
+ * IMPORTANT: Parametrized routes must come AFTER specific routes like /chat-message
+ */
+router.get('/:sessionId/transcript', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    // Get call session by call_sid (sessionId is call_sid for WebRTC)
+    const { data: session } = await supabaseAdmin
+      .from('call_sessions')
+      .select('transcript_json')
+      .eq('call_sid', sessionId)
+      .maybeSingle();
+
+    if (!session) {
+      return res.status(404).json({ error: 'Call session not found' });
+    }
+
+    res.json({
+      success: true,
+      transcript: session.transcript_json || [],
+    });
+  } catch (error: any) {
+    logger.error('test_call.transcript_error', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/test-call/:sessionId/recording
+ * Get recording URL for test call
+ */
+router.get('/:sessionId/recording', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    const { data: session } = await supabaseAdmin
+      .from('call_sessions')
+      .select('recording_url')
+      .eq('call_sid', sessionId)
+      .maybeSingle();
+
+    if (!session) {
+      return res.status(404).json({ error: 'Call session not found' });
+    }
+
+    res.json({
+      success: true,
+      recording_url: session.recording_url || null,
+    });
+  } catch (error: any) {
+    logger.error('test_call.recording_error', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
