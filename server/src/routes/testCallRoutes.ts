@@ -7,6 +7,8 @@ import { Router, Request, Response } from 'express';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { logger, redact } from '../utils/logger';
 import { verifySupabaseAuth, AuthenticatedRequest } from '../middleware/supabaseAuth';
+import { agentCore } from '../core/agent/agentCore';
+import { ttsService } from '../services/ttsService';
 
 const router = Router();
 
@@ -154,6 +156,102 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
     res.status(500).json({ 
       success: false,
       error: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/v1/test-call/chat-message
+ * Handle chat message in test call (text input with voice response)
+ * Agent responds with text + TTS audio (always voice mode)
+ */
+router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { location_id, text, call_sid } = req.body;
+
+    if (!location_id || !text) {
+      return res.status(400).json({
+        success: false,
+        error: 'location_id and text are required',
+      });
+    }
+
+    // Generate call_sid if not provided (for chat-only mode)
+    const effectiveCallSid = call_sid || `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    logger.info('test_call.chat_message', redact({
+      location_id,
+      textLength: text.length,
+      call_sid: effectiveCallSid,
+    }));
+
+    // Step 1: Get agent response using AgentCore (same as voice mode)
+    const agentResponse = await agentCore.handleMessage({
+      locationId: location_id,
+      channel: 'voice', // Use voice channel for voice-optimized responses
+      externalUserId: `test_call_${effectiveCallSid}`,
+      text: text.trim(),
+      metadata: {
+        call_sid: effectiveCallSid,
+        test_call: true,
+        chat_mode: true,
+      },
+    });
+
+    // Step 2: Get voice preset for location
+    const { data: agentConfig } = await supabaseAdmin
+      .from('agent_configs')
+      .select('voice_profile_id')
+      .eq('location_id', location_id)
+      .maybeSingle();
+
+    let voicePreset = 'SwissProfessionalDE'; // Default
+    if (agentConfig?.voice_profile_id) {
+      const { data: voiceProfile } = await supabaseAdmin
+        .from('voice_profiles')
+        .select('preset')
+        .eq('id', agentConfig.voice_profile_id)
+        .maybeSingle();
+
+      if (voiceProfile?.preset) {
+        voicePreset = voiceProfile.preset;
+      }
+    }
+
+    // Step 3: Generate TTS audio
+    const audioPath = await ttsService.synthesizeToFile(
+      agentResponse.text,
+      voicePreset,
+      { language: 'de', speed: 1.0 }
+    );
+
+    // Step 4: Convert local file path to HTTP URL
+    const path = require('path');
+    const filename = path.basename(audioPath);
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://real-aidevelo-ai.onrender.com';
+    const audioUrl = `${publicBaseUrl}/api/v1/freeswitch/audio/${filename}`;
+
+    logger.info('test_call.chat_message_complete', redact({
+      location_id,
+      textLength: agentResponse.text.length,
+      audioUrl,
+      hasToolCalls: !!agentResponse.toolCalls && agentResponse.toolCalls.length > 0,
+    }));
+
+    res.json({
+      success: true,
+      text: agentResponse.text,
+      audio_url: audioUrl,
+      toolCalls: agentResponse.toolCalls,
+    });
+  } catch (error: any) {
+    logger.error('test_call.chat_message_error', error, redact({
+      location_id: req.body?.location_id,
+    }));
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process chat message',
     });
   }
 });
