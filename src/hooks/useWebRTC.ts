@@ -152,20 +152,8 @@ export function useWebRTC(options: UseWebRTCOptions) {
 
       userAgentRef.current = userAgent;
 
-      // Listen for transport state changes using UserAgent delegate
-      userAgent.delegate = {
-        onTransportError: (error: Error) => {
-          console.error('[useWebRTC] Transport error:', error);
-          setState(prev => ({
-            ...prev,
-            isConnected: false,
-            callStatus: 'error',
-            error: 'Verbindung zu FreeSWITCH verloren. Bitte erneut verbinden.',
-          }));
-        },
-      };
-
       // Connect - wait for transport to be ready
+      // Transport errors will be caught in the try/catch block below
       await userAgent.start();
 
       // Wait for transport to be connected
