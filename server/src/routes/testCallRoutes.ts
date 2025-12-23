@@ -138,7 +138,7 @@ router.post('/chat-message', verifySupabaseAuth, async (req: AuthenticatedReques
         externalUserId: `test_call_${effectiveCallSid}`,
         text: text.trim(),
         metadata: {
-          ...metadata,
+          ...(metadata || {}),
           call_sid: effectiveCallSid,
           test_call: true,
           chat_mode: true,
