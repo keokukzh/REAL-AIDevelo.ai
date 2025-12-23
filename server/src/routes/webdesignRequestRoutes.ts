@@ -79,6 +79,7 @@ router.post('/:id/request-info', async (req: Request, res: Response, next: NextF
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       missingInfo,
     });
     
@@ -136,6 +137,7 @@ router.post('/:id/send-deposit-link', async (req: Request, res: Response, next: 
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       depositPaymentLink: payment.paymentLink,
     });
     
@@ -152,6 +154,7 @@ router.post('/:id/send-deposit-link', async (req: Request, res: Response, next: 
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       depositPaymentLink: payment.paymentLink,
     });
     
@@ -223,6 +226,7 @@ router.post('/:id/send-preview', async (req: Request, res: Response, next: NextF
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       previewUrl,
     });
     
@@ -280,6 +284,7 @@ router.post('/:id/send-final-payment-link', async (req: Request, res: Response, 
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       finalPaymentLink: payment.paymentLink,
     });
     
@@ -329,6 +334,7 @@ router.post('/:id/confirm-final-payment', async (req: Request, res: Response, ne
       customerEmail: request.customer_email,
       requestId: request.id,
       requestType: request.request_type,
+      projectDescription: request.project_description,
       loginCredentials,
     });
     
