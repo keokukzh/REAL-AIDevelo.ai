@@ -4,6 +4,8 @@ import { InternalServerError } from '../utils/errors';
 import { webdesignContactSchema, WebdesignContactRequest } from '../types/webdesign';
 import { validateRequest } from '../middleware/validateRequest';
 import { sendMail } from '../services/emailService';
+import { createWebdesignRequest } from '../services/webdesignRequestService';
+import { getNewRequestEmail } from '../services/webdesignEmailTemplates';
 
 const router = Router();
 
@@ -97,57 +99,35 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
     const { name, email, phone, company, requestType, currentWebsiteUrl, message }: WebdesignContactRequest = req.body;
     const files = req.files as Express.Multer.File[] || [];
 
-    // Prepare email content
-    const requestTypeLabel = requestType === 'new' ? 'Neue Website' : 'Website Redesign';
-    const emailSubject = `[Webdesign Anfrage] ${requestTypeLabel} - ${name}`;
-    
-    // Build email text
-    let emailTextParts = [
-      `Webdesign-Anfrage von ${name} (${email})`,
-      '',
-      `Art: ${requestTypeLabel}`,
-    ];
-    if (company) {
-      emailTextParts.push(`Firma: ${company}`);
-    }
-    if (phone) {
-      emailTextParts.push(`Telefon: ${phone}`);
-    }
-    if (requestType === 'redesign' && currentWebsiteUrl) {
-      emailTextParts.push(`Aktuelle Website: ${currentWebsiteUrl}`);
-    }
-    emailTextParts.push(
-      '',
-      `Nachricht:\n${message}`,
-      '',
-      '---',
-      'Preis: 500 CHF',
-      `Eingereicht am: ${new Date().toISOString()}`
-    );
-    const emailText = emailTextParts.join('\n');
-    
-    // Build email HTML
-    const companyHtml = company ? `<p><strong>Firma:</strong> ${company}</p>` : '';
-    const phoneHtml = phone ? `<p><strong>Telefon:</strong> ${phone}</p>` : '';
-    const currentWebsiteHtml = (requestType === 'redesign' && currentWebsiteUrl) 
-      ? `<p><strong>Aktuelle Website:</strong> <a href="${currentWebsiteUrl}" target="_blank" rel="noopener noreferrer">${currentWebsiteUrl}</a></p>` 
-      : '';
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #DA291C;">Webdesign-Anfrage</h2>
-        <p><strong>Von:</strong> ${name} (${email})</p>
-        <p><strong>Art:</strong> ${requestTypeLabel}</p>
-        ${companyHtml}
-        ${phoneHtml}
-        ${currentWebsiteHtml}
-        <p><strong>Preis:</strong> 500 CHF</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p><strong>Nachricht:</strong></p>
-        <p style="white-space: pre-wrap;">${message}</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">Eingereicht am: ${new Date().toISOString()}</p>
-      </div>
-    `;
+    // Save to database
+    const fileMetadata = files.map(file => ({
+      filename: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype || 'application/octet-stream',
+    }));
+
+    const webdesignRequest = await createWebdesignRequest({
+      customer_name: name,
+      customer_email: email,
+      customer_phone: phone,
+      company: company,
+      request_type: requestType,
+      current_website_url: currentWebsiteUrl,
+      project_description: message,
+      files: fileMetadata,
+    });
+
+    // Prepare email content using template
+    const emailTemplate = getNewRequestEmail({
+      customerName: name,
+      customerEmail: email,
+      requestId: webdesignRequest.id,
+      requestType: requestType,
+      company: company,
+      phone: phone,
+      currentWebsiteUrl: currentWebsiteUrl,
+      projectDescription: message,
+    });
 
     // Prepare attachments from uploaded files
     const attachments = files.map((file) => ({
@@ -180,9 +160,9 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
     // Send email to support with attachments
     const emailResult = await sendMail({
       to: ['support@aidevelo.ai'],
-      subject: emailSubject,
-      text: emailText + fileInfoText,
-      html: emailHtml + fileInfoHtml,
+      subject: emailTemplate.subject,
+      text: emailTemplate.text + fileInfoText,
+      html: emailTemplate.html + fileInfoHtml,
       attachments: attachments,
     });
 
@@ -192,6 +172,7 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
     }
 
     console.log('[Webdesign] Contact request submitted', {
+      id: webdesignRequest.id,
       name,
       email,
       requestType,
@@ -201,6 +182,10 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
 
     res.json({
       success: true,
+      data: {
+        requestId: webdesignRequest.id,
+        status: webdesignRequest.status,
+      },
       message: 'Ihre Webdesign-Anfrage wurde erfolgreich übermittelt. Wir melden uns innerhalb von 24 Stunden bei Ihnen.',
     });
   } catch (error) {

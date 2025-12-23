@@ -5,6 +5,7 @@ import { ROUTES } from '../config/navigation';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { useAuthContext } from '../contexts/AuthContext';
 import { SetupWizard } from '../components/dashboard/SetupWizard';
+import { PreviewBanner } from '../components/dashboard/PreviewBanner';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
@@ -72,6 +73,15 @@ export const DashboardPage = () => {
     if (error && 'status' in error && error.status === 401) {
       logout();
       navigate(ROUTES.LOGIN, { replace: true });
+    } else if (error) {
+      // Log other errors but don't crash the dashboard
+      const errorMessage = extractErrorMessage(error);
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        console.warn('[DashboardPage] Network error - dashboard may show limited data:', errorMessage);
+        // Don't show toast for network errors on initial load - user might be offline
+      } else {
+        console.error('[DashboardPage] Dashboard error:', error);
+      }
     }
   }, [error, logout, navigate]);
 
@@ -284,12 +294,12 @@ export const DashboardPage = () => {
   const today = new Date();
   const todayDateString = today.toDateString();
   const weekEnd = React.useMemo(() => addDays(today, 7), [todayDateString]);
-  const calendarConnected = overview?.status?.calendar === 'connected';
+  const calendarConnected = effectiveOverview?.status?.calendar === 'connected';
   const { events: calendarEvents, isLoading: isLoadingEvents } = useCalendarEvents({
-    locationId: overview?.location?.id || '',
+    locationId: effectiveOverview?.location?.id || '',
     start: startOfDay(today),
     end: endOfDay(weekEnd),
-    enabled: calendarConnected && !!overview?.location?.id,
+    enabled: calendarConnected && !!effectiveOverview?.location?.id,
   });
 
   // Get next 5 upcoming events
@@ -308,29 +318,32 @@ export const DashboardPage = () => {
       .slice(0, 5);
   }, [calendarEvents]);
 
+  // Use displayOverview for all derived values (allows dashboard to work even with network errors)
+  const effectiveOverview = displayOverview;
+  
   // Compute derived values - must be before early returns
-  const userName = React.useMemo(() => user?.email || overview?.user?.email || 'Benutzer', [user?.email, overview?.user?.email]);
-  const isAgentActive = React.useMemo(() => overview?.agent_config?.setup_state === 'ready', [overview?.agent_config?.setup_state]);
+  const userName = React.useMemo(() => user?.email || effectiveOverview?.user?.email || 'Benutzer', [user?.email, effectiveOverview?.user?.email]);
+  const isAgentActive = React.useMemo(() => effectiveOverview?.agent_config?.setup_state === 'ready', [effectiveOverview?.agent_config?.setup_state]);
   const showWizard = React.useMemo(() => !isAgentActive, [isAgentActive]);
 
   // Map data for new UI (memoized to prevent recalculation on every render)
-  const kpis = React.useMemo(() => overview ? mapOverviewToKPIs(overview) : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' }, [overview]);
-  const chartData = React.useMemo(() => overview?.recent_calls ? mapCallsToChartData(overview.recent_calls) : [], [overview?.recent_calls]);
-  const recentCallsTableData = React.useMemo(() => overview?.recent_calls ? overview.recent_calls.map(mapCallToTableRow) : [], [overview?.recent_calls]);
+  const kpis = React.useMemo(() => effectiveOverview ? mapOverviewToKPIs(effectiveOverview) : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' }, [effectiveOverview]);
+  const chartData = React.useMemo(() => effectiveOverview?.recent_calls ? mapCallsToChartData(effectiveOverview.recent_calls) : [], [effectiveOverview?.recent_calls]);
+  const recentCallsTableData = React.useMemo(() => effectiveOverview?.recent_calls ? effectiveOverview.recent_calls.map(mapCallToTableRow) : [], [effectiveOverview?.recent_calls]);
 
   // Determine system health status (memoized)
   const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => {
     // Use gateway_health from backend if available (more accurate)
-    if (overview?.gateway_health) {
-      return overview.gateway_health;
+    if (effectiveOverview?.gateway_health) {
+      return effectiveOverview.gateway_health;
     }
     // Fallback to phone status-based health
-    return overview?.status?.phone === 'connected' ? 'ok' : overview?.status?.phone === 'needs_compliance' ? 'warning' : 'error';
-  }, [overview?.gateway_health, overview?.status?.phone]);
+    return effectiveOverview?.status?.phone === 'connected' ? 'ok' : effectiveOverview?.status?.phone === 'needs_compliance' ? 'warning' : 'error';
+  }, [effectiveOverview?.gateway_health, effectiveOverview?.status?.phone]);
   
   const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
-    overview?.status?.calendar === 'connected' ? 'ok' : 'error',
-    [overview?.status?.calendar]
+    effectiveOverview?.status?.calendar === 'connected' ? 'ok' : 'error',
+    [effectiveOverview?.status?.calendar]
   );
   
   // Memoize callbacks to prevent unnecessary re-renders
@@ -385,21 +398,61 @@ export const DashboardPage = () => {
     );
   }
 
-  if (error || !overview) {
+  // Show error state only if it's not a network error (network errors are handled gracefully)
+  const isNetworkError = error && (
+    extractErrorMessage(error).includes('Failed to fetch') || 
+    extractErrorMessage(error).includes('NetworkError') ||
+    extractErrorMessage(error).includes('Network request failed')
+  );
+  
+  // If it's a network error, show dashboard with limited functionality instead of error screen
+  // Use empty/default data to allow dashboard to render
+  const safeOverview = overview || {
+    user: { id: '', email: user?.email || null },
+    organization: { id: '', name: '' },
+    location: { id: '', name: '', timezone: 'Europe/Zurich' },
+    agent_config: {
+      id: '',
+      eleven_agent_id: null,
+      setup_state: 'needs_setup',
+      persona_gender: null,
+      persona_age_range: null,
+      goals_json: [],
+      services_json: [],
+      business_type: null,
+    },
+    status: {
+      agent: 'needs_setup' as const,
+      phone: 'not_connected' as const,
+      calendar: 'not_connected' as const,
+    },
+    recent_calls: [],
+  };
+  
+  // Only show error screen for non-network errors
+  if ((error && !isNetworkError) || (!overview && !isLoading && !isNetworkError)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
-          <p className="text-gray-400 mb-4">
-            {error instanceof Error ? error.message : 'Unbekannter Fehler'}
-          </p>
-          <Button onClick={() => globalThis.location.reload()}>
-            Seite neu laden
-          </Button>
-        </div>
+      <div className="min-h-screen bg-background flex font-sans text-white relative">
+        <SideNav />
+        <main className="flex-1 lg:ml-64 flex flex-col min-w-0">
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center max-w-md">
+              <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
+              <p className="text-gray-400 mb-4">
+                {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+              </p>
+              <Button onClick={() => refetch()}>
+                Erneut versuchen
+              </Button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
+  
+  // Use safe overview for rendering (allows dashboard to work even with network errors)
+  const displayOverview = overview || safeOverview;
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
@@ -448,6 +501,9 @@ export const DashboardPage = () => {
 
         {/* Dashboard Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+          {/* Preview Banner - Voice Agents Coming Soon */}
+          <PreviewBanner onExploreAgents={handleTestAgent} />
+
           {/* Setup Wizard (shown when setup_state != 'ready') */}
           {showWizard && (
             <div className="mb-8">
@@ -522,7 +578,7 @@ export const DashboardPage = () => {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            {overview.calendar_provider ? `${overview.calendar_provider.charAt(0).toUpperCase() + overview.calendar_provider.slice(1)} Calendar` : 'Google Calendar'}
+                            {effectiveOverview.calendar_provider ? `${effectiveOverview.calendar_provider.charAt(0).toUpperCase() + effectiveOverview.calendar_provider.slice(1)} Calendar` : 'Google Calendar'}
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleDisconnectCalendar(); }} 
                               className="ml-1 p-0.5 hover:bg-emerald-500/20 rounded text-emerald-400 transition-colors"
@@ -549,9 +605,9 @@ export const DashboardPage = () => {
                 >
                   {calendarConnected ? (
                     <div className="space-y-4">
-                      {overview.calendar_connected_email && (
+                      {effectiveOverview.calendar_connected_email && (
                         <div className="text-sm text-gray-300 mb-3">
-                          Verbunden mit: <span className="font-medium">{overview.calendar_connected_email}</span>
+                          Verbunden mit: <span className="font-medium">{effectiveOverview.calendar_connected_email}</span>
                         </div>
                       )}
                       
@@ -756,7 +812,7 @@ export const DashboardPage = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
                           {recentCallsTableData.slice(0, 10).map((row) => {
-                            const originalCall = overview.recent_calls.find(c => c.id === row.id);
+                            const originalCall = effectiveOverview.recent_calls.find(c => c.id === row.id);
                             return (
                               <tr 
                                 key={row.id} 
@@ -845,7 +901,7 @@ export const DashboardPage = () => {
                         ? 'Agent ist aktiv und bereit für Anrufe.'
                         : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
                     </p>
-                    {!overview.agent_config.eleven_agent_id && (
+                    {!effectiveOverview.agent_config.eleven_agent_id && (
                       <div className="mt-3 pt-3 border-t border-slate-700/50">
                         <div className="flex items-center gap-2 text-xs text-amber-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
@@ -858,12 +914,12 @@ export const DashboardPage = () => {
                     <div className="grid grid-cols-2 gap-3 relative z-10">
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
                       <div className="text-[10px] text-gray-500 uppercase mb-1">Branche</div>
-                      <div className="font-medium text-sm text-white">{overview.agent_config.business_type || 'Nicht gesetzt'}</div>
+                      <div className="font-medium text-sm text-white">{effectiveOverview.agent_config.business_type || 'Nicht gesetzt'}</div>
                     </div>
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
                       <div className="text-[10px] text-gray-500 uppercase mb-1">Nummer</div>
                       <div className="font-medium text-sm font-mono text-white">
-                        {overview.phone_number ? `${overview.phone_number.substring(0, 8)}...` : 'Nicht verbunden'}
+                        {effectiveOverview.phone_number ? `${effectiveOverview.phone_number.substring(0, 8)}...` : 'Nicht verbunden'}
                       </div>
                     </div>
                   </div>
@@ -885,7 +941,7 @@ export const DashboardPage = () => {
                       icon={Phone} 
                       label="Telefon verbinden" 
                       onClick={handleConnectPhone}
-                      disabled={overview.status.phone === 'connected'}
+                      disabled={effectiveOverview.status.phone === 'connected'}
                     />
                     <QuickActionButton 
                       icon={Calendar} 
@@ -912,41 +968,41 @@ export const DashboardPage = () => {
                   <div className="space-y-3.5">
                     <HealthItem label="Twilio Gateway" status={phoneHealth} />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
-                    <HealthItem label="ElevenLabs TTS" status={overview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
+                    <HealthItem label="ElevenLabs TTS" status={effectiveOverview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
                     <HealthItem label="Supabase DB" status="ok" />
                   </div>
                   
                   {/* ElevenLabs Credits Display */}
-                  {overview.elevenlabs_quota && (
+                  {effectiveOverview.elevenlabs_quota && (
                     <div className="mt-4 pt-4 border-t border-slate-700/50">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-gray-400 uppercase tracking-wider font-display">ElevenLabs Credits</span>
                         <span className={`text-xs font-semibold ${
-                          overview.elevenlabs_quota.status === 'critical' ? 'text-red-400' :
-                          overview.elevenlabs_quota.status === 'warning' ? 'text-yellow-400' :
+                          effectiveOverview.elevenlabs_quota.status === 'critical' ? 'text-red-400' :
+                          effectiveOverview.elevenlabs_quota.status === 'warning' ? 'text-yellow-400' :
                           'text-green-400'
                         }`}>
-                          {overview.elevenlabs_quota.remaining.toLocaleString()} / {overview.elevenlabs_quota.character_limit.toLocaleString()}
+                          {effectiveOverview.elevenlabs_quota.remaining.toLocaleString()} / {effectiveOverview.elevenlabs_quota.character_limit.toLocaleString()}
                         </span>
                       </div>
                       <div className="w-full bg-slate-800/50 rounded-full h-2 overflow-hidden">
                         <div
                           className={`h-full transition-all ${
-                            overview.elevenlabs_quota.status === 'critical' ? 'bg-red-500' :
-                            overview.elevenlabs_quota.status === 'warning' ? 'bg-yellow-500' :
+                            effectiveOverview.elevenlabs_quota.status === 'critical' ? 'bg-red-500' :
+                            effectiveOverview.elevenlabs_quota.status === 'warning' ? 'bg-yellow-500' :
                             'bg-green-500'
                           }`}
-                          style={{ width: `${Math.min(overview.elevenlabs_quota.percentageUsed, 100)}%` }}
+                          style={{ width: `${Math.min(effectiveOverview.elevenlabs_quota.percentageUsed, 100)}%` }}
                         />
                       </div>
-                      {overview.elevenlabs_quota.warning && (
+                      {effectiveOverview.elevenlabs_quota.warning && (
                         <p className="text-xs text-yellow-400 mt-2">
-                          ⚠️ {overview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht
+                          ⚠️ {effectiveOverview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht
                         </p>
                       )}
-                      {overview.elevenlabs_quota.status === 'critical' && (
+                      {effectiveOverview.elevenlabs_quota.status === 'critical' && (
                         <p className="text-xs text-red-400 mt-2">
-                          🚨 Kritisch: {overview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht - Tests blockiert
+                          🚨 Kritisch: {effectiveOverview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht - Tests blockiert
                         </p>
                       )}
                     </div>
@@ -971,17 +1027,17 @@ export const DashboardPage = () => {
       <AgentTestModal
         isOpen={isAgentTestOpen}
         onClose={() => setIsAgentTestOpen(false)}
-        agentConfigId={overview.agent_config.id}
-        locationId={overview.location.id}
-        elevenAgentId={overview.agent_config.eleven_agent_id}
-        adminTestNumber={(overview.agent_config as any).admin_test_number || null}
+        agentConfigId={effectiveOverview.agent_config.id}
+        locationId={effectiveOverview.location.id}
+        elevenAgentId={effectiveOverview.agent_config.eleven_agent_id}
+        adminTestNumber={(effectiveOverview.agent_config as any).admin_test_number || null}
       />
 
       <PhoneConnectionModal
         isOpen={isPhoneConnectionOpen}
         onClose={() => setIsPhoneConnectionOpen(false)}
-        agentConfigId={overview.agent_config.id}
-        locationId={overview.location.id}
+        agentConfigId={effectiveOverview.agent_config.id}
+        locationId={effectiveOverview.location.id}
         onSuccess={() => {
           // Dashboard will automatically refresh via query invalidation
         }}
@@ -995,7 +1051,7 @@ export const DashboardPage = () => {
       <AvailabilityModal
         isOpen={isAvailabilityModalOpen}
         onClose={() => setIsAvailabilityModalOpen(false)}
-        locationId={overview.location.id}
+        locationId={effectiveOverview.location.id}
         onCreateAppointment={(slot) => {
           setSelectedSlot(slot);
           setIsAvailabilityModalOpen(false);
@@ -1011,7 +1067,7 @@ export const DashboardPage = () => {
           setSelectedEvent(null);
           queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
         }}
-        locationId={overview.location.id}
+        locationId={effectiveOverview.location.id}
         event={selectedEvent}
         initialSlot={selectedSlot}
       />

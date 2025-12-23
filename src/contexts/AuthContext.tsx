@@ -44,35 +44,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!password) {
       throw new Error('Password is required for login');
     }
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      // Provide user-friendly error messages
-      if (error.message.includes('Invalid API key') || error.message.includes('Invalid login credentials')) {
-        throw new Error('Ungültige Anmeldedaten. Bitte überprüfe E-Mail und Passwort.');
-      } else if (error.message.includes('Email not confirmed')) {
-        throw new Error('Bitte bestätige zuerst deine E-Mail-Adresse.');
-      } else if (error.message.includes('Too many requests')) {
-        throw new Error('Zu viele Anmeldeversuche. Bitte warte einen Moment.');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        // Handle network errors
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.');
+        }
+        // Provide user-friendly error messages
+        if (error.message.includes('Invalid API key') || error.message.includes('Invalid login credentials')) {
+          throw new Error('Ungültige Anmeldedaten. Bitte überprüfe E-Mail und Passwort.');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Bitte bestätige zuerst deine E-Mail-Adresse.');
+        } else if (error.message.includes('Too many requests')) {
+          throw new Error('Zu viele Anmeldeversuche. Bitte warte einen Moment.');
+        }
+        throw new Error(error.message || 'Anmeldung fehlgeschlagen');
       }
-      throw new Error(error.message || 'Anmeldung fehlgeschlagen');
+      
+      setSession(data.session);
+      setUser(data.user);
+    } catch (err: any) {
+      // Handle network/fetch errors
+      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError') || err?.name === 'TypeError') {
+        throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.');
+      }
+      throw err;
     }
-    setSession(data.session);
-    setUser(data.user);
   };
 
   const register = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) throw error;
-    // Note: Supabase requires email confirmation by default
-    // If email confirmation is disabled, session will be available immediately
-    setSession(data.session);
-    setUser(data.user);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        // Handle network errors
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.');
+        }
+        throw error;
+      }
+      
+      // Note: Supabase requires email confirmation by default
+      // If email confirmation is disabled, session will be available immediately
+      setSession(data.session);
+      setUser(data.user);
+    } catch (err: any) {
+      // Handle network/fetch errors
+      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError') || err?.name === 'TypeError') {
+        throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.');
+      }
+      throw err;
+    }
   };
 
   const loginWithMagicLink = async (email: string) => {

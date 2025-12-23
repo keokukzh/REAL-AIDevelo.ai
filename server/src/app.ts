@@ -89,6 +89,8 @@ import authRoutes from './routes/authRoutes';
 import enterpriseRoutes from './routes/enterpriseRoutes';
 import supportRoutes from './routes/supportRoutes';
 import webdesignRoutes from './routes/webdesignRoutes';
+import webdesignRequestRoutes from './routes/webdesignRequestRoutes';
+import testAgentsRoutes from './routes/testAgentsRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import devCalendarRoutes from './routes/devCalendarRoutes';
 import devRagRoutes from './routes/devRagRoutes';
@@ -437,6 +439,8 @@ v1Router.use('/auth', authRoutes);
 v1Router.use('/enterprise', enterpriseRoutes);
 v1Router.use('/support', supportRoutes);
 v1Router.use('/webdesign', webdesignRoutes);
+v1Router.use('/webdesign-requests', webdesignRequestRoutes);
+v1Router.use('/test-agents', testAgentsRoutes);
 v1Router.use('/calendar', calendarRoutes);
 v1Router.use('/rag', ragRoutes); // Auth applied per-route
 v1Router.use('/analytics', analyticsRoutes); // Auth applied per-route

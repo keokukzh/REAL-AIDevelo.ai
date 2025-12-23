@@ -5,6 +5,7 @@
 
 export const ROUTES = {
   HOME: '/',
+  VOICE_AGENTS: '/voice-agents',
   WEBDESIGN: '/webdesign',
   DASHBOARD: '/dashboard',
   LOGIN: '/login',
@@ -36,7 +37,7 @@ export const ROUTES = {
 export const NAVIGATION_ITEMS = {
   VOICE_AGENTS: {
     label: 'Voice Agents',
-    path: ROUTES.HOME,
+    path: ROUTES.VOICE_AGENTS,
     icon: null,
     ariaLabel: 'Zur Voice Agents Hauptseite navigieren',
   },
@@ -95,6 +96,12 @@ export interface RouteMeta {
  */
 export const ROUTE_META: Record<string, RouteMeta> = {
   [ROUTES.HOME]: {
+    title: 'Webdesign',
+    breadcrumb: 'Webdesign',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.VOICE_AGENTS]: {
     title: 'Voice Agents',
     breadcrumb: 'Voice Agents',
     group: 'public',

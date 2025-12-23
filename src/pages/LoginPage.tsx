@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ROUTES } from '../config/navigation';
+import { ConnectionDiagnostics } from '../components/auth/ConnectionDiagnostics';
+import { DevQuickLogin } from '../components/auth/DevQuickLogin';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -51,6 +53,12 @@ export const LoginPage = () => {
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
+      
+      // Check for network/fetch errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('Verbindungsfehler')) {
+        errorMessage = 'Verbindungsfehler. Bitte überprüfe:\n- Deine Internetverbindung\n- Ob der Backend-Server läuft\n- Die Supabase-Konfiguration';
+      }
+      
       setError(errorMessage);
       console.error('[LoginPage] Login error:', err);
     } finally {
@@ -81,6 +89,9 @@ export const LoginPage = () => {
     );
   }
 
+  const showConnectionError = error && (error.includes('Failed to fetch') || error.includes('Verbindungsfehler') || error.includes('NetworkError'));
+  const devBypassEnabled = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+
   return (
     <div className="min-h-screen bg-background text-white flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-gray-800 rounded-lg p-8">
@@ -95,12 +106,24 @@ export const LoginPage = () => {
             : 'Melde dich mit deinem Konto an'}
         </p>
 
+        {/* Dev Quick Login Info */}
+        {showConnectionError && devBypassEnabled && (
+          <div className="mb-4 p-3 bg-yellow-900/50 border border-yellow-500 rounded text-yellow-200 text-sm">
+            <strong>Dev-Modus aktiviert:</strong> Du kannst den Dev Quick Login Button (unten rechts) verwenden, um direkt zum Dashboard zu gelangen, ohne Supabase-Konfiguration.
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
             {error}
             {error.includes('Invalid API key') && (
               <div className="mt-2 text-xs text-red-300">
                 Hinweis: Bitte überprüfe die Supabase-Konfiguration in den Environment-Variablen.
+              </div>
+            )}
+            {(error.includes('Failed to fetch') || error.includes('Verbindungsfehler')) && (
+              <div className="mt-4">
+                <ConnectionDiagnostics />
               </div>
             )}
           </div>
@@ -218,6 +241,8 @@ export const LoginPage = () => {
           </div>
         </div>
       </div>
+      {/* Dev Quick Login Button */}
+      <DevQuickLogin />
     </div>
   );
 };

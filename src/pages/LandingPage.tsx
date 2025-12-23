@@ -2,22 +2,13 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../config/navigation';
 import { Navbar } from '../components/Navbar';
-import { Hero } from '../components/Hero';
+import { WebdesignHero } from '../components/WebdesignHero';
+import { WebdesignProcessFlow } from '../components/webdesign/WebdesignProcessFlow';
 import { SEO } from '../components/SEO';
 import { TrustSection } from '../components/TrustSection';
 import { Features } from '../components/Features';
-import { IndustryTabs } from '../components/IndustryTabs';
-import { DemoAudioSection } from '../components/DemoAudioSection';
-import { CaseStudies } from '../components/CaseStudies';
-import { ROICalculator } from '../components/ROICalculator';
-import { DemoSection } from '../components/DemoSection';
-import { Pricing } from '../components/Pricing';
-import { HowItWorks } from '../components/HowItWorks';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
-import { LeadCaptureForm } from '../components/LeadCaptureForm';
-import { SectionNav } from '../components/navigation/SectionNav';
-import { Integrations } from '../components/Integrations';
 import { RevealSection } from '../components/layout/RevealSection';
 import { useAuthContext } from '../contexts/AuthContext';
 
@@ -54,86 +45,61 @@ export const LandingPage = () => {
     requestAnimationFrame(() => scrollToTarget());
     navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate]);
-  const startOnboarding = (industry?: string) => {
-    // All onboarding/agent creation happens in Studio only
-    // Landing page only shows demo data and previews
-    navigate(ROUTES.DASHBOARD);
-  };
-
-  const scrollToLeadCapture = () => {
-    const target = document.getElementById('lead-capture');
-    if (target) {
-      const headerOffset = 80;
-      const elementPosition = target.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-    }
-  };
 
   return (
     <>
       <SEO />
-      <Navbar onStartOnboarding={startOnboarding} />
-      <SectionNav variant="sticky" />
+      <Navbar />
       <main>
-        {/* 1. Hero with proper CTA */}
-        <Hero onStartOnboarding={startOnboarding} />
+        {/* 1. Webdesign Hero - Primary Focus */}
+        <WebdesignHero />
         
-        {/* 2. Trust Indicators */}
+        {/* 2. Process Flow - Visual 4 Steps */}
+        <WebdesignProcessFlow />
+        
+        {/* 3. Trust Indicators */}
         <TrustSection />
-
-        {/* 2b. Audio Demos - HIGH IMPACT (Moved up) */}
-        <DemoAudioSection />
         
-        {/* 3. Features & Industries */}
+        {/* 4. Features */}
         <Features />
         
-        {/* 3b. Integrations */}
-        <Integrations />
-        
-        <IndustryTabs onStartOnboarding={startOnboarding} />
-        
-        {/* 4. Social Proof / Case Studies */}
-        <CaseStudies />
-        
-        {/* 5. ROI Calculator to show value */}
-        <ROICalculator />
-        
-        {/* 6. Demo Booking before Pricing */}
-        <DemoSection onStartOnboarding={startOnboarding} />
-        
-        {/* Lead Capture Form for demo requests */}
+        {/* 5. Lead Capture for Webdesign */}
         <RevealSection id="lead-capture" className="py-20 bg-gradient-to-b from-black via-slate-950 to-black relative overflow-hidden section-spacing">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
           <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start relative z-10">
             <div className="space-y-4">
-              <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide">
-                Demo & Beratung
+              <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-swiss-red/10 text-swiss-red text-xs font-semibold tracking-wide">
+                Webdesign Anfrage
               </p>
               <h2 className="text-3xl md:text-4xl font-bold font-display text-white">
-                Sichern Sie sich einen Rückruf innerhalb von 24h.
+                Starten Sie Ihr Webdesign-Projekt noch heute.
               </h2>
               <p className="text-gray-400 text-lg leading-relaxed">
-                Hinterlassen Sie Ihre Kontaktdaten – wir zeigen Ihnen, wie der Voice Agent in Ihrem Alltag Termine bucht,
-                Anrufe qualifiziert und keine Anfrage liegen bleibt.
+                Füllen Sie das Formular aus und erhalten Sie innerhalb von 24 Stunden eine Antwort. 
+                Wir sammeln alle Informationen für Ihr Projekt und starten nach der Anzahlung direkt mit der Umsetzung.
               </p>
               <ul className="space-y-2 text-sm text-gray-300">
-                <li>✓ Schweizerdeutsch & Hochdeutsch – empathisch und klar</li>
-                <li>✓ Nahtlose Kalender-Integration (Google, Outlook, Calendly)</li>
-                <li>✓ Sofort startklar mit Branchen-Templates</li>
+                <li>✓ Professionelle Umsetzung in 2-3 Wochen</li>
+                <li>✓ Responsive Design für alle Geräte</li>
+                <li>✓ SEO-Optimiert und schnell</li>
               </ul>
             </div>
-            <LeadCaptureForm />
+            <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+              <p className="text-white font-semibold mb-4">Jetzt anfragen</p>
+              <p className="text-gray-400 text-sm mb-6">
+                Besuchen Sie unsere Webdesign-Seite für das vollständige Anfrageformular.
+              </p>
+              <a
+                href={ROUTES.WEBDESIGN}
+                className="inline-flex items-center gap-2 bg-swiss-red hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Zum Webdesign-Formular
+              </a>
+            </div>
           </div>
         </RevealSection>
-
-        {/* 7. Pricing with Recommendation */}
-        <Pricing onStartOnboarding={startOnboarding} onOpenLeadCapture={scrollToLeadCapture} />
         
-        {/* 8. Process Explanation */}
-        <HowItWorks />
-        
-        {/* 9. Objection Handling */}
+        {/* 6. FAQ */}
         <FAQ />
       </main>
       <Footer />

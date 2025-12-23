@@ -5,6 +5,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 // Lazy load pages for code splitting
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const VoiceAgentPage = React.lazy(() => import('./pages/VoiceAgentPage').then(m => ({ default: m.VoiceAgentPage })));
 const OnboardingPage = React.lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -40,7 +41,6 @@ import { useCoreWebVitals } from './hooks/useCoreWebVitals';
 import { initScrollTracking, trackPageView } from './lib/analytics';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ElevenLabsWidget } from './components/ElevenLabsWidget';
 
 // Conditionally import ReactQueryDevtools only in development (it uses eval internally)
 // In production, this will be null and tree-shaken out of the bundle
@@ -128,7 +128,6 @@ function AppContent() {
   return (
     <>
       <ScrollToTop />
-      <ElevenLabsWidget />
       <DevQuickLogin />
               <div className="bg-background min-h-screen text-white selection:bg-accent selection:text-black">
                 <AnimatePresence mode='wait'>
@@ -136,6 +135,11 @@ function AppContent() {
                     <Route path="/" element={
                       <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <LandingPage />
+                      </Suspense>
+                    } />
+                    <Route path="/voice-agents" element={
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                        <VoiceAgentPage />
                       </Suspense>
                     } />
                     <Route path="/checkout" element={

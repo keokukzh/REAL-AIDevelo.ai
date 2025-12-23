@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 import { apiRequest, ApiRequestError } from '../services/api';
-import { CheckCircle2, AlertCircle, Paperclip, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Paperclip, X, Upload, Loader2 } from 'lucide-react';
 
 interface WebdesignContactFormProps {
   onSuccess?: () => void;
@@ -28,6 +28,8 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -35,6 +37,21 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
       file,
       id: `${Date.now()}-${Math.random()}`,
     }));
+    
+    // Simulate upload progress for each file
+    newFiles.forEach(({ id }) => {
+      setUploadProgress(prev => ({ ...prev, [id]: 0 }));
+      // Simulate progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setUploadProgress(prev => ({ ...prev, [id]: progress }));
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 50);
+    });
+    
     setSelectedFiles(prev => [...prev, ...newFiles]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -142,17 +159,83 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   if (success) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ 
+          type: 'spring',
+          stiffness: 200,
+          damping: 20
+        }}
         className="text-center p-8"
       >
-        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-green-500" />
+        {/* Confetti Effect */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-swiss-red rounded-full"
+              initial={{
+                x: '50%',
+                y: '50%',
+                opacity: 1,
+                scale: 1,
+              }}
+              animate={{
+                x: `${50 + (Math.random() - 0.5) * 200}%`,
+                y: `${50 + (Math.random() - 0.5) * 200}%`,
+                opacity: 0,
+                scale: 0,
+              }}
+              transition={{
+                duration: 1.5,
+                delay: i * 0.05,
+                ease: 'easeOut',
+              }}
+            />
+          ))}
         </div>
-        <h3 className="text-2xl font-bold mb-2">Vielen Dank!</h3>
-        <p className="text-gray-400 mb-4">
+
+        <motion.div
+          className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 relative"
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 200,
+            damping: 15,
+            delay: 0.2
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <CheckCircle2 className="w-8 h-8 text-green-500" />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 bg-green-500/30 rounded-full"
+            initial={{ scale: 0, opacity: 0.8 }}
+            animate={{ scale: 2, opacity: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          />
+        </motion.div>
+        <motion.h3
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="text-2xl font-bold mb-2"
+        >
+          Vielen Dank!
+        </motion.h3>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="text-gray-400 mb-4"
+        >
           Wir haben Ihre Webdesign-Anfrage erhalten und melden uns innerhalb von 24 Stunden bei Ihnen.
-        </p>
+        </motion.p>
       </motion.div>
     );
   }
@@ -164,33 +247,65 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
           <label htmlFor="webdesign-name" className="block text-sm text-gray-400 mb-2">
             Name *
           </label>
-          <input
-            id="webdesign-name"
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => { setError(null); setFormData({ ...formData, name: e.target.value }); }}
-            autoComplete="name"
-            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-swiss-red focus:ring-2 focus:ring-swiss-red/20 outline-none transition-colors"
-            placeholder="Max Mustermann"
-            disabled={loading}
-          />
+          <motion.div
+            className="relative"
+            animate={focusedField === 'name' ? { scale: 1.02 } : { scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <input
+              id="webdesign-name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => { setError(null); setFormData({ ...formData, name: e.target.value }); }}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField(null)}
+              autoComplete="name"
+              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-swiss-red focus:ring-2 focus:ring-swiss-red/20 outline-none transition-all duration-300 relative z-10"
+              placeholder="Max Mustermann"
+              disabled={loading}
+            />
+            {focusedField === 'name' && (
+              <motion.div
+                className="absolute inset-0 bg-swiss-red/10 rounded-lg blur-sm -z-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </motion.div>
         </div>
         <div>
           <label htmlFor="webdesign-email" className="block text-sm text-gray-400 mb-2">
             E-Mail *
           </label>
-          <input
-            id="webdesign-email"
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) => { setError(null); setFormData({ ...formData, email: e.target.value }); }}
-            autoComplete="email"
-            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-swiss-red focus:ring-2 focus:ring-swiss-red/20 outline-none transition-colors"
-            placeholder="max@muster.ch"
-            disabled={loading}
-          />
+          <motion.div
+            className="relative"
+            animate={focusedField === 'email' ? { scale: 1.02 } : { scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <input
+              id="webdesign-email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => { setError(null); setFormData({ ...formData, email: e.target.value }); }}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+              autoComplete="email"
+              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-swiss-red focus:ring-2 focus:ring-swiss-red/20 outline-none transition-all duration-300 relative z-10"
+              placeholder="max@muster.ch"
+              disabled={loading}
+            />
+            {focusedField === 'email' && (
+              <motion.div
+                className="absolute inset-0 bg-swiss-red/10 rounded-lg blur-sm -z-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </motion.div>
         </div>
       </div>
 
@@ -346,44 +461,90 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
           </div>
 
           {/* Selected Files List */}
-          {selectedFiles.length > 0 && (
-            <div className="space-y-2">
-              {selectedFiles.map((selectedFile) => (
-                <motion.div
-                  key={selectedFile.id}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Paperclip size={16} className="text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-white truncate">{selectedFile.file.name}</div>
-                      <div className="text-xs text-gray-400">{formatFileSize(selectedFile.file.size)}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(selectedFile.id)}
-                    disabled={loading}
-                    className="ml-3 p-1 hover:bg-white/10 rounded transition-colors"
-                    aria-label="Datei entfernen"
-                  >
-                    <X size={16} className="text-gray-400" />
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {selectedFiles.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2"
+              >
+                {selectedFiles.map((selectedFile) => {
+                  const progress = uploadProgress[selectedFile.id] || 100;
+                  return (
+                    <motion.div
+                      key={selectedFile.id}
+                      initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                      className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3 relative overflow-hidden"
+                    >
+                      {/* Upload Progress Bar */}
+                      {progress < 100 && (
+                        <motion.div
+                          className="absolute bottom-0 left-0 h-1 bg-swiss-red"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      )}
+                      
+                      <div className="flex items-center gap-3 flex-1 min-w-0 relative z-10">
+                        {progress < 100 ? (
+                          <Loader2 size={16} className="text-swiss-red flex-shrink-0 animate-spin" />
+                        ) : (
+                          <Upload size={16} className="text-green-400 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white truncate">{selectedFile.file.name}</div>
+                          <div className="text-xs text-gray-400">
+                            {formatFileSize(selectedFile.file.size)}
+                            {progress < 100 && ` • ${progress}%`}
+                          </div>
+                        </div>
+                      </div>
+                      <motion.button
+                        type="button"
+                        onClick={() => removeFile(selectedFile.id)}
+                        disabled={loading}
+                        className="ml-3 p-1 hover:bg-white/10 rounded transition-colors"
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        aria-label="Datei entfernen"
+                      >
+                        <X size={16} className="text-gray-400" />
+                      </motion.button>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-400">
-          <AlertCircle size={20} />
-          <span>{error}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, x: [0, -10, 10, -10, 0] }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ 
+              x: { duration: 0.5, type: 'spring', stiffness: 300 },
+              opacity: { duration: 0.3 }
+            }}
+            className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-400"
+          >
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 0.5 }}
+            >
+              <AlertCircle size={20} />
+            </motion.div>
+            <span>{error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
@@ -419,7 +580,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               Wird gesendet...
             </>
           ) : (
-            'Anfrage senden (500 CHF)'
+            'Anfrage senden (599 CHF)'
           )}
         </Button>
       </div>
