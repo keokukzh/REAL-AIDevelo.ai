@@ -87,9 +87,12 @@ export const TestCallPage: React.FC = () => {
     setChatInput('');
 
     try {
-      // Generate call_sid if not exists
+      // Generate call_sid if not exists (use local variable, not state)
+      const effectiveCallSid = chatCallSid || `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      
+      // Update state for next message
       if (!chatCallSid) {
-        setChatCallSid(`chat_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+        setChatCallSid(effectiveCallSid);
       }
 
       const response = await apiClient.post<{
@@ -105,7 +108,7 @@ export const TestCallPage: React.FC = () => {
       }>('/v1/test-call/chat-message', {
         location_id: locationId,
         text: text.trim(),
-        call_sid: chatCallSid,
+        call_sid: effectiveCallSid,
       });
 
       if (response.data.success) {
