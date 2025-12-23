@@ -88,14 +88,18 @@ router.post('/call/process-turn', async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('freeswitch.process_turn_error', error, redact({
       call_sid: req.body?.call_sid,
+      message: error.message,
+      stack: error.stack
     }));
 
-    // Return fallback response
+    // Return fallback response with debugging info
     res.json({
       success: false,
       audio_url: null,
       text: 'Entschuldigung, es ist ein Fehler aufgetreten.',
       error: error.message,
+      stack: error.stack,
+      hint: 'Check OpenAI API key and Supabase connection'
     });
   }
 });
