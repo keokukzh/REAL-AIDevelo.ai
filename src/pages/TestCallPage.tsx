@@ -3,7 +3,7 @@
  * WebRTC softphone for testing voice agent
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
@@ -71,8 +71,8 @@ export const TestCallPage: React.FC = () => {
     }
   }, [isInCall]);
 
-  // Handle chat message
-  const handleChatMessage = async (text: string) => {
+  // Handle chat message - use useCallback to ensure stable reference
+  const handleChatMessage = useCallback(async (text: string) => {
     if (!text.trim() || !locationId || isSendingChatMessage) return;
 
     setIsSendingChatMessage(true);
@@ -145,22 +145,29 @@ export const TestCallPage: React.FC = () => {
     } finally {
       setIsSendingChatMessage(false);
     }
-  };
+  }, [locationId, chatCallSid, isSendingChatMessage]);
 
-  // Handle Enter key in chat input
-  const handleChatInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Handle Enter key in chat input - must be defined after handleChatMessage
+  const handleChatInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleChatMessage(chatInput);
+      if (chatInput.trim()) {
+        handleChatMessage(chatInput);
+      }
     }
-  };
+  }, [chatInput, handleChatMessage]);
 
-  // Get combined transcript (voice or chat)
-  const combinedTranscript = mode === 'voice' ? transcript : chatMessages.map(msg => ({
-    role: msg.role,
-    text: msg.text,
-    timestamp: msg.timestamp,
-  }));
+  // Get combined transcript (voice or chat) - use useMemo to avoid re-computation
+  const combinedTranscript = useMemo(() => {
+    if (mode === 'voice') {
+      return transcript;
+    }
+    return chatMessages.map(msg => ({
+      role: msg.role,
+      text: msg.text,
+      timestamp: msg.timestamp,
+    }));
+  }, [mode, transcript, chatMessages]);
 
   // Render main action button based on connection and call state
   const renderMainButton = () => {
