@@ -16,50 +16,41 @@ setupObservability(config.otlpExporterEndpoint);
 let dbInitialized = false;
 if (config.databaseUrl) {
   try {
-    // Check if DATABASE_URL points to old/invalid project (pdxdgfxhpyefqyouotat)
-    const isOldProject = config.databaseUrl.includes('pdxdgfxhpyefqyouotat');
-    if (isOldProject) {
-      StructuredLoggingService.warn('DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
-      StructuredLoggingService.warn('Skipping legacy database connection - new code uses Supabase client directly');
-      StructuredLoggingService.warn('Remove DATABASE_URL from Render environment variables to avoid ENOTFOUND errors');
+    console.log('[Startup] Initializing legacy database connection...');
+    const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
+    console.log('[Startup] DATABASE_URL:', databaseUrl);
+    
+    // Validate connection string format
+    if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
+      StructuredLoggingService.error('Invalid DATABASE_URL format - must start with postgresql:// or postgres://', new Error('Invalid DATABASE_URL format'));
+      StructuredLoggingService.warn('Skipping legacy database connection');
       dbInitialized = false;
     } else {
-      console.log('[Startup] Initializing legacy database connection...');
-      const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
-      console.log('[Startup] DATABASE_URL:', databaseUrl);
-      
-      // Validate connection string format
-      if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
-        StructuredLoggingService.error('Invalid DATABASE_URL format - must start with postgresql:// or postgres://', new Error('Invalid DATABASE_URL format'));
-        StructuredLoggingService.warn('Skipping legacy database connection');
-        dbInitialized = false;
-      } else {
-        try {
-          initializeDatabase();
-          
-          // Test connection with more retries and better error reporting
-          testConnection(8).then(async (connected) => {
-            dbInitialized = connected;
-            if (connected) {
-              StructuredLoggingService.info('Legacy connection successful and ready');
-            } else {
-              StructuredLoggingService.error('Connection test failed after retries', new Error('Database connection test failed'));
-              StructuredLoggingService.error('Troubleshooting: 1. Verify DATABASE_URL is correct in environment variables');
-              StructuredLoggingService.error('Troubleshooting: 2. Ensure PostgreSQL service is running and accessible');
-              StructuredLoggingService.error('Troubleshooting: 3. Verify network connectivity and firewall rules');
-              StructuredLoggingService.error('Troubleshooting: 4. Check Supabase/Neon/Render dashboard for connection issues');
-              StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
-            }
-          }).catch((err) => {
-            StructuredLoggingService.error('Connection error', err instanceof Error ? err : new Error(String(err)), { message: err.message });
+      try {
+        initializeDatabase();
+        
+        // Test connection with more retries and better error reporting
+        testConnection(8).then(async (connected) => {
+          dbInitialized = connected;
+          if (connected) {
+            StructuredLoggingService.info('Legacy connection successful and ready');
+          } else {
+            StructuredLoggingService.error('Connection test failed after retries', new Error('Database connection test failed'));
+            StructuredLoggingService.error('Troubleshooting: 1. Verify DATABASE_URL is correct in environment variables');
+            StructuredLoggingService.error('Troubleshooting: 2. Ensure PostgreSQL service is running and accessible');
+            StructuredLoggingService.error('Troubleshooting: 3. Verify network connectivity and firewall rules');
+            StructuredLoggingService.error('Troubleshooting: 4. Check Supabase/Neon/Render dashboard for connection issues');
             StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
-            dbInitialized = false;
-          });
-        } catch (initError) {
-          StructuredLoggingService.error('Failed to initialize legacy connection', initError instanceof Error ? initError : new Error(String(initError)));
+          }
+        }).catch((err) => {
+          StructuredLoggingService.error('Connection error', err instanceof Error ? err : new Error(String(err)), { message: err.message });
           StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
           dbInitialized = false;
-        }
+        });
+      } catch (initError) {
+        StructuredLoggingService.error('Failed to initialize legacy connection', initError instanceof Error ? initError : new Error(String(initError)));
+        StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
+        dbInitialized = false;
       }
     }
   } catch (error) {
@@ -526,14 +517,6 @@ if (require.main === module) {
     if (!config.databaseUrl) {
       StructuredLoggingService.info('DATABASE_URL not set - skipping legacy migrations');
       StructuredLoggingService.info('New code uses Supabase client directly (no migrations needed)');
-      return;
-    }
-
-    // Check if DATABASE_URL points to old/invalid project
-    if (config.databaseUrl.includes('pdxdgfxhpyefqyouotat')) {
-      StructuredLoggingService.warn('DATABASE_URL points to old Supabase project (pdxdgfxhpyefqyouotat)');
-      StructuredLoggingService.warn('Skipping migrations to avoid ENOTFOUND errors');
-      StructuredLoggingService.warn('Remove DATABASE_URL from Render environment variables');
       return;
     }
 
