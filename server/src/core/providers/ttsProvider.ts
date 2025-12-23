@@ -207,9 +207,10 @@ export class OpenAITTSProvider implements TTSProvider {
     }
 
     try {
+      const voice = process.env.OPENAI_TTS_VOICE || 'alloy';
       const response = await this.client.audio.speech.create({
         model: 'tts-1',
-        voice: 'alloy',
+        voice: voice,
         input: text,
       });
 

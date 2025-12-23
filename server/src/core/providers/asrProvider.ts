@@ -90,11 +90,9 @@ export class OpenAIWhisperProvider implements ASRProvider {
     }
 
     try {
-      // OpenAI Whisper expects a File-like object
-      // Convert Buffer to Uint8Array, then to Blob, then to File
-      const uint8Array = new Uint8Array(audio);
-      const blob = new Blob([uint8Array], { type: 'audio/wav' });
-      const file = new File([blob], 'audio.wav', { type: 'audio/wav' });
+      // Use openai.toFile for better Node.js compatibility
+      const { toFile } = require('openai');
+      const file = await toFile(audio, 'audio.wav', { type: 'audio/wav' });
       
       const response = await this.client.audio.transcriptions.create({
         file: file,
