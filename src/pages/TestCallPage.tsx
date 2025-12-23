@@ -3,26 +3,14 @@
  * WebRTC softphone for testing voice agent
  */
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
+import { useAgentChat, ChatMessage } from '../hooks/useAgentChat';
 import { Phone, PhoneOff, Loader, MessageSquare, Mic } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
 
 type TestMode = 'voice' | 'chat';
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  text: string;
-  timestamp: string;
-  toolCalls?: Array<{
-    name: string;
-    arguments: any;
-    result?: any;
-    error?: string;
-  }>;
-}
 
 export const TestCallPage: React.FC = () => {
   const locationId = useLocationId();
@@ -30,11 +18,18 @@ export const TestCallPage: React.FC = () => {
   const agentId = overview?.agent_config?.id;
 
   const [mode, setMode] = useState<TestMode>('voice');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isSendingChatMessage, setIsSendingChatMessage] = useState(false);
-  const [chatCallSid, setChatCallSid] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Chat mode hook
+  const {
+    messages: chatMessages,
+    input: chatInput,
+    setInput: setChatInput,
+    isSending: isSendingChatMessage,
+    sendMessage: sendChatMessage,
+    audioRef,
+  } = useAgentChat({
+    locationId: locationId || '',
+  });
 
   const {
     isConnected,
@@ -71,91 +66,15 @@ export const TestCallPage: React.FC = () => {
     }
   }, [isInCall]);
 
-  // Handle chat message - use useCallback to ensure stable reference
-  const handleChatMessage = useCallback(async (text: string) => {
-    if (!text.trim() || !locationId || isSendingChatMessage) return;
-
-    setIsSendingChatMessage(true);
-
-    // Add user message to chat
-    const userMessage: ChatMessage = {
-      role: 'user',
-      text: text.trim(),
-      timestamp: new Date().toISOString(),
-    };
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
-
-    try {
-      // Generate call_sid if not exists (use local variable, not state)
-      const effectiveCallSid = chatCallSid || `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      
-      // Update state for next message
-      if (!chatCallSid) {
-        setChatCallSid(effectiveCallSid);
-      }
-
-      const response = await apiClient.post<{
-        success: boolean;
-        text: string;
-        audio_url: string;
-        toolCalls?: Array<{
-          name: string;
-          arguments: any;
-          result?: any;
-          error?: string;
-        }>;
-      }>('/v1/test-call/chat-message', {
-        location_id: locationId,
-        text: text.trim(),
-        call_sid: effectiveCallSid,
-      });
-
-      if (response.data.success) {
-        // Add assistant message
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          text: response.data.text,
-          timestamp: new Date().toISOString(),
-          toolCalls: response.data.toolCalls,
-        };
-        setChatMessages(prev => [...prev, assistantMessage]);
-
-        // Play audio response
-        if (response.data.audio_url && audioRef.current) {
-          audioRef.current.src = response.data.audio_url;
-          audioRef.current.play().catch(err => {
-            console.error('Failed to play audio:', err);
-          });
-        }
-      } else {
-        throw new Error('Failed to get response');
-      }
-    } catch (error: any) {
-      console.error('[TestCallPage] Chat message error:', error);
-      const errorMessage = error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
-      
-      // Add error message
-      const errorMsg: ChatMessage = {
-        role: 'assistant',
-        text: `Fehler: ${errorMessage}`,
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsSendingChatMessage(false);
-    }
-  }, [locationId, chatCallSid, isSendingChatMessage]);
-
-  // Handle Enter key in chat input - must be defined after handleChatMessage
+  // Handle Enter key in chat input
   const handleChatInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (chatInput.trim()) {
-        handleChatMessage(chatInput);
+        sendChatMessage();
       }
     }
-  }, [chatInput, handleChatMessage]);
+  }, [chatInput, sendChatMessage]);
 
   // Get combined transcript (voice or chat) - use useMemo to avoid re-computation
   const combinedTranscript = useMemo(() => {
@@ -339,7 +258,7 @@ export const TestCallPage: React.FC = () => {
                   disabled={isSendingChatMessage || !locationId}
                 />
                 <button
-                  onClick={() => handleChatMessage(chatInput)}
+                  onClick={() => sendChatMessage()}
                   disabled={!chatInput.trim() || isSendingChatMessage || !locationId}
                   className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
