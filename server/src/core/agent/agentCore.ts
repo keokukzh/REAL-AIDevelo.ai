@@ -233,9 +233,18 @@ export class AgentCore {
         channel,
         externalUserId,
         textLength: text.length,
+        errorMessage: error.message,
+        errorStack: error.stack,
       }));
 
-      // Return a safe fallback response
+      // In test mode, return a more detailed error message to help debugging
+      if (metadata?.test_call) {
+        return {
+          text: `Fehler beim Verarbeiten der Nachricht: ${error.message}. Bitte stellen Sie sicher, dass alle API-Keys (z.B. OPENAI_API_KEY) korrekt konfiguriert sind.`,
+        };
+      }
+
+      // Return a safe fallback response for production
       return {
         text: 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.',
       };

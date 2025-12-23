@@ -25,12 +25,13 @@ validateEnv();
 export const voiceAgentConfig = {
   // LLM Configuration
   llm: {
-    provider: (process.env.LLM_PROVIDER || 'openai') as 'openai' | 'anthropic' | 'deepseek',
-    apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.DEEPSEEK_API_KEY || '',
-    model: process.env.LLM_MODEL || 'gpt-4o-mini',
+    provider: (process.env.LLM_PROVIDER || 'openai') as 'openai' | 'anthropic' | 'deepseek' | 'vllm',
+    apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.VLLM_API_KEY || '',
+    model: process.env.LLM_MODEL || process.env.VLLM_MODEL || 'gpt-4o-mini',
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+    vllmBaseUrl: process.env.VLLM_BASE_URL || 'http://vllm:8000/v1',
   },
 
   // ASR Configuration
