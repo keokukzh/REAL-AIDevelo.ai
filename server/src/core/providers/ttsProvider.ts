@@ -186,21 +186,62 @@ export class ElevenLabsTTSProvider implements TTSProvider {
 }
 
 /**
+ * OpenAI TTS Provider
+ * Uses OpenAI Audio API for TTS
+ */
+export class OpenAITTSProvider implements TTSProvider {
+  private apiKey: string;
+  private client: any;
+
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
+    if (this.apiKey) {
+      const OpenAI = require('openai');
+      this.client = new OpenAI({ apiKey: this.apiKey });
+    }
+  }
+
+  async synthesize(text: string, voicePreset: string, options?: TTSOptions): Promise<Buffer> {
+    if (!this.client) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    try {
+      const response = await this.client.audio.speech.create({
+        model: 'tts-1',
+        voice: 'alloy',
+        input: text,
+      });
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return buffer;
+    } catch (error: any) {
+      throw new Error(`OpenAI TTS synthesis failed: ${error.message}`);
+    }
+  }
+}
+
+/**
  * Get TTS provider based on configuration
  * Priority:
- * 1. TTS_PROVIDER env var (if set)
+ * 1. TTS_PROVIDER env var (if set: elevenlabs, parler, piper, openai)
  * 2. TTS_SERVICE_URL env var (if set, use Parler/Piper)
  * 3. ELEVENLABS_API_KEY (if set, use ElevenLabs)
- * 4. Default: ElevenLabs (if API key available) or Parler (fallback)
+ * 4. OPENAI_API_KEY (if set, use OpenAI)
+ * 5. Default: Parler (fallback)
  */
 export function getTTSProvider(): TTSProvider {
   const explicitProvider = process.env.TTS_PROVIDER;
   const ttsServiceUrl = process.env.TTS_SERVICE_URL;
   const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+  const openaiApiKey = process.env.OPENAI_API_KEY;
 
   // If explicit provider is set, use it
   if (explicitProvider === 'elevenlabs') {
     return new ElevenLabsTTSProvider();
+  }
+  if (explicitProvider === 'openai') {
+    return new OpenAITTSProvider();
   }
   if (explicitProvider === 'parler') {
     return new ParlerTTSProvider();
@@ -214,12 +255,17 @@ export function getTTSProvider(): TTSProvider {
     return new ParlerTTSProvider();
   }
 
-  // If ElevenLabs API key is available, use ElevenLabs (default for production)
+  // If ElevenLabs API key is available, use ElevenLabs
   if (elevenLabsApiKey && elevenLabsApiKey !== '' && elevenLabsApiKey !== 'PLACEHOLDER_FOR_TESTING') {
     return new ElevenLabsTTSProvider();
   }
 
-  // Fallback to Parler (will fail if service not available, but that's expected)
+  // If OpenAI API key is available, use OpenAI
+  if (openaiApiKey && openaiApiKey !== '' && !openaiApiKey.includes('placeholder')) {
+    return new OpenAITTSProvider();
+  }
+
+  // Fallback to Parler
   return new ParlerTTSProvider();
 }
 
