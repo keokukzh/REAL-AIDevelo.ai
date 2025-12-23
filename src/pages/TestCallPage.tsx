@@ -3,7 +3,7 @@
  * WebRTC softphone for testing voice agent
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
@@ -24,22 +24,29 @@ interface ChatMessage {
   }>;
 }
 
+// Helper function (defined outside component)
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
 export const TestCallPage: React.FC = () => {
-  // 1. All useState hooks first
+  // 1. All useRef hooks first (stable references)
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const chatCallSidRef = useRef<string | null>(null);
+  
+  // 2. All useState hooks
   const [mode, setMode] = useState<TestMode>('voice');
   const [callDuration, setCallDuration] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChatMessage, setIsSendingChatMessage] = useState(false);
-  const [chatCallSid, setChatCallSid] = useState<string | null>(null);
   
-  // 2. All useRef hooks
-  const audioRef = useRef<HTMLAudioElement>(null);
-  
-  // 3. Custom hooks that don't depend on component state
+  // 3. Custom hooks
   const locationId = useLocationId();
-  const { data: overview } = useDashboardOverview();
-  const agentId = overview?.agent_config?.id;
+  const dashboardData = useDashboardOverview();
+  const agentId = dashboardData.data?.agent_config?.id;
 
   // 4. WebRTC hook
   const webRTC = useWebRTC({
@@ -59,8 +66,8 @@ export const TestCallPage: React.FC = () => {
     }
   }, [webRTC.isInCall]);
 
-  // 6. useCallback hooks - defined after all state is available
-  const sendChatMessage = useCallback(async () => {
+  // 6. Event handlers as regular async functions (no useCallback to avoid TDZ issues)
+  async function sendChatMessage(): Promise<void> {
     if (!chatInput.trim() || !locationId || isSendingChatMessage) return;
 
     setIsSendingChatMessage(true);
@@ -76,11 +83,11 @@ export const TestCallPage: React.FC = () => {
     setChatInput('');
 
     try {
-      // Generate call_sid if not exists
-      const effectiveCallSid = chatCallSid || `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      if (!chatCallSid) {
-        setChatCallSid(effectiveCallSid);
+      // Generate call_sid if not exists (use ref to avoid state timing issues)
+      if (!chatCallSidRef.current) {
+        chatCallSidRef.current = `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       }
+      const effectiveCallSid = chatCallSidRef.current;
 
       const response = await apiClient.post<{
         success: boolean;
@@ -129,14 +136,14 @@ export const TestCallPage: React.FC = () => {
     } finally {
       setIsSendingChatMessage(false);
     }
-  }, [chatInput, locationId, isSendingChatMessage, chatCallSid]);
+  }
 
-  const handleChatInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  function handleChatInputKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>): void {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendChatMessage();
     }
-  }, [sendChatMessage]);
+  }
 
   // 7. useMemo hooks
   const combinedTranscript = useMemo(() => {
@@ -149,13 +156,6 @@ export const TestCallPage: React.FC = () => {
       timestamp: msg.timestamp,
     }));
   }, [mode, webRTC.transcript, chatMessages]);
-
-  // Helper function (not a hook)
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Render main action button based on connection and call state
   const renderMainButton = () => {
