@@ -53,111 +53,65 @@ export const OnboardingPage = () => {
         if (!selectedTemplate) return;
 
         setIsSubmitting(true);
-        setSubmissionProgress('Agent wird erstellt...');
+        setSubmissionProgress('Tenant wird erstellt...');
         try {
-            const payload: any = {
-                businessProfile: {
-                    companyName: finalData.companyName,
-                    industry: finalData.industry || selectedTemplate.industry,
-                    location: {
-                        country: 'CH',
-                        city: finalData.city || 'Zürich',
-                    },
-                    contact: {
-                        email: finalData.email,
-                        ...(finalData.phone && { phone: finalData.phone }),
-                    },
-                    ...(finalData.openingHours && finalData.openingHours !== '24/7' && {
-                        openingHours: { 'Mon-Fri': '08:00-18:00' }
-                    }),
+            const { logger } = await import('../lib/logger');
+            logger.debug('Starting Supabase tenant setup', { finalData });
+
+            // Step 1: Ensure tenant exists (creates user, org, location, agent_config if needed)
+            setSubmissionProgress('Tenant wird initialisiert...');
+            const tenantResponse = await apiRequest<{ success: boolean; data: any }>('/v1/agents/default', {
+                method: 'POST',
+                data: {
+                    locationName: finalData.companyName || 'Hauptstandort',
                 },
-                config: {
-                    primaryLocale: finalData.language || selectedTemplate.languageCode,
-                    fallbackLocales: ['en-US'],
-                    recordingConsent: finalData.recordingConsent || false,
-                    systemPrompt: finalData.systemPrompt || selectedTemplate.systemPrompt,
-                    elevenLabs: {
-                        voiceId: finalData.voiceId || selectedTemplate.voiceId,
-                        modelId: finalData.modelId || selectedTemplate.modelId,
-                    },
-                },
-                subscription: planId && planName ? {
-                    planId: planId,
-                    planName: planName,
-                    purchaseId: purchaseId || '',
-                    purchasedAt: new Date().toISOString(),
-                } : undefined,
-                voiceCloning: finalData.voiceId && finalData.voiceId !== selectedTemplate.voiceId ? {
-                    voiceId: finalData.voiceId,
-                    voiceName: finalData.voiceName || 'Custom Voice Clone',
-                } : undefined,
-                purchaseId: purchaseId || undefined,
+            });
+
+            logger.debug('Tenant setup response', {
+                hasSuccess: 'success' in tenantResponse,
+                hasData: 'data' in tenantResponse,
+            });
+
+            if (!tenantResponse.success || !tenantResponse.data) {
+                throw new Error('Tenant-Setup fehlgeschlagen. Bitte versuchen Sie es erneut.');
+            }
+
+            const { agent_config, location } = tenantResponse.data;
+            if (!agent_config || !agent_config.id) {
+                throw new Error('Agent-Config konnte nicht erstellt werden.');
+            }
+
+            // Step 2: Update agent config with onboarding data
+            setSubmissionProgress('Agent-Konfiguration wird gespeichert...');
+            
+            // Map onboarding form data to agent config fields
+            const configUpdate: any = {
+                company_name: finalData.companyName || 'Unser Unternehmen',
+                business_type: finalData.industry || selectedTemplate.industry || 'general',
+                persona_gender: finalData.voiceId ? (finalData.voiceId.includes('female') ? 'female' : 'male') : 'female',
+                persona_age_range: '25-35',
+                goals_json: finalData.goals || selectedTemplate.defaultSettings.goals || [],
+                services_json: [],
+                greeting_template: `Grüezi, hier ist ${finalData.companyName || 'Unser Unternehmen'}. Wie kann ich Ihnen helfen?`,
+                booking_required_fields_json: ['name', 'phone', 'service', 'preferredTime', 'timezone'],
+                booking_default_duration_min: 30,
+                setup_state: 'ready', // Mark as ready after onboarding
             };
 
-            const { logger } = await import('../lib/logger');
-            logger.debug('Creating agent with payload', { payload });
-            setSubmissionProgress('Daten werden gesendet...');
-            
-            const response = await apiRequest<{ success: boolean; data: any }>('/agents', {
-                method: 'POST',
-                data: payload,
-            });
-
-            logger.debug('Agent creation response received', {
-                hasSuccess: 'success' in response,
-                hasData: 'data' in response,
-                responseKeys: Object.keys(response),
-                dataKeys: response.data ? Object.keys(response.data) : 'no data'
-            });
-
-            if (!response.data || !response.data.id) {
-                throw new Error(`Unexpected response format: ${JSON.stringify(response)}`);
+            // Add admin test number if provided
+            if (finalData.phone) {
+                configUpdate.admin_test_number = finalData.phone;
             }
 
-            logger.info('Agent creation started', { agentId: response.data.id });
-            setSubmissionProgress('Agent wird konfiguriert (dies kann bis zu 30 Sekunden dauern)...');
-            
-            // Poll for agent status until it's no longer 'creating'
-            const agentId = response.data.id;
-            let pollingAttempts = 0;
-            const maxPollingAttempts = 60; // 60 * 1 second = 60 seconds max
-            
-            while (pollingAttempts < maxPollingAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between polls
-                
-                try {
-                    const statusResponse = await apiRequest<{ success: boolean; data: any }>(`/agents/${agentId}`, {
-                        method: 'GET',
-                    });
-                    
-                    const agentStatus = statusResponse.data.status;
-                    logger.debug('Agent status check', { 
-                        status: agentStatus, 
-                        attempt: pollingAttempts + 1 
-                    });
-                    
-                    if (agentStatus === 'pending_activation') {
-                        logger.info('Agent creation completed', { agentId });
-                        setSubmissionProgress('Agent erfolgreich erstellt!');
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        navigate(ROUTES.DASHBOARD);
-                        return;
-                    } else if (agentStatus === 'creation_failed') {
-                        throw new Error('Agent-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.');
-                    }
-                } catch (pollError) {
-                    // Continue polling even if status check fails
-                    logger.warn('Status check failed, will retry', { error: pollError });
-                }
-                
-                pollingAttempts++;
-            }
-            
-            // If we timeout, still navigate (agent might complete in background)
-            logger.warn('Agent creation timeout - agent may complete in background', { agentId });
-            setSubmissionProgress('Agent-Setup wird im Hintergrund abgeschlossen...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            navigate('/dashboard');
+            await apiRequest<{ success: boolean; data: any }>('/v1/dashboard/agent/config', {
+                method: 'PATCH',
+                data: configUpdate,
+            });
+
+            logger.info('Agent config updated successfully', { agentConfigId: agent_config.id });
+            setSubmissionProgress('Agent erfolgreich erstellt!');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            navigate(ROUTES.DASHBOARD);
             
         } catch (error) {
             const { logger } = await import('../lib/logger');
