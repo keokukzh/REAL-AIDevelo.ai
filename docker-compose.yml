@@ -139,6 +139,7 @@ services:
       - ./infra/freeswitch/sofia:/etc/freeswitch/sip_profiles  # Sofia profiles for WebSocket
       - ./infra/freeswitch/directory:/etc/freeswitch/directory
       - ./infra/freeswitch/autoload_configs/event_socket.conf.xml:/etc/freeswitch/autoload_configs/event_socket.conf.xml
+      - ./infra/freeswitch/autoload_configs/modules.conf.xml:/etc/freeswitch/autoload_configs/modules.conf.xml
       - ./data/recordings:/var/freeswitch/recordings
       - /tmp:/tmp  # For TTS audio files
     environment:
