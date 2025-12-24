@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Check, Play, Square, RefreshCw, Shield, Globe, Lock, Cpu, AlertCircle, Upload } from 'lucide-react';
-import { Button } from './ui/Button';
-import { aiService } from '../services/aiService';
-import { AudioUploadOption } from './AudioUploadOption';
-import { logger } from '../lib/logger';
+import { Button } from '../ui/Button';
+import { aiService } from '../../services/aiService';
+import { AudioUploadOption } from './VoiceAudioUploadOption';
+import { logger } from '../../lib/logger';
 
 // Phase 3 Data: Sentences tailored for Swiss SMEs
 const sentences = [
@@ -213,7 +213,7 @@ export const VoiceOnboarding: React.FC<VoiceOnboardingProps> = ({ onBack, onComp
         };
 
         mediaRecorder.onerror = async (event) => {
-            logger.error('MediaRecorder error', event as Error);
+            logger.error('MediaRecorder error', (event as any).error || new Error('MediaRecorder error'));
             isRecordingRef.current = false;
             setAnalysisStatus("Fehler bei der Aufnahme. Bitte versuchen Sie es erneut.");
             setIsRecording(false);
