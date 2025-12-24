@@ -172,8 +172,8 @@ export const WebdesignPage = () => {
       
       {/* Global Seamless Background */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
-         <WebdesignAnimatedBackground variant="section" intensity="low" />
-         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-950/80 to-slate-950/95" />
+         <WebdesignAnimatedBackground variant="hero" intensity="medium" />
+         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-950/80 to-slate-950" />
       </div>
 
       <Navbar />
