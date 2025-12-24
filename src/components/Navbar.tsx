@@ -273,19 +273,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   </motion.div>
                 </motion.a>
                 
-                {/* Quick Login Button - Only show if not authenticated */}
-                {!isAuthenticated && (
-                  <motion.button
-                    onClick={() => nav.goTo(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN)}
-                    className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-semibold transition-all duration-200 flex items-center gap-1.5"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    aria-label="Zum Dashboard navigieren"
-                  >
-                    <LogIn size={14} />
-                    <span className="hidden sm:inline">Dashboard</span>
-                  </motion.button>
-                )}
+                {/* Quick Login/Dashboard Button - Always visible */}
+                <motion.button
+                  onClick={() => nav.goTo(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN)}
+                  className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-semibold transition-all duration-200 flex items-center gap-1.5"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  aria-label={isAuthenticated ? "Zum Dashboard navigieren" : "Zum Login navigieren"}
+                >
+                  <LogIn size={14} />
+                  <span className="hidden sm:inline">{isAuthenticated ? 'Dashboard' : 'Login'}</span>
+                </motion.button>
               </div>
             </div>
 
@@ -442,22 +440,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                           }}
                         />
                     </motion.a>
-                    {/* Quick Login Button in Mobile Menu */}
-                    {!isAuthenticated && (
-                      <motion.button
-                        onClick={() => {
-                          nav.goTo(ROUTES.LOGIN);
-                          setMobileMenuOpen(false);
-                        }}
-                        className="px-6 py-3 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary font-semibold transition-all duration-200 flex items-center gap-2"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        aria-label="Zum Dashboard navigieren"
-                      >
-                        <LogIn size={18} />
-                        <span>Dashboard</span>
-                      </motion.button>
-                    )}
+                    {/* Quick Login/Dashboard Button in Mobile Menu - Always visible */}
+                    <motion.button
+                      onClick={() => {
+                        nav.goTo(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="px-6 py-3 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary font-semibold transition-all duration-200 flex items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      aria-label={isAuthenticated ? "Zum Dashboard navigieren" : "Zum Login navigieren"}
+                    >
+                      <LogIn size={18} />
+                      <span>{isAuthenticated ? 'Dashboard' : 'Login'}</span>
+                    </motion.button>
                     <div className="text-xl font-semibold text-gray-400 mb-4">Sektionen</div>
                     {SECTION_LINKS.map((link) => (
                         <motion.a 
