@@ -96,8 +96,8 @@ export interface RouteMeta {
  */
 export const ROUTE_META: Record<string, RouteMeta> = {
   [ROUTES.HOME]: {
-    title: 'Webdesign',
-    breadcrumb: 'Webdesign',
+    title: 'Home',
+    breadcrumb: 'Home',
     group: 'public',
     parent: null,
   },

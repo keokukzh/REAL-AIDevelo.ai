@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, ArrowLeft } from 'lucide-react';
 import { useNavigation, useNavigationWithLocation } from '../hooks/useNavigation';
 import { useNavbarState } from '../hooks/useNavbarState';
 import { ROUTES, NAVIGATION_ITEMS, SECTION_LINKS } from '../config/navigation';
@@ -95,8 +95,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     setMobileMenuOpen(false);
   };
 
-  const isWebdesignPage = location.pathname === ROUTES.WEBDESIGN;
-  
   // Determine active routes for highlighting
   const isActiveRoute = (path: string) => {
     if (path === ROUTES.HOME) {
@@ -104,9 +102,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
-
-  const isWebdesignActive = isActiveRoute(ROUTES.WEBDESIGN);
-  const isVoiceAgentsActive = isActiveRoute(ROUTES.HOME);
 
   return (
     <motion.header
@@ -155,51 +150,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
             )}
 
             {/* Grid Layout for Perfect Centering */}
-            <div className="hidden md:grid grid-cols-3 w-full items-center gap-4 relative z-10">
-              {/* Left Side: Webdesign Logo */}
-              <div className="flex items-center justify-start">
-                <motion.a
-                  href={ROUTES.WEBDESIGN}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    nav.goTo(ROUTES.WEBDESIGN);
-                  }}
-                  className="flex items-center group relative"
-                  style={{
-                    y: prefersReducedMotion ? 0 : leftLogoY,
-                    rotate: prefersReducedMotion ? 0 : leftLogoRotate,
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-label="Zur Webdesign Seite navigieren"
-                >
-                  <motion.div
-                    className="relative"
-                    style={prefersReducedMotion ? {} : {
-                      filter: leftLogoGlow,
+            <div className="flex w-full items-center justify-between relative z-10">
+              <div className="hidden md:flex flex-1 items-center justify-start">
+                {location.pathname !== ROUTES.HOME && (
+                  <motion.a
+                    href={ROUTES.HOME}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      nav.goToHome();
                     }}
+                    className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium group"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    whileHover={{ x: -2 }}
                   >
-                    <img 
-                      src="/webdesign-logo-white.png" 
-                      alt="Webdesign" 
-                      className="h-7 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(218,41,28,0.5)]"
-                      style={{ maxHeight: '32px' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </motion.div>
-                </motion.a>
+                    <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+                    Alle Services
+                  </motion.a>
+                )}
               </div>
 
               {/* Center: Main Logo - Perfectly Centered */}
-              <div className="flex items-center justify-center">
+              <div className="flex flex-1 items-center justify-center">
                 <motion.a 
-                    href={isWebdesignPage ? ROUTES.WEBDESIGN : ROUTES.HOME} 
+                    href={ROUTES.HOME} 
                     onClick={(e) => { 
                       e.preventDefault(); 
-                      if (isWebdesignPage) {
+                      if (location.pathname === ROUTES.HOME) {
                         nav.scrollToTop();
                       } else {
                         nav.goToHome();
@@ -211,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                     }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    aria-label={isWebdesignPage ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
+                    aria-label="AIDevelo.ai Logo"
                 >
                     <motion.div
                       className="relative"
@@ -220,81 +197,38 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                       }}
                     >
                       <img 
-                        src={isWebdesignPage ? '/webdesign-logo-white.png' : '/main-logo.png'} 
-                        alt={isWebdesignPage ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
-                        className="h-7 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(0,224,255,0.5)]"
-                        style={{ maxHeight: '32px' }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          // Fallback to main logo if webdesign logo fails to load
-                          if (target.src.includes('webdesign-logo')) {
-                            target.src = '/main-logo.png';
-                            target.alt = 'AIDevelo.ai';
-                          }
-                        }}
+                        src="/main-logo.png" 
+                        alt="AIDevelo.ai" 
+                        className="h-8 md:h-10 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(0,224,255,0.6)]"
+                        style={{ maxHeight: '40px' }}
                       />
                     </motion.div>
                 </motion.a>
               </div>
 
-              {/* Right Side: Voice Agents Logo + Quick Login */}
-              <div className="flex items-center justify-end gap-3">
-                <motion.a
-                  href={ROUTES.VOICE_AGENTS}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    nav.goTo(ROUTES.VOICE_AGENTS);
-                  }}
-                  className="flex items-center group relative"
-                  style={{
-                    y: prefersReducedMotion ? 0 : rightLogoY,
-                    rotate: prefersReducedMotion ? 0 : rightLogoRotate,
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-label="Zur Voice Agents Hauptseite navigieren"
-                >
-                  <motion.div
-                    className="relative"
-                    style={prefersReducedMotion ? {} : {
-                      filter: rightLogoGlow,
-                    }}
-                  >
-                    <img 
-                      src="/voiceagent-logo-white.png" 
-                      alt="Voice Agents" 
-                      className="h-7 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(0,224,255,0.5)]"
-                      style={{ maxHeight: '32px' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </motion.div>
-                </motion.a>
-                
-                {/* Quick Login/Dashboard Button - Always visible */}
+              {/* Right Side: Quick Login / Dashboard */}
+              <div className="flex flex-1 items-center justify-end gap-3">
                 <motion.button
                   onClick={() => nav.goTo(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN)}
-                  className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-semibold transition-all duration-200 flex items-center gap-1.5"
-                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold transition-all duration-200 flex items-center gap-2 backdrop-blur-sm"
+                  whileHover={{ scale: 1.05, borderColor: 'rgba(255,255,255,0.2)' }}
                   whileTap={{ scale: 0.95 }}
                   aria-label={isAuthenticated ? "Zum Dashboard navigieren" : "Zum Login navigieren"}
                 >
-                  <LogIn size={14} />
+                  <LogIn size={16} />
                   <span className="hidden sm:inline">{isAuthenticated ? 'Dashboard' : 'Login'}</span>
                 </motion.button>
               </div>
             </div>
 
-            {/* Mobile: Logo + Webdesign + Voice Agents + Toggle */}
-            <div className="md:hidden flex items-center gap-3 sm:gap-4 flex-1">
+            {/* Mobile: Logo + Toggle */}
+            <div className="md:hidden flex items-center justify-between flex-1">
               {/* Mobile Main Logo */}
               <motion.a 
-                href={isWebdesignPage ? ROUTES.WEBDESIGN : ROUTES.HOME} 
+                href={ROUTES.HOME} 
                 onClick={(e) => { 
                   e.preventDefault(); 
-                  if (isWebdesignPage) {
+                  if (location.pathname === ROUTES.HOME) {
                     nav.scrollToTop();
                   } else {
                     nav.goToHome();
@@ -303,73 +237,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                 className="flex items-center flex-shrink-0"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                aria-label={isWebdesignPage ? 'AIDevelo Webdesign Logo' : 'AIDevelo.ai Logo'}
+                aria-label="AIDevelo.ai Logo"
               >
                 <img 
-                  src={isWebdesignPage ? '/webdesign-logo-white.png' : '/main-logo.png'} 
-                  alt={isWebdesignPage ? 'AIDevelo Webdesign' : 'AIDevelo.ai'} 
-                  className="h-6 w-auto object-contain transition-all duration-300"
-                  style={{ maxHeight: '24px' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    // Fallback to main logo if webdesign logo fails to load
-                    if (target.src.includes('webdesign-logo')) {
-                      target.src = '/main-logo.png';
-                      target.alt = 'AIDevelo.ai';
-                    }
-                  }}
+                  src="/main-logo.png" 
+                  alt="AIDevelo.ai" 
+                  className="h-7 w-auto object-contain transition-all duration-300"
+                  style={{ maxHeight: '28px' }}
                 />
               </motion.a>
               
-              {/* Mobile Webdesign Logo */}
-              <motion.a
-                href={ROUTES.WEBDESIGN}
-                onClick={(e) => {
-                  e.preventDefault();
-                  nav.goTo(ROUTES.WEBDESIGN);
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Zur Webdesign Seite navigieren"
-              >
-                <img 
-                  src="/webdesign-logo-white.png" 
-                  alt="Webdesign" 
-                  className="h-6 w-auto object-contain transition-all duration-300"
-                  style={{ maxHeight: '24px' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </motion.a>
-              
-              {/* Mobile Voice Agents Logo */}
-              <motion.a
-                href={ROUTES.VOICE_AGENTS}
-                onClick={(e) => {
-                  e.preventDefault();
-                  nav.goTo(ROUTES.VOICE_AGENTS);
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Zur Voice Agents Hauptseite navigieren"
-              >
-                <img 
-                  src="/voiceagent-logo-white.png" 
-                  alt="Voice Agents" 
-                  className="h-6 w-auto object-contain transition-all duration-300"
-                  style={{ maxHeight: '24px' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </motion.a>
                 <motion.button 
                     className="text-white z-50 p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black/60 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
