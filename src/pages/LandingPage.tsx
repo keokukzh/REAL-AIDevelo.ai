@@ -4,6 +4,7 @@ import { ROUTES } from '../config/navigation';
 import { Navbar } from '../components/Navbar';
 import { WebdesignHero } from '../components/WebdesignHero';
 import { WebdesignProcessFlow } from '../components/webdesign/WebdesignProcessFlow';
+import { WebsitePreviews } from '../components/webdesign/WebsitePreviews';
 import { SEO } from '../components/SEO';
 import { TrustSection } from '../components/TrustSection';
 import { Features } from '../components/Features';
@@ -56,6 +57,9 @@ export const LandingPage = () => {
         
         {/* 2. Process Flow - Visual 4 Steps */}
         <WebdesignProcessFlow />
+        
+        {/* 2.5 Portfolio / Website Previews */}
+        <WebsitePreviews />
         
         {/* 3. Trust Indicators */}
         <TrustSection />

@@ -13,6 +13,7 @@ import { WebdesignAnimatedBackground } from '../components/webdesign/WebdesignAn
 import { ScrollReveal, Parallax } from '../components/webdesign/ScrollReveal';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { WebdesignProcessFlow } from '../components/webdesign/WebdesignProcessFlow';
+import { WebsitePreviews } from '../components/webdesign/WebsitePreviews';
 
 interface Feature {
   icon: LucideIcon;
@@ -165,112 +166,198 @@ export const WebdesignPage = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-950 to-background -z-50" aria-hidden="true" />
         
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <motion.div
-            style={{ y: prefersReducedMotion ? 0 : heroY, opacity: prefersReducedMotion ? 1 : heroOpacity }}
-            className="text-center max-w-5xl mx-auto space-y-8"
-          >
-            {/* Badge with Shine Effect */}
-            <ScrollReveal direction="fade" delay={0.2}>
-              <motion.div
-                className="inline-block px-4 py-2 bg-swiss-red/20 border border-swiss-red/30 rounded-full mb-6 backdrop-blur-sm relative overflow-hidden"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                <div className="relative flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-swiss-red" />
-                  <span className="text-sm font-semibold text-swiss-red uppercase tracking-wide">
-                    Professionelle Webentwicklung
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              style={{ y: prefersReducedMotion ? 0 : heroY, opacity: prefersReducedMotion ? 1 : heroOpacity }}
+              className="text-left space-y-8"
+            >
+              {/* Badge with Shine Effect */}
+              <ScrollReveal direction="fade" delay={0.2}>
+                <motion.div
+                  className="inline-block px-4 py-2 bg-swiss-red/20 border border-swiss-red/30 rounded-full mb-6 backdrop-blur-sm relative overflow-hidden group"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <div className="relative flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-swiss-red" />
+                    <span className="text-sm font-semibold text-swiss-red uppercase tracking-wide">
+                      Professionelle Webentwicklung
+                    </span>
+                  </div>
+                </motion.div>
+              </ScrollReveal>
+
+              {/* Heading with Kinetic Typography */}
+              <ScrollReveal direction="up" delay={0.4} duration={0.8}>
+                <h1 
+                  id="hero-heading"
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.1] tracking-tight"
+                >
+                  <motion.span
+                    className="text-white block"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                  >
+                    Neue Website oder
+                  </motion.span>
+                  <motion.span
+                    className="text-swiss-red block mt-2 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red bg-clip-text text-transparent bg-[length:200%_auto]"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ 
+                      opacity: 1, 
+                      y: 0,
+                      backgroundPosition: prefersReducedMotion ? '0%' : ['0%', '100%', '0%']
+                    }}
+                    transition={{ 
+                      duration: 0.8, 
+                      delay: 0.6,
+                      backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
+                    }}
+                  >
+                    Redesign für 599 CHF
+                  </motion.span>
+                </h1>
+              </ScrollReveal>
+
+              {/* Subheading */}
+              <ScrollReveal direction="up" delay={0.6} duration={0.8}>
+                <p className="text-lg sm:text-xl text-gray-400 mt-6 max-w-xl leading-relaxed">
+                  Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles zum transparenten Festpreis.
+                  <br />
+                  <span className="text-white font-semibold mt-2 block">Premium-Design für Schweizer KMU.</span>
+                </p>
+              </ScrollReveal>
+
+              {/* CTA Buttons with Glow Effects */}
+              <ScrollReveal direction="up" delay={0.8} duration={0.8}>
+                <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative"
+                  >
+                    <div className="absolute inset-0 bg-swiss-red blur-xl opacity-50 animate-pulse" />
+                    <Button
+                      onClick={handleScrollToForm}
+                      variant="primary"
+                      className="relative bg-swiss-red hover:bg-red-700 text-white border-none min-h-[56px] px-8 font-semibold shadow-lg shadow-swiss-red/50"
+                      aria-label="Zum Kontaktformular scrollen"
+                    >
+                      Jetzt Projekt anfragen
+                    </Button>
+                  </motion.div>
+                  <BackButton
+                    to={ROUTES.HOME}
+                    label="Zurück zur Startseite"
+                    variant="ghost"
+                    className="text-gray-400 hover:text-white"
+                  />
                 </div>
+              </ScrollReveal>
+
+              {/* Trust Indicators */}
+              <div className="flex items-center gap-6 pt-12 border-t border-white/5 mt-12 overflow-x-auto no-scrollbar">
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-xl leading-none">100%</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-widest mt-1">Zufriedenheit</span>
+                </div>
+                <div className="w-px h-8 bg-white/10" />
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-xl leading-none">24h</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-widest mt-1">Reaktionszeit</span>
+                </div>
+                <div className="w-px h-8 bg-white/10" />
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-xl leading-none">Swiss</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-widest mt-1">Developed</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Side: Floating Website Preview */}
+            <ScrollReveal direction="fade" delay={0.5} className="hidden lg:block relative perspective-1000">
+              <motion.div
+                initial={{ opacity: 0, x: 100, rotateY: -10 }}
+                animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="relative"
+              >
+                {/* Decorative glows behind the card */}
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-swiss-red/20 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-[100px] animate-pulse" />
+
+                {/* The Main Laptop/Browser Mockup */}
+                <div className="relative z-10 bg-slate-900 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50 transform-gpu hover:rotate-2 transition-transform duration-500">
+                  <div className="bg-slate-800 rounded-xl overflow-hidden aspect-[16/10] border border-white/5">
+                    <img 
+                      src="/assets/previews/saas_website_mockup.png" 
+                      alt="Website Preview Mockup" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* Browser Controls */}
+                  <div className="absolute top-5 left-5 flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
+                  </div>
+                </div>
+
+                {/* Floating Secondary Cards */}
+                <motion.div
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -bottom-10 -right-10 z-20 w-48 bg-white rounded-xl p-4 shadow-2xl border border-slate-200"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <div className="h-2 w-20 bg-slate-100 rounded" />
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-50 rounded mb-1" />
+                  <div className="h-1.5 w-2/3 bg-slate-50 rounded" />
+                </motion.div>
+
+                <motion.div
+                  animate={{ y: [0, 15, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute -top-10 -left-10 z-20 w-40 bg-slate-900/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/10"
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="h-2 w-12 bg-swiss-red/40 rounded" />
+                    <div className="w-2 h-2 rounded-full bg-swiss-red shadow-[0_0_8px_rgba(218,41,28,0.8)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-1.5 w-full bg-white/10 rounded" />
+                    <div className="h-1.5 w-5/6 bg-white/10 rounded" />
+                    <div className="h-1.5 w-4/6 bg-white/10 rounded" />
+                  </div>
+                </motion.div>
               </motion.div>
             </ScrollReveal>
-
-            {/* Heading with Kinetic Typography */}
-            <ScrollReveal direction="up" delay={0.4} duration={0.8}>
-              <h1 
-                id="hero-heading"
-                className="text-[clamp(2.5rem,6vw,5.5rem)] font-bold font-display leading-tight tracking-tight"
-              >
-                <motion.span
-                  className="text-white block"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  Website-Erstellung oder
-                </motion.span>
-                <motion.span
-                  className="text-swiss-red block mt-2 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red bg-clip-text text-transparent bg-[length:200%_auto]"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    backgroundPosition: prefersReducedMotion ? '0%' : ['0%', '100%', '0%']
-                  }}
-                  transition={{ 
-                    duration: 0.8, 
-                    delay: 0.6,
-                    backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
-                  }}
-                >
-                  Redesign für 599 CHF
-                </motion.span>
-              </h1>
-            </ScrollReveal>
-
-            {/* Subheading */}
-            <ScrollReveal direction="up" delay={0.6} duration={0.8}>
-              <p className="text-[clamp(1.125rem,2.5vw,1.5rem)] text-gray-400 mt-6 max-w-3xl mx-auto leading-relaxed">
-                Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles aus einer Hand.
-                <br />
-                <span className="text-white font-semibold">Perfekt für kleine und mittlere Unternehmen.</span>
-              </p>
-            </ScrollReveal>
-
-            {/* CTA Buttons with Glow Effects */}
-            <ScrollReveal direction="up" delay={0.8} duration={0.8}>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative"
-                >
-                  <div className="absolute inset-0 bg-swiss-red blur-xl opacity-50 animate-pulse" />
-                  <Button
-                    onClick={handleScrollToForm}
-                    variant="primary"
-                    className="relative bg-swiss-red hover:bg-red-700 text-white border-none min-h-[56px] min-w-[200px] font-semibold shadow-lg shadow-swiss-red/50"
-                    aria-label="Zum Kontaktformular scrollen"
-                  >
-                    Jetzt anfragen
-                  </Button>
-                </motion.div>
-                <BackButton
-                  to={ROUTES.HOME}
-                  label="Zurück zur Startseite"
-                  variant="default"
-                />
-              </div>
-            </ScrollReveal>
-
-          </motion.div>
-          
-          {/* Scroll Indicator */}
-          <ScrollReveal direction="fade" delay={1.2}>
-            <motion.div
-              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <ArrowDown className="w-6 h-6 text-gray-400" />
-            </motion.div>
-          </ScrollReveal>
+          </div>
         </div>
+
+        {/* Scroll Indicator */}
+        <ScrollReveal direction="fade" delay={1.2}>
+          <motion.div
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <ArrowDown className="w-6 h-6 text-gray-400" />
+          </motion.div>
+        </ScrollReveal>
       </section>
 
       {/* Process Flow Section */}
       <WebdesignProcessFlow />
+
+      {/* Portfolio / Website Previews Section */}
+      <WebsitePreviews />
 
       {/* Pricing Section */}
       <section 
