@@ -1,20 +1,33 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Navbar } from '../components/Navbar';
-import { WebdesignContactForm } from '../components/WebdesignContactForm';
+import { 
+  WebdesignContactForm,
+  FeatureCard, 
+  BentoFeatures, 
+  BentoGrid, 
+  ProcessStepCard, 
+  TechnologyBadge, 
+  PricingCard, 
+  FloatingShapes, 
+  Magnetic, 
+  TypewriterTitle, 
+  CursorFollower, 
+  SmoothScroll,
+  WebdesignAnimatedBackground,
+  WebdesignProcessFlow,
+  WebsitePreviews,
+  ScrollReveal,
+  Parallax
+} from '../components/webdesign';
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, CheckCircle, ArrowDown } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
 import { BackButton } from '../components/navigation/BackButton';
 import { ROUTES } from '../config/navigation';
-import { FeatureCard, BentoFeatures, BentoGrid, ProcessStepCard, TechnologyBadge, PricingCard, FloatingShapes, Magnetic, TypewriterTitle, CursorFollower, SmoothScroll } from '../components/webdesign';
-import { WebdesignAnimatedBackground } from '../components/webdesign/WebdesignAnimatedBackground';
-import { ScrollReveal, Parallax } from '../components/webdesign/ScrollReveal';
-import { useReducedMotion } from '../hooks/useReducedMotion';
-import { WebdesignProcessFlow } from '../components/webdesign/WebdesignProcessFlow';
-import { WebsitePreviews } from '../components/webdesign/WebsitePreviews';
 
 interface Feature {
   icon: LucideIcon;

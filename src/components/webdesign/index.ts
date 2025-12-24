@@ -13,3 +13,4 @@ export { Magnetic } from './Magnetic';
 export { CursorFollower } from './CursorFollower';
 export { SmoothScroll } from './SmoothScroll';
 export { WebdesignAnimatedBackground } from './WebdesignAnimatedBackground';
+export { WebdesignContactForm } from './WebdesignContactForm';

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Settings, CalendarCheck, Zap } from 'lucide-react';
-import { RevealSection } from './layout/RevealSection';
+import { RevealSection } from '../layout/RevealSection';
 
-export const HowItWorks: React.FC = () => {
+export const VoiceHowItWorks: React.FC = () => {
   const steps = [
     {
       icon: Settings,

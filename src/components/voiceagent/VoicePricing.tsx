@@ -2,20 +2,20 @@ import React from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Check, Star } from 'lucide-react';
-import { Button } from './ui/Button';
-import { pricingPlans } from '../data/pricing';
-import { trackCTAClick } from '../lib/analytics';
-import { RevealSection } from './layout/RevealSection';
-import { useReducedMotion } from '../hooks/useReducedMotion';
+import { Button } from '../ui/Button';
+import { pricingPlans } from '../../data/pricing';
+import { trackCTAClick } from '../../lib/analytics';
+import { RevealSection } from '../layout/RevealSection';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
-interface PricingProps {
+interface VoicePricingProps {
   onStartOnboarding?: () => void;
   onOpenLeadCapture?: () => void;
 }
 
 type RegularPlanId = 'starter' | 'business' | 'premium';
 
-export const Pricing: React.FC<PricingProps> = ({ onStartOnboarding, onOpenLeadCapture }) => {
+export const VoicePricing: React.FC<VoicePricingProps> = ({ onStartOnboarding, onOpenLeadCapture }) => {
   const regularPlans = pricingPlans.filter(p => p.id !== 'enterprise');
   const enterprisePlan = pricingPlans.find(p => p.id === 'enterprise');
   const prefersReducedMotion = useReducedMotion();

@@ -1,111 +1,46 @@
-import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { ROUTES } from '../config/navigation';
+import React from 'react';
 import { Navbar } from '../components/Navbar';
-import { Hero } from '../components/Hero';
 import { SEO } from '../components/SEO';
-import { Features } from '../components/Features';
-import { IndustryTabs } from '../components/IndustryTabs';
-import { DemoSection } from '../components/DemoSection';
-import { DemoAudioSection } from '../components/DemoAudioSection';
-import { DashboardPreviewSlideshow } from '../components/voiceagent/DashboardPreviewSlideshow';
-import { ROICalculator } from '../components/ROICalculator';
-import { HowItWorks } from '../components/HowItWorks';
-import { Pricing } from '../components/Pricing';
+import { 
+  VoiceAgentsComingSoon, 
+  DashboardPreviewSlideshow, 
+  VoiceAudioDemo 
+} from '../components/voiceagent';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
-import { useAuthContext } from '../contexts/AuthContext';
-import { StickyRegistrationWidget } from '../components/voiceagent/StickyRegistrationWidget';
 
-export const VoiceAgentPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated } = useAuthContext();
-
-  useEffect(() => {
-    const state = location.state as { scrollTarget?: string } | null;
-    if (!state?.scrollTarget) return;
-
-    // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
-    const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
-    const scrollTarget = state.scrollTarget as string;
-    
-    // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
-    if (!SAFE_ANCHOR_REGEX.test(scrollTarget)) {
-      navigate(location.pathname, { replace: true, state: {} });
-      return;
-    }
-
-    const headerOffset = 80;
-    const scrollToTarget = () => {
-      const target = document.querySelector(scrollTarget);
-      if (target) {
-        const elementPosition = target.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-      }
-    };
-
-    // allow DOM to paint before scrolling
-    requestAnimationFrame(() => scrollToTarget());
-    navigate(location.pathname, { replace: true, state: {} });
-  }, [location, navigate]);
-
-  const handleStartOnboarding = () => {
-    navigate(ROUTES.ONBOARDING);
-  };
-
-  const handleScrollToSection = (href: string) => {
-    const target = document.querySelector(href);
-    if (target) {
-      const headerOffset = 80;
-      const elementPosition = target.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-    }
-  };
-
+export const VoiceAgentPage: React.FC = () => {
   return (
-    <>
-      <SEO />
+    <div className="bg-black min-h-screen">
+      <SEO 
+        title="Voice Agents Coming Soon - AIDevelo"
+        description="KI-Telefonassistenten für Schweizer Unternehmen. In Kürze verfügbar. Holen Sie sich jetzt exklusiven Vorabzugriff."
+      />
       <Navbar />
-      <main>
-        {/* Hero Section */}
-        <Hero 
-          onStartOnboarding={handleStartOnboarding}
-          onScrollToSection={handleScrollToSection}
-        />
+      <main className="pt-20">
+        <VoiceAgentsComingSoon />
         
-        {/* Dashboard Preview Slideshow */}
-        <DashboardPreviewSlideshow />
+        {/* Deep Dive into what is coming */}
+        <div className="py-20 bg-slate-950/30">
+          <div className="container mx-auto px-6 text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold font-display text-white mb-6">
+              Ein Einblick in die Zukunft
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+              Unsere Voice Agents sind mehr als nur Chatbots. Sie sind intelligente, zweisprachige Assistenten, die Ihre Geschäftsprozesse automatisieren.
+            </p>
+          </div>
+          <DashboardPreviewSlideshow />
+        </div>
+
+        <VoiceAudioDemo />
         
-        {/* Features */}
-        <Features />
-        
-        {/* Industry Tabs */}
-        <IndustryTabs />
-        
-        {/* Demo Section */}
-        <DemoSection />
-        
-        {/* Demo Audio Section */}
-        <DemoAudioSection />
-        
-        {/* ROI Calculator */}
-        <ROICalculator />
-        
-        {/* How It Works */}
-        <HowItWorks />
-        
-        {/* Pricing */}
-        <Pricing />
-        
-        {/* FAQ */}
-        <FAQ />
+        <div className="py-20 border-t border-white/5">
+          <FAQ />
+        </div>
       </main>
       <Footer />
-      <StickyRegistrationWidget />
-    </>
+    </div>
   );
 };
 

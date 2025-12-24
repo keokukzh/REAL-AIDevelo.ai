@@ -1,9 +1,9 @@
 import React from 'react';
 import { Play, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { RevealSection } from './layout/RevealSection';
+import { RevealSection } from '../layout/RevealSection';
 
-export function DemoAudioSection() {
+export function VoiceAudioDemo() {
   return (
     <RevealSection className="py-24 bg-surface border-y border-white/5 relative overflow-hidden section-spacing">
         {/* Background Gradients */}

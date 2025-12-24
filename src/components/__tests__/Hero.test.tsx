@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { Hero } from "../Hero";
+import { VoiceHero as Hero } from "../voiceagent/VoiceHero";
 
 describe("Hero", () => {
   it("renders headline and key value proposition", () => {

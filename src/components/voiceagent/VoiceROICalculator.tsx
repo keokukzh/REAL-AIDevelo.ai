@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, PhoneMissed, DollarSign } from 'lucide-react';
-import { CountUp } from './ui/CountUp';
-import { useReducedMotion } from '../hooks/useReducedMotion';
-import { RevealSection } from './layout/RevealSection';
+import { CountUp } from '../ui/CountUp';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { RevealSection } from '../layout/RevealSection';
 
-export const ROICalculator: React.FC = () => {
+export const VoiceROICalculator: React.FC = () => {
   const [missedCalls, setMissedCalls] = useState(3);
   const [customerValue, setCustomerValue] = useState(150);
   const prefersReducedMotion = useReducedMotion();

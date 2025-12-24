@@ -1,19 +1,19 @@
 import React, { useMemo } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Play, CheckCircle2 } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { HeroBackground } from './hero/HeroBackground';
 import { HeroPhone } from './hero/HeroPhone';
 import { HeroWaveAnimation } from './animations/HeroWaveAnimation';
-import { useReducedMotion } from '../hooks/useReducedMotion';
-import { trackCTAClick } from '../lib/analytics';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { trackCTAClick } from '../../lib/analytics';
 
-interface HeroProps {
+interface VoiceHeroProps {
   onStartOnboarding?: () => void;
   onScrollToSection?: (href: string) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
+export const VoiceHero: React.FC<VoiceHeroProps> = ({ onStartOnboarding, onScrollToSection }) => {
   const { scrollY } = useScroll();
   const yContent = useTransform(scrollY, [0, 500], [0, 100]);
   const prefersReducedMotion = useReducedMotion();

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scissors, Stethoscope, Car, Home, Wrench, Heart, Briefcase } from 'lucide-react';
-import { Button } from './ui/Button';
-import { IndustryDemoPreview } from './IndustryDemoPreview';
-import { getIndustryDemo } from '../data/industryDemos';
-import { RevealSection } from './layout/RevealSection';
+import { Button } from '../ui/Button';
+import { VoiceIndustryDemoPreview } from './VoiceIndustryDemoPreview';
+import { getIndustryDemo } from '../../data/industryDemos';
+import { RevealSection } from '../layout/RevealSection';
 
 interface IndustryTabsProps {
   onStartOnboarding?: (industry?: string) => void;
@@ -76,7 +76,7 @@ const industries = [
   }
 ];
 
-export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding }) => {
+export const VoiceIndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding }) => {
   const [activeTab, setActiveTab] = useState(industries[0]);
 
   return (
@@ -144,7 +144,7 @@ export const IndustryTabs: React.FC<IndustryTabsProps> = ({ onStartOnboarding })
                         const demo = getIndustryDemo(activeTab.id);
                         if (demo) {
                             return (
-                                <IndustryDemoPreview 
+                                <VoiceIndustryDemoPreview 
                                     key={`demo-${activeTab.id}`}
                                     demo={demo}
                                     onStartOnboarding={() => {

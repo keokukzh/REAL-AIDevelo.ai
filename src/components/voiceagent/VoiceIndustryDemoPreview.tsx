@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Mic } from 'lucide-react';
-import { IndustryDemo } from '../data/industryDemos';
+import { IndustryDemo } from '../../data/industryDemos';
 
 interface IndustryDemoPreviewProps {
   demo: IndustryDemo;
   onStartOnboarding?: () => void;
 }
 
-export const IndustryDemoPreview: React.FC<IndustryDemoPreviewProps> = ({ 
+export const VoiceIndustryDemoPreview: React.FC<IndustryDemoPreviewProps> = ({ 
   demo, 
   onStartOnboarding 
 }) => {

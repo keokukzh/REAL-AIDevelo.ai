@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from './ui/Button';
-import { apiRequest, ApiRequestError } from '../services/api';
+import { Button } from '../ui/Button';
+import { apiRequest, ApiRequestError } from '../../services/api';
 import { CheckCircle2, AlertCircle, Paperclip, X, Upload, Loader2 } from 'lucide-react';
 
 interface WebdesignContactFormProps {

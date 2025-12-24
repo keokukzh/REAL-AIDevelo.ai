@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../config/navigation';
+import { ROUTES } from '../../config/navigation';
 
 export const VoiceAgentsComingSoon: React.FC = () => {
   const navigate = useNavigate();

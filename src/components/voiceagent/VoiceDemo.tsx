@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Mic } from 'lucide-react';
-import { RevealSection } from './layout/RevealSection';
+import { RevealSection } from '../layout/RevealSection';
 
-interface DemoSectionProps {
+interface VoiceDemoProps {
   onStartOnboarding?: () => void;
 }
 
-export const DemoSection: React.FC<DemoSectionProps> = ({ onStartOnboarding }) => {
+export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 

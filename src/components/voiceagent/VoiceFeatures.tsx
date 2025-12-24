@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { features } from '../data/features';
-import { Feature } from '../types';
-import { RevealSection } from './layout/RevealSection';
+import { features } from '../../data/features';
+import { Feature } from '../../types';
+import { RevealSection } from '../layout/RevealSection';
 
 const FeatureCard: React.FC<{ feature: Feature }> = ({ feature }) => {
   return (
@@ -27,7 +27,7 @@ const FeatureCard: React.FC<{ feature: Feature }> = ({ feature }) => {
   );
 };
 
-export const Features: React.FC = () => {
+export const VoiceFeatures: React.FC = () => {
   return (
     <RevealSection className="py-24 relative section-spacing" id="features">
       <div className="container mx-auto px-6">
