@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, FileAudio, CheckCircle2, AlertCircle, X } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 
 interface AudioUploadOptionProps {
   onUploadComplete: (audioBlob: Blob) => void;

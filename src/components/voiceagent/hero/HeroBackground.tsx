@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useReducedMotion } from '../../../hooks/useReducedMotion';
 
 export const HeroBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {

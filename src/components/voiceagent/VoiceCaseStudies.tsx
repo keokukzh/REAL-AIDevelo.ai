@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Clock, Star, MapPin, Quote } from 'lucide-react';
-import { RevealSection } from './layout/RevealSection';
+import { RevealSection } from '../layout/RevealSection';
 
 const cases = [
   {
