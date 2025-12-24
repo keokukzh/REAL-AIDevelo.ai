@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion, useInView } from 'framer-motion';
-import { useRef } from 'react';
-import { FileText, CreditCard, Code, CheckCircle } from 'lucide-react';
+import React, { useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { FileText, CreditCard, Code, CheckCircle, LucideIcon } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
-import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface ProcessStep {
   number: string;
   title: string;
   description: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   color: string;
 }
 
@@ -17,28 +15,28 @@ const steps: ProcessStep[] = [
   {
     number: '01',
     title: 'Digitale Vision & Analyse',
-    description: 'Teilen Sie uns Ihre Wünsche mit. In einem ersten Briefing analysieren wir Ihre Zielgruppe und definieren die strategischen Ziele Ihrer neuen Website.',
+    description: 'Wir analysieren Ihre Zielgruppe und definieren die strategischen Ziele. Kein Baukasten-Einheitsbrei, sondern maßgeschneidertes Konzept.',
     icon: FileText,
     color: 'text-blue-400',
   },
   {
     number: '02',
-    title: 'Projektstart & Fundament',
-    description: 'Nach Ihrer Anzahlung von 100 CHF legen wir sofort los. Wir sichern Ihre Domain, setzen das Hosting auf und erstellen das erste Designkonzept.',
+    title: 'Design & Fundament',
+    description: 'Nach dem Startschuss (100 CHF) erstellen wir das erste visuelle Konzept. Wir sichern Domain und Hosting und legen das technische Fundament.',
     icon: CreditCard,
     color: 'text-emerald-400',
   },
   {
     number: '03',
-    title: 'Präzisions-Entwicklung',
-    description: 'In 2-3 Wochen erwecken wir Ihr Projekt zum Leben. Mit modernsten Technologien bauen wir eine performante Website, die Ihre Kunden begeistert.',
+    title: 'Development & Polish',
+    description: 'Transformation des Designs in pixelperfekten Code. Performance-Optimierung, SEO-Setup und Mobile-First Umsetzung in 2-3 Wochen.',
     icon: Code,
-    color: 'text-blue-500',
+    color: 'text-purple-400',
   },
   {
     number: '04',
-    title: 'Launch & Erfolgskontrolle',
-    description: 'Nach der finalen Abnahme geht Ihre Seite live. Wir optimieren die SEO-Einstellungen und übergeben Ihnen alle Schlüssel für Ihren digitalen Erfolg.',
+    title: 'Launch & Success',
+    description: 'Go-Live Ihrer neuen Digital-Präsenz. Übergabe aller Zugänge, kurze Schulung und finale Qualitätskontrolle. Ready for Business.',
     icon: CheckCircle,
     color: 'text-swiss-red',
   },
@@ -46,185 +44,159 @@ const steps: ProcessStep[] = [
 
 export const WebdesignProcessFlow: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true, margin: '-100px' });
-  const prefersReducedMotion = useReducedMotion();
-  const [activeStep, setActiveStep] = useState(0);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
 
-  useEffect(() => {
-    if (!isInView || prefersReducedMotion) return;
-    const interval = setInterval(() => {
-      setActiveStep((prev) => (prev < steps.length - 1 ? prev + 1 : 0));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [isInView, prefersReducedMotion]);
+  const scaleY = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   return (
-    <RevealSection id="process-flow" className="py-24 relative section-spacing bg-slate-950/30 overflow-hidden">
-      {/* Background Animation */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-swiss-red/20 via-transparent to-swiss-red/20" 
-          style={{
-            backgroundSize: '200% 100%',
-            animation: prefersReducedMotion ? 'none' : 'gradient-mesh 15s ease infinite',
-          }}
-        />
-      </div>
+    <section ref={containerRef} id="process-flow" className="py-32 relative bg-slate-950 overflow-hidden">
+      {/* Background Circuit Grid */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      
+      {/* Ambient Glows */}
+      <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/10 rounded-full blur-[128px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <RevealSection className="text-center mb-16 max-w-3xl mx-auto" staggerDelay={0.05}>
-          <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
-            So funktioniert's – <span className="text-swiss-red">einfach und transparent</span>
+        <RevealSection className="text-center mb-24 max-w-3xl mx-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="inline-block px-4 py-1.5 rounded-full bg-swiss-red/10 border border-swiss-red/20 text-swiss-red text-sm font-bold uppercase tracking-widest mb-6"
+          >
+            Workflow
+          </motion.div>
+          <h2 className="text-4xl md:text-6xl font-bold font-display mb-6 leading-tight">
+            Vom Konzept zum <span className="text-transparent bg-clip-text bg-gradient-to-r from-swiss-red to-orange-500">Launch</span>
           </h2>
-          <p className="text-gray-400 text-lg">
-            Von der ersten Anfrage bis zur fertigen Website – in 4 klaren Schritten.
+          <p className="text-gray-400 text-lg leading-relaxed">
+            Ein transparenter, strukturierter Prozess garantiert Ergebnisse, die Ihre Erwartungen übertreffen. Keine Überraschungen, nur Fortschritt.
           </p>
         </RevealSection>
 
-        <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto relative">
-          {/* Progress Line (Desktop) */}
-          <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 -z-10">
-            <motion.div
-              className="h-full bg-gradient-to-r from-swiss-red/30 via-swiss-red/50 to-swiss-red/30"
-              initial={{ scaleX: 0 }}
-              animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
-              transition={{ duration: 2, ease: 'easeInOut' }}
-              style={{ transformOrigin: 'left' }}
+        <div className="relative max-w-5xl mx-auto">
+          {/* Central Circuit Line (Desktop) */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-white/5 -translate-x-1/2 hidden md:block rounded-full">
+            <motion.div 
+              style={{ scaleY, transformOrigin: 'top' }}
+              className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-swiss-red via-purple-500 to-blue-500 rounded-full"
             />
           </div>
 
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = activeStep >= index;
-            return (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
-                className="relative group"
-              >
-                {/* Animated Connector Line */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-0.5 z-0 overflow-hidden">
+          <div className="space-y-12 md:space-y-24">
+            {steps.map((step, index) => {
+              const isEven = index % 2 === 0;
+              return (
+                <div key={step.number} className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${isEven ? '' : 'md:flex-row-reverse'}`}>
+                  
+                  {/* Step Card */}
+                  <div className="w-full md:w-1/2">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-swiss-red/50 to-transparent"
-                      initial={{ scaleX: 0 }}
-                      animate={isInView && isActive ? { scaleX: 1 } : { scaleX: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.2 }}
-                      style={{ transformOrigin: 'left' }}
-                    />
-                  </div>
-                )}
-
-                <motion.div
-                  className="bg-white/5 border border-white/10 rounded-2xl p-6 h-full relative overflow-hidden backdrop-blur-sm"
-                  whileHover={{ 
-                    scale: 1.05,
-                    borderColor: 'rgba(218, 41, 28, 0.5)',
-                    boxShadow: '0 20px 40px rgba(218, 41, 28, 0.2)'
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {/* Shine Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  </div>
-
-                  {/* Step Number with Counter Animation */}
-                  <div className="flex items-center justify-between mb-4 relative z-10">
-                    <motion.span
-                      className="text-4xl font-bold text-gray-600 font-mono"
-                      animate={isActive ? { color: '#DA291C', scale: 1.1 } : { color: '#4B5563', scale: 1 }}
-                      transition={{ duration: 0.3 }}
+                      initial={{ opacity: 0, x: isEven ? -50 : 50 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      transition={{ duration: 0.7, delay: 0.2 }}
+                      className="group relative"
                     >
-                      {step.number}
-                    </motion.span>
-                    <motion.div
-                      className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${step.color} relative overflow-hidden`}
-                      animate={isActive ? { 
-                        scale: 1.1,
-                        borderColor: 'rgba(218, 41, 28, 0.5)',
-                        boxShadow: '0 0 20px rgba(218, 41, 28, 0.3)'
-                      } : { scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <motion.div
-                        animate={isActive ? { rotate: [0, -10, 10, -10, 0] } : { rotate: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <Icon className="w-6 h-6 relative z-10" />
-                      </motion.div>
-                      {isActive && (
-                        <motion.div
-                          className="absolute inset-0 bg-swiss-red/20 rounded-xl"
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
-                          transition={{ duration: 0.6 }}
-                        />
-                      )}
+                      <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="relative bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-white/20 transition-colors">
+                        {/* Corner Accents */}
+                        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/10 rounded-tl-lg group-hover:border-swiss-red/50 transition-colors" />
+                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white/10 rounded-tr-lg group-hover:border-blue-500/50 transition-colors" />
+                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white/10 rounded-bl-lg group-hover:border-purple-500/50 transition-colors" />
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white/10 rounded-br-lg group-hover:border-white/30 transition-colors" />
+
+                        <div className="flex items-start gap-4 mb-4">
+                          <span className={`text-5xl font-bold font-display opacity-20 ${step.color}`}>{step.number}</span>
+                          <div className={`p-3 rounded-lg bg-white/5 border border-white/10 ${step.color}`}>
+                            <step.icon size={24} />
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">
+                          {step.title}
+                        </h3>
+                        <p className="text-gray-400 leading-relaxed font-light">
+                          {step.description}
+                        </p>
+                      </div>
                     </motion.div>
                   </div>
 
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-white mb-3 font-display relative z-10 group-hover:text-swiss-red transition-colors">
-                    {step.title}
-                  </h3>
-                  <p className="text-gray-400 leading-relaxed text-sm relative z-10 group-hover:text-gray-300 transition-colors">
-                    {step.description}
-                  </p>
-                </motion.div>
-              </motion.div>
-            );
-          })}
+                  {/* Center Node Connection */}
+                  <div className="relative z-10 hidden md:flex items-center justify-center w-12 h-12">
+                     <motion.div
+                        initial={{ scale: 0 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.1 }}
+                        className="w-4 h-4 bg-slate-950 border-2 border-white/30 rounded-full z-10"
+                     />
+                     <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className={`absolute w-8 h-8 ${step.color.replace('text-', 'bg-')}/20 rounded-full animate-ping`}
+                     />
+                     {/* Horizontal Connector */}
+                     <div className={`absolute h-px w-8 md:w-16 bg-gradient-to-r from-transparent via-white/20 to-transparent ${isEven ? 'right-full' : 'left-full'}`} />
+                  </div>
+
+                  {/* Spacer for the other side */}
+                  <div className="w-full md:w-1/2 hidden md:block" />
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Total Price Summary with Animation */}
+        {/* Pricing Summary Card */}
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-20 text-center"
+           initial={{ opacity: 0, y: 30 }}
+           whileInView={{ opacity: 1, y: 0 }}
+           viewport={{ once: true }}
+           transition={{ delay: 0.5 }}
+           className="mt-32 relative max-w-4xl mx-auto"
         >
-          <motion.div
-            className="inline-block bg-gradient-to-br from-slate-900/80 to-slate-950/90 border border-white/10 rounded-3xl px-10 py-8 backdrop-blur-xl relative overflow-hidden group shadow-2xl shadow-swiss-red/10"
-            whileHover={{ scale: 1.02, borderColor: 'rgba(218, 41, 28, 0.3)' }}
-          >
-            {/* Animated Glow Backdrop */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-swiss-red/10 blur-[80px] rounded-full group-hover:bg-swiss-red/20 transition-colors" />
-            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full group-hover:bg-blue-500/20 transition-colors" />
+          <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 via-purple-500/20 to-blue-500/20 blur-3xl opacity-30" />
+          <div className="relative bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 md:p-12 overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-swiss-red via-purple-500 to-blue-500" />
             
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-              <div className="text-left">
-                <div className="text-sm font-medium text-swiss-red uppercase tracking-wider mb-2">Transparente Fixpreise</div>
-                <h3 className="text-2xl font-bold text-white mb-1">Einfache Abwicklung</h3>
-                <p className="text-gray-400 text-sm">Keine versteckten Kosten. Alles inklusive.</p>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <h3 className="text-2xl font-bold text-white mb-2">Transparente Preisstruktur</h3>
+                <p className="text-gray-400 max-w-md">
+                  Keine versteckten Kosten. Sie zahlen den Projektstart, wir liefern Ergebnisse. Die Restzahlung wird erst nach erfolgreichem Launch fällig.
+                </p>
               </div>
-
-              <div className="h-12 w-px bg-white/10 hidden md:block" />
-
-              <div className="text-center md:text-right">
-                <div className="text-sm text-gray-400 mb-1">Gesamtinvestition</div>
-                <div className="flex items-baseline gap-2 justify-center md:justify-end">
-                  <motion.span 
-                    className="text-5xl font-bold text-white font-display"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  >
-                    599
-                  </motion.span>
-                  <span className="text-2xl font-bold text-gray-400">CHF</span>
-                </div>
-                <div className="text-xs font-medium text-gray-500 mt-2 uppercase tracking-widest">
-                  100 CHF Start • 499 CHF Launch
-                </div>
+              
+              <div className="flex items-center gap-6">
+                 <div className="text-right">
+                    <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">Total</div>
+                    <div className="text-5xl font-bold font-display text-white">599 <span className="text-2xl text-gray-400">CHF</span></div>
+                 </div>
+                 <div className="h-16 w-px bg-white/10" />
+                 <div className="flex flex-col gap-2">
+                    <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full">
+                      High Performance
+                    </span>
+                    <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold rounded-full">
+                      SEO Optimized
+                    </span>
+                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
-    </RevealSection>
+    </section>
   );
 };
 

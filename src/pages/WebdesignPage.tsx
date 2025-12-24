@@ -8,8 +8,7 @@ import {
   WebdesignContactForm,
   FeatureCard, 
   BentoFeatures, 
-  BentoGrid, 
-  ProcessStepCard, 
+  BentoGrid,
   TechnologyBadge, 
   PricingCard, 
   FloatingShapes, 
@@ -32,12 +31,6 @@ import { ROUTES } from '../config/navigation';
 
 interface Feature {
   icon: LucideIcon;
-  title: string;
-  description: string;
-}
-
-interface ProcessStep {
-  number: string;
   title: string;
   description: string;
 }
@@ -122,28 +115,7 @@ export const WebdesignPage = () => {
     },
   ], []);
 
-  const processSteps = useMemo<ProcessStep[]>(() => [
-    {
-      number: '01',
-      title: 'Anfrage',
-      description: 'Onboarding Formular ausfüllen und benötigte Daten direkt mitsenden.',
-    },
-    {
-      number: '02',
-      title: 'Anzahlung',
-      description: 'Nach Review durch unser Team erhalten Sie den Link für die 100 CHF Anzahlung.',
-    },
-    {
-      number: '03',
-      title: 'Umsetzung',
-      description: 'Wir erstellen Ihre Website basierend auf Ihren Wünschen in 2-3 Wochen.',
-    },
-    {
-      number: '04',
-      title: 'Launch',
-      description: 'Nach Testphase und Restzahlung übergeben wir Ihnen alle Logindaten.',
-    },
-  ], []);
+
 
   const technologies = useMemo<Technology[]>(() => [
     { name: 'React', description: 'Moderne Frontend-Bibliothek' },
@@ -198,6 +170,12 @@ export const WebdesignPage = () => {
         Zum Hauptinhalt springen
       </a>
       
+      {/* Global Seamless Background */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+         <WebdesignAnimatedBackground variant="section" intensity="low" />
+         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-950/80 to-slate-950/95" />
+      </div>
+
       <Navbar />
       
       {/* Hero Section */}
@@ -209,16 +187,14 @@ export const WebdesignPage = () => {
       {/* Portfolio / Website Previews Section */}
       <WebsitePreviews />
 
-      <div className="h-24 w-px bg-gradient-to-b from-swiss-red to-transparent mx-auto opacity-30" />
+      <div className="h-32 w-px bg-gradient-to-b from-swiss-red to-transparent mx-auto opacity-30" />
 
       {/* Pricing Section */}
       <section 
         id="pricing"
-        className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+        className="py-12 sm:py-32 relative overflow-hidden"
         aria-labelledby="pricing-heading"
       >
-        <WebdesignAnimatedBackground variant="section" intensity="low" />
-        <FloatingShapes />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <ScrollReveal direction="up" delay={0.2} className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -240,48 +216,16 @@ export const WebdesignPage = () => {
         </div>
       </section>
 
-      {/* Process Section */}
-      <section 
-        id="process"
-        className="py-24 relative overflow-hidden"
-        aria-labelledby="process-heading"
-      >
-        <WebdesignAnimatedBackground variant="section" intensity="low" />
-        <FloatingShapes />
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="up" delay={0.2} className="text-center mb-16">
-            <h2 id="process-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-              Unser Prozess
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Von der ersten Idee bis zum Launch – strukturiert, transparent und professionell.
-            </p>
-          </ScrollReveal>
-
-          <ScrollReveal stagger staggerDelay={0.1} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto mb-12 sm:mb-20 list-none" aria-label="Prozess-Schritte">
-            {processSteps.map((step, index) => (
-              <ProcessStepCard
-                key={step.number}
-                number={step.number}
-                title={step.title}
-                description={step.description}
-                isLast={index === processSteps.length - 1}
-                index={index}
-              />
-            ))}
-          </ScrollReveal>
-        </div>
-      </section>
+      {/* Process Section - REMOVED (Redundant with new WebdesignProcessFlow) */}
 
       {/* Features Section */}
       <section 
         id="features"
-        className="py-12 sm:py-20 bg-slate-950/30 relative overflow-hidden"
+        className="py-12 sm:py-24 relative overflow-hidden"
         aria-labelledby="features-heading"
       >
-        <WebdesignAnimatedBackground variant="section" intensity="medium" />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="up" delay={0.2} className="text-center mb-12">
+          <ScrollReveal direction="up" delay={0.2} className="text-center mb-16">
             <h2 id="features-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
               Professionelle Features
             </h2>
@@ -299,10 +243,9 @@ export const WebdesignPage = () => {
       {/* Technologies Section */}
       <section 
         id="technologies"
-        className="py-12 sm:py-20 relative overflow-hidden"
+        className="py-12 sm:py-24 relative overflow-hidden"
         aria-labelledby="technologies-heading"
       >
-        <WebdesignAnimatedBackground variant="section" intensity="low" />
         <FloatingShapes />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <ScrollReveal direction="up" delay={0.2} className="text-center mb-12">
@@ -330,34 +273,29 @@ export const WebdesignPage = () => {
       {/* Contact Form Section */}
       <section 
         id="contact-form"
-        className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+        className="py-12 sm:py-32 relative overflow-hidden"
         aria-labelledby="contact-heading"
         tabIndex={-1}
       >
-        <WebdesignAnimatedBackground variant="section" intensity="medium" />
+         {/* Background Spotlights */}
+         <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-swiss-red/10 rounded-full blur-[128px] pointer-events-none" />
+         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[128px] pointer-events-none" />
+
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="scale" delay={0.2} className="max-w-3xl mx-auto">
-            <motion.div
-              className="bg-surface/50 rounded-2xl border border-white/10 p-6 sm:p-8 md:p-12 backdrop-blur-md relative overflow-hidden"
-              whileHover={{ borderColor: 'rgba(218, 41, 28, 0.3)' }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Glassmorphism Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+          <ScrollReveal direction="scale" delay={0.2} className="max-w-4xl mx-auto">
               
               <div className="relative z-10">
-                <ScrollReveal direction="fade" delay={0.3} className="text-center mb-8">
+                <ScrollReveal direction="fade" delay={0.3} className="text-center mb-12">
                   <h2 id="contact-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-                    Jetzt anfragen
+                    Projekt Starten
                   </h2>
                   <p className="text-gray-400 text-lg">
-                    Beschreiben Sie Ihr Projekt und wir melden uns innerhalb von 24 Stunden bei Ihnen.
+                    Bereit für den digitalen Aufstieg? Initiieren Sie jetzt Ihr Projekt.
                   </p>
                 </ScrollReveal>
 
                 <WebdesignContactForm onSuccess={() => navigate('/')} />
               </div>
-            </motion.div>
           </ScrollReveal>
         </div>
       </section>
@@ -365,7 +303,7 @@ export const WebdesignPage = () => {
       {/* Related Links Section */}
       <section 
         id="related-links"
-        className="py-12 sm:py-20 bg-slate-950/30"
+        className="py-12 sm:py-20 relative"
         aria-labelledby="related-links-heading"
       >
         <div className="container mx-auto px-4 sm:px-6">
