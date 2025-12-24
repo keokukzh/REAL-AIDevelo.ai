@@ -268,7 +268,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: '100%' }}
                   transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
-                  className="bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
+                  className="absolute top-0 right-0 w-full h-screen bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center space-y-8 md:hidden rounded-none z-40 fixed inset-0"
                   aria-label="Hauptnavigation"
                 >
                     <motion.a 
