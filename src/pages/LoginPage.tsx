@@ -100,10 +100,10 @@ export const LoginPage = () => {
         </h1>
         <p className="text-gray-400 text-center mb-6">
           {isRegistering
-            ? 'Erstelle ein neues Konto'
+            ? 'Registriere dich für den Dashboard-Preview und teste unsere Voice-Agents.'
             : isMagicLink
             ? 'Wir senden dir einen Magic Link per E-Mail'
-            : 'Melde dich mit deinem Konto an'}
+            : 'Melde dich mit deinem Konto an, um auf das Dashboard zuzugreifen.'}
         </p>
 
         {/* Dev Quick Login Info */}
@@ -151,17 +151,30 @@ export const LoginPage = () => {
               <label htmlFor="password" className="block text-sm font-medium mb-2">
                 Passwort
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required={!isMagicLink}
-                minLength={isRegistering ? 6 : undefined}
-                autoComplete={isRegistering ? "new-password" : "current-password"}
-                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-accent"
-                placeholder={isRegistering ? 'Mindestens 6 Zeichen' : 'Dein Passwort'}
-              />
+              {isRegistering ? (
+                <input
+                  id="password-new"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                  placeholder="Mindestens 6 Zeichen"
+                />
+              ) : (
+                <input
+                  id="password-current"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                  placeholder="Dein Passwort"
+                />
+              )}
             </div>
           )}
 

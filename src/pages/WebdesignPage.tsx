@@ -92,23 +92,23 @@ export const WebdesignPage = () => {
   const processSteps = useMemo<ProcessStep[]>(() => [
     {
       number: '01',
-      title: 'Konsultation',
-      description: 'Wir besprechen Ihre Anforderungen, Ziele und Vision für Ihre Website in einem ausführlichen Gespräch.',
+      title: 'Anfrage',
+      description: 'Onboarding Formular ausfüllen und benötigte Daten direkt mitsenden.',
     },
     {
       number: '02',
-      title: 'Konzept & Design',
-      description: 'Erstellung eines detaillierten Konzepts mit Wireframes und Design-Mockups für Ihre Freigabe.',
+      title: 'Anzahlung',
+      description: 'Nach Review durch unser Team erhalten Sie den Link für die 100 CHF Anzahlung.',
     },
     {
       number: '03',
-      title: 'Entwicklung',
-      description: 'Professionelle Umsetzung mit modernen Technologien, regelmäßigen Updates und Feedback-Schleifen.',
+      title: 'Umsetzung',
+      description: 'Wir erstellen Ihre Website basierend auf Ihren Wünschen in 2-3 Wochen.',
     },
     {
       number: '04',
-      title: 'Testing & Launch',
-      description: 'Umfassendes Testing auf allen Geräten, Performance-Optimierung und finaler Launch.',
+      title: 'Launch',
+      description: 'Nach Testphase und Restzahlung übergeben wir Ihnen alle Logindaten.',
     },
   ], []);
 
@@ -249,7 +249,7 @@ export const WebdesignPage = () => {
                 <BackButton
                   to={ROUTES.HOME}
                   label="Zurück zur Startseite"
-                  variant="outline"
+                  variant="default"
                 />
               </div>
             </ScrollReveal>

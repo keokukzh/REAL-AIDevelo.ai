@@ -5,7 +5,7 @@ import { webdesignContactSchema, WebdesignContactRequest } from '../types/webdes
 import { validateRequest } from '../middleware/validateRequest';
 import { sendMail } from '../services/emailService';
 import { createWebdesignRequest } from '../services/webdesignRequestService';
-import { getNewRequestEmail } from '../services/webdesignEmailTemplates';
+import { getNewRequestEmail, getAcknowledgmentEmail } from '../services/webdesignEmailTemplates';
 
 const router = Router();
 
@@ -164,6 +164,23 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
       text: emailTemplate.text + fileInfoText,
       html: emailTemplate.html + fileInfoHtml,
       attachments: attachments,
+    });
+
+    // Send acknowledgment email to customer
+    const ackTemplate = getAcknowledgmentEmail({
+      customerName: name,
+      customerEmail: email,
+      requestId: webdesignRequest.id,
+      requestType: requestType,
+      projectDescription: message,
+      phone: files.length > 0 ? 'FILES_COUNT_PLACEHOLDER' : undefined,
+    });
+
+    await sendMail({
+      to: [email],
+      subject: ackTemplate.subject,
+      text: ackTemplate.text,
+      html: ackTemplate.html,
     });
 
     if (!emailResult.success) {

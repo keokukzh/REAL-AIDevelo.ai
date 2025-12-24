@@ -304,3 +304,56 @@ Ihr AIDevelo Team
   return { subject, text, html };
 }
 
+
+/**
+ * Email: Acknowledgment (to customer)
+ */
+export function getAcknowledgmentEmail(data: EmailTemplateData): { subject: string; text: string; html: string } {
+  const subject = `[AIDevelo Webdesign] Ihre Anfrage ist eingegangen`;
+  
+  const text = `
+Guten Tag ${data.customerName},
+
+vielen Dank für Ihre Webdesign-Anfrage bei AIDevelo. Wir haben Ihre Nachricht erhalten.
+
+Unser Team wird Ihre Angaben und Dateien nun prüfen. Sobald alles bereit ist, erhalten Sie von uns eine Rückmeldung oder direkt den Zahlungslink für die Anzahlung (100 CHF).
+
+Überblick Ihres Projekts:
+Art: ${data.requestType === 'new' ? 'Neue Website' : 'Website Redesign'}
+Beschreibung: ${data.projectDescription.substring(0, 100)}${data.projectDescription.length > 100 ? '...' : ''}
+
+Nächste Schritte:
+1. Review durch unser Team (innerhalb von 24h)
+2. Anzahlung von 100 CHF (Link folgt per E-Mail)
+3. Umsetzung Ihrer Website
+
+Vielen Dank für Ihr Vertrauen!
+Ihr AIDevelo Team
+  `.trim();
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #DA291C;">Anfrage erhalten</h2>
+      <p>Guten Tag ${data.customerName},</p>
+      <p>vielen Dank für Ihre Webdesign-Anfrage bei <strong>AIDevelo</strong>. Wir haben Ihre Nachricht erhalten.</p>
+      <p>Unser Team wird Ihre Angaben und Dateien nun prüfen. Sobald alles bereit ist, erhalten Sie von uns eine Rückmeldung oder direkt den Zahlungslink für die Anzahlung (100 CHF).</p>
+      
+      <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">Überblick Ihres Projekts</h3>
+        <p><strong>Art:</strong> ${data.requestType === 'new' ? 'Neue Website' : 'Website Redesign'}</p>
+        <p><strong>Anzahl der Dateien:</strong> ${data.phone === 'FILES_COUNT_PLACEHOLDER' ? 'Vorhanden' : 'In Prüfung'}</p>
+      </div>
+
+      <h3>Nächste Schritte</h3>
+      <ol>
+        <li>Review durch unser Team (innerhalb von 24h)</li>
+        <li>Anzahlung von <strong>100 CHF</strong> (Link folgt per E-Mail)</li>
+        <li>Umsetzung Ihrer Website (2-3 Wochen)</li>
+      </ol>
+
+      <p>Vielen Dank für Ihr Vertrauen!<br>Ihr AIDevelo Team</p>
+    </div>
+  `;
+
+  return { subject, text, html };
+}

@@ -23,6 +23,7 @@ import { StatusBadge } from '../components/newDashboard/StatusBadge';
 import { QuickActionButton } from '../components/newDashboard/QuickActionButton';
 import { HealthItem } from '../components/newDashboard/HealthItem';
 import { SkeletonStatCard } from '../components/newDashboard/Skeleton';
+import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal, ArrowRight } from 'lucide-react';
@@ -32,6 +33,16 @@ import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents';
 import { CallLog } from '../hooks/useCallLogs';
 import { extractErrorMessage } from '../lib/errorUtils';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
+
+interface TestAgent {
+  id: string;
+  name: string;
+  description: string;
+  industry: string;
+  language: string;
+  audioUrl?: string;
+  demoText: string;
+}
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -67,6 +78,22 @@ export const DashboardPage = () => {
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(undefined);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [testAgents, setTestAgents] = useState<TestAgent[]>([]);
+
+  // Fetch test agents
+  React.useEffect(() => {
+    const fetchTestAgents = async () => {
+      try {
+        const response = await apiClient.get<{ success: boolean; data: { agents: TestAgent[] } }>('/test-agents');
+        if (response.data?.success) {
+          setTestAgents(response.data.data.agents);
+        }
+      } catch (err) {
+        console.error('[DashboardPage] Failed to fetch test agents:', err);
+      }
+    };
+    fetchTestAgents();
+  }, []);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -517,7 +544,12 @@ export const DashboardPage = () => {
                   <h1 id="welcome-heading" className="text-3xl font-bold font-display text-white tracking-tight">
                     Willkommen, {userName.split('@')[0]}
                   </h1>
-                  <p className="text-gray-400 mt-2 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <p className="text-gray-400 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/30">
+                      Preview Mode
+                    </span>
+                  </div>
                 </div>
               {lastRefresh && (
                 <output className="text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
@@ -674,18 +706,7 @@ export const DashboardPage = () => {
                                       {service}
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedEvent(event);
-                                      setIsCreateAppointmentModalOpen(true);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 transition-all"
-                                    aria-label="Termin bearbeiten"
-                                  >
-                                    <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                                  </button>
+                                  <MoreHorizontal className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 transition-all" aria-hidden="true" />
                                 </div>
                               </div>
                             );
@@ -788,6 +809,48 @@ export const DashboardPage = () => {
                   </div>
                 </Card>
 
+                {/* Demo Agents Library */}
+                <section aria-labelledby="demo-agents-heading" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 id="demo-agents-heading" className="text-2xl font-bold font-display text-white">
+                        Test-Agents Mediathek
+                      </h2>
+                      <p className="text-gray-400 text-sm mt-1">
+                        Hören Sie sich unsere verschiedenen Agent-Varianten im Einsatz an.
+                      </p>
+                    </div>
+                  </div>
+
+                  {testAgents.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {testAgents.map((agent) => (
+                        <DemoAgentPlayer
+                          key={agent.id}
+                          name={agent.name}
+                          industry={agent.industry}
+                          audioUrl={agent.audioUrl}
+                          demoText={agent.demoText}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Mic className="text-gray-600" />
+                      </div>
+                      <p className="text-gray-500 italic">Demo-Agents werden geladen...</p>
+                    </div>
+                  )}
+                  
+                  <div className="bg-swiss-red/10 border border-swiss-red/20 rounded-xl p-6">
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      💡 <strong>Hinweis unseres Teams:</strong> Wir arbeiten mit Hochleistung an der Live-Schaltung dieser Agents. 
+                      Sobald diese verfügbar sind, können Sie sie mit einem Klick in Ihrem Account aktivieren.
+                    </p>
+                  </div>
+                </section>
+
                 {/* Recent Logs Table */}
                 <Card 
                   title="Letzte Anrufe" 
@@ -835,17 +898,7 @@ export const DashboardPage = () => {
                                 <td className="px-4 py-4 text-gray-400 font-mono text-xs">{row.duration}</td>
                                 <td className="px-4 py-4 text-right">
                                   <span className="text-gray-400">{row.timestamp}</span>
-                                  <button 
-                                    className="ml-2 p-1 text-gray-600 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (originalCall) handleCallClick(originalCall);
-                                    }}
-                                    aria-label="Anrufdetails anzeigen"
-                                    title="Anrufdetails anzeigen"
-                                  >
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </button>
+                                  <MoreHorizontal className="ml-2 w-4 h-4 text-gray-600 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all inline-block" aria-hidden="true" />
                                 </td>
                               </tr>
                             );
@@ -1066,7 +1119,7 @@ export const DashboardPage = () => {
           queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
         }}
         locationId={effectiveOverview.location.id}
-        event={selectedEvent}
+        event={selectedEvent || undefined}
         initialSlot={selectedSlot}
       />
     </div>

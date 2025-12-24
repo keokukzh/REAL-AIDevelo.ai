@@ -32,12 +32,24 @@ export const Features: React.FC = () => {
     <RevealSection className="py-24 relative section-spacing" id="features">
       <div className="container mx-auto px-6">
         <RevealSection className="text-center mb-16 max-w-2xl mx-auto" staggerDelay={0.05}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[10px] font-bold uppercase tracking-widest mb-4">
+            Coming Soon: Voice Agents
+          </div>
           <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
-            Mehr als nur ein <span className="text-accent">Anrufbeantworter</span>.
+            In Kürze: Ihr KI-basierter <span className="text-accent">Voice Agent</span>.
           </h2>
           <p className="text-gray-400 text-lg">
-            Ein kompletter Voice Agent, der Ihr Geschäft skaliert und Prozesse automatisiert.
+            Wir arbeiten bereits an der nächsten Generation der Kundenkommunikation. 
+            Melden Sie sich an, um die Test-Agents bereits jetzt im Dashboard zu erleben.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+            <button
+              onClick={() => window.location.href = '/login'}
+              className="px-6 py-3 bg-accent text-black rounded-lg font-semibold hover:bg-accent/80 transition-all transform hover:scale-105"
+            >
+              Jetzt für Preview registrieren
+            </button>
+          </div>
         </RevealSection>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
