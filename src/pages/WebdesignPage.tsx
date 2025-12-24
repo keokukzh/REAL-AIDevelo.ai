@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as FramerMotion from 'framer-motion';
-const { motion, useScroll, useTransform } = FramerMotion;
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 import { WebdesignContactForm } from '../components/WebdesignContactForm';
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, CheckCircle, ArrowDown } from 'lucide-react';

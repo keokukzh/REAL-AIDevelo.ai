@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
+// Import WebdesignPage directly (not lazy) to ensure framer-motion is available
+import { WebdesignPage } from './pages/WebdesignPage';
 // Lazy load pages for code splitting
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const VoiceAgentPage = React.lazy(() => import('./pages/VoiceAgentPage').then(m => ({ default: m.VoiceAgentPage })));
@@ -12,7 +14,6 @@ const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m =>
 const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const PaymentSuccessPage = React.lazy(() => import('./pages/PaymentSuccessPage').then(m => ({ default: m.PaymentSuccessPage })));
 const EnterpriseContactPage = React.lazy(() => import('./pages/EnterpriseContactPage').then(m => ({ default: m.EnterpriseContactPage })));
-const WebdesignPage = React.lazy(() => import('./pages/WebdesignPage').then(m => ({ default: m.WebdesignPage })));
 const CalendarCallbackPage = React.lazy(() => import('./pages/CalendarCallbackPage').then(m => ({ default: m.CalendarCallbackPage })));
 const AuthCallbackPage = React.lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage').then(m => ({ default: m.ImpressumPage })));
@@ -157,11 +158,7 @@ function AppContent() {
                         <EnterpriseContactPage />
                       </Suspense>
                     } />
-                    <Route path="/webdesign" element={
-                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
-                        <WebdesignPage />
-                      </Suspense>
-                    } />
+                    <Route path="/webdesign" element={<WebdesignPage />} />
                     <Route path="/calendar/:provider/callback" element={
                       <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <CalendarCallbackPage />
