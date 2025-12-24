@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Magnetic } from './Magnetic';
 
 interface ProcessStepCardProps {
   number: string;
@@ -39,14 +40,16 @@ export const ProcessStepCard = React.memo<ProcessStepCardProps>(({ number, title
         </div>
 
         <div className="relative z-10">
-          <motion.div
-            className="text-4xl font-bold text-swiss-red/30 mb-4 group-hover:text-swiss-red/50 transition-colors"
-            aria-hidden="true"
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
-          >
-            {number}
-          </motion.div>
+          <Magnetic strength={0.4}>
+            <motion.div
+              className="text-4xl font-bold text-swiss-red/30 mb-4 group-hover:text-swiss-red/60 transition-colors"
+              aria-hidden="true"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+            >
+              {number}
+            </motion.div>
+          </Magnetic>
           <h3 id={`process-title-${index}`} className="text-xl font-semibold mb-3 group-hover:text-swiss-red transition-colors">
             {title}
           </h3>

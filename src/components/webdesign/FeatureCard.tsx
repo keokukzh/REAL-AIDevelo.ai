@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
+import { Magnetic } from './Magnetic';
 
 interface FeatureCardProps {
   icon: LucideIcon;
@@ -69,15 +70,17 @@ export const FeatureCard = React.memo<FeatureCardProps>(({ icon: Icon, title, de
 
       <div className="relative z-10" style={{ transform: 'translateZ(20px)' }}>
         {/* Icon with Animation */}
-        <motion.div
-          className="w-12 h-12 bg-swiss-red/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
-          aria-hidden="true"
-          animate={isHovered ? { scale: 1.1, rotate: [0, -5, 5, -5, 0] } : { scale: 1, rotate: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-swiss-red/40 to-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <Icon className="w-6 h-6 text-swiss-red relative z-10" aria-hidden="true" />
-        </motion.div>
+        <Magnetic strength={0.5}>
+          <motion.div
+            className="w-12 h-12 bg-swiss-red/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
+            aria-hidden="true"
+            animate={isHovered ? { scale: 1.1, rotate: [0, -5, 5, -5, 0] } : { scale: 1, rotate: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-swiss-red/40 to-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <Icon className="w-6 h-6 text-swiss-red relative z-10" aria-hidden="true" />
+          </motion.div>
+        </Magnetic>
 
         <h3
           id={`feature-title-${index}`}

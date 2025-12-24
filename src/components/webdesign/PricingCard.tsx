@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { Magnetic } from './Magnetic';
 
 interface PricingFeature {
   text: string;
@@ -144,6 +145,18 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
             ))}
           </li>
         </ul>
+
+        {/* Action Button */}
+        <div className="mt-12 text-center">
+          <Magnetic strength={1.2}>
+            <button
+              onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all hover:scale-105"
+            >
+              Jetzt Projekt starten
+            </button>
+          </Magnetic>
+        </div>
       </div>
     </motion.div>
   );

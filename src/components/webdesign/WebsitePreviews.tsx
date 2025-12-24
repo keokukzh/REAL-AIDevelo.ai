@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, ZoomIn } from 'lucide-react';
+import { Magnetic } from './Magnetic';
 
 interface PreviewItem {
   id: string;
@@ -82,25 +83,25 @@ export const WebsitePreviews: React.FC = () => {
               transition={{ delay: index * 0.1 }}
               className="group relative"
             >
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl transition-all duration-500 group-hover:border-swiss-red/30 group-hover:shadow-swiss-red/10">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl transition-all duration-500 group-hover:border-swiss-red/30 group-hover:shadow-swiss-red/20">
                 {/* Image */}
                 <img 
                   src={item.image} 
                   alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
                 
                 {/* Content Overlay */}
-                <div className="absolute inset-x-0 bottom-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="absolute inset-x-0 bottom-0 p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <div className="flex items-center gap-2 mb-3">
                     <span className="px-2 py-0.5 rounded bg-swiss-red text-[10px] font-bold text-white uppercase tracking-wider">
                       {item.category}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-swiss-red transition-colors">
+                  <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-swiss-red transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-sm text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 line-clamp-2">
@@ -109,10 +110,12 @@ export const WebsitePreviews: React.FC = () => {
                 </div>
 
                 {/* Hover Action Button */}
-                <div className="absolute top-4 right-4 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
-                  <div className="w-10 h-10 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg">
-                    <ZoomIn className="w-5 h-5" />
-                  </div>
+                <div className="absolute top-6 right-6 translate-x-6 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
+                  <Magnetic strength={1.5}>
+                    <div className="w-12 h-12 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-2xl cursor-pointer">
+                      <ZoomIn className="w-6 h-6" />
+                    </div>
+                  </Magnetic>
                 </div>
               </div>
             </motion.div>
@@ -124,24 +127,26 @@ export const WebsitePreviews: React.FC = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="mt-20 p-8 rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 border border-white/5 text-center relative overflow-hidden"
+          className="mt-20 p-12 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 text-center relative overflow-hidden group shadow-2xl"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(218,41,28,0.05)_0%,transparent_70%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(218,41,28,0.1)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
           <div className="relative z-10">
-            <h3 className="text-2xl font-bold text-white mb-4">
+            <h3 className="text-3xl font-bold text-white mb-6">
               Bereit für Ihren eigenen digitalen Auftritt?
             </h3>
-            <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
-              Sichern Sie sich jetzt Ihr Redesign zum Festpreis von 599 CHF.
-              Keine versteckten Kosten, volle Transparenz.
+            <p className="text-gray-400 mb-10 max-w-2xl mx-auto text-lg leading-relaxed">
+              Sichern Sie sich jetzt Ihr Redesign zum Festpreis von <span className="text-white font-bold">599 CHF</span>.
+              Keine monatlichen Gebühren. Volle Transparenz. Schweizer Qualität.
             </p>
-            <button 
-              onClick={() => document.getElementById('webdesign-contact')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 rounded-full bg-swiss-red hover:bg-red-700 text-white font-bold transition-all hover:scale-105 shadow-xl shadow-red-900/20 inline-flex items-center gap-2"
-            >
-              Kostenloses Erstgespräch anfragen
-              <ExternalLink className="w-4 h-4" />
-            </button>
+            <Magnetic strength={0.8}>
+              <button 
+                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-10 py-5 rounded-full bg-swiss-red hover:bg-red-700 text-white font-bold transition-all hover:scale-105 shadow-[0_0_30px_rgba(218,41,28,0.3)] inline-flex items-center gap-3 text-lg"
+              >
+                Kostenloses Erstgespräch anfragen
+                <ExternalLink className="w-5 h-5" />
+              </button>
+            </Magnetic>
           </div>
         </motion.div>
       </div>

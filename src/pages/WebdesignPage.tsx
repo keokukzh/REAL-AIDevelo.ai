@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { useRef } from 'react';
 import { Navbar } from '../components/Navbar';
 import { WebdesignContactForm } from '../components/WebdesignContactForm';
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, CheckCircle, ArrowDown } from 'lucide-react';
@@ -8,7 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
 import { BackButton } from '../components/navigation/BackButton';
 import { ROUTES } from '../config/navigation';
-import { FeatureCard, BentoFeatures, ProcessStepCard, TechnologyBadge, PricingCard, FloatingShapes } from '../components/webdesign';
+import { FeatureCard, BentoFeatures, BentoGrid, ProcessStepCard, TechnologyBadge, PricingCard, FloatingShapes, Magnetic, TypewriterTitle, CursorFollower, SmoothScroll } from '../components/webdesign';
 import { WebdesignAnimatedBackground } from '../components/webdesign/WebdesignAnimatedBackground';
 import { ScrollReveal, Parallax } from '../components/webdesign/ScrollReveal';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -31,6 +32,23 @@ interface Technology {
   name: string;
   description: string;
 }
+
+const LazySection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "0px 0px -200px 0px" });
+
+  return (
+    <div ref={ref}>
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+};
 
 export const WebdesignPage = () => {
   const navigate = useNavigate();
@@ -141,8 +159,23 @@ export const WebdesignPage = () => {
     }
   };
 
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className="min-h-screen bg-background text-white selection:bg-swiss-red/30 overflow-hidden">
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 bg-swiss-red z-[100] origin-left"
+        style={{ scaleX }}
+      />
+      
+      <SmoothScroll>
+        <CursorFollower />
       {/* Skip to main content link */}
       <a 
         href="#main-content" 
@@ -191,35 +224,15 @@ export const WebdesignPage = () => {
 
               {/* Heading with Kinetic Typography */}
               <ScrollReveal direction="up" delay={0.4} duration={0.8}>
-                <h1 
-                  id="hero-heading"
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.1] tracking-tight"
-                >
-                  <motion.span
-                    className="text-white block"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.4 }}
-                  >
-                    Neue Website oder
-                  </motion.span>
-                  <motion.span
-                    className="text-swiss-red block mt-2 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red bg-clip-text text-transparent bg-[length:200%_auto]"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ 
-                      opacity: 1, 
-                      y: 0,
-                      backgroundPosition: prefersReducedMotion ? '0%' : ['0%', '100%', '0%']
-                    }}
-                    transition={{ 
-                      duration: 0.8, 
-                      delay: 0.6,
-                      backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
-                    }}
-                  >
-                    Redesign für 599 CHF
-                  </motion.span>
-                </h1>
+                <TypewriterTitle 
+                  baseText="Moderne Websites &"
+                  words={["Elegantes Redesign", "Maximale Performance", "Conversion-Optimiert", "Lighthouse Score 90+", "Schlüsselfertig geliefert"]}
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.1] tracking-tight bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent"
+                />
+                <div className="mt-6 text-2xl md:text-3xl font-bold text-swiss-red flex items-center gap-3">
+                  <span className="h-px w-12 bg-swiss-red/50"></span>
+                  Ab Festpreis 599 CHF
+                </div>
               </ScrollReveal>
 
               {/* Subheading */}
@@ -239,15 +252,18 @@ export const WebdesignPage = () => {
                     whileTap={{ scale: 0.95 }}
                     className="relative"
                   >
-                    <div className="absolute inset-0 bg-swiss-red blur-xl opacity-50 animate-pulse" />
-                    <Button
-                      onClick={handleScrollToForm}
-                      variant="primary"
-                      className="relative bg-swiss-red hover:bg-red-700 text-white border-none min-h-[56px] px-8 font-semibold shadow-lg shadow-swiss-red/50"
-                      aria-label="Zum Kontaktformular scrollen"
-                    >
-                      Jetzt Projekt anfragen
-                    </Button>
+                    <div className="absolute inset-0 bg-swiss-red blur-xl opacity-30 group-hover:opacity-60 transition-opacity animate-pulse" />
+                    <Magnetic strength={1.2}>
+                      <Button
+                        onClick={handleScrollToForm}
+                        variant="primary"
+                        className="relative bg-swiss-red hover:bg-red-700 text-white border-none min-h-[56px] px-8 font-semibold shadow-lg shadow-swiss-red/50 group"
+                        aria-label="Zum Kontaktformular scrollen"
+                      >
+                        Jetzt Projekt anfragen
+                        <ArrowDown className="ml-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                      </Button>
+                    </Magnetic>
                   </motion.div>
                   <BackButton
                     to={ROUTES.HOME}
@@ -394,7 +410,7 @@ export const WebdesignPage = () => {
       {/* Process Section */}
       <section 
         id="process"
-        className="py-12 sm:py-20 relative overflow-hidden"
+        className="py-24 relative overflow-hidden"
         aria-labelledby="process-heading"
       >
         <WebdesignAnimatedBackground variant="section" intensity="low" />
@@ -442,7 +458,7 @@ export const WebdesignPage = () => {
           </ScrollReveal>
 
           <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
-            <BentoFeatures features={features} />
+            <BentoGrid features={features} />
           </ScrollReveal>
         </div>
       </section>
@@ -556,6 +572,7 @@ export const WebdesignPage = () => {
       </section>
 
       <Footer />
+      </SmoothScroll>
     </div>
   );
 };

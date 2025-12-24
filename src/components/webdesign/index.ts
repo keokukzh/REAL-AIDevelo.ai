@@ -1,5 +1,6 @@
 export { FeatureCard } from './FeatureCard';
 export { BentoFeatures } from './BentoFeatures';
+export { BentoGrid } from './BentoGrid';
 export { ProcessStepCard } from './ProcessStepCard';
 export { TechnologyBadge } from './TechnologyBadge';
 export { PricingCard } from './PricingCard';
@@ -7,4 +8,8 @@ export { FloatingShapes } from './FloatingShapes';
 export { ScrollReveal, Parallax } from './ScrollReveal';
 export { WebdesignProcessFlow } from './WebdesignProcessFlow';
 export { WebsitePreviews } from './WebsitePreviews';
+export { TypewriterTitle } from './TypewriterTitle';
+export { Magnetic } from './Magnetic';
+export { CursorFollower } from './CursorFollower';
+export { SmoothScroll } from './SmoothScroll';
 export { WebdesignAnimatedBackground } from './WebdesignAnimatedBackground';
