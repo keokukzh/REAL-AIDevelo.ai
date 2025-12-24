@@ -34,6 +34,9 @@ interface Technology {
 export const WebdesignPage = () => {
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
+  
+  // Use scroll tracking for parallax effects
+  // Hooks must always be called in the same order
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 100]);
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
