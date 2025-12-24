@@ -287,6 +287,41 @@ export const DashboardPage = () => {
 
 
 
+  // Determine effective overview early (before any hooks that depend on it)
+  // This allows dashboard to work even with network errors
+  const isNetworkError = error && (
+    extractErrorMessage(error).includes('Failed to fetch') || 
+    extractErrorMessage(error).includes('NetworkError') ||
+    extractErrorMessage(error).includes('Network request failed')
+  );
+  
+  // Create safe fallback overview
+  const safeOverview = overview || {
+    user: { id: '', email: user?.email || null },
+    organization: { id: '', name: '' },
+    location: { id: '', name: '', timezone: 'Europe/Zurich' },
+    agent_config: {
+      id: '',
+      eleven_agent_id: null,
+      setup_state: 'needs_setup',
+      persona_gender: null,
+      persona_age_range: null,
+      goals_json: [],
+      services_json: [],
+      business_type: null,
+    },
+    status: {
+      agent: 'needs_setup' as const,
+      phone: 'not_connected' as const,
+      calendar: 'not_connected' as const,
+    },
+    recent_calls: [],
+  };
+  
+  // Use safe overview for rendering (allows dashboard to work even with network errors)
+  const displayOverview = overview || safeOverview;
+  const effectiveOverview = displayOverview;
+
   // Fetch today's and next few days' events for dashboard
   // IMPORTANT: ALL hooks must be called before any early returns
   // Note: We create a new Date() each render for "today" since we want current date
@@ -318,9 +353,6 @@ export const DashboardPage = () => {
       .slice(0, 5);
   }, [calendarEvents]);
 
-  // Use displayOverview for all derived values (allows dashboard to work even with network errors)
-  const effectiveOverview = displayOverview;
-  
   // Compute derived values - must be before early returns
   const userName = React.useMemo(() => user?.email || effectiveOverview?.user?.email || 'Benutzer', [user?.email, effectiveOverview?.user?.email]);
   const isAgentActive = React.useMemo(() => effectiveOverview?.agent_config?.setup_state === 'ready', [effectiveOverview?.agent_config?.setup_state]);
@@ -398,37 +430,6 @@ export const DashboardPage = () => {
     );
   }
 
-  // Show error state only if it's not a network error (network errors are handled gracefully)
-  const isNetworkError = error && (
-    extractErrorMessage(error).includes('Failed to fetch') || 
-    extractErrorMessage(error).includes('NetworkError') ||
-    extractErrorMessage(error).includes('Network request failed')
-  );
-  
-  // If it's a network error, show dashboard with limited functionality instead of error screen
-  // Use empty/default data to allow dashboard to render
-  const safeOverview = overview || {
-    user: { id: '', email: user?.email || null },
-    organization: { id: '', name: '' },
-    location: { id: '', name: '', timezone: 'Europe/Zurich' },
-    agent_config: {
-      id: '',
-      eleven_agent_id: null,
-      setup_state: 'needs_setup',
-      persona_gender: null,
-      persona_age_range: null,
-      goals_json: [],
-      services_json: [],
-      business_type: null,
-    },
-    status: {
-      agent: 'needs_setup' as const,
-      phone: 'not_connected' as const,
-      calendar: 'not_connected' as const,
-    },
-    recent_calls: [],
-  };
-  
   // Only show error screen for non-network errors
   if ((error && !isNetworkError) || (!overview && !isLoading && !isNetworkError)) {
     return (
@@ -450,9 +451,6 @@ export const DashboardPage = () => {
       </div>
     );
   }
-  
-  // Use safe overview for rendering (allows dashboard to work even with network errors)
-  const displayOverview = overview || safeOverview;
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
