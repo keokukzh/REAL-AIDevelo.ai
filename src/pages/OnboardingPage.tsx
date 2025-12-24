@@ -5,7 +5,7 @@ import { ROUTES } from '../config/navigation';
 import { OnboardingWizard } from '../components/OnboardingWizard';
 import { AgentTemplateSelector } from '../components/AgentTemplateSelector';
 import { AgentTemplate } from '../data/agentTemplates';
-import { VoiceOnboarding } from '../components/VoiceOnboarding';
+import { VoiceOnboarding } from '../components/voiceagent/VoiceOnboarding';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { CompanyDataStep } from '../components/onboarding/CompanyDataStep';
 import { AvailabilityStep } from '../components/onboarding/AvailabilityStep';

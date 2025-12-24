@@ -16,29 +16,29 @@ interface ProcessStep {
 const steps: ProcessStep[] = [
   {
     number: '01',
-    title: 'Anfrage stellen',
-    description: 'Füllen Sie das Formular aus und laden Sie alle benötigten Dateien hoch. Wir sammeln alle Informationen für Ihr Projekt.',
+    title: 'Digitale Vision & Analyse',
+    description: 'Teilen Sie uns Ihre Wünsche mit. In einem ersten Briefing analysieren wir Ihre Zielgruppe und definieren die strategischen Ziele Ihrer neuen Website.',
     icon: FileText,
     color: 'text-blue-400',
   },
   {
     number: '02',
-    title: 'Anzahlung (100 CHF)',
-    description: 'Nach Prüfung Ihrer Anfrage erhalten Sie einen Zahlungslink für die Anzahlung. Sobald diese bezahlt ist, starten wir mit der Umsetzung.',
+    title: 'Projektstart & Fundament',
+    description: 'Nach Ihrer Anzahlung von 100 CHF legen wir sofort los. Wir sichern Ihre Domain, setzen das Hosting auf und erstellen das erste Designkonzept.',
     icon: CreditCard,
-    color: 'text-green-400',
+    color: 'text-emerald-400',
   },
   {
     number: '03',
-    title: 'Website-Erstellung',
-    description: 'Unser Team erstellt Ihre Website in 2-3 Wochen. Sie erhalten regelmäßige Updates und können Feedback geben.',
+    title: 'Präzisions-Entwicklung',
+    description: 'In 2-3 Wochen erwecken wir Ihr Projekt zum Leben. Mit modernsten Technologien bauen wir eine performante Website, die Ihre Kunden begeistert.',
     icon: Code,
-    color: 'text-purple-400',
+    color: 'text-blue-500',
   },
   {
     number: '04',
-    title: 'Restzahlung (499 CHF) + Übergabe',
-    description: 'Nach Ihrer Zustimmung erhalten Sie den Link für die Restzahlung. Danach übergeben wir Ihnen die Login-Daten für Domain und Server.',
+    title: 'Launch & Erfolgskontrolle',
+    description: 'Nach der finalen Abnahme geht Ihre Seite live. Wir optimieren die SEO-Einstellungen und übergeben Ihnen alle Schlüssel für Ihren digitalen Erfolg.',
     icon: CheckCircle,
     color: 'text-swiss-red',
   },
@@ -184,33 +184,42 @@ export const WebdesignProcessFlow: React.FC = () => {
           initial={{ opacity: 0, y: 20, scale: 0.9 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-12 text-center"
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="mt-20 text-center"
         >
           <motion.div
-            className="inline-block bg-gradient-to-r from-swiss-red/20 to-red-600/20 border-2 border-swiss-red/30 rounded-2xl px-8 py-6 backdrop-blur-sm relative overflow-hidden"
-            whileHover={{ scale: 1.05, borderColor: 'rgba(218, 41, 28, 0.5)' }}
-            transition={{ duration: 0.3 }}
+            className="inline-block bg-gradient-to-br from-slate-900/80 to-slate-950/90 border border-white/10 rounded-3xl px-10 py-8 backdrop-blur-xl relative overflow-hidden group shadow-2xl shadow-swiss-red/10"
+            whileHover={{ scale: 1.02, borderColor: 'rgba(218, 41, 28, 0.3)' }}
           >
-            {/* Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
+            {/* Animated Glow Backdrop */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-swiss-red/10 blur-[80px] rounded-full group-hover:bg-swiss-red/20 transition-colors" />
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full group-hover:bg-blue-500/20 transition-colors" />
             
-            <div className="relative z-10">
-              <div className="text-sm text-gray-400 mb-2">Gesamtpreis</div>
-              <motion.div
-                className="text-4xl font-bold text-white font-display"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ 
-                  type: 'spring',
-                  stiffness: 200,
-                  damping: 15,
-                  delay: 0.8
-                }}
-              >
-                599 CHF
-              </motion.div>
-              <div className="text-sm text-gray-400 mt-2">100 CHF Anzahlung + 499 CHF Restzahlung</div>
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
+              <div className="text-left">
+                <div className="text-sm font-medium text-swiss-red uppercase tracking-wider mb-2">Transparente Fixpreise</div>
+                <h3 className="text-2xl font-bold text-white mb-1">Einfache Abwicklung</h3>
+                <p className="text-gray-400 text-sm">Keine versteckten Kosten. Alles inklusive.</p>
+              </div>
+
+              <div className="h-12 w-px bg-white/10 hidden md:block" />
+
+              <div className="text-center md:text-right">
+                <div className="text-sm text-gray-400 mb-1">Gesamtinvestition</div>
+                <div className="flex items-baseline gap-2 justify-center md:justify-end">
+                  <motion.span 
+                    className="text-5xl font-bold text-white font-display"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  >
+                    599
+                  </motion.span>
+                  <span className="text-2xl font-bold text-gray-400">CHF</span>
+                </div>
+                <div className="text-xs font-medium text-gray-500 mt-2 uppercase tracking-widest">
+                  100 CHF Start • 499 CHF Launch
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
