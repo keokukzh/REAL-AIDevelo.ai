@@ -31,7 +31,7 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
         scale: 1.02,
         transition: { duration: 0.3 }
       }}
-      className="bg-gradient-to-br from-swiss-red/20 to-red-900/20 border-2 border-swiss-red/30 rounded-2xl p-8 md:p-12 relative overflow-hidden group"
+      className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
       aria-labelledby="pricing-heading"
       style={{ willChange: 'transform' }}
     >
@@ -63,18 +63,22 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           {/* Price with Pulse Animation */}
           <motion.div
             id="pricing-heading"
-            className="text-6xl md:text-7xl font-bold font-display text-swiss-red mb-2 relative inline-block"
+            className="text-7xl md:text-8xl font-bold font-display text-white mb-2 relative inline-block"
             animate={isHovered ? { 
-              scale: [1, 1.05, 1],
-              filter: ['brightness(1)', 'brightness(1.2)', 'brightness(1)']
+              scale: [1, 1.02, 1],
+              textShadow: [
+                '0 0 20px rgba(218,41,28,0)',
+                '0 0 40px rgba(218,41,28,0.5)',
+                '0 0 20px rgba(218,41,28,0)'
+              ]
             } : {}}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 2, repeat: Infinity }}
           >
-            <span className="relative z-10">{price}</span>
+            <span className="relative z-10 bg-gradient-to-r from-white via-swiss-red to-white bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-mesh">{price}</span>
             <motion.div
-              className="absolute inset-0 bg-swiss-red/20 rounded-lg blur-xl"
-              animate={isHovered ? { scale: 1.5, opacity: [0.5, 0.8, 0.5] } : { scale: 1, opacity: 0.3 }}
-              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 bg-swiss-red/10 rounded-full blur-3xl"
+              animate={isHovered ? { scale: [1, 1.5, 1], opacity: [0.2, 0.4, 0.2] } : { scale: 1, opacity: 0 }}
+              transition={{ duration: 3, repeat: Infinity }}
             />
           </motion.div>
           <p className="text-xl text-gray-300 mb-2">

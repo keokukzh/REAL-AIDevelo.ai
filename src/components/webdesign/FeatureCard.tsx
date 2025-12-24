@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 
 interface FeatureCardProps {
@@ -50,7 +50,7 @@ export const FeatureCard = React.memo<FeatureCardProps>(({ icon: Icon, title, de
         rotateY: isHovered ? rotateY : 0,
         transformStyle: 'preserve-3d',
       }}
-      className="group relative bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 transition-all duration-300 hover:border-swiss-red/50 hover:shadow-2xl hover:shadow-swiss-red/20"
+      className="group relative bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 transition-all duration-300 hover:border-swiss-red/50 hover:shadow-2xl hover:shadow-swiss-red/20 h-full"
       role="article"
       aria-labelledby={`feature-title-${index}`}
       aria-describedby={`feature-desc-${index}`}

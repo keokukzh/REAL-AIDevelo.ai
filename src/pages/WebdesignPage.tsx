@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
 import { BackButton } from '../components/navigation/BackButton';
 import { ROUTES } from '../config/navigation';
-import { FeatureCard, ProcessStepCard, TechnologyBadge, PricingCard } from '../components/webdesign';
+import { FeatureCard, BentoFeatures, ProcessStepCard, TechnologyBadge, PricingCard, FloatingShapes } from '../components/webdesign';
 import { WebdesignAnimatedBackground } from '../components/webdesign/WebdesignAnimatedBackground';
 import { ScrollReveal, Parallax } from '../components/webdesign/ScrollReveal';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -161,6 +161,7 @@ export const WebdesignPage = () => {
       >
         {/* Animated Background */}
         <WebdesignAnimatedBackground variant="hero" intensity="high" />
+        <FloatingShapes />
         
         {/* Base Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-950 to-background -z-50" aria-hidden="true" />
@@ -359,6 +360,8 @@ export const WebdesignPage = () => {
       {/* Portfolio / Website Previews Section */}
       <WebsitePreviews />
 
+      <div className="h-24 w-px bg-gradient-to-b from-swiss-red to-transparent mx-auto opacity-30" />
+
       {/* Pricing Section */}
       <section 
         id="pricing"
@@ -366,6 +369,7 @@ export const WebdesignPage = () => {
         aria-labelledby="pricing-heading"
       >
         <WebdesignAnimatedBackground variant="section" intensity="low" />
+        <FloatingShapes />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <ScrollReveal direction="up" delay={0.2} className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -394,6 +398,7 @@ export const WebdesignPage = () => {
         aria-labelledby="process-heading"
       >
         <WebdesignAnimatedBackground variant="section" intensity="low" />
+        <FloatingShapes />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <ScrollReveal direction="up" delay={0.2} className="text-center mb-16">
             <h2 id="process-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
@@ -436,16 +441,8 @@ export const WebdesignPage = () => {
             </p>
           </ScrollReveal>
 
-          <ScrollReveal stagger staggerDelay={0.1} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto list-none" aria-label="Features">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                index={index}
-              />
-            ))}
+          <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
+            <BentoFeatures features={features} />
           </ScrollReveal>
         </div>
       </section>
@@ -457,6 +454,7 @@ export const WebdesignPage = () => {
         aria-labelledby="technologies-heading"
       >
         <WebdesignAnimatedBackground variant="section" intensity="low" />
+        <FloatingShapes />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <ScrollReveal direction="up" delay={0.2} className="text-center mb-12">
             <h2 id="technologies-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
