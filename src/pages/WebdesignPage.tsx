@@ -19,6 +19,9 @@ import {
   WebdesignAnimatedBackground,
   WebdesignProcessFlow,
   WebsitePreviews,
+  WebdesignTechStack,
+  WebdesignArchitecture,
+  WebdesignComparison,
   ScrollReveal,
   Parallax,
   WebdesignHero
@@ -240,7 +243,16 @@ export const WebdesignPage = () => {
         {/* Portfolio / Website Previews Section */}
         <WebsitePreviews />
 
+        {/* Tech Stack Showcase */}
+        <WebdesignTechStack />
+
+        {/* Architectural Deep-Dive */}
+        <WebdesignArchitecture />
+
         <div className="h-48 w-px bg-gradient-to-b from-swiss-red via-swiss-red/50 to-transparent mx-auto opacity-30 my-12" />
+
+        {/* Business Comparison Section */}
+        <WebdesignComparison />
 
         {/* Pricing Section */}
         <section 
