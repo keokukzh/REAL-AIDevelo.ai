@@ -75,7 +75,7 @@ const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, 
           {description}
         </p>
 
-        {/* Mico-Demo Area */}
+        {/* Micro-Demo Area */}
         {renderDemo && (
           <div className="mt-4 p-4 rounded-xl bg-black/40 border border-white/5 overflow-hidden min-h-[120px] flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-500">
              {renderDemo()}

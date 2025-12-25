@@ -310,35 +310,6 @@ export const WebdesignPage = () => {
           </div>
         </section>
 
-        {/* Technologies Section */}
-        <section 
-          id="technologies"
-          className="py-24 sm:py-32 relative overflow-hidden"
-          aria-labelledby="technologies-heading"
-        >
-          <FloatingShapes />
-          <div className="container mx-auto px-6 relative z-10">
-            <ScrollReveal direction="up" className="text-center mb-16">
-              <h2 id="technologies-heading" className="text-4xl md:text-5xl font-bold font-display mb-6">
-                Tech Stack
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-                Zukunftssichere Technologien für langlebige digitale Produkte.
-              </p>
-            </ScrollReveal>
-
-            <ScrollReveal stagger staggerDelay={0.05} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto list-none" aria-label="Technologien">
-              {technologies.map((tech, index) => (
-                <TechnologyBadge
-                  key={tech.name}
-                  name={tech.name}
-                  description={tech.description}
-                  index={index}
-                />
-              ))}
-            </ScrollReveal>
-          </div>
-        </section>
 
         {/* Contact Form Section */}
         <section 

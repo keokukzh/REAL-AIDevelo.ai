@@ -9,36 +9,59 @@ export const WebdesignArchitecture: React.FC = () => {
         <div className="flex flex-col lg:flex-row items-center gap-16">
           {/* Left Side: Visual Blueprint */}
           <div className="w-full lg:w-1/2 relative h-[500px] flex items-center justify-center">
+             {/* Background Particles for filling space */}
+             <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(6)].map((_, i) => (
+                   <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ 
+                         opacity: [0, 0.4, 0],
+                         scale: [1, 2, 1],
+                         x: [0, (i % 2 === 0 ? 1 : -1) * 200],
+                         y: [0, (i % 3 === 0 ? 1 : -1) * 200]
+                      }}
+                      transition={{ 
+                         duration: 8 + i, 
+                         repeat: Infinity, 
+                         delay: i * 2,
+                         ease: "linear" 
+                      }}
+                      className="absolute left-1/2 top-1/2 w-1 h-1 bg-blue-500 rounded-full blur-[2px]"
+                   />
+                ))}
+             </div>
+
              {/* Central Hub */}
              <motion.div 
                animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
                transition={{ duration: 10, repeat: Infinity }}
-               className="relative w-48 h-48 bg-swiss-red/10 border border-swiss-red/30 rounded-3xl flex items-center justify-center z-20 shadow-[0_0_50px_rgba(218,41,28,0.2)]"
+               className="relative w-48 h-48 bg-blue-500/10 border border-blue-500/30 rounded-3xl flex items-center justify-center z-20 shadow-[0_0_50px_rgba(59,130,246,0.2)]"
              >
-                <div className="p-6 rounded-2xl bg-slate-900 border border-white/10 text-swiss-red">
+                <div className="p-6 rounded-2xl bg-slate-900 border border-white/10 text-blue-400">
                    <Zap size={48} fill="currentColor" />
                 </div>
                 {/* Orbital Rings */}
-                <div className="absolute inset-[-40px] border border-white/5 rounded-full animate-[spin_20s_linear_infinite]" />
+                <div className="absolute inset-[-40px] border border-blue-500/10 rounded-full animate-[spin_20s_linear_infinite]" />
                 <div className="absolute inset-[-80px] border border-white/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
              </motion.div>
 
              {/* Connecting Nodes */}
              {[
-               { icon: Globe2, label: 'CDN / Edge', x: -180, y: -120, delay: 0 },
-               { icon: ShieldCheck, label: 'Security Layer', x: 180, y: -120, delay: 0.2 },
-               { icon: Server, label: 'BaaS Engine', x: -180, y: 120, delay: 0.4 },
-               { icon: Layers, label: 'Hydration', x: 180, y: 120, delay: 0.6 }
+               { icon: Globe2, label: 'CDN / Edge', x: -160, y: -100, delay: 0 },
+               { icon: ShieldCheck, label: 'Security Layer', x: 160, y: -100, delay: 0.2 },
+               { icon: Server, label: 'BaaS Engine', x: -160, y: 100, delay: 0.4 },
+               { icon: Layers, label: 'Hydration', x: 160, y: 100, delay: 0.6 }
              ].map((node, i) => (
                 <motion.div 
                   key={node.label}
                   initial={{ opacity: 0, scale: 0 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: node.delay + 0.5 }}
-                  className="absolute p-4 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 flex flex-col items-center gap-2 z-30"
+                  className="absolute p-4 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 flex flex-col items-center gap-2 z-30 group/node"
                   style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
                 >
-                   <node.icon className="text-blue-400" size={24} />
+                   <node.icon className="text-blue-400 group-hover:scale-110 transition-transform" size={24} />
                    <span className="text-[10px] font-mono text-white/50 uppercase tracking-widest">{node.label}</span>
                    
                    {/* Connection Line to Hub */}

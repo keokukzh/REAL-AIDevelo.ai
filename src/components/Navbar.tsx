@@ -159,10 +159,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                       e.preventDefault();
                       nav.goToHome();
                     }}
-                    className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium group"
+                    className="flex items-center gap-2 text-white/80 hover:text-white transition-all text-sm font-medium group bg-white/0 hover:bg-white/5 px-3 py-1.5 rounded-full"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    whileHover={{ x: -2 }}
+                    whileHover={{ x: -1 }}
                   >
                     <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
                     Alle Services

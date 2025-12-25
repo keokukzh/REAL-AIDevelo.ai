@@ -71,8 +71,8 @@ export const WebdesignComparison: React.FC = () => {
             <div className="hidden md:block p-8 bg-white/5 border-b border-white/10">
               <div className="text-sm font-mono text-white/30 uppercase tracking-widest">Feature</div>
             </div>
-            <div className="hidden md:block p-8 bg-swiss-red/10 border-b border-swiss-red/20">
-              <div className="text-xl font-bold text-swiss-red flex items-center gap-2">
+            <div className="hidden md:block p-8 bg-blue-600/10 border-b border-blue-500/20">
+              <div className="text-xl font-bold text-blue-400 flex items-center gap-2">
                  Digital Genesis <Zap size={18} />
               </div>
             </div>
@@ -92,12 +92,12 @@ export const WebdesignComparison: React.FC = () => {
                 </div>
                 
                 {/* Genesis Value */}
-                <div className="p-6 md:p-8 bg-swiss-red/5 border-b border-swiss-red/10 flex flex-col justify-center">
+                <div className="p-6 md:p-8 bg-blue-500/5 border-b border-blue-500/10 flex flex-col justify-center">
                    <div className="flex items-center gap-2 text-white font-bold text-lg mb-1">
                       <Check className="text-emerald-400" size={18} />
                       {feature.genesis}
                    </div>
-                   <div className="md:hidden text-[10px] text-swiss-red/50 uppercase font-mono">Digital Genesis</div>
+                   <div className="md:hidden text-[10px] text-blue-400/50 uppercase font-mono">Digital Genesis</div>
                 </div>
 
                 {/* Legacy Value */}
