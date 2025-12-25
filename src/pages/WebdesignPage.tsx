@@ -72,16 +72,64 @@ export const WebdesignPage = () => {
       icon: Globe,
       title: 'Responsive Design',
       description: 'Ihre Website sieht auf allen Geräten perfekt aus - Desktop, Tablet und Smartphone. Pixelgenaue Umsetzung mit modernen CSS-Frameworks.',
+      renderDemo: () => (
+        <div className="flex items-center gap-4">
+          <motion.div 
+            animate={{ width: [100, 60, 100] }} 
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="h-16 border-2 border-white/20 rounded-lg bg-white/5 flex items-center justify-center"
+          >
+            <div className="w-4 h-4 rounded-full bg-swiss-red/40" />
+          </motion.div>
+          <div className="text-[10px] font-mono text-white/30 hidden sm:block">FITTING_UI_V1</div>
+        </div>
+      )
     },
     {
       icon: Zap,
       title: 'Schnelle Ladezeiten',
       description: 'Optimierte Performance mit Code-Splitting, Lazy Loading und modernen Build-Tools. Lighthouse Score 90+ garantiert.',
+      renderDemo: () => (
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          <svg className="w-full h-full -rotate-90">
+            <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
+            <motion.circle 
+              cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" 
+              strokeDasharray="251"
+              animate={{ strokeDashoffset: [251, 2.5, 2.5] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              className="text-emerald-500" 
+            />
+          </svg>
+          <motion.span 
+            className="absolute text-2xl font-bold font-mono text-white"
+            animate={{ opacity: [0, 1, 1] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+          >99</motion.span>
+        </div>
+      )
     },
     {
       icon: Search,
       title: 'SEO-Optimierung',
       description: 'Meta-Tags, strukturierte Daten (Schema.org), XML-Sitemap und semantisches HTML für maximale Sichtbarkeit.',
+      renderDemo: () => (
+        <div className="w-full max-w-[200px] space-y-2">
+           <div className="h-8 w-full bg-white/10 rounded-full px-3 flex items-center gap-2">
+              <Search size={12} className="text-white/40" />
+              <div className="h-1.5 w-20 bg-white/20 rounded" />
+           </div>
+           <motion.div 
+             initial={{ opacity: 0, x: -10 }}
+             whileInView={{ opacity: 1, x: 0 }}
+             transition={{ delay: 0.5 }}
+             className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20"
+           >
+              <div className="h-1.5 w-12 bg-blue-400/60 rounded mb-1" />
+              <div className="h-1 w-24 bg-white/10 rounded" />
+           </motion.div>
+        </div>
+      )
     },
     {
       icon: Palette,

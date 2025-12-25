@@ -180,6 +180,20 @@ export const WebdesignHero: React.FC = () => {
                       {/* Hero Image Mockup */}
                       <div className="w-full h-44 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 relative overflow-hidden shadow-inner group/mockup">
                          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
+                         
+                         {/* GHOST CURSOR - Mimics user mouse inside the mockup */}
+                         <motion.div 
+                           className="absolute w-4 h-4 z-30 pointer-events-none"
+                           style={{
+                             left: useTransform(mouseX, [-0.5, 0.5], ['20%', '80%']),
+                             top: useTransform(mouseY, [-0.5, 0.5], ['20%', '80%']),
+                           }}
+                         >
+                            <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                               <path d="M5.5 3.21V20.8L10.21 15.65H18.59L5.5 3.21Z" fill="currentColor" stroke="black" strokeWidth="1" />
+                            </svg>
+                         </motion.div>
+
                          <motion.div 
                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-swiss-red/10 rounded-full blur-3xl"
                            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}

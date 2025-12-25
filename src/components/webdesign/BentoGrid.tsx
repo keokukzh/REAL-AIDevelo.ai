@@ -8,9 +8,10 @@ interface BentoCardProps {
   description: string;
   className?: string;
   index: number;
+  renderDemo?: () => React.ReactNode;
 }
 
-const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, className = "", index }) => {
+const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, className = "", index, renderDemo }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -70,9 +71,16 @@ const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, 
         <h3 className="mb-2 text-2xl font-bold text-white group-hover:text-swiss-red transition-colors">
           {title}
         </h3>
-        <p className="text-gray-400 group-hover:text-gray-300 transition-colors line-clamp-3">
+        <p className="text-gray-400 group-hover:text-gray-300 transition-colors line-clamp-3 mb-6">
           {description}
         </p>
+
+        {/* Mico-Demo Area */}
+        {renderDemo && (
+          <div className="mt-4 p-4 rounded-xl bg-black/40 border border-white/5 overflow-hidden min-h-[120px] flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-500">
+             {renderDemo()}
+          </div>
+        )}
       </div>
 
       <div className="relative z-10 mt-8 flex items-center gap-2 text-sm font-bold text-swiss-red opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0 transform duration-300">
@@ -89,6 +97,7 @@ interface Feature {
   icon: LucideIcon;
   title: string;
   description: string;
+  renderDemo?: () => React.ReactNode;
 }
 
 export const BentoGrid = React.memo<{ features: Feature[] }>(({ features }) => {

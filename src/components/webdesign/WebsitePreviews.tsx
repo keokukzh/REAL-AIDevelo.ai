@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion, useScroll, useSpring, useTransform, useVelocity, useAnimationFrame, useMotionValue } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { Magnetic } from './Magnetic';
 import { Button } from '../ui/Button';
@@ -59,8 +59,40 @@ const PREVIEWS: PreviewItem[] = [
 
 export const WebsitePreviews: React.FC = () => {
     // Duplicate items for infinite loop
-    const carouselItems = [...PREVIEWS, ...PREVIEWS, ...PREVIEWS]; 
+    const carouselItems = [...PREVIEWS, ...PREVIEWS]; 
     
+    // Scroll-Linked Velocity Logic
+    const { scrollY } = useScroll();
+    const scrollVelocity = useVelocity(scrollY);
+    const smoothVelocity = useSpring(scrollVelocity, {
+      damping: 50,
+      stiffness: 400
+    });
+    
+    const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], {
+      clamp: false
+    });
+
+    const baseVelocity = -15; // Default marquee speed
+    const x = useMotionValue(0);
+
+    useAnimationFrame((t, delta) => {
+      let moveBy = baseVelocity * (delta / 1000);
+      
+      /**
+       * This is what makes it feel ultra: 
+       * The marquee speed reacts to scroll velocity!
+       */
+      const currentVelocityFactor = velocityFactor.get();
+      // Increase speed when scrolling, but maintain a base direction
+      moveBy += currentVelocityFactor * (delta / 1000) * -20;
+
+      x.set(x.get() + moveBy);
+    });
+
+    // We'll use percentage wrap for the infinite loop
+    const xPercent = useTransform(x, (v) => `${(v % 50)}%`);
+
     return (
     <section id="website-previews" className="py-24 bg-slate-950 relative overflow-hidden">
       {/* Background Decor */}
@@ -98,9 +130,9 @@ export const WebsitePreviews: React.FC = () => {
         </div>
       </div>
 
-      {/* Infinite Marquee */}
+      {/* Infinite Marquee with Velocity-Linked Speed */}
       <div 
-        className="relative w-full overflow-hidden py-20 perspective-marquee"
+        className="relative w-full overflow-hidden py-20 perspective-marquee group/marquee"
       >
           {/* Gradient Masks */}
           <div className="absolute top-0 left-0 w-48 h-full bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
@@ -108,14 +140,7 @@ export const WebsitePreviews: React.FC = () => {
 
           <motion.div 
             className="flex gap-12 w-max px-12"
-            animate={{
-                x: ["0%", "-33.33%"] 
-            }}
-            transition={{
-                duration: 50,
-                repeat: Infinity,
-                ease: "linear"
-            }}
+            style={{ x: xPercent }}
           >
               {carouselItems.map((item, index) => (
                   <div 
