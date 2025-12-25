@@ -100,19 +100,19 @@ export const WebsitePreviews: React.FC = () => {
 
       {/* Infinite Marquee */}
       <div 
-        className="relative w-full overflow-hidden py-10"
+        className="relative w-full overflow-hidden py-20 perspective-marquee"
       >
           {/* Gradient Masks */}
-          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none" />
-          <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none" />
+          <div className="absolute top-0 left-0 w-48 h-full bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
 
           <motion.div 
-            className="flex gap-8 w-max px-8"
+            className="flex gap-12 w-max px-12"
             animate={{
                 x: ["0%", "-33.33%"] 
             }}
             transition={{
-                duration: 60,
+                duration: 50,
                 repeat: Infinity,
                 ease: "linear"
             }}
@@ -120,27 +120,27 @@ export const WebsitePreviews: React.FC = () => {
               {carouselItems.map((item, index) => (
                   <div 
                     key={`${item.id}-${index}`}
-                    className="relative w-[400px] md:w-[500px] aspect-[16/10] flex-shrink-0 group rounded-2xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl"
+                    className="relative w-[450px] md:w-[600px] aspect-[16/10] flex-shrink-0 group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl perspective-card"
                   >
                         {/* Image */}
                         <img 
                             src={item.image} 
                             alt={item.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             loading="lazy"
                         />
                         
                         {/* Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                            <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                                <span className="inline-block px-2 py-1 bg-red-600/20 text-red-500 text-xs font-bold rounded mb-2 border border-red-500/20">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+                            <div className="transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
+                                <span className="inline-block px-3 py-1 bg-red-600/20 text-red-500 text-[10px] font-bold rounded-full mb-3 border border-red-500/20 uppercase tracking-widest">
                                     {item.category}
                                 </span>
-                                <h3 className="text-2xl font-bold text-white mb-1">{item.title}</h3>
-                                <p className="text-gray-300 text-sm line-clamp-2 mb-3">{item.description}</p>
+                                <h3 className="text-3xl font-bold text-white mb-2">{item.title}</h3>
+                                <p className="text-gray-300 text-base line-clamp-2 mb-4 font-light">{item.description}</p>
                                 <div className="flex gap-2">
                                     {item.tags.map(tag => (
-                                        <span key={tag} className="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                        <span key={tag} className="text-[10px] text-gray-400 bg-white/5 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
                                             {tag}
                                         </span>
                                     ))}
@@ -149,8 +149,8 @@ export const WebsitePreviews: React.FC = () => {
                         </div>
 
                         {/* Interactive Hint */}
-                         <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 border border-white/10">
-                            <ExternalLink size={16} className="text-white" />
+                         <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md rounded-full p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10 scale-75 group-hover:scale-100">
+                            <ExternalLink size={20} className="text-white" />
                          </div>
                   </div>
               ))}

@@ -114,3 +114,58 @@
     transform: translateY(-20px);
   }
 }
+
+@keyframes glitch-1 {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+@keyframes glitch-2 {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(2px, -2px);
+  }
+  40% {
+    transform: translate(2px, 2px);
+  }
+  60% {
+    transform: translate(-2px, -2px);
+  }
+  80% {
+    transform: translate(-2px, 2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+.perspective-marquee {
+  perspective: 2000px;
+}
+
+.perspective-card {
+  transform: rotateX(25deg) rotateY(-15deg) rotateZ(5deg);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.perspective-card:hover {
+  transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1.05);
+}

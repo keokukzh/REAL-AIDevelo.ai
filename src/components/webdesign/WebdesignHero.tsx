@@ -57,15 +57,18 @@ export const WebdesignHero: React.FC = () => {
           {/* Headline */}
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold font-display text-white leading-[0.95] tracking-tight mb-8">
             Digital <br/>
-            <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
+            <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 group/title">
               Genesis
               <motion.span 
-                 className="absolute -bottom-2 left-0 w-full h-2 bg-swiss-red"
+                 className="absolute -bottom-2 left-0 w-full h-2 bg-swiss-red shadow-[0_5px_15px_-3px_rgba(218,41,28,0.5)]"
                  initial={{ scaleX: 0 }}
                  animate={{ scaleX: 1 }}
                  transition={{ delay: 0.8, duration: 1, ease: 'circOut' }}
                  style={{ originX: 0 }}
               />
+              {/* Glitch Layers */}
+              <span className="absolute inset-0 text-white opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-1 pointer-events-none select-none" aria-hidden="true">Genesis</span>
+              <span className="absolute inset-0 text-red-500 opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-2 pointer-events-none select-none" aria-hidden="true">Genesis</span>
             </span>
           </h1>
           

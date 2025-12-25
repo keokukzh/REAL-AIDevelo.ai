@@ -23,7 +23,7 @@ import {
   Parallax,
   WebdesignHero
 } from '../components/webdesign';
-import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft } from 'lucide-react';
+import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Footer } from '../components/Footer';
 import { BackButton } from '../components/navigation/BackButton';
@@ -153,10 +153,10 @@ export const WebdesignPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background text-white selection:bg-swiss-red/30 overflow-hidden">
-      {/* Scroll Progress Bar */}
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white">
+      {/* Premium Scroll Progress */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-swiss-red z-[100] origin-left"
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red z-[100] origin-left shadow-[0_0_20px_rgba(218,41,28,0.5)]"
         style={{ scaleX }}
       />
       
@@ -173,174 +173,186 @@ export const WebdesignPage = () => {
       {/* Global Seamless Background */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
          <WebdesignAnimatedBackground variant="hero" intensity="medium" />
-         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-950/80 to-slate-950" />
+         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/80 to-slate-950" />
       </div>
 
       <Navbar />
-      
-      {/* Hero Section */}
-      <WebdesignHero />
 
-      {/* Process Flow Section */}
-      <WebdesignProcessFlow />
+      <main id="main-content">
+        {/* Hero Section */}
+        <section className="relative">
+          <WebdesignHero />
+        </section>
 
-      {/* Portfolio / Website Previews Section */}
-      <WebsitePreviews />
+        {/* Process Flow Section */}
+        <ScrollReveal direction="up">
+          <WebdesignProcessFlow />
+        </ScrollReveal>
 
-      <div className="h-32 w-px bg-gradient-to-b from-swiss-red to-transparent mx-auto opacity-30" />
+        {/* Portfolio / Website Previews Section */}
+        <WebsitePreviews />
 
-      {/* Pricing Section */}
-      <section 
-        id="pricing"
-        className="py-12 sm:py-32 relative overflow-hidden"
-        aria-labelledby="pricing-heading"
-      >
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="up" delay={0.2} className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 id="pricing-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-                Transparente Preisgestaltung
-              </h2>
-              <p className="text-gray-400 text-lg">
-                Alles inklusive – keine versteckten Kosten, keine Überraschungen
-              </p>
-            </div>
-            
-            <PricingCard
-              price="599 CHF"
-              subtitle="Einmalig - Alles inklusive"
-              disclaimer="Keine monatlichen Gebühren • Keine versteckten Kosten"
-              features={pricingFeatures}
-            />
-          </ScrollReveal>
-        </div>
-      </section>
+        <div className="h-48 w-px bg-gradient-to-b from-swiss-red via-swiss-red/50 to-transparent mx-auto opacity-30 my-12" />
 
-      {/* Process Section - REMOVED (Redundant with new WebdesignProcessFlow) */}
-
-      {/* Features Section */}
-      <section 
-        id="features"
-        className="py-12 sm:py-24 relative overflow-hidden"
-        aria-labelledby="features-heading"
-      >
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="up" delay={0.2} className="text-center mb-16">
-            <h2 id="features-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-              Professionelle Features
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Modernste Technologien und Best Practices für maximale Performance und Benutzerfreundlichkeit.
-            </p>
-          </ScrollReveal>
-
-          <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
-            <BentoGrid features={features} />
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Technologies Section */}
-      <section 
-        id="technologies"
-        className="py-12 sm:py-24 relative overflow-hidden"
-        aria-labelledby="technologies-heading"
-      >
-        <FloatingShapes />
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="up" delay={0.2} className="text-center mb-12">
-            <h2 id="technologies-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-              Moderne Technologien
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Wir verwenden nur die besten und modernsten Tools für Ihre Website.
-            </p>
-          </ScrollReveal>
-
-          <ScrollReveal stagger staggerDelay={0.05} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 max-w-5xl mx-auto list-none" aria-label="Technologien">
-            {technologies.map((tech, index) => (
-              <TechnologyBadge
-                key={tech.name}
-                name={tech.name}
-                description={tech.description}
-                index={index}
-              />
-            ))}
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Contact Form Section */}
-      <section 
-        id="contact-form"
-        className="py-12 sm:py-32 relative overflow-hidden"
-        aria-labelledby="contact-heading"
-        tabIndex={-1}
-      >
-         {/* Background Spotlights */}
-         <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-swiss-red/10 rounded-full blur-[128px] pointer-events-none" />
-         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[128px] pointer-events-none" />
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <ScrollReveal direction="scale" delay={0.2} className="max-w-4xl mx-auto">
-              
-              <div className="relative z-10">
-                <ScrollReveal direction="fade" delay={0.3} className="text-center mb-12">
-                  <h2 id="contact-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-4">
-                    Projekt Starten
-                  </h2>
-                  <p className="text-gray-400 text-lg">
-                    Bereit für den digitalen Aufstieg? Initiieren Sie jetzt Ihr Projekt.
-                  </p>
-                </ScrollReveal>
-
-                <WebdesignContactForm onSuccess={() => navigate('/')} />
+        {/* Pricing Section */}
+        <section 
+          id="pricing"
+          className="py-24 sm:py-32 relative overflow-hidden"
+          aria-labelledby="pricing-heading"
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" delay={0.1} className="max-w-4xl mx-auto">
+              <div className="text-center mb-16">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  className="inline-block px-4 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-400 uppercase tracking-widest mb-4"
+                >
+                  Investition
+                </motion.div>
+                <h2 id="pricing-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight">
+                  Transparente <span className="text-swiss-red">Festpreise</span>
+                </h2>
+                <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+                  Premium-Webdesign muss nicht kompliziert sein. Wir bieten klare Strukturen ohne monatliche Folgekosten.
+                </p>
               </div>
-          </ScrollReveal>
-        </div>
-      </section>
+              
+              <PricingCard
+                price="599 CHF"
+                subtitle="Einmalig - Alles inklusive"
+                disclaimer="Keine monatlichen Gebühren • Keine versteckten Kosten"
+                features={pricingFeatures}
+              />
+            </ScrollReveal>
+          </div>
+        </section>
 
-      {/* Related Links Section */}
-      <section 
-        id="related-links"
-        className="py-12 sm:py-20 relative"
-        aria-labelledby="related-links-heading"
-      >
-        <div className="container mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
-            transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-center"
-          >
-            <h2 id="related-links-heading" className="text-[clamp(1.875rem,4vw,2.5rem)] font-bold font-display mb-6">
-              Weitere Services
-            </h2>
-            <p className="text-gray-400 mb-8">
-              Entdecken Sie unsere anderen Angebote
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                onClick={() => navigate(ROUTES.HOME)}
-                variant="outline"
-                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
-                aria-label="Zu Voice Agents navigieren"
-              >
-                Voice Agents
-              </Button>
-              <Button
-                onClick={() => navigate(ROUTES.DASHBOARD)}
-                variant="outline"
-                className="min-h-[44px] min-w-[44px] text-white border-white/30 hover:border-white/60 hover:bg-white/5"
-                aria-label="Zum Dashboard navigieren"
-              >
-                Dashboard
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+        {/* Features Section */}
+        <section 
+          id="features"
+          className="py-24 sm:py-32 relative bg-white/[0.02]"
+          aria-labelledby="features-heading"
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" className="text-center mb-20">
+              <h2 id="features-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight">
+                High-End <span className="text-blue-500">Standards</span>
+              </h2>
+              <p className="text-gray-400 text-lg max-w-3xl mx-auto font-light">
+                Wir setzen auf modernste Architektur für maximale Skalierbarkeit und Geschwindigkeit.
+              </p>
+            </ScrollReveal>
+
+            <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
+              <BentoGrid features={features} />
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* Technologies Section */}
+        <section 
+          id="technologies"
+          className="py-24 sm:py-32 relative overflow-hidden"
+          aria-labelledby="technologies-heading"
+        >
+          <FloatingShapes />
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" className="text-center mb-16">
+              <h2 id="technologies-heading" className="text-4xl md:text-5xl font-bold font-display mb-6">
+                Tech Stack
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+                Zukunftssichere Technologien für langlebige digitale Produkte.
+              </p>
+            </ScrollReveal>
+
+            <ScrollReveal stagger staggerDelay={0.05} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto list-none" aria-label="Technologien">
+              {technologies.map((tech, index) => (
+                <TechnologyBadge
+                  key={tech.name}
+                  name={tech.name}
+                  description={tech.description}
+                  index={index}
+                />
+              ))}
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* Contact Form Section */}
+        <section 
+          id="contact-form"
+          className="py-24 sm:py-40 relative"
+          aria-labelledby="contact-heading"
+          tabIndex={-1}
+        >
+           {/* Background Spotlights */}
+           <div className="absolute top-1/2 left-1/4 w-[600px] h-[600px] bg-swiss-red/10 rounded-full blur-[160px] pointer-events-none animate-pulse" />
+           <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[160px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
+
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
+                <div className="relative z-10">
+                  <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">
+                    <h2 id="contact-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tighter">
+                      Initialisierung
+                    </h2>
+                    <p className="text-gray-400 text-xl font-light">
+                      Bereit für den digitalen Aufstieg? Starten wir die Kollaboration.
+                    </p>
+                  </ScrollReveal>
+                  <WebdesignContactForm onSuccess={() => navigate('/')} />
+                </div>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* Related Links Section */}
+        <section 
+          id="related-links"
+          className="py-24 relative overflow-hidden"
+          aria-labelledby="related-links-heading"
+        >
+           <div className="absolute inset-0 bg-white/[0.01]" />
+           <div className="container mx-auto px-6 relative z-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="max-w-4xl mx-auto text-center"
+            >
+              <h2 id="related-links-heading" className="text-3xl font-bold font-display mb-10 tracking-tight text-white/80">
+                Weitere Ecosysteme
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <Button
+                  onClick={() => navigate(ROUTES.HOME)}
+                  variant="outline"
+                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
+                  aria-label="Zu Voice Agents navigieren"
+                >
+                  <span className="flex items-center gap-2">
+                    <Zap size={18} className="text-yellow-500" />
+                    Voice Agents
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => navigate(ROUTES.DASHBOARD)}
+                  variant="outline"
+                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
+                  aria-label="Zum Dashboard navigieren"
+                >
+                  <span className="flex items-center gap-2">
+                    <Layout size={18} className="text-blue-500" />
+                    Dashboard
+                  </span>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
       </SmoothScroll>

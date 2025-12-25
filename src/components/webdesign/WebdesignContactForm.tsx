@@ -30,6 +30,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   const [error, setError] = useState<string | null>(null);
   const [activeField, setActiveField] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [logs, setLogs] = useState<string[]>([]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -65,6 +66,10 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const addLog = (msg: string) => {
+    setLogs(prev => [...prev.slice(-3), `> ${msg}`]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) { setError('System Error: Identity Required'); return; }
@@ -72,21 +77,32 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     
     setLoading(true);
     setError(null);
+    setLogs([]);
 
     try {
+      addLog('Initializing secure uplink...');
+      await new Promise(r => setTimeout(r, 600));
+      
+      addLog('Packaging project schematics...');
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
       selectedFiles.forEach(f => formDataToSend.append('files', f.file));
+      await new Promise(r => setTimeout(r, 400));
 
+      addLog('Transmitting data to Digital Genesis core...');
       await apiRequest('/webdesign/contact', {
         method: 'POST',
         data: formDataToSend,
       });
 
+      addLog('Transmission successful. Response verified.');
+      await new Promise(r => setTimeout(r, 600));
+
       setSuccess(true);
       setSelectedFiles([]);
       if (onSuccess) setTimeout(() => onSuccess(), 2000);
     } catch (err) {
+      addLog('CRITICAL ERROR: Connection reset.');
       setError('Transmission Failed: Connection Reset');
     } finally {
       setLoading(false);
@@ -246,28 +262,47 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                    </button>
                 </div>
 
-                {/* Submit Button */}
-                <Button
-                   type="submit"
-                   variant="primary"
-                   disabled={loading}
-                   className="w-full md:w-auto min-w-[240px] bg-swiss-red hover:bg-red-700 border-none relative overflow-hidden group/submit"
-                >
-                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/submit:translate-x-[100%] transition-transform duration-1000" />
-                   <span className="flex items-center gap-2 font-mono uppercase tracking-widest text-sm">
-                      {loading ? (
-                         <>
-                           <Loader2 size={16} className="animate-spin" />
-                           Initializing...
-                         </>
-                      ) : (
-                         <>
-                           <Zap size={16} className={loading ? "" : "fill-current"} />
-                           Initialize_Project
-                         </>
+                {/* Submit Button & Logs */}
+                <div className="flex flex-col gap-4 w-full md:w-auto min-w-[240px]">
+                   <AnimatePresence>
+                      {logs.length > 0 && (
+                         <motion.div 
+                           initial={{ opacity: 0, y: 10 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           exit={{ opacity: 0 }}
+                           className="bg-slate-900/80 border border-white/5 rounded-lg p-3 space-y-1"
+                         >
+                            {logs.map((log, i) => (
+                               <div key={i} className="text-[10px] font-mono text-emerald-500/80 animate-pulse">
+                                  {log}
+                               </div>
+                            ))}
+                         </motion.div>
                       )}
-                   </span>
-                </Button>
+                   </AnimatePresence>
+
+                   <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={loading}
+                      className="w-full bg-swiss-red hover:bg-red-700 border-none relative overflow-hidden group/submit h-12"
+                   >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/submit:translate-x-[100%] transition-transform duration-1000" />
+                      <span className="flex items-center gap-2 font-mono uppercase tracking-widest text-sm">
+                         {loading ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              Processing...
+                            </>
+                         ) : (
+                            <>
+                              <Zap size={16} className={loading ? "" : "fill-current"} />
+                              Initialize_Project
+                            </>
+                         )}
+                      </span>
+                   </Button>
+                </div>
             </div>
             
             <AnimatePresence>
