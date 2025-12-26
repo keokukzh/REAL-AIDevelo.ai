@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Terminal UI styles */
-@import './styles/terminal.css';
+/* Terminal UI styles removed */
 
 @layer base {
   :root {
