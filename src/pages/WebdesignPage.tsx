@@ -29,29 +29,34 @@ import {
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Lazy-load heavy below-the-fold sections for better LCP
+// Wrap named exports as default exports for React.lazy()
 const WebdesignProcessFlow = lazy(() =>
   import('../components/webdesign/WebdesignProcessFlow').then((m) => ({
     default: m.WebdesignProcessFlow,
   })),
-);
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
+
 const WebsitePreviews = lazy(() =>
   import('../components/webdesign/WebsitePreviews').then((m) => ({ default: m.WebsitePreviews })),
-);
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
+
 const WebdesignTechStack = lazy(() =>
   import('../components/webdesign/WebdesignTechStack').then((m) => ({
     default: m.WebdesignTechStack,
   })),
-);
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
+
 const WebdesignArchitecture = lazy(() =>
   import('../components/webdesign/WebdesignArchitecture').then((m) => ({
     default: m.WebdesignArchitecture,
   })),
-);
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
+
 const WebdesignComparison = lazy(() =>
   import('../components/webdesign/WebdesignComparison').then((m) => ({
     default: m.WebdesignComparison,
   })),
-);
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
 const HeroUltraAnimation = React.lazy(
   () => import('../components/webdesign/hero/HeroUltraAnimation'),

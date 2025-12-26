@@ -9,6 +9,7 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 ## Changes Implemented
 
 ### 1. Canvas & GPU Optimization ✓
+
 - **DPR Capping**: Limited device pixel ratio to 2 (from dynamic [1,2]) to reduce GPU overhead on high-DPI displays
 - **Particle Reduction**: Cut particle counts by 50%
   - Stars: 7,000 → 3,500
@@ -17,12 +18,14 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 - **Performance Monitor**: Added adaptive rendering mode for slower devices
 
 **Files:**
+
 - [src/components/webdesign/hero/HeroUltraAnimation.tsx](src/components/webdesign/hero/HeroUltraAnimation.tsx)
 - [src/components/webdesign/hero/UltraScene.tsx](src/components/webdesign/hero/UltraScene.tsx)
 
 ---
 
 ### 2. Deferred 3D Canvas Loading ✓
+
 - **RequestIdleCallback Pattern**: Defer 3D canvas load until browser is idle
   - Shows static `WebdesignHero` first (fast LCP)
   - Loads 3D canvas asynchronously with 1.5s timeout fallback
@@ -30,24 +33,29 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 - **useCallback Handlers**: Memoized language switcher to prevent unnecessary re-renders
 
 **Files:**
+
 - [src/pages/WebdesignPage.tsx](src/pages/WebdesignPage.tsx#L159-L170)
 
 **Expected Impact:**
+
 - **LCP improvement: 500–800ms faster** (via deferred canvas load)
 - **CLS elimination**: ~0.00–0.05 (vs. 0.15–0.25 before)
 
 ---
 
 ### 3. Vendor Chunk Isolation ✓
+
 - **Manual Chunk Splitting** in Vite config:
   - `vendor-three`: three.js + r3f + drei (286.90 KB gzip)
   - `vendor-animation`: framer-motion (42.01 KB gzip)
   - `vendor-ui`: react-helmet-async + react-router-dom (18.01 KB gzip)
 
 **Files:**
+
 - [vite.config.ts](vite.config.ts#L21-L28)
 
 **Benefits:**
+
 - Stable hashes reduce re-downloads on updates
 - Better cache hit rates across browsers
 - Parallel loading via HTTP/2
@@ -55,6 +63,7 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 ---
 
 ### 4. Component-Level Code Splitting ✓
+
 - **Lazy-loaded 5 heavy sections** that render below-the-fold:
   - `WebdesignProcessFlow`
   - `WebsitePreviews`
@@ -65,6 +74,7 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 - **Prefetch Hints**: Added modulepreload + prefetch links for vendor chunks
 
 **Files:**
+
 - [src/pages/WebdesignPage.tsx](src/pages/WebdesignPage.tsx#L34-L38)
 
 **Bundle Impact:**
@@ -78,6 +88,7 @@ Completed a comprehensive React performance optimization of the **REAL-AIDevelo.
 ## Metrics & Results
 
 ### Bundle Size Improvements
+
 ```
 WebdesignPage: 110.77 KB → 77.41 KB (−30.1%)
 Main JS gzip: ~100 KB → ~70 KB (−30%)
@@ -86,16 +97,18 @@ Vendor isolation: 3 separate chunks (better caching)
 ```
 
 ### Expected Lighthouse Improvements
-| Metric | Before | After | Gain |
-|---|---|---|---|
-| LCP | ~3.0–3.5s | ~1.8–2.4s | **+35%** |
-| FCP | ~2.2–2.5s | ~1.4–1.8s | **+30%** |
-| CLS | ~0.15–0.25 | ~0.00–0.05 | **Eliminated** |
-| FID | ~150–200ms | ~50–100ms | **+50%** |
-| TBT | ~500–800ms | ~200–400ms | **+50%** |
-| **Lighthouse Score** | ~65–75 | ~82–92 | **+10–20 pts** |
+
+| Metric               | Before     | After      | Gain           |
+| -------------------- | ---------- | ---------- | -------------- |
+| LCP                  | ~3.0–3.5s  | ~1.8–2.4s  | **+35%**       |
+| FCP                  | ~2.2–2.5s  | ~1.4–1.8s  | **+30%**       |
+| CLS                  | ~0.15–0.25 | ~0.00–0.05 | **Eliminated** |
+| FID                  | ~150–200ms | ~50–100ms  | **+50%**       |
+| TBT                  | ~500–800ms | ~200–400ms | **+50%**       |
+| **Lighthouse Score** | ~65–75     | ~82–92     | **+10–20 pts** |
 
 ### GPU Performance
+
 ```
 Particle reduction: 8,600 → 3,900 (−55%)
 DPR capped: Prevents 2–4x overdraw on high-DPI
@@ -118,23 +131,31 @@ GPU memory: ~60–70% reduction in vertex buffer
 ## Key Technical Decisions
 
 ### 1. Deferred 3D Over Immediate Load
+
 **Chosen:** Defer 3D canvas via `requestIdleCallback`
+
 - **Rationale:** Shows static hero first for fast LCP; 3D loads during idle time without blocking main thread
 - **Alternative rejected:** Loading 3D eagerly would block FCP by 1–2 seconds
 
 ### 2. Component Splitting Over Vendor Optimization
+
 **Chosen:** Both vendor isolation AND component splitting
+
 - **Vendor chunking:** Improves cache hit rates across browser updates
 - **Component splitting:** Reduces initial page bundle by 30%
 - **Combined effect:** Better LCP + better caching = long-term wins
 
 ### 3. Particle Count vs. Visual Fidelity
+
 **Chosen:** 50% reduction in particles
+
 - **Rationale:** Visual difference minimal (stars still dense); GPU benefit significant
 - **Tested:** 3,500 stars maintain parallax depth while cutting GPU load by 50%
 
 ### 4. RequestIdleCallback with Timeout Fallback
+
 **Chosen:** Modern requestIdleCallback + 1.5s timeout for older browsers
+
 - **Modern browsers:** Load 3D when idle (best case: <500ms after LCP)
 - **Older browsers:** Load after 1.5s (still improves LCP vs. eager load)
 - **All devices:** Static hero visible immediately
@@ -144,13 +165,15 @@ GPU memory: ~60–70% reduction in vertex buffer
 ## Performance Validation Checklist
 
 ### Build ✓
+
 - [x] TypeScript compilation succeeds
-- [x] Vite build completes without errors  
+- [x] Vite build completes without errors
 - [x] Chunk hashing stable for vendor deps
 - [x] Source maps disabled in production
 - [x] All commits pushed to main
 
 ### Runtime (Manual Testing Recommended)
+
 - [ ] Dev server: `npm run dev` runs without errors
 - [ ] Hero section: Static fallback → 3D canvas (deferred 1.5s)
 - [ ] Language toggle: Responds without full re-render
@@ -162,11 +185,13 @@ GPU memory: ~60–70% reduction in vertex buffer
 ## Deployment Notes
 
 ### Cloudflare Pages
+
 - **Build cache**: Stable vendor hashes = reuse across deploys
 - **Node version**: Currently 20.19.2 (sufficient for all deps)
 - **Status**: Ready for deployment
 
 ### Next Steps (Optional)
+
 1. **Monitor Core Web Vitals** in production
 2. **A/B test** 3D vs. static hero impact
 3. **Consider** optimizing JSON-LD via `requestIdleCallback`
@@ -176,18 +201,19 @@ GPU memory: ~60–70% reduction in vertex buffer
 
 ## Files Modified
 
-| File | Changes | Impact |
-|---|---|---|
-| [vite.config.ts](vite.config.ts) | Manual chunk splitting | Better caching, −13% bundle |
-| [src/components/webdesign/hero/HeroUltraAnimation.tsx](src/components/webdesign/hero/HeroUltraAnimation.tsx) | DPR capping, performance monitor | −40% GPU on high-DPI |
-| [src/components/webdesign/hero/UltraScene.tsx](src/components/webdesign/hero/UltraScene.tsx) | Particle reduction | −50% GPU load |
-| [src/pages/WebdesignPage.tsx](src/pages/WebdesignPage.tsx) | Deferred 3D, lazy sections, useCallback | −30% bundle, +800ms LCP |
+| File                                                                                                         | Changes                                 | Impact                      |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------- | --------------------------- |
+| [vite.config.ts](vite.config.ts)                                                                             | Manual chunk splitting                  | Better caching, −13% bundle |
+| [src/components/webdesign/hero/HeroUltraAnimation.tsx](src/components/webdesign/hero/HeroUltraAnimation.tsx) | DPR capping, performance monitor        | −40% GPU on high-DPI        |
+| [src/components/webdesign/hero/UltraScene.tsx](src/components/webdesign/hero/UltraScene.tsx)                 | Particle reduction                      | −50% GPU load               |
+| [src/pages/WebdesignPage.tsx](src/pages/WebdesignPage.tsx)                                                   | Deferred 3D, lazy sections, useCallback | −30% bundle, +800ms LCP     |
 
 ---
 
 ## Performance Documentation
 
 See [PERFORMANCE_OPTIMIZATION_REPORT.md](PERFORMANCE_OPTIMIZATION_REPORT.md) for:
+
 - Detailed before/after metrics
 - GPU optimization strategy
 - Network strategy & caching
