@@ -21,7 +21,13 @@
     "noEmit": true,
     "strict": true,
     "noImplicitAny": false,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "importsNotUsedAsValues": "remove",
+    "preserveConstEnums": false,
+    "importHelpers": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
   },
   "exclude": ["vendor", "node_modules", "src/components/ThreeAvatar.tsx"],
   "include": ["src", "shared/types"]
