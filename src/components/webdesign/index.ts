@@ -22,3 +22,4 @@ export { WebdesignInquiryWidget } from './WebdesignInquiryWidget';
 export { FaqSection } from './FaqSection';
 export { TestimonialSection } from './TestimonialSection';
 export { default as DigitalGenesisAnimation } from './DigitalGenesisAnimation';
+export { default as HeroFuturistic } from './hero/HeroFuturistic';
