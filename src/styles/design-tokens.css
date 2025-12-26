@@ -40,8 +40,8 @@
   --spacing-5xl: 8rem; /* 128px */
 
   /* Typography */
-  --font-sans: "Inter", sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
 
   /* Border Radius */
   --radius-sm: 0.25rem; /* 4px */
@@ -54,12 +54,9 @@
   /* Shadows - Elevation System */
   --shadow-elevation-0: none;
   --shadow-elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.4),
-    0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --shadow-elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.5),
-    0 4px 6px -4px rgba(0, 0, 0, 0.4);
-  --shadow-elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.6),
-    0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
   --shadow-elevation-5: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 
   /* Glow Effects */
@@ -108,16 +105,12 @@
   --term-border-primary: #404040;
   --term-border-secondary: #606060;
 
-  --font-mono-term: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  --font-mono-term: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
 /* Utility Classes for Gradients */
 .bg-gradient-primary {
-  background: linear-gradient(
-    135deg,
-    var(--color-primary) 0%,
-    var(--color-accent) 100%
-  );
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
 }
 
 .bg-gradient-accent {
@@ -125,30 +118,26 @@
 }
 
 .bg-gradient-surface {
-  background: linear-gradient(
-    180deg,
-    rgba(17, 24, 39, 0.8) 0%,
-    rgba(15, 23, 42, 0.9) 100%
-  );
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
 }
 
 /* Glass Morphism Utilities */
 .glass-light {
   background: var(--glass-light);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 .glass-medium {
   background: var(--glass-medium);
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
 }
 
 .glass-heavy {
   background: var(--glass-heavy);
-  backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
 }
 
 /* Elevation Utilities */

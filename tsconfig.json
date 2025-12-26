@@ -4,26 +4,17 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": [
-      "vitest",
-      "vitest/globals",
-      "node"
-    ],
-    "moduleResolution": "bundler",
+    "types": ["vitest", "vitest/globals", "node"],
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -31,13 +22,6 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": [
-    "vendor",
-    "node_modules",
-    "src/components/ThreeAvatar.tsx"
-  ],
-  "include": [
-    "src",
-    "shared/types"
-  ]
+  "exclude": ["vendor", "node_modules", "src/components/ThreeAvatar.tsx"],
+  "include": ["src", "shared/types"]
 }
