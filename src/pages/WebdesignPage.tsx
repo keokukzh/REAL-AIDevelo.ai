@@ -19,11 +19,6 @@ import {
   CursorFollower,
   SmoothScroll,
   WebdesignAnimatedBackground,
-  WebdesignProcessFlow,
-  WebsitePreviews,
-  WebdesignTechStack,
-  WebdesignArchitecture,
-  WebdesignComparison,
   ScrollReveal,
   Parallax,
   WebdesignHero,
@@ -32,6 +27,31 @@ import {
   TestimonialSection,
 } from '../components/webdesign';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+
+// Lazy-load heavy below-the-fold sections for better LCP
+const WebdesignProcessFlow = lazy(() =>
+  import('../components/webdesign/WebdesignProcessFlow').then((m) => ({
+    default: m.WebdesignProcessFlow,
+  })),
+);
+const WebsitePreviews = lazy(() =>
+  import('../components/webdesign/WebsitePreviews').then((m) => ({ default: m.WebsitePreviews })),
+);
+const WebdesignTechStack = lazy(() =>
+  import('../components/webdesign/WebdesignTechStack').then((m) => ({
+    default: m.WebdesignTechStack,
+  })),
+);
+const WebdesignArchitecture = lazy(() =>
+  import('../components/webdesign/WebdesignArchitecture').then((m) => ({
+    default: m.WebdesignArchitecture,
+  })),
+);
+const WebdesignComparison = lazy(() =>
+  import('../components/webdesign/WebdesignComparison').then((m) => ({
+    default: m.WebdesignComparison,
+  })),
+);
 
 const HeroUltraAnimation = React.lazy(
   () => import('../components/webdesign/hero/HeroUltraAnimation'),
@@ -394,6 +414,21 @@ export const WebdesignPage = () => {
             }
           `}
         </script>
+        {/* Prefetch vendor chunks for better caching and performance */}
+        <link rel="modulepreload" href="/assets/vendor-three-DaCYYJKB.js" as="script" />
+        <link rel="modulepreload" href="/assets/vendor-animation-GNRSXg_G.js" as="script" />
+        <link
+          rel="prefetch"
+          href="/assets/vendor-three-DaCYYJKB.js"
+          as="script"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="prefetch"
+          href="/assets/vendor-animation-GNRSXg_G.js"
+          as="script"
+          crossOrigin="anonymous"
+        />
       </Helmet>
 
       {/* Language & Theme Switcher */}
@@ -467,23 +502,33 @@ export const WebdesignPage = () => {
           </section>
 
           {/* Process Flow Section */}
-          <ScrollReveal direction="up">
-            <WebdesignProcessFlow lang={lang} />
-          </ScrollReveal>
+          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+            <ScrollReveal direction="up">
+              <WebdesignProcessFlow lang={lang} />
+            </ScrollReveal>
+          </Suspense>
 
           {/* Portfolio / Website Previews Section */}
-          <WebsitePreviews lang={lang} />
+          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+            <WebsitePreviews lang={lang} />
+          </Suspense>
 
           {/* Tech Stack Showcase */}
-          <WebdesignTechStack lang={lang} />
+          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+            <WebdesignTechStack lang={lang} />
+          </Suspense>
 
           {/* Architectural Deep-Dive */}
-          <WebdesignArchitecture lang={lang} />
+          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+            <WebdesignArchitecture lang={lang} />
+          </Suspense>
 
           <div className="h-48 w-px bg-gradient-to-b from-swiss-red via-swiss-red/50 to-transparent mx-auto opacity-30 my-12" />
 
           {/* Business Comparison Section */}
-          <WebdesignComparison lang={lang} />
+          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+            <WebdesignComparison lang={lang} />
+          </Suspense>
 
           {/* Pricing Section */}
           <section
