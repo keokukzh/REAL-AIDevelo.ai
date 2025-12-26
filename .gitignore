@@ -27,6 +27,7 @@ dist-ssr
 .cursor/
 .agent/
 .superdesign/
+brain/
 
 # Cloudflare Wrangler
 .wrangler/
@@ -60,6 +61,14 @@ test-results/
 .tmp/
 tmp/
 scripts/proof_*.mjs
+
+# Generated reports (test artifacts)
+reports/*.json
+reports/*.png
+reports/audit-summary.md
+
+# Archive folder (temp cleanup storage)
+_archive/
 
 # Stripe CLI (binary)
 stripe-cli/
