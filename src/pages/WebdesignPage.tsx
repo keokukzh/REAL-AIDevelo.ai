@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-mo
 import { useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Navbar } from '../components/Navbar';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { 
   WebdesignContactForm,
   FeatureCard, 
@@ -29,9 +29,11 @@ import {
   WebdesignHero,
   WebdesignInquiryWidget,
   FaqSection,
-  TestimonialSection,
-  DigitalGenesisAnimation
+  TestimonialSection
 } from '../components/webdesign';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+
+const DigitalGenesisAnimation = React.lazy(() => import('../components/webdesign/DigitalGenesisAnimation'));
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, ArrowRight, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
@@ -360,8 +362,12 @@ export const WebdesignPage = () => {
 
       <main id="main-content">
         {/* Hero Section */}
-        <section className="relative">
-          <WebdesignHero t={t} />
+        <section className="relative min-h-screen">
+          <ErrorBoundary fallback={<WebdesignHero t={t} />}>
+            <Suspense fallback={<WebdesignHero t={t} />}>
+              <DigitalGenesisAnimation t={t} lang={lang} />
+            </Suspense>
+          </ErrorBoundary>
         </section>
 
         {/* Process Flow Section */}

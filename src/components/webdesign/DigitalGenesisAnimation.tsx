@@ -1,11 +1,12 @@
 import React, { Suspense, useMemo, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial, Float, PerspectiveCamera, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Code, Zap, Layout, Smartphone, CheckCircle2, Info } from 'lucide-react';
+import { ArrowRight, Info, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { isWebGLAvailable } from '../../utils/webgl';
 
 // --- WebGL Particle System (The "Digital Seeds") ---
 const ParticleSystem = ({ count = 2000 }) => {
@@ -23,8 +24,10 @@ const ParticleSystem = ({ count = 2000 }) => {
   
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
-    ref.current.rotation.y = time * 0.05;
-    ref.current.rotation.z = time * 0.02;
+    if (ref.current) {
+      ref.current.rotation.y = time * 0.05;
+      ref.current.rotation.z = time * 0.02;
+    }
   });
 
   return (
@@ -90,7 +93,9 @@ const GenesisCore = () => {
   
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
-    meshRef.current.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    if (meshRef.current) {
+      meshRef.current.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    }
   });
 
   return (
@@ -120,15 +125,22 @@ interface DigitalGenesisAnimationProps {
   lang: string;
 }
 
-export const DigitalGenesisAnimation: React.FC<DigitalGenesisAnimationProps> = ({ t, lang }) => {
+const DigitalGenesisAnimation: React.FC<DigitalGenesisAnimationProps> = ({ t, lang }) => {
   const prefersReducedMotion = useReducedMotion();
   const [showSpecs, setShowSpecs] = useState(false);
+  const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setHasWebGL(isWebGLAvailable());
+  }, []);
+
+  const shouldRenderCanvas = !prefersReducedMotion && hasWebGL === true;
 
   return (
     <section className="relative w-full h-[100vh] bg-slate-950 overflow-hidden flex items-center justify-center">
       {/* 3D WebGL Layer */}
       <div className="absolute inset-0 z-0">
-        {!prefersReducedMotion ? (
+        {shouldRenderCanvas ? (
           <Canvas gl={{ antialias: true, alpha: true }}>
             <PerspectiveCamera makeDefault position={[0, 0, 5]} />
             <ambientLight intensity={0.2} />
@@ -140,7 +152,10 @@ export const DigitalGenesisAnimation: React.FC<DigitalGenesisAnimationProps> = (
             </Suspense>
           </Canvas>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-red-950/20 to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+          </div>
         )}
       </div>
 
@@ -238,3 +253,5 @@ export const DigitalGenesisAnimation: React.FC<DigitalGenesisAnimationProps> = (
     </section>
   );
 };
+
+export default DigitalGenesisAnimation;
