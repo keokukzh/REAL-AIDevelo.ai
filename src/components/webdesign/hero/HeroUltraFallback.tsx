@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Info, CheckCircle2, Zap } from 'lucide-react';
+import { Info, CheckCircle2, Zap } from 'lucide-react';
 import { Button } from '../../ui/Button';
 
 interface HeroUltraFallbackProps {
@@ -55,7 +55,7 @@ export const HeroUltraFallback: React.FC<HeroUltraFallbackProps> = ({ t, onShowS
 
           <div className="flex flex-wrap gap-4">
              <Button 
-                onClick={() => document.getElementById('webdesign-process')?.scrollIntoView({ behavior: 'smooth' })}
+               onClick={() => document.getElementById('process-flow')?.scrollIntoView({ behavior: 'smooth' })}
                 className="h-16 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none border-b-4 border-emerald-900 group transition-all"
              >
                 <span className="flex items-center gap-2 font-bold uppercase tracking-widest text-sm">

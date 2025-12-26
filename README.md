@@ -79,9 +79,17 @@ src/
    ```bash
    cd server
    npm install
-   ```
+   1. Install dependencies: `npm install`
+   2. Start frontend: `npm run dev`
+   3. Start API: `cd server && npm run dev`
 
-2. **Set up Environment Variables:**
+   ### VS Code Setup
+   - See DEVELOPER_SETUP.md for recommended extensions and workspace configuration.
+   - Tasks: Dev Server, Tests: Watch, and Lint available via Terminal > Run Task.
+
+   ### Linting & Formatting
+   - Run lint: `npm run lint`
+   - Prettier settings are defined in `prettier.config.cjs` and applied on save via `.vscode/settings.json`.
    Copy `.env.example` to `.env` and fill in your API keys:
    ```bash
    cp .env.example .env

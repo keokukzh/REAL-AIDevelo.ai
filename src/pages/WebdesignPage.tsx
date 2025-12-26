@@ -35,7 +35,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 
 
 const HeroUltraAnimation = React.lazy(() => import('../components/webdesign/hero/HeroUltraAnimation'));
-import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, ArrowRight, Layout } from 'lucide-react';
+import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowRight, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Footer } from '../components/Footer';
@@ -365,7 +365,16 @@ export const WebdesignPage = () => {
         {/* Hero Section */}
         <section className="relative min-h-screen">
           <ErrorBoundary fallback={<WebdesignHero t={t} />}>
-            <Suspense fallback={<WebdesignHero t={t} />}>
+            <Suspense 
+              fallback={
+                <div className="relative flex items-center justify-center min-h-[80vh]">
+                  <div aria-live="polite" aria-busy="true" className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-swiss-red animate-spin" />
+                    <div className="text-xs font-mono text-white/50">Lade Ultra‑Experience…</div>
+                  </div>
+                </div>
+              }
+            >
               <HeroUltraAnimation t={t} lang={lang} />
             </Suspense>
           </ErrorBoundary>
