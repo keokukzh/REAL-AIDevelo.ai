@@ -21,3 +21,4 @@ export { SmoothScroll } from './SmoothScroll';
 export { WebdesignInquiryWidget } from './WebdesignInquiryWidget';
 export { FaqSection } from './FaqSection';
 export { TestimonialSection } from './TestimonialSection';
+export { DigitalGenesisAnimation } from './DigitalGenesisAnimation';

@@ -26,10 +26,10 @@ import {
   WebdesignComparison,
   ScrollReveal,
   Parallax,
-  WebdesignHero,
   WebdesignInquiryWidget,
   FaqSection,
-  TestimonialSection
+  TestimonialSection,
+  DigitalGenesisAnimation
 } from '../components/webdesign';
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, ArrowRight, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -360,7 +360,7 @@ export const WebdesignPage = () => {
       <main id="main-content">
         {/* Hero Section */}
         <section className="relative">
-          <WebdesignHero t={t} />
+          <DigitalGenesisAnimation t={t} lang={lang} />
         </section>
 
         {/* Process Flow Section */}
