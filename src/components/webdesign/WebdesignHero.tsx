@@ -3,7 +3,19 @@ import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePres
 import { ArrowRight, Code, Zap, Layout, Smartphone, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
-export const WebdesignHero: React.FC = () => {
+interface WebdesignHeroProps {
+  t: {
+    heroText1: string;
+    heroText2: string;
+    heroSub: string;
+    missionStart: string;
+    showSpecs: string;
+    closeSpecs: string;
+    scrollExplore: string;
+  };
+}
+
+export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 500], [0, 150]);
@@ -58,9 +70,9 @@ export const WebdesignHero: React.FC = () => {
 
           {/* Headline */}
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold font-display text-white leading-[0.95] tracking-tight mb-8">
-            Digital <br/>
+            {t.heroText1} <br/>
             <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 group/title">
-              Genesis
+              {t.heroText2}
               <motion.span 
                  className="absolute -bottom-2 left-0 w-full h-2 bg-swiss-red shadow-[0_5px_15px_-3px_rgba(218,41,28,0.5)]"
                  initial={{ scaleX: 0 }}
@@ -69,13 +81,13 @@ export const WebdesignHero: React.FC = () => {
                  style={{ originX: 0 }}
               />
               {/* Glitch Layers */}
-              <span className="absolute inset-0 text-white opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-1 pointer-events-none select-none" aria-hidden="true">Genesis</span>
-              <span className="absolute inset-0 text-red-500 opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-2 pointer-events-none select-none" aria-hidden="true">Genesis</span>
+              <span className="absolute inset-0 text-white opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-1 pointer-events-none select-none" aria-hidden="true">{t.heroText2}</span>
+              <span className="absolute inset-0 text-red-500 opacity-0 group-hover/title:opacity-20 group-hover/title:animate-glitch-2 pointer-events-none select-none" aria-hidden="true">{t.heroText2}</span>
             </span>
           </h1>
           
           <p className="text-xl sm:text-2xl text-gray-400 mb-10 max-w-xl leading-relaxed font-light">
-            Wir transformieren Konzepte in <span className="text-white font-medium">digitale Dominanz</span>. Exzellenz ist kein Zufall, sondern Code.
+            {t.heroSub}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-5">
@@ -83,10 +95,11 @@ export const WebdesignHero: React.FC = () => {
                 onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
                 variant="primary" 
                 className="group relative overflow-hidden h-14 px-8 text-lg shadow-[0_0_40px_-10px_rgba(220,38,38,0.5)] hover:shadow-[0_0_60px_-10px_rgba(220,38,38,0.7)] transition-shadow duration-500"
+                aria-label="Mission starten: Zum Kontaktformular scrollen"
             >
               <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_2s_infinite]" />
               <span className="relative z-10 flex items-center gap-3">
-                Mission Starten <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                {t.missionStart} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </span>
             </Button>
             
@@ -94,8 +107,9 @@ export const WebdesignHero: React.FC = () => {
                 onClick={() => setShowSpecs(!showSpecs)}
                 variant="outline" 
                 className={`h-14 px-8 text-lg border border-white/10 backdrop-blur-sm transition-all duration-300 ${showSpecs ? 'bg-white/10 border-white/30 text-white' : 'hover:bg-white/5 text-gray-300'}`}
+                aria-label={showSpecs ? t.closeSpecs : t.showSpecs}
             >
-              {showSpecs ? 'Analyse schließen' : 'Systemdaten ansehen'}
+              {showSpecs ? t.closeSpecs : t.showSpecs}
             </Button>
           </div>
 
@@ -233,10 +247,10 @@ export const WebdesignHero: React.FC = () => {
                       ].map((stat) => (
                          <div key={stat.label} className="text-center group/stat">
                             <motion.div 
-                              className={`text-2xl font-bold font-mono ${stat.color} mb-1`}
-                              animate={showSpecs ? { scale: [1, 1.1, 1] } : {}}
+                               className={`text-2xl font-bold font-mono ${stat.color} mb-1`}
+                               animate={showSpecs ? { scale: [1, 1.1, 1] } : {}}
                             >
-                              {stat.val}
+                               {stat.val}
                             </motion.div>
                             <div className="text-[8px] uppercase text-white/30 tracking-widest font-mono">{stat.label}</div>
                          </div>
@@ -351,7 +365,7 @@ export const WebdesignHero: React.FC = () => {
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         aria-hidden="true"
       >
-        <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">Scroll to Explore</span>
+        <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{t.scrollExplore}</span>
         <motion.div 
           className="w-px h-12 bg-gradient-to-b from-swiss-red to-transparent"
           animate={{ height: ["0%", "100%", "0%"], opacity: [0, 1, 0] }}

@@ -3,7 +3,21 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { MessageSquare, Zap } from 'lucide-react';
 import { trackCTAClick } from '../../lib/analytics';
 
-export const WebdesignInquiryWidget: React.FC = () => {
+const WIDGET_DICTIONARY = {
+  de: {
+    live: "Live Projekt",
+    cta: "Anfrage starten",
+    status: "UPLINK_STATUS: BEREIT"
+  },
+  en: {
+    live: "Live Project",
+    cta: "Start Inquiry",
+    status: "UPLINK_STATUS: READY"
+  }
+};
+
+export const WebdesignInquiryWidget: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
+  const t = WIDGET_DICTIONARY[lang];
   const { scrollYProgress } = useScroll();
   
   // Only show after scrolling a bit
@@ -94,10 +108,10 @@ export const WebdesignInquiryWidget: React.FC = () => {
           <div className="pr-6 text-left">
             <div className="text-[10px] font-mono text-swiss-red uppercase tracking-widest leading-none mb-1 flex items-center gap-1">
               <span className="w-1 h-1 bg-swiss-red rounded-full animate-pulse" />
-              Live Project
+              {t.live}
             </div>
             <div className="text-sm font-bold font-display text-white tracking-tight">
-              Anfrage starten
+              {t.cta}
             </div>
           </div>
 
@@ -110,7 +124,7 @@ export const WebdesignInquiryWidget: React.FC = () => {
         {/* Tooltip Content (Optional but adds premium feel) */}
         <div className="absolute top-0 right-full mr-4 flex items-center h-full pointer-events-none opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-500 whitespace-nowrap">
            <div className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-white/10 backdrop-blur-md text-[10px] font-mono text-gray-400">
-              UPLINK_STATUS: READY
+              {t.status}
            </div>
         </div>
       </div>

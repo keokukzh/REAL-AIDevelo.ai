@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Navbar } from '../components/Navbar';
+import { useState, useEffect } from 'react';
 import { 
   WebdesignContactForm,
   FeatureCard, 
@@ -61,8 +63,61 @@ const LazySection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+const DICTIONARY = {
+  de: {
+    heroTitle: "Digital Genesis",
+    heroText1: "Digital",
+    heroText2: "Genesis",
+    heroSub: "Wir transformieren Konzepte in digitale Dominanz. Exzellenz ist kein Zufall, sondern Code.",
+    missionStart: "Mission Starten",
+    showSpecs: "Systemdaten ansehen",
+    closeSpecs: "Analyse schließen",
+    pricingTitle: "Transparente Festpreise",
+    pricingSub: "Premium-Webdesign muss nicht kompliziert sein. Wir bieten klare Strukturen ohne monatliche Folgekosten.",
+    pricingInvest: "Investition",
+    pricingSubtitle: "Einmalig - Alles inklusive",
+    pricingDisclaimer: "Keine monatlichen Gebühren • Keine versteckten Kosten",
+    featuresTitle: "High-End Standards",
+    featuresSub: "Wir setzen auf modernste Architektur für maximale Skalierbarkeit und Geschwindigkeit.",
+    contactTitle: "Initialisierung",
+    contactSub: "Bereit für den digitalen Aufstieg? Starten wir die Kollaboration.",
+    relatedTitle: "Weitere Ecosysteme",
+    skipToContent: "Zum Hauptinhalt springen",
+    scrollExplore: "Scrollen zum Entdecken",
+  },
+  en: {
+    heroTitle: "Digital Genesis",
+    heroText1: "Digital",
+    heroText2: "Genesis",
+    heroSub: "We transform concepts into digital dominance. Excellence is not a coincidence, it is code.",
+    missionStart: "Start Mission",
+    showSpecs: "View System Data",
+    closeSpecs: "Close Analysis",
+    pricingTitle: "Transparent Fixed Prices",
+    pricingSub: "Premium web design shouldn't be complicated. We offer clear structures without monthly recurring costs.",
+    pricingInvest: "Investment",
+    pricingSubtitle: "One-time - All inclusive",
+    pricingDisclaimer: "No monthly fees • No hidden costs",
+    featuresTitle: "High-End Standards",
+    featuresSub: "We rely on state-of-the-art architecture for maximum scalability and speed.",
+    contactTitle: "Initialization",
+    contactSub: "Ready for digital ascent? Let's start the collaboration.",
+    relatedTitle: "Other Ecosystems",
+    skipToContent: "Skip to main content",
+    scrollExplore: "Scroll to Explore",
+  }
+};
+
 export const WebdesignPage = () => {
   const navigate = useNavigate();
+  const [lang, setLang] = useState<'de' | 'en'>('de');
+  const t = DICTIONARY[lang];
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('lang') === 'en') setLang('en');
+  }, []);
+
   const prefersReducedMotion = useReducedMotion();
   
   // Use scroll tracking for parallax effects
@@ -206,6 +261,54 @@ export const WebdesignPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white">
+      <Helmet>
+        <title>Premium Webdesign & Digital Genesis | AIDevelo</title>
+        <meta name="description" content="High-End Webdesign aus der Schweiz. Wir transformieren Konzepte in digitale Dominanz mit React, TypeScript und modernster Architektur. Lighthouse Score 90+ garantiert." />
+        <meta property="og:title" content="Premium Webdesign | AIDevelo" />
+        <meta property="og:description" content="Exzellenz ist kein Zufall, sondern Code. Entdecken Sie High-End Webdesign für maximale Skalierbarkeit." />
+        <meta property="og:type" content="website" />
+        <link rel="alternate" hrefLang="de-CH" href="https://aidevelo.ai/webdesign" />
+        <link rel="alternate" hrefLang="en" href="https://aidevelo.ai/en/webdesign" />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "High-End Webdesign Service",
+              "description": "Premium Webdesign-Umsetzung in 2-3 Wochen mit Fokus auf Performance, SEO und modernster Architektur.",
+              "brand": {
+                "@type": "Brand",
+                "name": "AIDevelo"
+              },
+              "offers": {
+                "@type": "Offer",
+                "price": "599",
+                "priceCurrency": "CHF",
+                "availability": "https://schema.org/InStock"
+              }
+            }
+          `}
+        </script>
+      </Helmet>
+
+      {/* Language Switcher */}
+      <div className="fixed top-24 right-8 z-[100] flex gap-2">
+        <button 
+          onClick={() => setLang('de')}
+          className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'de' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+          aria-label="Switch to German"
+        >
+          DE
+        </button>
+        <button 
+          onClick={() => setLang('en')}
+          className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'en' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+          aria-label="Switch to English"
+        >
+          EN
+        </button>
+      </div>
+
       {/* Premium Scroll Progress */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red z-[100] origin-left shadow-[0_0_20px_rgba(218,41,28,0.5)]"
@@ -219,7 +322,7 @@ export const WebdesignPage = () => {
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
       >
-        Zum Hauptinhalt springen
+        {t.skipToContent}
       </a>
       
       {/* Global Seamless Background */}
@@ -233,27 +336,27 @@ export const WebdesignPage = () => {
       <main id="main-content">
         {/* Hero Section */}
         <section className="relative">
-          <WebdesignHero />
+          <WebdesignHero t={t} />
         </section>
 
         {/* Process Flow Section */}
         <ScrollReveal direction="up">
-          <WebdesignProcessFlow />
+          <WebdesignProcessFlow lang={lang} />
         </ScrollReveal>
 
         {/* Portfolio / Website Previews Section */}
-        <WebsitePreviews />
+        <WebsitePreviews lang={lang} />
 
         {/* Tech Stack Showcase */}
-        <WebdesignTechStack />
+        <WebdesignTechStack lang={lang} />
 
         {/* Architectural Deep-Dive */}
-        <WebdesignArchitecture />
+        <WebdesignArchitecture lang={lang} />
 
         <div className="h-48 w-px bg-gradient-to-b from-swiss-red via-swiss-red/50 to-transparent mx-auto opacity-30 my-12" />
 
         {/* Business Comparison Section */}
-        <WebdesignComparison />
+        <WebdesignComparison lang={lang} />
 
         {/* Pricing Section */}
         <section 
@@ -269,20 +372,24 @@ export const WebdesignPage = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   className="inline-block px-4 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-400 uppercase tracking-widest mb-4"
                 >
-                  Investition
+                  {t.pricingInvest}
                 </motion.div>
                 <h2 id="pricing-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight">
-                  Transparente <span className="text-swiss-red">Festpreise</span>
+                  {lang === 'de' ? (
+                    <>Transparente <span className="text-swiss-red">Festpreise</span></>
+                  ) : (
+                    <>Transparent <span className="text-swiss-red">Fixed Prices</span></>
+                  )}
                 </h2>
                 <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-                  Premium-Webdesign muss nicht kompliziert sein. Wir bieten klare Strukturen ohne monatliche Folgekosten.
+                  {t.pricingSub}
                 </p>
               </div>
               
               <PricingCard
                 price="599 CHF"
-                subtitle="Einmalig - Alles inklusive"
-                disclaimer="Keine monatlichen Gebühren • Keine versteckten Kosten"
+                subtitle={t.pricingSubtitle}
+                disclaimer={t.pricingDisclaimer}
                 features={pricingFeatures}
               />
             </ScrollReveal>
@@ -298,15 +405,19 @@ export const WebdesignPage = () => {
           <div className="container mx-auto px-6 relative z-10">
             <ScrollReveal direction="up" className="text-center mb-20">
               <h2 id="features-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight">
-                High-End <span className="text-blue-500">Standards</span>
+                {lang === 'de' ? (
+                  <>High-End <span className="text-blue-500">Standards</span></>
+                ) : (
+                  <>High-End <span className="text-blue-500">Standards</span></>
+                )}
               </h2>
               <p className="text-gray-400 text-lg max-w-3xl mx-auto font-light">
-                Wir setzen auf modernste Architektur für maximale Skalierbarkeit und Geschwindigkeit.
+                {t.featuresSub}
               </p>
             </ScrollReveal>
 
             <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
-              <BentoGrid features={features} />
+              <BentoGrid features={features} lang={lang} />
             </ScrollReveal>
           </div>
         </section>
@@ -328,13 +439,13 @@ export const WebdesignPage = () => {
                 <div className="relative z-10">
                   <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">
                     <h2 id="contact-heading" className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tighter">
-                      Initialisierung
+                      {t.contactTitle}
                     </h2>
                     <p className="text-gray-400 text-xl font-light">
-                      Bereit für den digitalen Aufstieg? Starten wir die Kollaboration.
+                      {t.contactSub}
                     </p>
                   </ScrollReveal>
-                  <WebdesignContactForm onSuccess={() => navigate('/')} />
+                  <WebdesignContactForm onSuccess={() => navigate('/')} lang={lang} />
                 </div>
             </ScrollReveal>
           </div>
@@ -355,7 +466,7 @@ export const WebdesignPage = () => {
               className="max-w-4xl mx-auto text-center"
             >
               <h2 id="related-links-heading" className="text-3xl font-bold font-display mb-10 tracking-tight text-white/80">
-                Weitere Ecosysteme
+                {t.relatedTitle}
               </h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <Button
@@ -387,10 +498,8 @@ export const WebdesignPage = () => {
       </main>
 
       <Footer />
-      <WebdesignInquiryWidget />
+      <WebdesignInquiryWidget lang={lang} />
       </SmoothScroll>
     </div>
   );
 };
-
-

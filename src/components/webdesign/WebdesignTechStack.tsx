@@ -11,59 +11,95 @@ interface TechItem {
   why: string;
 }
 
-const TECH_STACK: TechItem[] = [
-  {
-    name: 'React 18',
-    logo: '/tech/react.svg',
-    icon: Code2,
-    color: 'text-blue-400',
-    description: 'Die weltweit führende Library für dynamische Interfaces.',
-    why: 'Ermöglicht ultra-schnelle UI-Updates durch Virtual DOM und eine skalierbare Komponenten-Architektur.'
+const TECH_DICTIONARY = {
+  de: {
+    engine: "Die Engine",
+    title: "Unser",
+    titleHighlight: "Tech-Ecosystem",
+    sub: "Wir setzen nicht auf Trends, sondern auf Industriestandards. Jede Technologie in unserem Stack ist darauf optimiert, maximale Performance und Sicherheit zu liefern.",
+    rationale: "Technisches Rationale",
+    items: [
+      {
+        name: 'React 18',
+        description: 'Die weltweit führende Library für dynamische Interfaces.',
+        why: 'Ermöglicht ultra-schnelle UI-Updates durch Virtual DOM und eine skalierbare Komponenten-Architektur.'
+      },
+      {
+        name: 'TypeScript',
+        description: 'Typsicheres JavaScript für fehlerfreien Code.',
+        why: 'Verhindert 90% der Laufzeitfehler bereits während der Entwicklung und sichert die Wartbarkeit.'
+      },
+      {
+        name: 'Vite',
+        description: 'Next-Generation Frontend Tooling.',
+        why: 'Bietet nahezu instantane Hot-Module-Replacement (HMR) und optimierte Produktions-Builds.'
+      },
+      {
+        name: 'Tailwind CSS',
+        description: 'Utility-First CSS für High-Speed Styling.',
+        why: 'Eliminiert unkontrolliertes CSS-Wachstum und garantiert konsistente Design-Systeme.'
+      },
+      {
+        name: 'Framer Motion',
+        description: 'Premium Animations-Engine.',
+        why: 'Ermöglicht komplexe 3D- und Gesten-basierte Animationen mit minimalem Performance-Overhead.'
+      },
+      {
+        name: 'Supabase',
+        description: 'BaaS (Backend as a Service) für Skalierbarkeit.',
+        why: 'Echtzeit-Datenbanken und sichere Authentifizierung ohne komplexe Server-Infrastruktur.'
+      }
+    ]
   },
-  {
-    name: 'TypeScript',
-    logo: '/tech/typescript.svg',
-    icon: ShieldCheck,
-    color: 'text-blue-600',
-    description: 'Typsicheres JavaScript für fehlerfreien Code.',
-    why: 'Verhindert 90% der Laufzeitfehler bereits während der Entwicklung und sichert die Wartbarkeit.'
-  },
-  {
-    name: 'Vite',
-    logo: '/tech/vite.svg',
-    icon: Zap,
-    color: 'text-yellow-400',
-    description: 'Next-Generation Frontend Tooling.',
-    why: 'Bietet nahezu instantane Hot-Module-Replacement (HMR) und optimierte Produktions-Builds.'
-  },
-  {
-    name: 'Tailwind CSS',
-    logo: '/tech/tailwind.svg',
-    icon: Layers,
-    color: 'text-cyan-400',
-    description: 'Utility-First CSS für High-Speed Styling.',
-    why: 'Eliminiert unkontrolliertes CSS-Wachstum und garantiert konsistente Design-Systeme.'
-  },
-  {
-    name: 'Framer Motion',
-    logo: '/tech/framer.svg',
-    icon: Rocket,
-    color: 'text-purple-500',
-    description: 'Premium Animations-Engine.',
-    why: 'Ermöglicht komplexe 3D- und Gesten-basierte Animationen mit minimalem Performance-Overhead.'
-  },
-  {
-    name: 'Supabase',
-    logo: '/tech/supabase.svg',
-    icon: Database,
-    color: 'text-emerald-500',
-    description: 'BaaS (Backend as a Service) für Skalierbarkeit.',
-    why: 'Echtzeit-Datenbanken und sichere Authentifizierung ohne komplexe Server-Infrastruktur.'
+  en: {
+    engine: "The Engine",
+    title: "Our",
+    titleHighlight: "Tech Ecosystem",
+    sub: "We don't follow trends, we rely on industry standards. Every technology in our stack is optimized to deliver maximum performance and security.",
+    rationale: "Technical Rationale",
+    items: [
+      {
+        name: 'React 18',
+        description: 'The world\'s leading library for dynamic interfaces.',
+        why: 'Enables ultra-fast UI updates through Virtual DOM and a scalable component architecture.'
+      },
+      {
+        name: 'TypeScript',
+        description: 'Type-safe JavaScript for error-free code.',
+        why: 'Prevents 90% of runtime errors during development and ensures maintainability.'
+      },
+      {
+        name: 'Vite',
+        description: 'Next-generation frontend tooling.',
+        why: 'Provides near-instant Hot Module Replacement (HMR) and optimized production builds.'
+      },
+      {
+        name: 'Tailwind CSS',
+        description: 'Utility-first CSS for high-speed styling.',
+        why: 'Eliminates uncontrolled CSS growth and guarantees consistent design systems.'
+      },
+      {
+        name: 'Framer Motion',
+        description: 'Premium animation engine.',
+        why: 'Enables complex 3D and gesture-based animations with minimal performance overhead.'
+      },
+      {
+        name: 'Supabase',
+        description: 'BaaS (Backend as a Service) for scalability.',
+        why: 'Real-time databases and secure authentication without complex server infrastructure.'
+      }
+    ]
   }
-];
+};
 
-export const WebdesignTechStack: React.FC = () => {
-  const [activeTech, setActiveTech] = useState<TechItem | null>(null);
+export const WebdesignTechStack: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
+  const t = TECH_DICTIONARY[lang];
+  const itemsData = t.items.map((item, i) => ({
+    ...item,
+    icon: [Code2, ShieldCheck, Zap, Layers, Rocket, Database][i],
+    color: ['text-blue-400', 'text-blue-600', 'text-yellow-400', 'text-cyan-400', 'text-purple-500', 'text-emerald-500'][i]
+  }));
+  const [activeTech, setActiveTech] = useState<typeof itemsData[0] | null>(null);
 
   return (
     <section className="py-24 bg-slate-950/50 relative overflow-hidden">
@@ -75,18 +111,18 @@ export const WebdesignTechStack: React.FC = () => {
             className="flex items-center gap-3 mb-4"
           >
             <Cpu className="text-swiss-red" size={20} />
-            <span className="text-swiss-red font-mono text-sm font-bold uppercase tracking-widest">Die Engine</span>
+            <span className="text-swiss-red font-mono text-sm font-bold uppercase tracking-widest">{t.engine}</span>
           </motion.div>
           <h2 className="text-4xl md:text-5xl font-bold font-display text-white mb-6">
-            Unser <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Tech-Ecosystem</span>
+            {t.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">{t.titleHighlight}</span>
           </h2>
           <p className="text-gray-400 max-w-2xl text-lg font-light">
-            Wir setzen nicht auf Trends, sondern auf Industriestandards. Jede Technologie in unserem Stack ist darauf optimiert, maximale Performance und Sicherheit zu liefern.
+            {t.sub}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {TECH_STACK.map((tech, idx) => (
+          {itemsData.map((tech, idx) => (
             <motion.div
               key={tech.name}
               initial={{ opacity: 0, y: 20 }}
@@ -114,7 +150,7 @@ export const WebdesignTechStack: React.FC = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="pt-4 border-t border-white/5"
                     >
-                      <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2">Technical Rationale</div>
+                      <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2">{t.rationale}</div>
                       <p className="text-xs text-gray-300 italic leading-relaxed">
                         "{tech.why}"
                       </p>

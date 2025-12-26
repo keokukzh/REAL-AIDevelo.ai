@@ -12,7 +12,106 @@ interface PreviewItem {
   description: string;
   tags: string[];
 }
-// ... (PREVIEWS array remains same, handled by context or skipped in replacement if not targeted)
+const PREVIEWS_DICTIONARY = {
+  de: {
+    badge: "Showcase",
+    title: "Ausgewählte",
+    titleHighlight: "Arbeiten",
+    sub: "Entdecken Sie, wie wir Marken digital zum Leben erwecken.",
+    cta: "Eigenes Projekt besprechen",
+    items: [
+      {
+        id: '1',
+        title: 'Alpine Dental Clinic',
+        category: 'Medizintechnik',
+        image: '/assets/previews/dentist_website_mockup.png',
+        description: 'Modernes Redesign für eine Zahnarztpraxis mit Fokus auf Vertrauen und Online-Buchung.',
+        tags: ['Next.js', 'Booking System', 'SEO']
+      },
+      {
+        id: '2',
+        title: 'Alta Cucina',
+        category: 'Gastronomie',
+        image: '/assets/previews/restaurant_website_mockup.png',
+        description: 'Elegantes Design für ein High-End Restaurant mit Fokus auf Atmosphäre und Menü-Präsentation.',
+        tags: ['Animation', 'Menu API', 'Reservations']
+      },
+      {
+        id: '3',
+        title: 'Neural Core AI',
+        category: 'Technik / SaaS',
+        image: '/assets/previews/saas_website_mockup.png',
+        description: 'Futuristisches Interface für ein KI-Startup mit komplexen Daten-Visualisierungen.',
+        tags: ['WebGL', 'Dark Mode', 'Dashboard']
+      },
+       {
+        id: '4',
+        title: 'Creative Agency',
+        category: 'Agentur',
+        image: '/assets/previews/agency_modern_mockup.png',
+        description: 'Minimalistisches Portfolio für eine Design-Agentur mit Fokus auf visuelle Hierarchie.',
+        tags: ['Minimalism', 'Portfolio', 'CMS']
+      },
+      {
+        id: '5',
+        title: 'Mobile App Showcase',
+        category: 'App Landing',
+        image: '/assets/previews/mobile_app_showcase.png',
+        description: 'Conversion-optimierte Landing Page für eine neue Fintech-App.',
+        tags: ['App Store', 'Conversion', '3D']
+      }
+    ]
+  },
+  en: {
+    badge: "Showcase",
+    title: "Selected",
+    titleHighlight: "Works",
+    sub: "Discover how we bring brands to life digitally.",
+    cta: "Discuss Your Project",
+    items: [
+      {
+        id: '1',
+        title: 'Alpine Dental Clinic',
+        category: 'Medical Tech',
+        image: '/assets/previews/dentist_website_mockup.png',
+        description: 'Modern redesign for a dental clinic with a focus on trust and online booking.',
+        tags: ['Next.js', 'Booking System', 'SEO']
+      },
+      {
+        id: '2',
+        title: 'Alta Cucina',
+        category: 'Gastronomy',
+        image: '/assets/previews/restaurant_website_mockup.png',
+        description: 'Elegant design for a high-end restaurant with a focus on atmosphere and menu presentation.',
+        tags: ['Animation', 'Menu API', 'Reservations']
+      },
+      {
+        id: '3',
+        title: 'Neural Core AI',
+        category: 'Tech / SaaS',
+        image: '/assets/previews/saas_website_mockup.png',
+        description: 'Futuristic interface for an AI startup with complex data visualizations.',
+        tags: ['WebGL', 'Dark Mode', 'Dashboard']
+      },
+       {
+        id: '4',
+        title: 'Creative Agency',
+        category: 'Agency',
+        image: '/assets/previews/agency_modern_mockup.png',
+        description: 'Minimalist portfolio for a design agency with a focus on visual hierarchy.',
+        tags: ['Minimalism', 'Portfolio', 'CMS']
+      },
+      {
+        id: '5',
+        title: 'Mobile App Showcase',
+        category: 'App Landing',
+        image: '/assets/previews/mobile_app_showcase.png',
+        description: 'Conversion-optimized landing page for a new fintech app.',
+        tags: ['App Store', 'Conversion', '3D']
+      }
+    ]
+  }
+};
 
 const PREVIEWS: PreviewItem[] = [
   {
@@ -57,9 +156,10 @@ const PREVIEWS: PreviewItem[] = [
   }
 ];
 
-export const WebsitePreviews: React.FC = () => {
+export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
+    const t = PREVIEWS_DICTIONARY[lang];
     // Duplicate items for infinite loop
-    const carouselItems = [...PREVIEWS, ...PREVIEWS]; 
+    const carouselItems = [...t.items, ...t.items]; 
     
     // Scroll-Linked Velocity Logic
     const { scrollY } = useScroll();
@@ -107,7 +207,7 @@ export const WebsitePreviews: React.FC = () => {
             viewport={{ once: true }}
             className="inline-block px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold uppercase tracking-widest mb-4"
           >
-            Showcase
+            {t.badge}
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -116,7 +216,7 @@ export const WebsitePreviews: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-bold font-display text-white mb-6"
           >
-            Ausgewählte <span className="text-red-500">Arbeiten</span>
+            {t.title} <span className="text-red-500">{t.titleHighlight}</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -125,7 +225,7 @@ export const WebsitePreviews: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-gray-400 text-lg"
           >
-             Entdecken Sie, wie wir Marken digital zum Leben erwecken.
+             {t.sub}
           </motion.p>
         </div>
       </div>
@@ -150,7 +250,7 @@ export const WebsitePreviews: React.FC = () => {
                         {/* Image */}
                         <img 
                             src={item.image} 
-                            alt={item.title}
+                            alt={`Preview of ${item.title}: ${item.category} Website Design`}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             loading="lazy"
                         />
@@ -174,7 +274,10 @@ export const WebsitePreviews: React.FC = () => {
                         </div>
 
                         {/* Interactive Hint */}
-                         <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md rounded-full p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10 scale-75 group-hover:scale-100">
+                         <div 
+                            className="absolute top-6 right-6 bg-black/60 backdrop-blur-md rounded-full p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10 scale-75 group-hover:scale-100"
+                            aria-label={`Projekt ${item.title} ansehen`}
+                         >
                             <ExternalLink size={20} className="text-white" />
                          </div>
                   </div>
@@ -189,7 +292,7 @@ export const WebsitePreviews: React.FC = () => {
                 variant="primary"
                 className="inline-flex items-center gap-2"
               >
-                Eigenes Projekt besprechen
+                {t.cta}
                 <ExternalLink className="w-4 h-4" />
               </Button>
             </Magnetic>

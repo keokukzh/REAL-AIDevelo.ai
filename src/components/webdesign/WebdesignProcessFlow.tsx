@@ -11,38 +11,78 @@ interface ProcessStep {
   color: string;
 }
 
-const steps: ProcessStep[] = [
-  {
-    number: '01',
-    title: 'Digitale Vision & Analyse',
-    description: 'Wir analysieren Ihre Zielgruppe und definieren die strategischen Ziele. Kein Baukasten-Einheitsbrei, sondern maßgeschneidertes Konzept.',
-    icon: FileText,
-    color: 'text-blue-400',
+const PROCESS_DICTIONARY = {
+  de: {
+    workflow: "Workflow",
+    title: "Vom Konzept zum",
+    titleHighlight: "Launch",
+    sub: "Ein transparenter, strukturierter Prozess garantiert Ergebnisse, die Ihre Erwartungen übertreffen. Keine Überraschungen, nur Fortschritt.",
+    pricingTitle: "Transparente Preisstruktur",
+    pricingSub: "Keine versteckten Kosten. Sie zahlen den Projektstart, wir liefern Ergebnisse. Die Restzahlung wird erst nach erfolgreichem Launch fällig.",
+    total: "Total",
+    steps: [
+      {
+        number: '01',
+        title: 'Digitale Vision & Analyse',
+        description: 'Wir analysieren Ihre Zielgruppe und definieren die strategischen Ziele. Kein Baukasten-Einheitsbrei, sondern maßgeschneidertes Konzept.',
+      },
+      {
+        number: '02',
+        title: 'Design & Fundament',
+        description: 'Nach dem Startschuss (100 CHF) erstellen wir das erste visuelle Konzept. Wir sichern Domain und Hosting und legen das technische Fundament.',
+      },
+      {
+        number: '03',
+        title: 'Development & Polish',
+        description: 'Transformation des Designs in pixelperfekten Code. Performance-Optimierung, SEO-Setup und Mobile-First Umsetzung in 2-3 Wochen.',
+      },
+      {
+        number: '04',
+        title: 'Launch & Success',
+        description: 'Go-Live Ihrer neuen Digital-Präsenz. Übergabe aller Zugänge, kurze Schulung und finale Qualitätskontrolle. Ready for Business.',
+      },
+    ]
   },
-  {
-    number: '02',
-    title: 'Design & Fundament',
-    description: 'Nach dem Startschuss (100 CHF) erstellen wir das erste visuelle Konzept. Wir sichern Domain und Hosting und legen das technische Fundament.',
-    icon: CreditCard,
-    color: 'text-emerald-400',
-  },
-  {
-    number: '03',
-    title: 'Development & Polish',
-    description: 'Transformation des Designs in pixelperfekten Code. Performance-Optimierung, SEO-Setup und Mobile-First Umsetzung in 2-3 Wochen.',
-    icon: Code,
-    color: 'text-purple-400',
-  },
-  {
-    number: '04',
-    title: 'Launch & Success',
-    description: 'Go-Live Ihrer neuen Digital-Präsenz. Übergabe aller Zugänge, kurze Schulung und finale Qualitätskontrolle. Ready for Business.',
-    icon: CheckCircle,
-    color: 'text-swiss-red',
-  },
-];
+  en: {
+    workflow: "Workflow",
+    title: "From Concept to",
+    titleHighlight: "Launch",
+    sub: "A transparent, structured process guarantees results that exceed your expectations. No surprises, just progress.",
+    pricingTitle: "Transparent Pricing Structure",
+    pricingSub: "No hidden costs. You pay for the project start, we deliver results. Balance payment is only due after successful launch.",
+    total: "Total",
+    steps: [
+      {
+        number: '01',
+        title: 'Digital Vision & Analysis',
+        description: 'We analyze your target audience and define strategic goals. No cookie-cutter templates, but a tailor-made concept.',
+      },
+      {
+        number: '02',
+        title: 'Design & Foundation',
+        description: 'After the starting signal (100 CHF), we create the first visual concept. We secure domain and hosting and lay the technical foundation.',
+      },
+      {
+        number: '03',
+        title: 'Development & Polish',
+        description: 'Transformation of design into pixel-perfect code. Performance optimization, SEO setup and mobile-first implementation in 2-3 weeks.',
+      },
+      {
+        number: '04',
+        title: 'Launch & Success',
+        description: 'Go-live of your new digital presence. Handover of all access data, brief training and final quality control. Ready for business.',
+      },
+    ]
+  }
+};
 
-export const WebdesignProcessFlow: React.FC = () => {
+export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
+  const t = PROCESS_DICTIONARY[lang];
+  const stepsData = t.steps.map((s, i) => ({
+    ...s,
+    icon: [FileText, CreditCard, Code, CheckCircle][i],
+    color: ['text-blue-400', 'text-emerald-400', 'text-purple-400', 'text-swiss-red'][i]
+  }));
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -71,13 +111,13 @@ export const WebdesignProcessFlow: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="inline-block px-4 py-1.5 rounded-full bg-swiss-red/10 border border-swiss-red/20 text-swiss-red text-sm font-bold uppercase tracking-widest mb-6"
           >
-            Workflow
+            {t.workflow}
           </motion.div>
           <h2 className="text-4xl md:text-6xl font-bold font-display mb-6 leading-tight">
-            Vom Konzept zum <span className="text-transparent bg-clip-text bg-gradient-to-r from-swiss-red to-orange-500">Launch</span>
+            {t.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-swiss-red to-orange-500">{t.titleHighlight}</span>
           </h2>
           <p className="text-gray-400 text-lg leading-relaxed">
-            Ein transparenter, strukturierter Prozess garantiert Ergebnisse, die Ihre Erwartungen übertreffen. Keine Überraschungen, nur Fortschritt.
+            {t.sub}
           </p>
         </RevealSection>
 
@@ -91,7 +131,7 @@ export const WebdesignProcessFlow: React.FC = () => {
           </div>
 
           <div className="space-y-12 md:space-y-24">
-            {steps.map((step, index) => {
+            {stepsData.map((step, index) => {
               const isEven = index % 2 === 0;
               return (
                 <div key={step.number} className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${isEven ? '' : 'md:flex-row-reverse'}`}>
@@ -171,15 +211,15 @@ export const WebdesignProcessFlow: React.FC = () => {
             
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold text-white mb-2">Transparente Preisstruktur</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">{t.pricingTitle}</h3>
                 <p className="text-gray-400 max-w-md">
-                  Keine versteckten Kosten. Sie zahlen den Projektstart, wir liefern Ergebnisse. Die Restzahlung wird erst nach erfolgreichem Launch fällig.
+                  {t.pricingSub}
                 </p>
               </div>
               
               <div className="flex items-center gap-6">
                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">Total</div>
+                    <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">{t.total}</div>
                     <div className="text-5xl font-bold font-display text-white">599 <span className="text-2xl text-gray-400">CHF</span></div>
                  </div>
                  <div className="h-16 w-px bg-white/10" />

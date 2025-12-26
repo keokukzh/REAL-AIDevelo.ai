@@ -9,9 +9,10 @@ interface BentoCardProps {
   className?: string;
   index: number;
   renderDemo?: () => React.ReactNode;
+  lang?: 'de' | 'en';
 }
 
-const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, className = "", index, renderDemo }) => {
+const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, className = "", index, renderDemo, lang = 'de' }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -84,7 +85,7 @@ const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, 
       </div>
 
       <div className="relative z-10 mt-8 flex items-center gap-2 text-sm font-bold text-swiss-red opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0 transform duration-300">
-        Mehr erfahren
+        {lang === 'de' ? 'Mehr erfahren' : 'Learn more'}
         <span className="text-lg">→</span>
       </div>
     </motion.div>
@@ -100,15 +101,16 @@ interface Feature {
   renderDemo?: () => React.ReactNode;
 }
 
-export const BentoGrid = React.memo<{ features: Feature[] }>(({ features }) => {
+export const BentoGrid = React.memo<{ features: Feature[], lang?: 'de' | 'en' }>(({ features, lang = 'de' }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[280px]">
-      {/* Featured Big Card */}
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-fr md:auto-rows-[280px]">
+      {/* featured big card */}
       {features[0] && (
         <div className="md:col-span-8 md:row-span-2">
           <BentoCard 
             {...features[0]} 
             index={0} 
+            lang={lang}
             className="bg-gradient-to-br from-slate-900 to-slate-950"
           />
         </div>
@@ -117,36 +119,36 @@ export const BentoGrid = React.memo<{ features: Feature[] }>(({ features }) => {
       {/* Two Regular Spans */}
       {features[1] && (
         <div className="md:col-span-4 md:row-span-1">
-          <BentoCard {...features[1]} index={1} />
+          <BentoCard {...features[1]} index={1} lang={lang} />
         </div>
       )}
       {features[2] && (
         <div className="md:col-span-4 md:row-span-1">
-          <BentoCard {...features[2]} index={2} />
+          <BentoCard {...features[2]} index={2} lang={lang} />
         </div>
       )}
 
       {/* Complex Row */}
       {features[3] && (
         <div className="md:col-span-4 md:row-span-2">
-          <BentoCard {...features[3]} index={3} />
+          <BentoCard {...features[3]} index={3} lang={lang} />
         </div>
       )}
       {features[4] && (
         <div className="md:col-span-8 md:row-span-1">
-          <BentoCard {...features[4]} index={4} />
+          <BentoCard {...features[4]} index={4} lang={lang} />
         </div>
       )}
       
       {/* Bottom Row */}
       {features[5] && (
         <div className="md:col-span-4 md:row-span-1">
-          <BentoCard {...features[5]} index={5} />
+          <BentoCard {...features[5]} index={5} lang={lang} />
         </div>
       )}
       {features[6] && (
         <div className="md:col-span-4 md:row-span-1">
-          <BentoCard {...features[6]} index={6} />
+          <BentoCard {...features[6]} index={6} lang={lang} />
         </div>
       )}
     </div>

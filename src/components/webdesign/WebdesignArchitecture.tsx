@@ -2,7 +2,68 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Network, Server, Globe2, ShieldCheck, Zap, Layers } from 'lucide-react';
 
-export const WebdesignArchitecture: React.FC = () => {
+const ARCH_DICTIONARY = {
+  de: {
+    infra: "Modern Infrastructure",
+    title: "Die Anatomie der",
+    titleHighlight: "Exzellenz",
+    nodes: [
+      { label: 'CDN / Edge', x: -160, y: -100, delay: 0 },
+      { label: 'Security Layer', x: 160, y: -100, delay: 0.2 },
+      { label: 'BaaS Engine', x: -160, y: 100, delay: 0.4 },
+      { label: 'Hydration', x: 160, y: 100, delay: 0.6 }
+    ],
+    features: [
+      {
+        title: "Dezentrale Auslieferung",
+        desc: "Ihre Website wird global auf über 300 Edge-Nodes gleichzeitig gehostet. Das bedeutet: Null Latenz, egal ob Ihr Kunde aus Zürich oder New York zugreift.",
+        highlight: "Null Latenz"
+      },
+      {
+        title: "Progressive Hydration",
+        desc: "Wir laden nur den Code, der wirklich benötigt wird. Der Rest wird intelligent im Hintergrund nachgeladen. Die Folge: Sofortige Interaktivität.",
+        highlight: "Sofortige Interaktivität"
+      },
+      {
+        title: "Immutable Security",
+        desc: "Statische Generation kombiniert mit sicheren API-Endpunkten macht Ihre Seite immun gegen klassische Server-Angriffe (SQL-Injection, Brute-Force).",
+        highlight: "statische Generation"
+      }
+    ]
+  },
+  en: {
+    infra: "Modern Infrastructure",
+    title: "The Anatomy of",
+    titleHighlight: "Excellence",
+    nodes: [
+      { label: 'CDN / Edge', x: -160, y: -100, delay: 0 },
+      { label: 'Security Layer', x: 160, y: -100, delay: 0.2 },
+      { label: 'BaaS Engine', x: -160, y: 100, delay: 0.4 },
+      { label: 'Hydration', x: 160, y: 100, delay: 0.6 }
+    ],
+    features: [
+      {
+        title: "Decentralized Delivery",
+        desc: "Your website is hosted globally on over 300 edge nodes simultaneously. This means: zero latency, whether your customer accesses from Zurich or New York.",
+        highlight: "Zero Latency"
+      },
+      {
+        title: "Progressive Hydration",
+        desc: "We only load the code that is actually needed. The rest is intelligently reloaded in the background. The result: immediate interactivity.",
+        highlight: "Immediate Interactivity"
+      },
+      {
+        title: "Immutable Security",
+        desc: "Static generation combined with secure API endpoints makes your site immune to classic server attacks (SQL injection, brute force).",
+        highlight: "Static Generation"
+      }
+    ]
+  }
+};
+
+export const WebdesignArchitecture: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
+  const t = ARCH_DICTIONARY[lang];
+  const nodeIcons = [Globe2, ShieldCheck, Server, Layers];
   return (
     <section className="py-24 bg-slate-950 relative overflow-hidden">
       <div className="container mx-auto px-6 relative z-10">
@@ -47,12 +108,7 @@ export const WebdesignArchitecture: React.FC = () => {
              </motion.div>
 
              {/* Connecting Nodes */}
-             {[
-               { icon: Globe2, label: 'CDN / Edge', x: -160, y: -100, delay: 0 },
-               { icon: ShieldCheck, label: 'Security Layer', x: 160, y: -100, delay: 0.2 },
-               { icon: Server, label: 'BaaS Engine', x: -160, y: 100, delay: 0.4 },
-               { icon: Layers, label: 'Hydration', x: 160, y: 100, delay: 0.6 }
-             ].map((node, i) => (
+             {t.nodes.map((node, i) => (
                 <motion.div 
                   key={node.label}
                   initial={{ opacity: 0, scale: 0 }}
@@ -61,7 +117,7 @@ export const WebdesignArchitecture: React.FC = () => {
                   className="absolute p-4 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 flex flex-col items-center gap-2 z-30 group/node"
                   style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
                 >
-                   <node.icon className="text-blue-400 group-hover:scale-110 transition-transform" size={24} />
+                   {React.createElement(nodeIcons[i], { className: "text-blue-400 group-hover:scale-110 transition-transform", size: 24 })}
                    <span className="text-[10px] font-mono text-white/50 uppercase tracking-widest">{node.label}</span>
                    
                    {/* Connection Line to Hub */}
@@ -83,50 +139,37 @@ export const WebdesignArchitecture: React.FC = () => {
 
           {/* Right Side: Content */}
           <div className="w-full lg:w-1/2">
-             <motion.div
-               initial={{ opacity: 0, x: 20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono mb-6"
-             >
-                <Network size={14} />
-                <span>Modern Infrastructure</span>
-             </motion.div>
-             
-             <h2 className="text-4xl md:text-6xl font-bold font-display text-white mb-8 leading-[1.1]">
-                Die Anatomie der <span className="text-blue-400">Exzellenz</span>
-             </h2>
-             
-             <div className="space-y-8">
-                <div className="group">
-                   <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
-                      <div className="w-8 h-px bg-blue-400 group-hover:w-12 transition-all" />
-                      Dezentrale Auslieferung
-                   </h3>
-                   <p className="text-gray-400 font-light leading-relaxed">
-                      Ihre Website wird global auf über 300 Edge-Nodes gleichzeitig gehostet. Das bedeutet: <span className="text-white">Null Latenz</span>, egal ob Ihr Kunde aus Zürich oder New York zugreift.
-                   </p>
-                </div>
-
-                <div className="group">
-                   <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
-                      <div className="w-8 h-px bg-purple-400 group-hover:w-12 transition-all" />
-                      Progressive Hydration
-                   </h3>
-                   <p className="text-gray-400 font-light leading-relaxed">
-                      Wir laden nur den Code, der wirklich benötigt wird. Der Rest wird intelligent im Hintergrund nachgeladen. Die Folge: <span className="text-white">Sofortige Interaktivität</span>.
-                   </p>
-                </div>
-
-                <div className="group">
-                   <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
-                      <div className="w-8 h-px bg-emerald-400 group-hover:w-12 transition-all" />
-                      Immutable Security
-                   </h3>
-                   <p className="text-gray-400 font-light leading-relaxed">
-                      Statische Generation kombiniert mit sicheren API-Endpunkten macht Ihre Seite immun gegen klassische Server-Angriffe (SQL-Injection, Brute-Force).
-                   </p>
-                </div>
-             </div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono mb-6"
+              >
+                 <Network size={14} />
+                 <span>{t.infra}</span>
+              </motion.div>
+              
+              <h2 className="text-4xl md:text-6xl font-bold font-display text-white mb-8 leading-[1.1]">
+                 {t.title} <span className="text-blue-400">{t.titleHighlight}</span>
+              </h2>
+              
+              <div className="space-y-8">
+                {t.features.map((f, i) => (
+                  <div key={i} className="group">
+                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
+                       <div className={`w-8 h-px bg-${['blue', 'purple', 'emerald'][i]}-400 group-hover:w-12 transition-all`} />
+                       {f.title}
+                    </h3>
+                    <p className="text-gray-400 font-light leading-relaxed">
+                       {f.desc.split(f.highlight).map((part, idx, arr) => (
+                         <React.Fragment key={idx}>
+                           {part}
+                           {idx < arr.length - 1 && <span className="text-white">{f.highlight}</span>}
+                         </React.Fragment>
+                       ))}
+                    </p>
+                  </div>
+                ))}
+              </div>
           </div>
         </div>
       </div>
