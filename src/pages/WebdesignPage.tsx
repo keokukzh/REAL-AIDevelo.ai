@@ -366,7 +366,7 @@ export const WebdesignPage = () => {
         <section className="relative min-h-screen">
           <ErrorBoundary fallback={<WebdesignHero t={t} />}>
             <Suspense fallback={<WebdesignHero t={t} />}>
-              <DigitalGenesisAnimation t={t} lang={lang} />
+              <HeroUltraAnimation t={t} lang={lang} />
             </Suspense>
           </ErrorBoundary>
         </section>
