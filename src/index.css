@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Terminal UI styles */
+@import './styles/terminal.css';
+
 @layer base {
   :root {
     --fluid-3xl: clamp(2rem, 5vw + 1rem, 4rem);
