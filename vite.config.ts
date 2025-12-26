@@ -20,69 +20,7 @@ export default defineConfig(({ mode }) => {
             entryFileNames: 'assets/[name]-[hash].js',
             chunkFileNames: 'assets/[name]-[hash].js',
             assetFileNames: 'assets/[name]-[hash].[ext]',
-            manualChunks: (id) => {
-              // Core React - must be first and in its own chunk
-              if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-                return 'react';
-              }
-              
-              // lucide-react depends on React, bundle it with React-related packages
-              if (id.includes('node_modules/lucide-react')) {
-                return 'react';
-              }
-              
-              // Framer Motion (animation library) - depends on React
-              if (id.includes('node_modules/framer-motion')) {
-                return 'motion';
-              }
-              
-              // Recharts (charting library - large)
-              if (id.includes('node_modules/recharts')) {
-                return 'recharts';
-              }
-              
-              // Three.js and related 3D libraries (large)
-              if (id.includes('node_modules/three') || 
-                  id.includes('node_modules/@react-three') ||
-                  id.includes('node_modules/@lottiefiles')) {
-                return 'three';
-              }
-              
-              // React Query (data fetching)
-              if (id.includes('node_modules/@tanstack/react-query')) {
-                return 'react-query';
-              }
-              
-              // Exclude ReactQueryDevtools from production bundle (uses eval)
-              if (id.includes('node_modules/@tanstack/react-query-devtools')) {
-                return null; // Don't include in any chunk
-              }
-              
-              // Router
-              if (id.includes('node_modules/react-router')) {
-                return 'router';
-              }
-              
-              // SIP.js (WebRTC library) - separate chunk to avoid circular dependencies
-              if (id.includes('node_modules/sip.js')) {
-                return 'sipjs';
-              }
-              
-              // Supabase client
-              if (id.includes('node_modules/@supabase')) {
-                return 'supabase';
-              }
-              
-              // Date utilities
-              if (id.includes('node_modules/date-fns')) {
-                return 'date-fns';
-              }
-              
-              // Other node_modules
-              if (id.includes('node_modules')) {
-                return 'vendor';
-              }
-            },
+            manualChunks: undefined,
           },
         },
         // Ensure public files (including _routes.json) are copied to dist
