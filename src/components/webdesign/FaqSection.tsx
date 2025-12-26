@@ -38,7 +38,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang = 'de' }) => {
                 <button
                   onClick={() => setOpenIndex(isExpanded ? null : index)}
                   className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
-                  aria-expanded={isExpanded}
+                  aria-expanded={isExpanded ? "true" : "false"}
                 >
                   <span className="text-lg font-medium text-white group-hover:text-blue-400 transition-colors">
                     {faq.question}
