@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 // Import WebdesignPage directly (not lazy) to ensure framer-motion is available
-import { WebdesignPage } from './pages/WebdesignPage';
+const WebdesignPage = React.lazy(() => import('./pages/WebdesignPage').then(m => ({ default: m.WebdesignPage })));
 // Lazy load pages for code splitting
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const VoiceAgentPage = React.lazy(() => import('./pages/VoiceAgentPage').then(m => ({ default: m.VoiceAgentPage })));
@@ -158,7 +158,11 @@ function AppContent() {
                         <EnterpriseContactPage />
                       </Suspense>
                     } />
-                    <Route path="/webdesign" element={<WebdesignPage />} />
+                    <Route path="/webdesign" element={
+                      <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                        <WebdesignPage />
+                      </Suspense>
+                    } />
                     <Route path="/calendar/:provider/callback" element={
                       <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                         <CalendarCallbackPage />
