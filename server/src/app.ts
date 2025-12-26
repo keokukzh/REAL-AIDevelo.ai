@@ -19,48 +19,87 @@ if (config.databaseUrl) {
     console.log('[Startup] Initializing legacy database connection...');
     const databaseUrl = config.databaseUrl.replace(/:[^:@]+@/, ':****@');
     console.log('[Startup] DATABASE_URL:', databaseUrl);
-    
+
     // Validate connection string format
-    if (!config.databaseUrl.startsWith('postgresql://') && !config.databaseUrl.startsWith('postgres://')) {
-      StructuredLoggingService.error('Invalid DATABASE_URL format - must start with postgresql:// or postgres://', new Error('Invalid DATABASE_URL format'));
+    if (
+      !config.databaseUrl.startsWith('postgresql://') &&
+      !config.databaseUrl.startsWith('postgres://')
+    ) {
+      StructuredLoggingService.error(
+        'Invalid DATABASE_URL format - must start with postgresql:// or postgres://',
+        new Error('Invalid DATABASE_URL format'),
+      );
       StructuredLoggingService.warn('Skipping legacy database connection');
       dbInitialized = false;
     } else {
       try {
         initializeDatabase();
-        
+
         // Test connection with more retries and better error reporting
-        testConnection(8).then(async (connected) => {
-          dbInitialized = connected;
-          if (connected) {
-            StructuredLoggingService.info('Legacy connection successful and ready');
-          } else {
-            StructuredLoggingService.error('Connection test failed after retries', new Error('Database connection test failed'));
-            StructuredLoggingService.error('Troubleshooting: 1. Verify DATABASE_URL is correct in environment variables');
-            StructuredLoggingService.error('Troubleshooting: 2. Ensure PostgreSQL service is running and accessible');
-            StructuredLoggingService.error('Troubleshooting: 3. Verify network connectivity and firewall rules');
-            StructuredLoggingService.error('Troubleshooting: 4. Check Supabase/Neon/Render dashboard for connection issues');
-            StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
-          }
-        }).catch((err) => {
-          StructuredLoggingService.error('Connection error', err instanceof Error ? err : new Error(String(err)), { message: err.message });
-          StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
-          dbInitialized = false;
-        });
+        testConnection(8)
+          .then(async (connected) => {
+            dbInitialized = connected;
+            if (connected) {
+              StructuredLoggingService.info('Legacy connection successful and ready');
+            } else {
+              StructuredLoggingService.error(
+                'Connection test failed after retries',
+                new Error('Database connection test failed'),
+              );
+              StructuredLoggingService.error(
+                'Troubleshooting: 1. Verify DATABASE_URL is correct in environment variables',
+              );
+              StructuredLoggingService.error(
+                'Troubleshooting: 2. Ensure PostgreSQL service is running and accessible',
+              );
+              StructuredLoggingService.error(
+                'Troubleshooting: 3. Verify network connectivity and firewall rules',
+              );
+              StructuredLoggingService.error(
+                'Troubleshooting: 4. Check Supabase/Neon/Render dashboard for connection issues',
+              );
+              StructuredLoggingService.warn(
+                'Server will continue - new code uses Supabase client directly',
+              );
+            }
+          })
+          .catch((err) => {
+            StructuredLoggingService.error(
+              'Connection error',
+              err instanceof Error ? err : new Error(String(err)),
+              { message: err.message },
+            );
+            StructuredLoggingService.warn(
+              'Server will continue - new code uses Supabase client directly',
+            );
+            dbInitialized = false;
+          });
       } catch (initError) {
-        StructuredLoggingService.error('Failed to initialize legacy connection', initError instanceof Error ? initError : new Error(String(initError)));
-        StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
+        StructuredLoggingService.error(
+          'Failed to initialize legacy connection',
+          initError instanceof Error ? initError : new Error(String(initError)),
+        );
+        StructuredLoggingService.warn(
+          'Server will continue - new code uses Supabase client directly',
+        );
         dbInitialized = false;
       }
     }
   } catch (error) {
-    StructuredLoggingService.error('Failed to initialize', error instanceof Error ? error : new Error(String(error)));
+    StructuredLoggingService.error(
+      'Failed to initialize',
+      error instanceof Error ? error : new Error(String(error)),
+    );
     StructuredLoggingService.warn('Server will continue - new code uses Supabase client directly');
     dbInitialized = false;
   }
 } else {
-  StructuredLoggingService.info('DATABASE_URL not set - using Supabase client directly (recommended)');
-  StructuredLoggingService.info('Legacy Agent/Purchase features require DATABASE_URL, but new routes use Supabase client');
+  StructuredLoggingService.info(
+    'DATABASE_URL not set - using Supabase client directly (recommended)',
+  );
+  StructuredLoggingService.info(
+    'Legacy Agent/Purchase features require DATABASE_URL, but new routes use Supabase client',
+  );
 }
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -141,16 +180,20 @@ app.use(varyOriginMiddleware);
 app.use(rateLimitMiddleware);
 
 // Compression (for JSON responses)
-app.use(compression({ 
-  filter: (req: Request, res: Response) => {
-    // Only compress JSON responses
-    if (req.headers['accept']?.includes('application/json') || 
-        res.getHeader('content-type')?.toString().includes('application/json')) {
-      return compression.filter(req, res);
-    }
-    return false;
-  }
-}));
+app.use(
+  compression({
+    filter: (req: Request, res: Response) => {
+      // Only compress JSON responses
+      if (
+        req.headers['accept']?.includes('application/json') ||
+        res.getHeader('content-type')?.toString().includes('application/json')
+      ) {
+        return compression.filter(req, res);
+      }
+      return false;
+    },
+  }),
+);
 
 // Request timeout middleware
 app.use(timeoutMiddleware);
@@ -175,36 +218,40 @@ app.use(express.urlencoded({ limit: '10mb', extended: true })); // Limit URL-enc
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Store original json method
   const originalJson = res.json.bind(res);
-  
+
   // Override json to always set Content-Type
-  res.json = function(body: any) {
+  res.json = function (body: any) {
     if (!res.getHeader('Content-Type')) {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
     }
     return originalJson(body);
   };
-  
+
   next();
 });
 
 // Response logging middleware with performance metrics (after body parser)
 app.use((req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
-  
+
   // Store request timing for percentile calculation
   (req as any).startTime = startTime;
-  
+
   // Override res.end to log completion with performance metrics
   const originalEnd = res.end.bind(res);
-  (res as any).end = function(chunk?: any, encoding?: BufferEncoding | (() => void), cb?: () => void) {
+  (res as any).end = function (
+    chunk?: any,
+    encoding?: BufferEncoding | (() => void),
+    cb?: () => void,
+  ) {
     const duration = Date.now() - startTime;
-    
+
     // Log request completion
     StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
-    
+
     // Add performance headers
     res.setHeader('X-Response-Time', `${duration}ms`);
-    
+
     // Log slow requests (>1s)
     if (duration > PERFORMANCE.SLOW_REQUEST_THRESHOLD_MS) {
       StructuredLoggingService.warn(
@@ -214,14 +261,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
           path: req.path,
           duration,
           statusCode: res.statusCode,
-          requestId: Array.isArray(req.headers['x-request-id']) 
-            ? req.headers['x-request-id'][0] 
+          requestId: Array.isArray(req.headers['x-request-id'])
+            ? req.headers['x-request-id'][0]
             : req.headers['x-request-id'],
         },
-        req
+        req,
       );
     }
-    
+
     // Handle Express res.end() overloads
     if (typeof encoding === 'function') {
       // res.end(cb) or res.end(chunk, cb)
@@ -237,7 +284,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
       return originalEnd(cb);
     }
   };
-  
+
   next();
 });
 
@@ -252,16 +299,20 @@ if (config.isProduction) {
 app.use(cacheMiddleware);
 
 // API Documentation (Swagger UI)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'AIDevelo.ai API Documentation',
-  customfavIcon: '/favicon.ico'
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'AIDevelo.ai API Documentation',
+    customfavIcon: '/favicon.ico',
+  }),
+);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'AIDevelo API Server',
     version: '1.0.0',
     status: 'running',
@@ -276,8 +327,8 @@ app.get('/', (req: Request, res: Response) => {
       enterprise: '/api/enterprise',
       telephony: '/api/telephony',
       onboarding: '/api/onboarding',
-      voiceAgent: '/api/voice-agent'
-    }
+      voiceAgent: '/api/voice-agent',
+    },
   });
 });
 
@@ -336,7 +387,9 @@ app.get('/health/ready', async (req: Request, res: Response) => {
     const { voiceAgentConfig } = require('./voice-agent/config');
     const qdrantUrl = voiceAgentConfig?.vectorDb?.qdrantUrl;
     if (qdrantUrl) {
-      const response = await axios.get(`${qdrantUrl.replace(/\/$/, '')}/collections`, { timeout: 2000 });
+      const response = await axios.get(`${qdrantUrl.replace(/\/$/, '')}/collections`, {
+        timeout: 2000,
+      });
       checks.qdrant = { ok: response.status === 200 };
     } else {
       checks.qdrant = { ok: false, reason: 'qdrant not configured' };
@@ -351,7 +404,11 @@ app.get('/health/ready', async (req: Request, res: Response) => {
     if (appConfig?.redisUrl) {
       // Try to load ioredis only if installed
       let Redis: any;
-      try { Redis = require('ioredis'); } catch (e) { Redis = null; }
+      try {
+        Redis = require('ioredis');
+      } catch (e) {
+        Redis = null;
+      }
       if (Redis) {
         const client = new Redis(appConfig.redisUrl);
         const pong = await client.ping();
@@ -374,8 +431,8 @@ app.get('/health/ready', async (req: Request, res: Response) => {
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'AIDevelo API is running',
     version: '1.0.0',
     endpoints: {
@@ -387,8 +444,8 @@ app.get('/api', (req: Request, res: Response) => {
       enterprise: '/api/enterprise',
       telephony: '/api/telephony',
       onboarding: '/api/onboarding',
-      voiceAgent: '/api/voice-agent'
-    }
+      voiceAgent: '/api/voice-agent',
+    },
   });
 });
 
@@ -447,6 +504,11 @@ v1Router.use('/analytics', analyticsRoutes); // Auth applied per-route
 v1Router.use('/analytics/exports', analyticsExportRoutes); // Auth applied per-route
 v1Router.use('/cron', cronRoutes); // Secret-based auth (no JWT)
 v1Router.use('/reports/scheduled', scheduledReportsRoutes); // Auth applied per-route
+
+// Lead capture (public, rate-limited)
+import leadRoutes from './routes/leadRoutes';
+v1Router.use('/leads', leadRoutes);
+
 if (process.env.NODE_ENV !== 'production') {
   v1Router.use('/dev/calendar', devCalendarRoutes); // Dev-only endpoints
   v1Router.use('/dev/rag', devRagRoutes); // Dev-only RAG endpoints
@@ -520,7 +582,9 @@ if (require.main === module) {
   const runMigrations = async () => {
     if (!config.databaseUrl) {
       StructuredLoggingService.info('DATABASE_URL not set - skipping legacy migrations');
-      StructuredLoggingService.info('New code uses Supabase client directly (no migrations needed)');
+      StructuredLoggingService.info(
+        'New code uses Supabase client directly (no migrations needed)',
+      );
       return;
     }
 
@@ -537,18 +601,23 @@ if (require.main === module) {
         break;
       }
       StructuredLoggingService.info(`[Startup] Waiting for database... (${i + 1}/10)`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     if (!connected) {
-      StructuredLoggingService.error('[Startup] Cannot run migrations - database not connected', new Error('Database connection failed'));
-      StructuredLoggingService.error('[Startup] Migrations will be skipped. Server will continue but database features may not work.');
+      StructuredLoggingService.error(
+        '[Startup] Cannot run migrations - database not connected',
+        new Error('Database connection failed'),
+      );
+      StructuredLoggingService.error(
+        '[Startup] Migrations will be skipped. Server will continue but database features may not work.',
+      );
       return;
     }
 
     StructuredLoggingService.info('[Startup] Starting migrations...');
 
-    const migrationsDir = fs.existsSync('/app/db/migrations') 
+    const migrationsDir = fs.existsSync('/app/db/migrations')
       ? '/app/db/migrations'
       : path.join(__dirname, '../../db/migrations');
 
@@ -565,13 +634,13 @@ if (require.main === module) {
     let client;
     try {
       // Get client with timeout
-      client = await Promise.race([
+      client = (await Promise.race([
         pool.connect(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), 10000)
-        )
-      ]) as any;
-      
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Connection timeout')), 10000),
+        ),
+      ])) as any;
+
       StructuredLoggingService.info('[Startup] Got client from pool');
 
       await client.query(`
@@ -582,11 +651,14 @@ if (require.main === module) {
         );
       `);
 
-      const files = fs.readdirSync(migrationsDir)
+      const files = fs
+        .readdirSync(migrationsDir)
         .filter((f: string) => f.endsWith('.sql'))
         .sort();
 
-      StructuredLoggingService.info(`[Startup] Found ${files.length} migration files`, { count: files.length });
+      StructuredLoggingService.info(`[Startup] Found ${files.length} migration files`, {
+        count: files.length,
+      });
 
       for (const file of files) {
         const name = file;
@@ -606,14 +678,21 @@ if (require.main === module) {
           StructuredLoggingService.info(`[Startup] Applied ${name}`, { name });
         } catch (err: any) {
           await client.query('ROLLBACK').catch(() => {}); // Ignore rollback errors
-          StructuredLoggingService.error(`[Startup] Failed to apply ${name}`, err instanceof Error ? err : new Error(String(err)), { name, message: err.message });
+          StructuredLoggingService.error(
+            `[Startup] Failed to apply ${name}`,
+            err instanceof Error ? err : new Error(String(err)),
+            { name, message: err.message },
+          );
           throw err;
         }
       }
 
       StructuredLoggingService.info('[Startup] All migrations completed successfully');
     } catch (error: any) {
-      StructuredLoggingService.error('[Startup] Migration error', error instanceof Error ? error : new Error(String(error)));
+      StructuredLoggingService.error(
+        '[Startup] Migration error',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       // Don't throw - allow server to start even if migrations fail
     } finally {
       if (client) {
@@ -627,13 +706,20 @@ if (require.main === module) {
     try {
       await runMigrations();
     } catch (err: any) {
-      StructuredLoggingService.error('[Startup] Migration error', err instanceof Error ? err : new Error(String(err)));
+      StructuredLoggingService.error(
+        '[Startup] Migration error',
+        err instanceof Error ? err : new Error(String(err)),
+      );
     }
 
     httpServer.listen(config.port, '0.0.0.0', () => {
-      StructuredLoggingService.info(`Running on http://0.0.0.0:${config.port}`, { port: config.port });
+      StructuredLoggingService.info(`Running on http://0.0.0.0:${config.port}`, {
+        port: config.port,
+      });
       StructuredLoggingService.info(`Environment: ${config.nodeEnv}`, { nodeEnv: config.nodeEnv });
-      StructuredLoggingService.info(`Allowed Origins: ${config.allowedOrigins.join(', ')}`, { allowedOrigins: config.allowedOrigins });
+      StructuredLoggingService.info(`Allowed Origins: ${config.allowedOrigins.join(', ')}`, {
+        allowedOrigins: config.allowedOrigins,
+      });
       StructuredLoggingService.info('WebSocket server ready for voice-agent connections');
       StructuredLoggingService.info('Background sync jobs registered and scheduled');
       StructuredLoggingService.info('Server is READY for requests');
@@ -643,13 +729,20 @@ if (require.main === module) {
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
       StructuredLoggingService.error('Server error', err, { message: err.message, code: err.code });
       if (err.code === 'EADDRINUSE') {
-        StructuredLoggingService.error(`Port ${config.port} is already in use`, new Error('Port in use'), { port: config.port });
+        StructuredLoggingService.error(
+          `Port ${config.port} is already in use`,
+          new Error('Port in use'),
+          { port: config.port },
+        );
       }
     });
   };
 
   start().catch((err) => {
-    StructuredLoggingService.error('Failed to start server', err instanceof Error ? err : new Error(String(err)));
+    StructuredLoggingService.error(
+      'Failed to start server',
+      err instanceof Error ? err : new Error(String(err)),
+    );
     process.exit(1);
   });
 }

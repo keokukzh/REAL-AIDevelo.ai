@@ -9,6 +9,14 @@
     --fluid-3xl: clamp(2rem, 5vw + 1rem, 4rem);
     --fluid-4xl: clamp(2.5rem, 6vw + 1rem, 5rem);
     --fluid-5xl: clamp(3rem, 8vw + 1rem, 7rem);
+
+    /* AIDevelo Ultra Theme Tokens */
+    --obsidian: #05060a;
+    --panel: #0b0f19;
+    --ultra-border: #1a2340;
+    --violet: #7c3aed;
+    --cyan: #22d3ee;
+    --electric-blue: #3b82f6;
   }
 
   html {
@@ -70,7 +78,8 @@
   }
 
   .smooth-transition {
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    transition:
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
       opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
@@ -170,4 +179,177 @@
 
 .perspective-card:hover {
   transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1.05);
+}
+
+/* AIDevelo Ultra Landing Styles */
+.ultra-aurora-bg {
+  background-size: 400% 400%;
+  animation: aurora 15s ease-in-out infinite;
+}
+
+.ultra-noise-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.ultra-glass {
+  background: rgba(11, 15, 25, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.ultra-glass-light {
+  background: rgba(11, 15, 25, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ultra-card {
+  background: linear-gradient(135deg, rgba(11, 15, 25, 0.8) 0%, rgba(5, 6, 10, 0.9) 100%);
+  border: 1px solid rgba(26, 35, 64, 0.5);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.ultra-card:hover {
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(124, 58, 237, 0.1);
+}
+
+.ultra-gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #22d3ee 50%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ultra-divider {
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--violet) 20%,
+    var(--cyan) 50%,
+    var(--violet) 80%,
+    transparent 100%
+  );
+}
+
+.ultra-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Aurora keyframe */
+@keyframes aurora {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 100%;
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Waveform bars */
+.ultra-waveform-bar {
+  animation: waveformBar 1s ease-in-out infinite;
+}
+
+@keyframes waveformBar {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Marquee */
+.ultra-marquee {
+  display: flex;
+  animation: marquee 30s linear infinite;
+}
+
+.ultra-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Stagger delay helpers */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+.stagger-6 {
+  animation-delay: 0.6s;
+}
+
+/* Button sheen effect */
+.ultra-btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.ultra-btn-sheen::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transform: skewX(-25deg);
+  transition: left 0.5s ease;
+}
+
+.ultra-btn-sheen:hover::after {
+  left: 150%;
+}
+
+/* Focus states for a11y */
+.ultra-focus:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
