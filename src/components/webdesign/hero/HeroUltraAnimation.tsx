@@ -79,6 +79,7 @@ const HeroUltraAnimation: React.FC<HeroUltraAnimationProps> = ({ t, lang }) => {
              <Button 
                 onClick={() => document.getElementById('webdesign-process')?.scrollIntoView({ behavior: 'smooth' })}
                 className="h-16 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none border-b-4 border-emerald-900 group"
+                aria-label={t.missionStart}
              >
                 <span className="flex items-center gap-2 font-bold uppercase tracking-widest text-sm">
                    {t.missionStart} <Zap size={18} className="text-yellow-300 group-hover:scale-110 transition-transform" />
@@ -89,6 +90,8 @@ const HeroUltraAnimation: React.FC<HeroUltraAnimationProps> = ({ t, lang }) => {
                 onClick={() => setShowSpecs(!showSpecs)}
                 variant="outline"
                 className="h-16 px-10 rounded-none border-white/10 hover:bg-white/5 text-white backdrop-blur-sm"
+                aria-label={showSpecs ? t.closeSpecs : t.showSpecs}
+                aria-expanded={showSpecs}
              >
                 <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
                    <Info size={16} /> {showSpecs ? t.closeSpecs : t.showSpecs}
