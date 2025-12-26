@@ -1,14 +1,14 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Info, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Info, CheckCircle2, Zap } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import { isWebGLAvailable } from '../../../utils/webgl';
-import { HeroStaticFallback } from './HeroStaticFallback';
-import Scene from './Scene';
+import { HeroUltraFallback } from './HeroUltraFallback';
+import UltraScene from './UltraScene';
 
-interface HeroFuturisticProps {
+interface HeroUltraAnimationProps {
   t: {
     heroText1: string;
     heroText2: string;
@@ -21,7 +21,7 @@ interface HeroFuturisticProps {
   lang: string;
 }
 
-const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
+const HeroUltraAnimation: React.FC<HeroUltraAnimationProps> = ({ t, lang }) => {
   const prefersReducedMotion = useReducedMotion();
   const [showSpecs, setShowSpecs] = useState(false);
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
@@ -35,7 +35,7 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
 
   // Render the static fallback if 3D is not available or reduced motion is requested
   if (hasWebGL !== null && !shouldRender3D) {
-    return <HeroStaticFallback t={t} onShowSpecs={() => setShowSpecs(!showSpecs)} showSpecs={showSpecs} />;
+    return <HeroUltraFallback t={t} onShowSpecs={() => setShowSpecs(!showSpecs)} showSpecs={showSpecs} />;
   }
 
   return (
@@ -44,7 +44,7 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
       <div className="absolute inset-0 z-0">
         <Canvas gl={{ antialias: true, alpha: true }} dpr={[1, 2]}>
           <Suspense fallback={null}>
-            <Scene />
+            <UltraScene />
           </Suspense>
         </Canvas>
       </div>
@@ -61,12 +61,12 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6">
              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-             <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Protocol Active // Genesis</span>
+             <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Protocol Active // ULTRA_CORE</span>
           </div>
           
           <h1 className="text-6xl md:text-8xl font-black font-display text-white leading-[0.9] tracking-tighter mb-8 italic">
             {t.heroText1} <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 animate-gradient-x">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 animate-gradient-x">
               {t.heroText2}
             </span>
           </h1>
@@ -77,11 +77,11 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
 
           <div className="flex flex-wrap gap-4">
              <Button 
-                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-                className="h-16 px-10 bg-red-600 hover:bg-red-700 text-white rounded-none border-b-4 border-red-900 group"
+                onClick={() => document.getElementById('webdesign-process')?.scrollIntoView({ behavior: 'smooth' })}
+                className="h-16 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none border-b-4 border-emerald-900 group"
              >
                 <span className="flex items-center gap-2 font-bold uppercase tracking-widest text-sm">
-                   {t.missionStart} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                   {t.missionStart} <Zap size={18} className="text-yellow-300 group-hover:scale-110 transition-transform" />
                 </span>
              </Button>
 
@@ -97,8 +97,8 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
           </div>
 
           <div className="mt-12 flex items-center gap-8 text-[10px] font-mono text-gray-500">
-             <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-red-500" /> ULTRA_PERFORMANT</div>
-             <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-purple-500" /> SCALABLE_GENESIS</div>
+             <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> ULTRA_PERFORMANT</div>
+             <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-cyan-500" /> SCALABLE_CORE</div>
           </div>
         </motion.div>
 
@@ -112,25 +112,25 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
                   exit={{ opacity: 0, scale: 0.9, rotateY: 20 }}
                   className="bg-slate-900/40 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden group pointer-events-auto"
                 >
-                   <div className="absolute top-0 right-0 p-4 font-mono text-[8px] text-white/20">SYSTEM_LOG_V2.0</div>
+                   <div className="absolute top-0 right-0 p-4 font-mono text-[8px] text-white/20">SYSTEM_LOG_V3.0</div>
                    <div className="space-y-6">
-                      <div className="h-2 w-32 bg-red-500/20 rounded-full overflow-hidden">
-                         <motion.div animate={{ x: [-128, 128] }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} className="h-full w-1/2 bg-red-500" />
+                      <div className="h-2 w-32 bg-emerald-500/20 rounded-full overflow-hidden">
+                         <motion.div animate={{ x: [-128, 128] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="h-full w-1/2 bg-emerald-500" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                          <div className="border border-white/5 p-4 rounded-xl">
                             <div className="text-[10px] text-gray-500 mb-1">FPS</div>
-                            <div className="text-2xl font-mono font-bold text-white">60.0</div>
+                            <div className="text-2xl font-mono font-bold text-white">120.0</div>
                          </div>
                          <div className="border border-white/5 p-4 rounded-xl">
                             <div className="text-[10px] text-gray-500 mb-1">LATENCY</div>
-                            <div className="text-2xl font-mono font-bold text-emerald-400">0.02ms</div>
+                            <div className="text-2xl font-mono font-bold text-emerald-400">0.01ms</div>
                          </div>
                       </div>
-                      <code className="block p-4 bg-black/40 rounded-xl text-[10px] text-blue-400 font-mono">
-                         &gt; Initializing protocol...<br/>
+                      <code className="block p-4 bg-black/40 rounded-xl text-[10px] text-emerald-400 font-mono">
+                         &gt; Initializing ULTRA protocol...<br/>
                          &gt; Quantum alignment active<br/>
-                         &gt; Genesis cores online [OK]<br/>
+                         &gt; Core stability 100% [OK]<br/>
                          &gt; UI_SYNC_COMPLETE
                       </code>
                    </div>
@@ -146,4 +146,4 @@ const HeroFuturistic: React.FC<HeroFuturisticProps> = ({ t, lang }) => {
   );
 };
 
-export default HeroFuturistic;
+export default HeroUltraAnimation;

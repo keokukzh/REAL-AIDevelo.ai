@@ -19,6 +19,11 @@ The system provides 24/7 call handling, lead qualification, and appointment book
 - **Frontend**: React 19, TypeScript, Vite
 - **Backend**: Node.js, Express, TypeScript
 - **Styling**: Tailwind CSS (Custom "Swiss" Theme), Framer Motion
+### 3. Hero Sections
+- **Home**: `Hero.tsx` - Main landing experience.
+- **Webdesign**: `HeroUltraAnimation.tsx` - **NEW** "Digital Dominance" 3D visualization using React Three Fiber.
+  - Features: Procedural geometry, glowing emission shaders, floating particles.
+  - Fallback: `HeroUltraFallback.tsx` for low-power devices/reduced motion.
 - **3D**: Three.js, React Three Fiber (for Avatar visualization)
 - **Routing**: React Router DOM v7+
 - **Voice**: OpenAI Realtime API (ASR), ElevenLabs (TTS)
