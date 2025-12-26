@@ -1,0 +1,135 @@
+{
+  "de": {
+    "caseStudies": [
+      {
+        "id": "cs-1",
+        "title": "Lumina Wellness",
+        "industry": "Gesundheit & Vorsorge",
+        "description": "Eine ganzheitliche Plattform, die Design-Ästhetik mit funktionaler Terminbuchung verbindet. Reduzierte Ladezeiten um 60% durch Headless-Architektur.",
+        "image": "/assets/projects/lumina.webp",
+        "imagePrompt": "Minimalist zen wellness website mockup, soft lighting, sage green and cream colors, high-end photography, 8k resolution",
+        "alt": "Screenshot der Lumina Wellness Website mit Fokus auf beruhigende Farben und klares Interface",
+        "tags": ["React 19", "Framer Motion", "Booking API"]
+      },
+      {
+        "id": "cs-2",
+        "title": "Quantum Logistics",
+        "industry": "Logistik & Transport",
+        "description": "Echtzeit-Tracking-Dashboard für internationale Lieferketten. Fokus auf Datenvisualisierung und mobile Erreichbarkeit unter extremen Bedingungen.",
+        "image": "/assets/projects/quantum.webp",
+        "imagePrompt": "Futuristic logistics dashboard mockup, dark mode, blue neon accents, complex data graphs, cinematic lighting, ultra-modern UI",
+        "alt": "Echtzeit-Dashboard von Quantum Logistics mit interaktiven Karten und Daten-Graphen",
+        "tags": ["Next.js", "WebGL", "Real-time Data"]
+      },
+      {
+        "id": "cs-3",
+        "title": "CyberNexus SaaS",
+        "industry": "Technologie / Software",
+        "description": "Landing Page für ein kollaboratives KI-Tool. Einsatz von interaktiven 3D-Modellen zur Veranschaulichung komplexer Algorithmen.",
+        "image": "/assets/projects/cybernexus.webp",
+        "imagePrompt": "SaaS website hero section, glassmorphism, floating 3D objects, futuristic tech vibes, vibrant purple and blue highlights",
+        "alt": "CyberNexus Landing Page mit schwebenden 3D-Elementen und futuristischer Typografie",
+        "tags": ["Three.js", "Tailwind CSS", "A/B Testing"]
+      }
+    ]
+  },
+  "en": {
+    "caseStudies": [
+      {
+        "id": "cs-1",
+        "title": "Lumina Wellness",
+        "industry": "Health & Prevention",
+        "description": "A holistic platform merging design aesthetics with functional booking. Reduced load times by 60% using headless architecture.",
+        "image": "/assets/projects/lumina.webp",
+        "alt": "Screenshot of Lumina Wellness website focusing on soothing colors and clean interface",
+        "tags": ["React 19", "Framer Motion", "Booking API"]
+      },
+      {
+        "id": "cs-2",
+        "title": "Quantum Logistics",
+        "industry": "Logistics & Transport",
+        "description": "Real-time tracking dashboard for global supply chains. Specialized in data visualization and mobile accessibility in extreme conditions.",
+        "image": "/assets/projects/quantum.webp",
+        "alt": "Real-time dashboard of Quantum Logistics featuring interactive maps and data graphs",
+        "tags": ["Next.js", "WebGL", "Real-time Data"]
+      },
+      {
+        "id": "cs-3",
+        "title": "CyberNexus SaaS",
+        "industry": "Technology / Software",
+        "description": "Landing page for a collaborative AI tool. Utilizing interactive 3D models to demonstrate complex algorithms.",
+        "image": "/assets/projects/cybernexus.webp",
+        "alt": "CyberNexus landing page with floating 3D elements and futuristic typography",
+        "tags": ["Three.js", "Tailwind CSS", "A/B Testing"]
+      }
+    ]
+  },
+  "fr": {
+    "caseStudies": [
+      {
+        "id": "cs-1",
+        "title": "Lumina Wellness",
+        "industry": "Santé & Bien-être",
+        "description": "Une plateforme holistique alliant esthétique du design et prise de rendez-vous fonctionnelle. Réduction des temps de chargement de 60%.",
+        "image": "/assets/projects/lumina.webp",
+        "imagePrompt": "Minimalist zen wellness website mockup, soft lighting, sage green and cream colors, high-end photography, 8k resolution",
+        "alt": "Capture d'écran du site Web Lumina Wellness",
+        "tags": ["React 19", "Framer Motion", "API de réservation"]
+      },
+      {
+        "id": "cs-2",
+        "title": "Quantum Logistics",
+        "industry": "Transport & Supply Chain",
+        "description": "Tableau de bord de suivi en temps réel pour une efficacité mondiale. Utilisation d'architectures orientées widgets.",
+        "image": "/assets/projects/quantum.webp",
+        "imagePrompt": "Futuristic logistics dashboard, dark theme, holographic data visualizations, sleek neon accents, high-tech interface",
+        "alt": "Interface du tableau de bord Quantum Logistics",
+        "tags": ["D3.js", "Dashboard UI", "Real-time"]
+      },
+      {
+        "id": "cs-3",
+        "title": "CyberNexus SaaS",
+        "industry": "Technologie Cloud",
+        "description": "Une landing page SaaS à fort impact avec des animations ultra-fluides et un funnel de conversion optimisé.",
+        "image": "/assets/projects/cybernexus.webp",
+        "imagePrompt": "Tech SaaS landing page, glassmorphism, floating interface elements, dark mode, vibrant purple and blue glows",
+        "alt": "Landing page de CyberNexus SaaS",
+        "tags": ["Next.js", "Tailwind CSS", "Motion UI"]
+      }
+    ]
+  },
+  "it": {
+    "caseStudies": [
+       {
+        "id": "cs-1",
+        "title": "Lumina Wellness",
+        "industry": "Salute & Benessere",
+        "description": "Una piattaforma olistica che unisce l'estetica del design alla funzionalità delle prenotazioni. Tempi di caricamento ridotti del 60%.",
+        "image": "/assets/projects/lumina.webp",
+        "imagePrompt": "Minimalist zen wellness website mockup, soft lighting, sage green and cream colors, high-end photography, 8k resolution",
+        "alt": "Screenshot del sito web Lumina Wellness",
+        "tags": ["React 19", "Framer Motion", "Booking API"]
+      },
+      {
+        "id": "cs-2",
+        "title": "Quantum Logistics",
+        "industry": "Trasporti & Supply Chain",
+        "description": "Dashboard di tracciamento in tempo reale per l'efficienza globale. Architettura modulare a widget.",
+        "image": "/assets/projects/quantum.webp",
+        "imagePrompt": "Futuristic logistics dashboard, dark theme, holographic data visualizations, sleek neon accents, high-tech interface",
+        "alt": "Interfaccia dashboard Quantum Logistics",
+        "tags": ["D3.js", "Dashboard UI", "Real-time"]
+      },
+      {
+        "id": "cs-3",
+        "title": "CyberNexus SaaS",
+        "industry": "Cloud Tech",
+        "description": "Landing page SaaS ad alto impatto con animazioni fluide e funnel di conversione ottimizzato.",
+        "image": "/assets/projects/cybernexus.webp",
+        "imagePrompt": "Tech SaaS landing page, glassmorphism, floating interface elements, dark mode, vibrant purple and blue glows",
+        "alt": "Landing page CyberNexus SaaS",
+        "tags": ["Next.js", "Tailwind CSS", "Motion UI"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "de": {
+    "faqs": [
+      {
+        "question": "Welches CMS nutzt AIDevelo?",
+        "answer": "Wir setzen primär auf moderne Headless-Lösungen wie Strapi oder Contentful, kombiniert mit performanten Frontend-Frameworks wie React oder Next.js. Dies garantiert maximale Geschwindigkeit und Flexibilität."
+      },
+      {
+        "question": "Wie lange dauert eine Projektumsetzung?",
+        "answer": "Ein typisches Webdesign-Projekt (Digital Genesis) dauert zwischen 4 und 8 Wochen, abhängig von der Komplexität und den gewünschten Integrationen."
+      },
+      {
+        "question": "Ist die Seite für Google optimiert?",
+        "answer": "Ja, technisches SEO ist bei uns Standard. Wir optimieren Core Web Vitals, Metadaten und die Informationsarchitektur von Anfang an."
+      },
+      {
+        "question": "Bieten Sie auch regelmäßige Wartung an?",
+        "answer": "Selbstverständlich. Nach dem Launch bieten wir verschiedene Maintenance-Pakete an, um Sicherheit, Updates und Performance dauerhaft zu gewährleisten."
+      },
+      {
+        "question": "Was unterscheidet AIDevelo von einer klassischen Agentur?",
+        "answer": "Unser Fokus liegt auf der Synergie zwischen High-End Design und künstlicher Intelligenz. Wir bauen keine statischen Seiten, sondern digitale Ökosysteme."
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Dr. Elena Weber",
+        "company": "Alpine Health Group",
+        "text": "AIDevelo hat unsere digitale Präsenz auf ein neues Level gehoben. Das Design ist nicht nur schön, sondern konvertiert auch messbar besser."
+      },
+      {
+        "name": "Marc Schneider",
+        "company": "Nexus Logistics",
+        "text": "Die Geschwindigkeit, mit der das Projekt umgesetzt wurde, und die technische Tiefe haben uns beeindruckt. Ein echter Partner für komplexe Vorhaben."
+      }
+    ]
+  },
+  "en": {
+    "faqs": [
+      {
+        "question": "Which CMS does AIDevelo use?",
+        "answer": "We primarily use modern headless solutions like Strapi or Contentful, combined with high-performance frontend frameworks like React or Next.js. This ensures maximum speed and flexibility."
+      },
+      {
+        "question": "How long does project implementation take?",
+        "answer": "A typical web design project (Digital Genesis) takes between 4 and 8 weeks, depending on the complexity and required integrations."
+      },
+      {
+        "question": "Is the site optimized for Google?",
+        "answer": "Yes, technical SEO is our standard. We optimize Core Web Vitals, metadata, and information architecture from the very beginning."
+      },
+      {
+        "question": "Do you offer regular maintenance?",
+        "answer": "Absolutely. After launch, we offer various maintenance packages to ensure ongoing security, updates, and performance."
+      },
+      {
+        "question": "What distinguishes AIDevelo from a classic agency?",
+        "answer": "Our focus is on the synergy between high-end design and artificial intelligence. We don't build static sites; we build digital ecosystems."
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Dr. Elena Weber",
+        "company": "Alpine Health Group",
+        "text": "AIDevelo has taken our digital presence to a new level. The design is not only beautiful but also converts measurably better."
+      },
+      {
+        "name": "Marc Schneider",
+        "company": "Nexus Logistics",
+        "text": "The speed of implementation and technical depth impressed us. A true partner for complex projects."
+      }
+    ]
+  },
+  "fr": {
+    "faqs": [
+      {
+        "question": "Quel CMS AIDevelo utilise-t-il ?",
+        "answer": "Nous utilisons principalement des solutions Headless modernes comme Strapi ou Contentful."
+      },
+      {
+        "question": "Combien de temps faut-il pour mettre en œuvre un projet ?",
+        "answer": "Un projet typique prend entre 4 et 8 semaines."
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Jean Dupont",
+        "company": "Tech Innovate",
+        "text": "AIDevelo a transformé notre présence numérique."
+      }
+    ]
+  },
+  "it": {
+    "faqs": [
+      {
+        "question": "Quale CMS utilizza AIDevelo?",
+        "answer": "Utilizziamo principalmente soluzioni moderne Headless come Strapi o Contentful."
+      },
+      {
+        "question": "Quanto tempo occorre per la realizzazione di un progetto?",
+        "answer": "Un progetto tipico richiede tra le 4 e le 8 settimane."
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Marco Rossi",
+        "company": "Italia Design",
+        "text": "AIDevelo ha elevato il nostro business."
+      }
+    ]
+  }
+}

@@ -19,3 +19,5 @@ export { Magnetic } from './Magnetic';
 export { CursorFollower } from './CursorFollower';
 export { SmoothScroll } from './SmoothScroll';
 export { WebdesignInquiryWidget } from './WebdesignInquiryWidget';
+export { FaqSection } from './FaqSection';
+export { TestimonialSection } from './TestimonialSection';

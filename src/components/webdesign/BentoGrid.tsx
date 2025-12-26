@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useMotionValue, useSpring, useVelocity, useTransform } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface BentoCardProps {
   icon: LucideIcon;
@@ -20,6 +21,7 @@ const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, 
   // Velocity tracking for dynamic glow
   const xVelocity = useVelocity(mouseX);
   const yVelocity = useVelocity(mouseY);
+  const prefersReducedMotion = useReducedMotion();
   
   // Increase spotlight size/intensity based on speed
   const spotlightSize = useTransform(
@@ -60,19 +62,21 @@ const BentoCard = React.memo<BentoCardProps>(({ icon: Icon, title, description, 
         className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition duration-300 group-hover:opacity-100"
         style={{
           background: useTransform(spotlightSize, (size) => 
-            `radial-gradient(${size}px circle at ${mouseX.get()}px ${mouseY.get()}px, rgba(218, 41, 28, 0.15), transparent 80%)`
+            prefersReducedMotion 
+              ? `radial-gradient(300px circle at ${mouseX.get()}px ${mouseY.get()}px, rgba(218, 41, 28, 0.05), transparent 80%)`
+              : `radial-gradient(${size}px circle at ${mouseX.get()}px ${mouseY.get()}px, rgba(218, 41, 28, 0.15), transparent 80%)`
           ),
         }}
       />
 
       <div className="relative z-10">
         <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-swiss-red/10 text-swiss-red group-hover:scale-110 group-hover:bg-swiss-red group-hover:text-white transition-all duration-300">
-          <Icon size={24} />
+          <Icon size={24} aria-hidden="true" />
         </div>
         <h3 className="mb-2 text-2xl font-bold text-white group-hover:text-swiss-red transition-colors">
           {title}
         </h3>
-        <p className="text-gray-400 group-hover:text-gray-300 transition-colors line-clamp-3 mb-6">
+        <p className="text-gray-300 group-hover:text-white transition-colors line-clamp-3 mb-6 font-light">
           {description}
         </p>
 

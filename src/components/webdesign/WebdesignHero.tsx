@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Code, Zap, Layout, Smartphone, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface WebdesignHeroProps {
   t: {
@@ -20,6 +21,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const prefersReducedMotion = useReducedMotion();
 
   // 3D Tilt Effect Logic
   const mouseX = useMotionValue(0);
@@ -99,7 +101,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
             >
               <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_2s_infinite]" />
               <span className="relative z-10 flex items-center gap-3">
-                {t.missionStart} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                {t.missionStart} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </span>
             </Button>
             
@@ -114,14 +116,14 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="mt-12 flex items-center gap-6 text-sm text-gray-500 font-mono">
+          <div className="mt-12 flex items-center gap-6 text-sm text-gray-400 font-mono">
              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-blue-500" />
-                <span>React Ecosystem</span>
+                <CheckCircle2 size={16} className="text-blue-400" aria-hidden="true" />
+                <span className="text-gray-300">React Ecosystem</span>
              </div>
              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-purple-500" />
-                <span>High Performance</span>
+                <CheckCircle2 size={16} className="text-purple-400" aria-hidden="true" />
+                <span className="text-gray-300">High Performance</span>
              </div>
           </div>
         </motion.div>
@@ -139,8 +141,8 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
           {/* 3D Container */}
           <motion.div
              style={{
-               rotateY: transformX,
-               rotateX: transformY,
+               rotateY: prefersReducedMotion ? 0 : transformX,
+               rotateX: prefersReducedMotion ? 0 : transformY,
              }}
              className="relative w-full max-w-[600px] aspect-[4/5] transition-transform duration-200 ease-out"
           >
@@ -156,10 +158,10 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                       <div className="w-3 h-3 rounded-full bg-amber-500/50" />
                       <div className="w-3 h-3 rounded-full bg-emerald-500/50" />
                    </div>
-                   <div className="flex gap-4 items-center">
-                      <div className={`h-2 transition-all duration-500 ${showSpecs ? 'w-24 bg-blue-500/30' : 'w-16 bg-white/10'} rounded-full`} />
-                      <Layout size={14} className="text-white/20" />
-                   </div>
+                    <div className="flex gap-4 items-center">
+                       <div className={`h-2 transition-all duration-500 ${showSpecs ? 'w-24 bg-blue-500/30' : 'w-16 bg-white/10'} rounded-full`} />
+                       <Layout size={14} className="text-white/20" aria-hidden="true" />
+                    </div>
                 </div>
 
                 {/* Body Content: Mini Landing Page Mockup */}

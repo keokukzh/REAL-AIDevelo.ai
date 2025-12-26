@@ -3,6 +3,8 @@ import { motion, useScroll, useSpring, useTransform, useVelocity, useAnimationFr
 import { ExternalLink } from 'lucide-react';
 import { Magnetic } from './Magnetic';
 import { Button } from '../ui/Button';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { LazyImage } from '../ui/LazyImage';
 
 interface PreviewItem {
   id: string;
@@ -172,19 +174,17 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
     const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], {
       clamp: false
     });
+    const prefersReducedMotion = useReducedMotion();
 
-    const baseVelocity = -15; // Default marquee speed
+    const baseVelocity = prefersReducedMotion ? 0 : -15; // Stop marquee if reduced motion is preferred
     const x = useMotionValue(0);
 
-    useAnimationFrame((t, delta) => {
+    useAnimationFrame((_t, delta) => {
+      if (prefersReducedMotion) return;
+      
       let moveBy = baseVelocity * (delta / 1000);
       
-      /**
-       * This is what makes it feel ultra: 
-       * The marquee speed reacts to scroll velocity!
-       */
       const currentVelocityFactor = velocityFactor.get();
-      // Increase speed when scrolling, but maintain a base direction
       moveBy += currentVelocityFactor * (delta / 1000) * -20;
 
       x.set(x.get() + moveBy);
@@ -223,7 +223,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-gray-400 text-lg"
+            className="text-gray-300 text-lg"
           >
              {t.sub}
           </motion.p>
@@ -248,11 +248,10 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                     className="relative w-[450px] md:w-[600px] aspect-[16/10] flex-shrink-0 group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl perspective-card"
                   >
                         {/* Image */}
-                        <img 
+                        <LazyImage 
                             src={item.image} 
                             alt={`Preview of ${item.title}: ${item.category} Website Design`}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                            loading="lazy"
                         />
                         
                         {/* Overlay */}
@@ -265,7 +264,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                                 <p className="text-gray-300 text-base line-clamp-2 mb-4 font-light">{item.description}</p>
                                 <div className="flex gap-2">
                                     {item.tags.map(tag => (
-                                        <span key={tag} className="text-[10px] text-gray-400 bg-white/5 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                                        <span key={tag} className="text-[10px] text-gray-200 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                                             {tag}
                                         </span>
                                     ))}
@@ -278,7 +277,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                             className="absolute top-6 right-6 bg-black/60 backdrop-blur-md rounded-full p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10 scale-75 group-hover:scale-100"
                             aria-label={`Projekt ${item.title} ansehen`}
                          >
-                            <ExternalLink size={20} className="text-white" />
+                            <ExternalLink size={20} className="text-white" aria-hidden="true" />
                          </div>
                   </div>
               ))}
@@ -293,7 +292,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                 className="inline-flex items-center gap-2"
               >
                 {t.cta}
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
               </Button>
             </Magnetic>
       </div>

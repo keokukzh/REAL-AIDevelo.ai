@@ -1,40 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * Hook to detect if user prefers reduced motion
- * Returns true if user has prefers-reduced-motion: reduce set
+ * Hook to detect if the user has requested reduced motion at the OS level.
+ * Useful for disabling or simplifying complex animations.
  */
-export const useReducedMotion = (): boolean => {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+export const useReducedMotion = () => {
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
-    // Check if matchMedia is available (SSR safety)
-    if (typeof globalThis.window === 'undefined' || !globalThis.window.matchMedia) {
-      return;
-    }
-
-    const mediaQuery = globalThis.window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    
+    // Set initial value
+    setReducedMotion(mediaQuery.matches);
 
     // Listen for changes
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
+    const listener = (event: MediaQueryListEvent) => {
+      setReducedMotion(event.matches);
     };
 
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-    // Fallback for older browsers (deprecated but needed for compatibility)
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    else if (mediaQuery.addListener) {
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
-      mediaQuery.addListener(handleChange);
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
-      return () => mediaQuery.removeListener(handleChange);
-    }
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
   }, []);
 
-  return prefersReducedMotion;
+  return reducedMotion;
 };

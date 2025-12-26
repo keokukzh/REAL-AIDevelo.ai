@@ -27,10 +27,13 @@ import {
   ScrollReveal,
   Parallax,
   WebdesignHero,
-  WebdesignInquiryWidget
+  WebdesignInquiryWidget,
+  FaqSection,
+  TestimonialSection
 } from '../components/webdesign';
-import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, Layout } from 'lucide-react';
+import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, ArrowRight, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { BackButton } from '../components/navigation/BackButton';
 import { ROUTES } from '../config/navigation';
@@ -285,28 +288,49 @@ export const WebdesignPage = () => {
                 "price": "599",
                 "priceCurrency": "CHF",
                 "availability": "https://schema.org/InStock"
-              }
+              },
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Welches CMS nutzt AIDevelo?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Wir setzen primär auf moderne Headless-Lösungen wie Strapi oder Contentful."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Wie lange dauert eine Projektumsetzung?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Ein typisches Webdesign-Projekt dauert zwischen 4 und 8 Wochen."
+                  }
+                }
+              ]
             }
           `}
         </script>
       </Helmet>
 
-      {/* Language Switcher */}
-      <div className="fixed top-24 right-8 z-[100] flex gap-2">
-        <button 
-          onClick={() => setLang('de')}
-          className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'de' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
-          aria-label="Switch to German"
-        >
-          DE
-        </button>
-        <button 
-          onClick={() => setLang('en')}
-          className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'en' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
-          aria-label="Switch to English"
-        >
-          EN
-        </button>
+      {/* Language & Theme Switcher */}
+      <div className="fixed top-24 right-8 z-[100] flex items-center gap-3">
+        <ThemeToggle />
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setLang('de')}
+            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'de' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+            aria-label="Switch to German"
+          >
+            DE
+          </button>
+          <button 
+            onClick={() => setLang('en')}
+            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'en' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+            aria-label="Switch to English"
+          >
+            EN
+          </button>
+        </div>
       </div>
 
       {/* Premium Scroll Progress */}
@@ -423,6 +447,12 @@ export const WebdesignPage = () => {
         </section>
 
 
+        {/* FAQ Section */}
+        <FaqSection lang={lang} />
+
+        {/* Testimonials */}
+        <TestimonialSection lang={lang} />
+
         {/* Contact Form Section */}
         <section 
           id="contact-form"
@@ -449,6 +479,45 @@ export const WebdesignPage = () => {
                 </div>
             </ScrollReveal>
           </div>
+        </section>
+
+        {/* Latest Insights / Blog Section */}
+        <section className="py-24 relative overflow-hidden bg-slate-900/40">
+           <div className="container mx-auto px-6 relative z-10">
+             <div className="text-center mb-16">
+                <div className="text-[10px] font-mono text-blue-400 uppercase tracking-widest mb-4">Knowledge Base</div>
+                <h2 className="text-4xl font-bold font-display text-white">Latest <span className="text-blue-500">Insights</span></h2>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                {[
+                  {
+                    title: lang === 'de' ? 'Mobile-First Design 2026' : 'Mobile-First Design 2026',
+                    description: lang === 'de' ? 'Warum responsive Design nicht mehr ausreicht und wie adaptive Layouts die Zukunft prägen.' : 'Why responsive design is no longer enough and how adaptive layouts shape the future.',
+                    tag: 'UX/UI'
+                  },
+                  {
+                    title: lang === 'de' ? 'Headless CMS Performance' : 'Headless CMS Performance',
+                    description: lang === 'de' ? 'Der Performance-Vergleich: Warum statische Frontends klassische Systeme wie WordPress schlagen.' : 'The performance comparison: Why static frontends beat classic systems like WordPress.',
+                    tag: 'Engineering'
+                  }
+                ].map((article, i) => (
+                  <motion.div 
+                    key={i}
+                    whileHover={{ y: -5 }}
+                    className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-500/30 transition-all"
+                  >
+                    <div className="inline-block px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-mono mb-4">{article.tag}</div>
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{article.title}</h3>
+                    <p className="text-gray-400 text-sm font-light leading-relaxed mb-6">{article.description}</p>
+                    <button className="text-[10px] font-mono text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
+                       READ_MORE // 0{i + 1}
+                       <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+                    </button>
+                  </motion.div>
+                ))}
+             </div>
+           </div>
         </section>
 
         {/* Related Links Section */}

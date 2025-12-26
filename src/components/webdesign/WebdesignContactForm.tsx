@@ -138,7 +138,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
             aria-required="false"
          />
        )}
-       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
+       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
           {label}
        </div>
     </div>
@@ -152,7 +152,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         className="bg-slate-900/50 backdrop-blur-xl border border-emerald-500/20 rounded-3xl p-12 text-center"
       >
         <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-           <CheckCircle2 size={40} className="text-emerald-400" />
+           <CheckCircle2 size={40} className="text-emerald-400" aria-hidden="true" />
         </div>
         <h3 className="text-2xl font-bold text-white mb-2">{t.success}</h3>
         <p className="text-gray-400 font-light mb-8 max-w-sm mx-auto">
@@ -172,7 +172,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         <div className="lg:col-span-4 p-8 lg:p-12 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10">
            <div className="space-y-8">
               <div>
-                 <div className="text-[10px] font-mono text-swiss-red uppercase tracking-widest mb-2">Protocol</div>
+                 <div className="text-[10px] font-mono text-swiss-red/80 uppercase tracking-widest mb-2">Protocol</div>
                  <h4 className="text-white font-bold text-xl">Digital Genesis</h4>
               </div>
               
@@ -182,8 +182,8 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                    { icon: Lock, label: 'Secure Data Handling' },
                    { icon: Zap, label: 'Priority Processing' }
                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-gray-400">
-                       <item.icon size={16} className="text-swiss-red/50" />
+                    <div key={i} className="flex items-center gap-3 text-sm text-gray-300">
+                       <item.icon size={16} className="text-swiss-red/60" aria-hidden="true" />
                        {item.label}
                     </div>
                  ))}
@@ -221,7 +221,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
            />
 
            <div className="space-y-3">
-              <label className="text-[10px] font-mono text-gray-500 uppercase tracking-widest pl-1">Project Type</label>
+              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">Project Type</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                  {(Object.keys(t.projectTypes) as Array<keyof typeof t.projectTypes>).map((type) => (
                     <button
@@ -237,7 +237,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
            </div>
 
            <div className="space-y-3">
-              <label className="text-[10px] font-mono text-gray-500 uppercase tracking-widest pl-1">Budget Allocation</label>
+              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">Budget Allocation</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                  {(Object.keys(t.budgets) as Array<keyof typeof t.budgets>).map((b) => (
                     <button
@@ -263,7 +263,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                  className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none resize-none ${activeField === 'message' ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' : 'border-white/10 hover:border-white/20'}`}
                  placeholder={t.placeholders.message}
               />
-              <div className="absolute right-3 top-3 text-[10px] text-gray-500 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
+              <div className="absolute right-3 top-3 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
                  Project Mission
               </div>
            </div>
@@ -283,7 +283,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               ) : (
                 <div className="flex items-center justify-center gap-2">
                    {t.submit}
-                   <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                   <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" aria-hidden="true" />
                 </div>
               )}
            </Button>
