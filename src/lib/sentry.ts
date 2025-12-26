@@ -10,7 +10,7 @@ export function initSentry(): void {
     // Sentry is optional - only log in development
     // Note: Can't use logger here as it may not be initialized yet
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.warn('[Sentry] VITE_SENTRY_DSN not configured - error tracking disabled');
     }
     return;

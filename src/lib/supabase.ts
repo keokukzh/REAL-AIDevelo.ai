@@ -19,7 +19,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // If env vars are missing, use dummy values (auth won't work but page loads)
 // BUT: If we detect a session in localStorage for a specific project, use that project's URL
 let finalUrl = supabaseUrl || 'https://placeholder.supabase.co';
-let finalKey = supabaseAnonKey || 'dummy-key-placeholder';
+const finalKey = supabaseAnonKey || 'dummy-key-placeholder';
 
 // Check localStorage for existing session to determine correct project
 if (typeof window !== 'undefined' && !supabaseUrl) {
