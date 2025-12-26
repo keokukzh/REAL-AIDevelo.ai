@@ -18,3 +18,4 @@ export { TypewriterTitle } from './TypewriterTitle';
 export { Magnetic } from './Magnetic';
 export { CursorFollower } from './CursorFollower';
 export { SmoothScroll } from './SmoothScroll';
+export { WebdesignInquiryWidget } from './WebdesignInquiryWidget';

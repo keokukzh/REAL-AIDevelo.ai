@@ -24,7 +24,8 @@ import {
   WebdesignComparison,
   ScrollReveal,
   Parallax,
-  WebdesignHero
+  WebdesignHero,
+  WebdesignInquiryWidget
 } from '../components/webdesign';
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -386,6 +387,7 @@ export const WebdesignPage = () => {
       </main>
 
       <Footer />
+      <WebdesignInquiryWidget />
       </SmoothScroll>
     </div>
   );
