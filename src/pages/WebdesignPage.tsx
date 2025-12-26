@@ -33,7 +33,7 @@ import {
 } from '../components/webdesign';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const DigitalGenesisAnimation = React.lazy(() => import('../components/webdesign/DigitalGenesisAnimation'));
+
 const HeroUltraAnimation = React.lazy(() => import('../components/webdesign/hero/HeroUltraAnimation'));
 import { Globe, Smartphone, Zap, Search, Palette, Code, Shield, Clock, TrendingUp, LucideIcon, ArrowLeft, ArrowRight, Layout } from 'lucide-react';
 import { Button } from '../components/ui/Button';
