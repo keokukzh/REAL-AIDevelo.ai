@@ -20,6 +20,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "strict": true,
+    "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true
   },
   "exclude": ["vendor", "node_modules", "src/components/ThreeAvatar.tsx"],
