@@ -26,6 +26,7 @@ import {
   WebdesignComparison,
   ScrollReveal,
   Parallax,
+  WebdesignHero,
   WebdesignInquiryWidget,
   FaqSection,
   TestimonialSection,
@@ -360,7 +361,7 @@ export const WebdesignPage = () => {
       <main id="main-content">
         {/* Hero Section */}
         <section className="relative">
-          <DigitalGenesisAnimation t={t} lang={lang} />
+          <WebdesignHero t={t} />
         </section>
 
         {/* Process Flow Section */}
