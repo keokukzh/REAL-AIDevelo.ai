@@ -16,10 +16,10 @@ interface PreviewItem {
 }
 const PREVIEWS_DICTIONARY = {
   de: {
-    badge: "Showcase",
-    title: "Ausgewählte",
-    titleHighlight: "Arbeiten",
-    sub: "Entdecken Sie, wie wir Marken digital zum Leben erwecken.",
+    badge: "Portfolio",
+    title: "Websites, die",
+    titleHighlight: "begeistern",
+    sub: "Wir erstellen keine 0815-Websites. Wir designen digitale Erlebnisse, die Ihre Marke widerspiegeln und Ihre Kunden überzeugen.",
     cta: "Eigenes Projekt besprechen",
     items: [
       {
@@ -45,30 +45,14 @@ const PREVIEWS_DICTIONARY = {
         image: '/assets/previews/saas_website_mockup.png',
         description: 'Futuristisches Interface für ein KI-Startup mit komplexen Daten-Visualisierungen.',
         tags: ['WebGL', 'Dark Mode', 'Dashboard']
-      },
-       {
-        id: '4',
-        title: 'Creative Agency',
-        category: 'Agentur',
-        image: '/assets/previews/agency_modern_mockup.png',
-        description: 'Minimalistisches Portfolio für eine Design-Agentur mit Fokus auf visuelle Hierarchie.',
-        tags: ['Minimalism', 'Portfolio', 'CMS']
-      },
-      {
-        id: '5',
-        title: 'Mobile App Showcase',
-        category: 'App Landing',
-        image: '/assets/previews/mobile_app_showcase.png',
-        description: 'Conversion-optimierte Landing Page für eine neue Fintech-App.',
-        tags: ['App Store', 'Conversion', '3D']
       }
     ]
   },
   en: {
-    badge: "Showcase",
-    title: "Selected",
-    titleHighlight: "Works",
-    sub: "Discover how we bring brands to life digitally.",
+    badge: "Portfolio",
+    title: "Websites that",
+    titleHighlight: "inspire",
+    sub: "We don't create generic websites. We design digital experiences that reflect your brand and convince your customers.",
     cta: "Discuss Your Project",
     items: [
       {
@@ -94,22 +78,6 @@ const PREVIEWS_DICTIONARY = {
         image: '/assets/previews/saas_website_mockup.png',
         description: 'Futuristic interface for an AI startup with complex data visualizations.',
         tags: ['WebGL', 'Dark Mode', 'Dashboard']
-      },
-       {
-        id: '4',
-        title: 'Creative Agency',
-        category: 'Agency',
-        image: '/assets/previews/agency_modern_mockup.png',
-        description: 'Minimalist portfolio for a design agency with a focus on visual hierarchy.',
-        tags: ['Minimalism', 'Portfolio', 'CMS']
-      },
-      {
-        id: '5',
-        title: 'Mobile App Showcase',
-        category: 'App Landing',
-        image: '/assets/previews/mobile_app_showcase.png',
-        description: 'Conversion-optimized landing page for a new fintech app.',
-        tags: ['App Store', 'Conversion', '3D']
       }
     ]
   }
@@ -196,7 +164,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
     return (
     <section id="website-previews" className="py-24 bg-slate-950 relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] -mr-64 -mt-32" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-swiss-red/5 rounded-full blur-[120px] -mr-64 -mt-32" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] -ml-64 -mb-32" />
 
       <div className="container mx-auto px-6 relative z-10 mb-12">
@@ -205,7 +173,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold uppercase tracking-widest mb-4"
+            className="inline-block px-4 py-1.5 rounded-full bg-swiss-red/10 border border-swiss-red/20 text-swiss-red text-sm font-bold uppercase tracking-widest mb-4"
           >
             {t.badge}
           </motion.div>
@@ -216,7 +184,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-bold font-display text-white mb-6"
           >
-            {t.title} <span className="text-red-500">{t.titleHighlight}</span>
+            {t.title} <span className="text-swiss-red">{t.titleHighlight}</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -257,7 +225,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
                             <div className="transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                                <span className="inline-block px-3 py-1 bg-red-600/20 text-red-500 text-[10px] font-bold rounded-full mb-3 border border-red-500/20 uppercase tracking-widest">
+                                <span className="inline-block px-3 py-1 bg-swiss-red/20 text-swiss-red text-[10px] font-bold rounded-full mb-3 border border-swiss-red/20 uppercase tracking-widest">
                                     {item.category}
                                 </span>
                                 <h3 className="text-3xl font-bold text-white mb-2">{item.title}</h3>

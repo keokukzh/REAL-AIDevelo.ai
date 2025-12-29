@@ -14,32 +14,32 @@ interface ProcessStep {
 const PROCESS_DICTIONARY = {
   de: {
     workflow: "Workflow",
-    title: "Vom Konzept zum",
-    titleHighlight: "Launch",
-    sub: "Ein transparenter, strukturierter Prozess garantiert Ergebnisse, die Ihre Erwartungen übertreffen. Keine Überraschungen, nur Fortschritt.",
-    pricingTitle: "Transparente Preisstruktur",
-    pricingSub: "Keine versteckten Kosten. Sie zahlen den Projektstart, wir liefern Ergebnisse. Die Restzahlung wird erst nach erfolgreichem Launch fällig.",
+    title: "So funktioniert's –",
+    titleHighlight: "einfach und transparent",
+    sub: "Von der ersten Anfrage bis zur fertigen Website – in 4 klaren Schritten.",
+    pricingTitle: "Gesamtpreis",
+    pricingSub: "100 CHF Anzahlung + 499 CHF Restzahlung",
     total: "Total",
     steps: [
       {
         number: '01',
-        title: 'Digitale Vision & Analyse',
-        description: 'Wir analysieren Ihre Zielgruppe und definieren die strategischen Ziele. Kein Baukasten-Einheitsbrei, sondern maßgeschneidertes Konzept.',
+        title: 'Anfrage stellen',
+        description: 'Füllen Sie das Formular aus und laden Sie alle benötigten Dateien hoch. Wir sammeln alle Informationen für Ihr Projekt.',
       },
       {
         number: '02',
-        title: 'Design & Fundament',
-        description: 'Nach dem Startschuss (100 CHF) erstellen wir das erste visuelle Konzept. Wir sichern Domain und Hosting und legen das technische Fundament.',
+        title: 'Anzahlung (100 CHF)',
+        description: 'Nach Prüfung Ihrer Anfrage erhalten Sie einen Zahlungslink für die Anzahlung. Sobald diese bezahlt ist, starten wir mit der Umsetzung.',
       },
       {
         number: '03',
-        title: 'Development & Polish',
-        description: 'Transformation des Designs in pixelperfekten Code. Performance-Optimierung, SEO-Setup und Mobile-First Umsetzung in 2-3 Wochen.',
+        title: 'Website-Erstellung',
+        description: 'Unser Team erstellt Ihre Website in 2-3 Wochen. Sie erhalten regelmäßige Updates und können Feedback geben.',
       },
       {
         number: '04',
-        title: 'Launch & Success',
-        description: 'Go-Live Ihrer neuen Digital-Präsenz. Übergabe aller Zugänge, kurze Schulung und finale Qualitätskontrolle. Ready for Business.',
+        title: 'Restzahlung (499 CHF) + Übergabe',
+        description: 'Nach Ihrer Zustimmung erhalten Sie den Link für die Restzahlung. Danach übergeben wir Ihnen die Login-Daten für Domain und Server.',
       },
     ]
   },
@@ -113,8 +113,8 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
           >
             {t.workflow}
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-bold font-display mb-6 leading-tight">
-            {t.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-swiss-red to-orange-500">{t.titleHighlight}</span>
+          <h2 className="text-3xl md:text-5xl font-bold font-display mb-6 leading-tight">
+            {t.title} <span className="text-swiss-red">{t.titleHighlight}</span>
           </h2>
           <p className="text-gray-400 text-lg leading-relaxed">
             {t.sub}
@@ -211,26 +211,11 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
             
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold text-white mb-2">{t.pricingTitle}</h3>
-                <p className="text-gray-400 max-w-md">
+                <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">{t.pricingTitle}</div>
+                <div className="text-5xl font-bold font-display text-white mb-2">599 <span className="text-2xl text-gray-400">CHF</span></div>
+                <p className="text-gray-400">
                   {t.pricingSub}
                 </p>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                 <div className="text-right">
-                    <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">{t.total}</div>
-                    <div className="text-5xl font-bold font-display text-white">599 <span className="text-2xl text-gray-400">CHF</span></div>
-                 </div>
-                 <div className="h-16 w-px bg-white/10" />
-                 <div className="flex flex-col gap-2">
-                    <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full">
-                      High Performance
-                    </span>
-                    <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold rounded-full">
-                      SEO Optimized
-                    </span>
-                 </div>
               </div>
             </div>
           </div>

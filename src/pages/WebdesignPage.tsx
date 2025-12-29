@@ -1,35 +1,20 @@
 import React, { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useReducedMotion } from '../hooks/useReducedMotion';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
-import { useRef } from 'react';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { Navbar } from '../components/Navbar';
 import { useState, useEffect, Suspense, lazy } from 'react';
 import {
   WebdesignContactForm,
-  FeatureCard,
-  BentoFeatures,
-  BentoGrid,
-  TechnologyBadge,
   PricingCard,
-  FloatingShapes,
-  Magnetic,
-  TypewriterTitle,
-  CursorFollower,
-  SmoothScroll,
-  WebdesignAnimatedBackground,
   ScrollReveal,
-  Parallax,
+  WebdesignAnimatedBackground,
   WebdesignHero,
   WebdesignInquiryWidget,
-  FaqSection,
-  TestimonialSection,
 } from '../components/webdesign';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Lazy-load heavy below-the-fold sections for better LCP
-// Wrap named exports as default exports for React.lazy()
 const WebdesignProcessFlow = lazy(() =>
   import('../components/webdesign/WebdesignProcessFlow').then((m) => ({
     default: m.WebdesignProcessFlow,
@@ -46,21 +31,6 @@ const WebdesignTechStack = lazy(() =>
   })),
 ) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
-const WebdesignArchitecture = lazy(() =>
-  import('../components/webdesign/WebdesignArchitecture').then((m) => ({
-    default: m.WebdesignArchitecture,
-  })),
-) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
-
-const WebdesignComparison = lazy(() =>
-  import('../components/webdesign/WebdesignComparison').then((m) => ({
-    default: m.WebdesignComparison,
-  })),
-) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
-
-const HeroUltraAnimation = React.lazy(
-  () => import('../components/webdesign/hero/HeroUltraAnimation'),
-);
 import {
   Globe,
   Smartphone,
@@ -69,8 +39,6 @@ import {
   Palette,
   Code,
   Shield,
-  Clock,
-  TrendingUp,
   LucideIcon,
   ArrowRight,
   Layout,
@@ -78,7 +46,6 @@ import {
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Footer } from '../components/Footer';
-import { BackButton } from '../components/navigation/BackButton';
 import { ROUTES } from '../config/navigation';
 
 interface Feature {
@@ -92,68 +59,57 @@ interface Technology {
   description: string;
 }
 
-const LazySection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '0px 0px -200px 0px' });
-
-  return (
-    <div ref={ref}>
-      <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-};
-
 const DICTIONARY = {
   de: {
-    heroTitle: 'Digital Genesis',
-    heroText1: 'Digital',
-    heroText2: 'Genesis',
+    heroText1: 'Moderne Websites &',
+    heroText2: 'Elegantes Redesign',
     heroSub:
-      'Wir transformieren Konzepte in digitale Dominanz. Exzellenz ist kein Zufall, sondern Code.',
-    missionStart: 'Mission Starten',
+      'Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles zum transparenten Festpreis.',
+    missionStart: 'Jetzt Projekt anfragen',
     showSpecs: 'Systemdaten ansehen',
     closeSpecs: 'Analyse schließen',
-    pricingTitle: 'Transparente Festpreise',
+    pricingTitle: 'Transparente Preisgestaltung',
     pricingSub:
-      'Premium-Webdesign muss nicht kompliziert sein. Wir bieten klare Strukturen ohne monatliche Folgekosten.',
+      'Alles inklusive – keine versteckten Kosten, keine Überraschungen',
     pricingInvest: 'Investition',
     pricingSubtitle: 'Einmalig - Alles inklusive',
     pricingDisclaimer: 'Keine monatlichen Gebühren • Keine versteckten Kosten',
-    featuresTitle: 'High-End Standards',
+    featuresTitle: 'Professionelle Features',
     featuresSub:
-      'Wir setzen auf modernste Architektur für maximale Skalierbarkeit und Geschwindigkeit.',
-    contactTitle: 'Initialisierung',
-    contactSub: 'Bereit für den digitalen Aufstieg? Starten wir die Kollaboration.',
-    relatedTitle: 'Weitere Ecosysteme',
+      'Modernste Technologien und Best Practices für maximale Performance und Benutzerfreundlichkeit.',
+    processTitle: 'Unser Prozess',
+    processSub: 'Von der ersten Idee bis zum Launch – strukturiert, transparent und professionell.',
+    technologiesTitle: 'Moderne Technologien',
+    technologiesSub: 'Wir verwenden nur die besten und modernsten Tools für Ihre Website.',
+    contactTitle: 'Jetzt anfragen',
+    contactSub: 'Beschreiben Sie Ihr Projekt und wir melden uns innerhalb von 24 Stunden bei Ihnen.',
+    relatedTitle: 'Weitere Services',
     skipToContent: 'Zum Hauptinhalt springen',
     scrollExplore: 'Scrollen zum Entdecken',
   },
   en: {
-    heroTitle: 'Digital Genesis',
-    heroText1: 'Digital',
-    heroText2: 'Genesis',
+    heroText1: 'Modern Websites &',
+    heroText2: 'Elegant Redesign',
     heroSub:
-      'We transform concepts into digital dominance. Excellence is not a coincidence, it is code.',
-    missionStart: 'Start Mission',
+      'Professional, modern websites with cutting-edge technologies. From concept to launch – everything at a transparent fixed price.',
+    missionStart: 'Start Project',
     showSpecs: 'View System Data',
     closeSpecs: 'Close Analysis',
-    pricingTitle: 'Transparent Fixed Prices',
+    pricingTitle: 'Transparent Pricing',
     pricingSub:
-      "Premium web design shouldn't be complicated. We offer clear structures without monthly recurring costs.",
+      'All inclusive – no hidden costs, no surprises',
     pricingInvest: 'Investment',
     pricingSubtitle: 'One-time - All inclusive',
     pricingDisclaimer: 'No monthly fees • No hidden costs',
-    featuresTitle: 'High-End Standards',
-    featuresSub: 'We rely on state-of-the-art architecture for maximum scalability and speed.',
-    contactTitle: 'Initialization',
-    contactSub: "Ready for digital ascent? Let's start the collaboration.",
-    relatedTitle: 'Other Ecosystems',
+    featuresTitle: 'Professional Features',
+    featuresSub: 'State-of-the-art technologies and best practices for maximum performance and user-friendliness.',
+    processTitle: 'Our Process',
+    processSub: 'From the first idea to launch – structured, transparent and professional.',
+    technologiesTitle: 'Modern Technologies',
+    technologiesSub: 'We use only the best and most modern tools for your website.',
+    contactTitle: 'Request Now',
+    contactSub: 'Describe your project and we will get back to you within 24 hours.',
+    relatedTitle: 'Other Services',
     skipToContent: 'Skip to main content',
     scrollExplore: 'Scroll to Explore',
   },
@@ -162,7 +118,6 @@ const DICTIONARY = {
 export const WebdesignPage = () => {
   const navigate = useNavigate();
   const [lang, setLang] = useState<'de' | 'en'>('de');
-  const [loadUltra3D, setLoadUltra3D] = useState(false); // Deferred 3D canvas loading
   const t = DICTIONARY[lang];
 
   useEffect(() => {
@@ -170,37 +125,9 @@ export const WebdesignPage = () => {
     if (params.get('lang') === 'en') setLang('en');
   }, []);
 
-  // Defer 3D Canvas loading until browser is idle to prioritize LCP
-  useEffect(() => {
-    if ('requestIdleCallback' in window) {
-      const id = requestIdleCallback(() => setLoadUltra3D(true), { timeout: 2000 });
-      return () => cancelIdleCallback(id);
-    } else {
-      // Fallback for browsers without requestIdleCallback
-      const timer = setTimeout(() => setLoadUltra3D(true), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  // Memoized handlers to prevent unnecessary re-renders of child components
-  const handleNavigate = useCallback(
-    (path: string) => {
-      navigate(path);
-    },
-    [navigate],
-  );
-
   const handleLangChange = useCallback((newLang: 'de' | 'en') => {
     setLang(newLang);
   }, []);
-
-  const prefersReducedMotion = useReducedMotion();
-
-  // Use scroll tracking for parallax effects
-  // Hooks must always be called in the same order
-  const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 500], [0, 100]);
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   const features = useMemo<Feature[]>(
     () => [
@@ -209,81 +136,18 @@ export const WebdesignPage = () => {
         title: 'Responsive Design',
         description:
           'Ihre Website sieht auf allen Geräten perfekt aus - Desktop, Tablet und Smartphone. Pixelgenaue Umsetzung mit modernen CSS-Frameworks.',
-        renderDemo: () => (
-          <div className="flex items-center gap-4">
-            <motion.div
-              animate={{ width: [100, 60, 100] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="h-16 border-2 border-white/20 rounded-lg bg-white/5 flex items-center justify-center"
-            >
-              <div className="w-4 h-4 rounded-full bg-swiss-red/40" />
-            </motion.div>
-            <div className="text-[10px] font-mono text-white/30 hidden sm:block">FITTING_UI_V1</div>
-          </div>
-        ),
       },
       {
         icon: Zap,
         title: 'Schnelle Ladezeiten',
         description:
           'Optimierte Performance mit Code-Splitting, Lazy Loading und modernen Build-Tools. Lighthouse Score 90+ garantiert.',
-        renderDemo: () => (
-          <div className="relative w-24 h-24 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90">
-              <circle
-                cx="48"
-                cy="48"
-                r="40"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                className="text-white/5"
-              />
-              <motion.circle
-                cx="48"
-                cy="48"
-                r="40"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                strokeDasharray="251"
-                animate={{ strokeDashoffset: [251, 2.5, 2.5] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                className="text-emerald-500"
-              />
-            </svg>
-            <motion.span
-              className="absolute text-2xl font-bold font-mono text-white"
-              animate={{ opacity: [0, 1, 1] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-            >
-              99
-            </motion.span>
-          </div>
-        ),
       },
       {
         icon: Search,
         title: 'SEO-Optimierung',
         description:
           'Meta-Tags, strukturierte Daten (Schema.org), XML-Sitemap und semantisches HTML für maximale Sichtbarkeit.',
-        renderDemo: () => (
-          <div className="w-full max-w-[200px] space-y-2">
-            <div className="h-8 w-full bg-white/10 rounded-full px-3 flex items-center gap-2">
-              <Search size={12} className="text-white/40" />
-              <div className="h-1.5 w-20 bg-white/20 rounded" />
-            </div>
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20"
-            >
-              <div className="h-1.5 w-12 bg-blue-400/60 rounded mb-1" />
-              <div className="h-1 w-24 bg-white/10 rounded" />
-            </motion.div>
-          </div>
-        ),
       },
       {
         icon: Palette,
@@ -307,18 +171,6 @@ export const WebdesignPage = () => {
         icon: Shield,
         title: 'Sicherheit',
         description: 'HTTPS, sichere Formulare, DSGVO-konform und regelmäßige Security-Updates.',
-      },
-      {
-        icon: Clock,
-        title: 'Schnelle Umsetzung',
-        description:
-          'Professionelle Umsetzung in 2-3 Wochen. Klare Kommunikation und regelmäßige Updates.',
-      },
-      {
-        icon: TrendingUp,
-        title: 'Conversion-Optimierung',
-        description:
-          'Strategisch platzierte CTAs, A/B-Testing-ready und datengetriebene Optimierungen.',
       },
     ],
     [],
@@ -350,13 +202,31 @@ export const WebdesignPage = () => {
     [],
   );
 
-  const handleScrollToForm = () => {
-    const formSection = document.getElementById('contact-form');
-    if (formSection) {
-      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      formSection.focus();
-    }
-  };
+  const processSteps = useMemo(
+    () => [
+      {
+        number: '01',
+        title: 'Anfrage',
+        description: 'Onboarding Formular ausfüllen und benötigte Daten direkt mitsenden.',
+      },
+      {
+        number: '02',
+        title: 'Anzahlung',
+        description: 'Nach Review durch unser Team erhalten Sie den Link für die 100 CHF Anzahlung.',
+      },
+      {
+        number: '03',
+        title: 'Umsetzung',
+        description: 'Wir erstellen Ihre Website basierend auf Ihren Wünschen in 2-3 Wochen.',
+      },
+      {
+        number: '04',
+        title: 'Launch',
+        description: 'Nach Testphase und Restzahlung übergeben wir Ihnen alle Logindaten.',
+      },
+    ],
+    [],
+  );
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -368,72 +238,19 @@ export const WebdesignPage = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white">
       <Helmet>
-        <title>Premium Webdesign & Digital Genesis | AIDevelo</title>
+        <title>Premium Webdesign & Elegantes Redesign | AIDevelo</title>
         <meta
           name="description"
-          content="High-End Webdesign aus der Schweiz. Wir transformieren Konzepte in digitale Dominanz mit React, TypeScript und modernster Architektur. Lighthouse Score 90+ garantiert."
+          content="Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles zum transparenten Festpreis von 599 CHF."
         />
         <meta property="og:title" content="Premium Webdesign | AIDevelo" />
         <meta
           property="og:description"
-          content="Exzellenz ist kein Zufall, sondern Code. Entdecken Sie High-End Webdesign für maximale Skalierbarkeit."
+          content="Moderne Websites & Elegantes Redesign. Professionelle Umsetzung zum transparenten Festpreis."
         />
         <meta property="og:type" content="website" />
         <link rel="alternate" hrefLang="de-CH" href="https://aidevelo.ai/webdesign" />
         <link rel="alternate" hrefLang="en" href="https://aidevelo.ai/en/webdesign" />
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@type": "Product",
-              "name": "High-End Webdesign Service",
-              "description": "Premium Webdesign-Umsetzung in 2-3 Wochen mit Fokus auf Performance, SEO und modernster Architektur.",
-              "brand": {
-                "@type": "Brand",
-                "name": "AIDevelo"
-              },
-              "offers": {
-                "@type": "Offer",
-                "price": "599",
-                "priceCurrency": "CHF",
-                "availability": "https://schema.org/InStock"
-              },
-              "mainEntity": [
-                {
-                  "@type": "Question",
-                  "name": "Welches CMS nutzt AIDevelo?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Wir setzen primär auf moderne Headless-Lösungen wie Strapi oder Contentful."
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": "Wie lange dauert eine Projektumsetzung?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Ein typisches Webdesign-Projekt dauert zwischen 4 und 8 Wochen."
-                  }
-                }
-              ]
-            }
-          `}
-        </script>
-        {/* Prefetch vendor chunks for better caching and performance */}
-        <link rel="modulepreload" href="/assets/vendor-three-DaCYYJKB.js" as="script" />
-        <link rel="modulepreload" href="/assets/vendor-animation-GNRSXg_G.js" as="script" />
-        <link
-          rel="prefetch"
-          href="/assets/vendor-three-DaCYYJKB.js"
-          as="script"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="prefetch"
-          href="/assets/vendor-animation-GNRSXg_G.js"
-          as="script"
-          crossOrigin="anonymous"
-        />
       </Helmet>
 
       {/* Language & Theme Switcher */}
@@ -463,305 +280,232 @@ export const WebdesignPage = () => {
         style={{ scaleX }}
       />
 
-      <SmoothScroll>
-        <CursorFollower />
-        {/* Skip to main content link */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+      {/* Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        {t.skipToContent}
+      </a>
+
+      {/* Global Seamless Background */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+        <WebdesignAnimatedBackground variant="hero" intensity="medium" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/80 to-slate-950" />
+      </div>
+
+      <Navbar />
+
+      <main id="main-content">
+        {/* Hero Section */}
+        <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20">
+          <ErrorBoundary fallback={<WebdesignHero t={t} />}>
+            <WebdesignHero t={t} />
+          </ErrorBoundary>
+        </section>
+
+        {/* Process Flow Section */}
+        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+          <WebdesignProcessFlow lang={lang} />
+        </Suspense>
+
+        {/* Portfolio / Website Previews Section */}
+        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+          <WebsitePreviews lang={lang} />
+        </Suspense>
+
+        {/* Pricing Section */}
+        <section
+          id="pricing"
+          className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+          aria-labelledby="pricing-heading"
         >
-          {t.skipToContent}
-        </a>
-
-        {/* Global Seamless Background */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none">
-          <WebdesignAnimatedBackground variant="hero" intensity="medium" />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/80 to-slate-950" />
-        </div>
-
-        <Navbar />
-
-        <main id="main-content">
-          {/* Hero Section - Show static hero first, then lazy-load 3D when idle */}
-          <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
-            {/* Reserved dimensions to prevent CLS when canvas mounts */}
-            <div className="absolute inset-0 bg-slate-950" />
-            <ErrorBoundary fallback={<WebdesignHero t={t} />}>
-              <Suspense
-                fallback={
-                  <div className="relative flex items-center justify-center min-h-[80vh]">
-                    <div
-                      aria-live="polite"
-                      aria-busy="true"
-                      className="flex flex-col items-center gap-4"
-                    >
-                      <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-swiss-red animate-spin" />
-                      <div className="text-xs font-mono text-white/50">Lade Ultra‑Experience…</div>
-                    </div>
-                  </div>
-                }
-              >
-                {loadUltra3D ? <HeroUltraAnimation t={t} lang={lang} /> : <WebdesignHero t={t} />}
-              </Suspense>
-            </ErrorBoundary>
-          </section>
-
-          {/* Process Flow Section */}
-          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
-            <ScrollReveal direction="up">
-              <WebdesignProcessFlow lang={lang} />
-            </ScrollReveal>
-          </Suspense>
-
-          {/* Portfolio / Website Previews Section */}
-          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
-            <WebsitePreviews lang={lang} />
-          </Suspense>
-
-          {/* Tech Stack Showcase */}
-          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
-            <WebdesignTechStack lang={lang} />
-          </Suspense>
-
-          {/* Architectural Deep-Dive */}
-          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
-            <WebdesignArchitecture lang={lang} />
-          </Suspense>
-
-          <div className="h-48 w-px bg-gradient-to-b from-swiss-red via-swiss-red/50 to-transparent mx-auto opacity-30 my-12" />
-
-          {/* Business Comparison Section */}
-          <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
-            <WebdesignComparison lang={lang} />
-          </Suspense>
-
-          {/* Pricing Section */}
-          <section
-            id="pricing"
-            className="py-24 sm:py-32 relative overflow-hidden"
-            aria-labelledby="pricing-heading"
-          >
-            <div className="container mx-auto px-6 relative z-10">
-              <ScrollReveal direction="up" delay={0.1} className="max-w-4xl mx-auto">
-                <div className="text-center mb-16">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    className="inline-block px-4 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-gray-400 uppercase tracking-widest mb-4"
-                  >
-                    {t.pricingInvest}
-                  </motion.div>
-                  <h2
-                    id="pricing-heading"
-                    className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
-                  >
-                    {lang === 'de' ? (
-                      <>
-                        Transparente <span className="text-swiss-red">Festpreise</span>
-                      </>
-                    ) : (
-                      <>
-                        Transparent <span className="text-swiss-red">Fixed Prices</span>
-                      </>
-                    )}
-                  </h2>
-                  <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-                    {t.pricingSub}
-                  </p>
-                </div>
-
-                <PricingCard
-                  price="599 CHF"
-                  subtitle={t.pricingSubtitle}
-                  disclaimer={t.pricingDisclaimer}
-                  features={pricingFeatures}
-                />
-              </ScrollReveal>
-            </div>
-          </section>
-
-          {/* Features Section */}
-          <section
-            id="features"
-            className="py-24 sm:py-32 relative bg-white/[0.02]"
-            aria-labelledby="features-heading"
-          >
-            <div className="container mx-auto px-6 relative z-10">
-              <ScrollReveal direction="up" className="text-center mb-20">
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" delay={0.1} className="max-w-4xl mx-auto">
+              <div className="text-center mb-16">
                 <h2
-                  id="features-heading"
+                  id="pricing-heading"
                   className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
                 >
-                  {lang === 'de' ? (
-                    <>
-                      High-End <span className="text-blue-500">Standards</span>
-                    </>
-                  ) : (
-                    <>
-                      High-End <span className="text-blue-500">Standards</span>
-                    </>
-                  )}
+                  {t.pricingTitle}
                 </h2>
-                <p className="text-gray-400 text-lg max-w-3xl mx-auto font-light">
-                  {t.featuresSub}
+                <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+                  {t.pricingSub}
                 </p>
-              </ScrollReveal>
-
-              <ScrollReveal direction="up" delay={0.2} className="max-w-7xl mx-auto">
-                <BentoGrid features={features} lang={lang} />
-              </ScrollReveal>
-            </div>
-          </section>
-
-          {/* FAQ Section */}
-          <FaqSection lang={lang} />
-
-          {/* Testimonials */}
-          <TestimonialSection lang={lang} />
-
-          {/* Contact Form Section */}
-          <section
-            id="contact-form"
-            className="py-24 sm:py-40 relative"
-            aria-labelledby="contact-heading"
-            tabIndex={-1}
-          >
-            {/* Background Spotlights */}
-            <div className="absolute top-1/2 left-1/4 w-[600px] h-[600px] bg-swiss-red/10 rounded-full blur-[160px] pointer-events-none animate-pulse" />
-            <div
-              className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[160px] pointer-events-none animate-pulse"
-              style={{ animationDelay: '2s' }}
-            />
-
-            <div className="container mx-auto px-6 relative z-10">
-              <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
-                <div className="relative z-10">
-                  <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">
-                    <h2
-                      id="contact-heading"
-                      className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tighter"
-                    >
-                      {t.contactTitle}
-                    </h2>
-                    <p className="text-gray-400 text-xl font-light">{t.contactSub}</p>
-                  </ScrollReveal>
-                  <WebdesignContactForm onSuccess={() => navigate('/')} lang={lang} />
-                </div>
-              </ScrollReveal>
-            </div>
-          </section>
-
-          {/* Latest Insights / Blog Section */}
-          <section className="py-24 relative overflow-hidden bg-slate-900/40">
-            <div className="container mx-auto px-6 relative z-10">
-              <div className="text-center mb-16">
-                <div className="text-[10px] font-mono text-blue-400 uppercase tracking-widest mb-4">
-                  Knowledge Base
-                </div>
-                <h2 className="text-4xl font-bold font-display text-white">
-                  Latest <span className="text-blue-500">Insights</span>
-                </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                {[
-                  {
-                    title: lang === 'de' ? 'Mobile-First Design 2026' : 'Mobile-First Design 2026',
-                    description:
-                      lang === 'de'
-                        ? 'Warum responsive Design nicht mehr ausreicht und wie adaptive Layouts die Zukunft prägen.'
-                        : 'Why responsive design is no longer enough and how adaptive layouts shape the future.',
-                    tag: 'UX/UI',
-                  },
-                  {
-                    title: lang === 'de' ? 'Headless CMS Performance' : 'Headless CMS Performance',
-                    description:
-                      lang === 'de'
-                        ? 'Der Performance-Vergleich: Warum statische Frontends klassische Systeme wie WordPress schlagen.'
-                        : 'The performance comparison: Why static frontends beat classic systems like WordPress.',
-                    tag: 'Engineering',
-                  },
-                ].map((article, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ y: -5 }}
-                    className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-500/30 transition-all"
-                  >
-                    <div className="inline-block px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-mono mb-4">
-                      {article.tag}
+              <PricingCard
+                price="599 CHF"
+                subtitle={t.pricingSubtitle}
+                disclaimer={t.pricingDisclaimer}
+                features={pricingFeatures}
+              />
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* Process Section */}
+        <section
+          id="process"
+          className="py-24 relative overflow-hidden"
+          aria-labelledby="process-heading"
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" className="text-center mb-16">
+              <h2
+                id="process-heading"
+                className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
+              >
+                {t.processTitle}
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+                {t.processSub}
+              </p>
+            </ScrollReveal>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+              {processSteps.map((step, index) => (
+                <ScrollReveal key={step.number} direction="up" delay={index * 0.1}>
+                  <article className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-4 mb-4">
+                      <span className="text-4xl font-bold font-display text-swiss-red opacity-50">
+                        {step.number}
+                      </span>
+                      <h3 className="text-2xl font-bold text-white">{step.title}</h3>
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors uppercase tracking-tight">
-                      {article.title}
-                    </h3>
-                    <p className="text-gray-400 text-sm font-light leading-relaxed mb-6">
-                      {article.description}
-                    </p>
-                    <button className="text-[10px] font-mono text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
-                      READ_MORE // 0{i + 1}
+                    <p className="text-gray-400 leading-relaxed">{step.description}</p>
+                  </article>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section
+          id="features"
+          className="py-12 sm:py-20 bg-slate-950/30 relative overflow-hidden"
+          aria-labelledby="features-heading"
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="up" className="text-center mb-16">
+              <h2
+                id="features-heading"
+                className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
+              >
+                {t.featuresTitle}
+              </h2>
+              <p className="text-gray-400 text-lg max-w-3xl mx-auto font-light">
+                {t.featuresSub}
+              </p>
+            </ScrollReveal>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {features.map((feature, index) => (
+                <ScrollReveal key={feature.title} direction="up" delay={index * 0.1}>
+                  <button className="text-left w-full p-6 rounded-2xl bg-slate-900/40 backdrop-blur-md border border-white/5 hover:border-white/20 transition-all group">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 transition-colors">
+                        <feature.icon className="w-6 h-6 text-swiss-red" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
+                      </div>
                       <ArrowRight
-                        size={12}
-                        className="group-hover:translate-x-1 transition-transform"
+                        size={20}
+                        className="text-gray-400 group-hover:text-swiss-red group-hover:translate-x-1 transition-all"
                         aria-hidden="true"
                       />
-                    </button>
-                  </motion.div>
-                ))}
+                    </div>
+                  </button>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Technologies Section */}
+        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+          <WebdesignTechStack lang={lang} />
+        </Suspense>
+
+        {/* Contact Form Section */}
+        <section
+          id="contact-form"
+          className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+          aria-labelledby="contact-heading"
+          tabIndex={-1}
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
+              <div className="relative z-10">
+                <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">
+                  <h2
+                    id="contact-heading"
+                    className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tighter"
+                  >
+                    {t.contactTitle}
+                  </h2>
+                  <p className="text-gray-400 text-xl font-light">{t.contactSub}</p>
+                </ScrollReveal>
+                <WebdesignContactForm onSuccess={() => navigate('/')} lang={lang} />
               </div>
-            </div>
-          </section>
+            </ScrollReveal>
+          </div>
+        </section>
 
-          {/* Related Links Section */}
-          <section
-            id="related-links"
-            className="py-24 relative overflow-hidden"
-            aria-labelledby="related-links-heading"
-          >
-            <div className="absolute inset-0 bg-white/[0.01]" />
-            <div className="container mx-auto px-6 relative z-10">
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                className="max-w-4xl mx-auto text-center"
+        {/* Related Links Section */}
+        <section
+          id="related-links"
+          className="py-12 sm:py-20 bg-slate-950/30"
+          aria-labelledby="related-links-heading"
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="max-w-4xl mx-auto text-center"
+            >
+              <h2
+                id="related-links-heading"
+                className="text-3xl font-bold font-display mb-10 tracking-tight text-white/80"
               >
-                <h2
-                  id="related-links-heading"
-                  className="text-3xl font-bold font-display mb-10 tracking-tight text-white/80"
+                {t.relatedTitle}
+              </h2>
+              <p className="text-gray-400 mb-8">Entdecken Sie unsere anderen Angebote</p>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <Button
+                  onClick={() => navigate(ROUTES.VOICE_AGENTS)}
+                  variant="outline"
+                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
+                  aria-label="Zu Voice Agents navigieren"
                 >
-                  {t.relatedTitle}
-                </h2>
-                <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                  <Button
-                    onClick={() => navigate(ROUTES.HOME)}
-                    variant="outline"
-                    className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
-                    aria-label="Zu Voice Agents navigieren"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Zap size={18} className="text-yellow-500" />
-                      Voice Agents
-                    </span>
-                  </Button>
-                  <Button
-                    onClick={() => navigate(ROUTES.DASHBOARD)}
-                    variant="outline"
-                    className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
-                    aria-label="Zum Dashboard navigieren"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Layout size={18} className="text-blue-500" />
-                      Dashboard
-                    </span>
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-          </section>
-        </main>
+                  <span className="flex items-center gap-2">
+                    <Zap size={18} className="text-yellow-500" />
+                    Voice Agents
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => navigate(ROUTES.DASHBOARD)}
+                  variant="outline"
+                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
+                  aria-label="Zum Dashboard navigieren"
+                >
+                  <span className="flex items-center gap-2">
+                    <Layout size={18} className="text-blue-500" />
+                    Dashboard
+                  </span>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
 
-        <Footer />
-        <WebdesignInquiryWidget lang={lang} />
-      </SmoothScroll>
+      <Footer />
+      <WebdesignInquiryWidget lang={lang} />
     </div>
   );
 };
