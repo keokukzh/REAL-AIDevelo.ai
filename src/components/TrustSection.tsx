@@ -26,8 +26,8 @@ export const TrustSection: React.FC = () => {
   ];
 
   const trustBadges = [
-    { icon: Shield, text: 'nDSG-konform', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30' },
-    { icon: null, text: '🇨🇭 Made in Zürich', color: 'text-white', bg: 'bg-white/5', border: 'border-white/10' },
+    { icon: Shield, text: 'DSGVO/nDSG-konform', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30', highlight: true },
+    { icon: null, text: '🇨🇭 Made in Zürich', color: 'text-white', bg: 'bg-white/5', border: 'border-white/10', highlight: true },
     { icon: CheckCircle2, text: 'Hosting in der Schweiz', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
     { icon: CheckCircle2, text: '14 Tage Geld-zurück-Garantie', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
     { icon: CheckCircle2, text: 'Monatlich kündbar', color: 'text-gray-300', bg: 'bg-white/5', border: 'border-white/10' },
@@ -40,24 +40,32 @@ export const TrustSection: React.FC = () => {
         {/* Trust Badges Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
           {trustBadges.map((badge, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className={`flex flex-col items-center justify-center gap-2 px-4 py-3 rounded-xl border ${badge.border} ${badge.bg} backdrop-blur-sm`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.1 }}
+              className={`flex flex-col items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 ${badge.border} ${badge.bg} backdrop-blur-sm hover:scale-105 transition-transform ${badge.highlight ? 'ring-2 ring-offset-2 ring-offset-black ring-opacity-50' : ''}`}
             >
               {badge.icon ? (
-                <badge.icon className={`w-5 h-5 ${badge.color}`} />
+                <badge.icon className={`w-6 h-6 ${badge.color} ${badge.highlight ? 'animate-pulse' : ''}`} />
               ) : (
-                <span className="text-2xl">🇨🇭</span>
+                <span className="text-3xl">🇨🇭</span>
               )}
-              <span className={`text-xs font-medium text-center ${badge.color}`}>
+              <span className={`text-xs font-semibold text-center ${badge.color} leading-tight`}>
                 {badge.text}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Social Proof */}
         <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm mb-4">
+            <span className="text-2xl">🇨🇭</span>
+            <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Made in Zürich</span>
+          </div>
           <p className="text-sm text-gray-500 uppercase tracking-widest mb-2">
             Bereits eingesetzt von modernen Unternehmen in der Schweiz
           </p>

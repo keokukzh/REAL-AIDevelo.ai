@@ -7,12 +7,12 @@ export const pricingPlans: PricingPlan[] = [
     price: '89',
     description: 'Perfekt für kleine Praxen & Salons',
     features: [
-      'Bis zu 120 Anrufe / Monat',
-      '1x Schweizer Telefonnummer (CH)',
-      'Terminbuchung & Kalender-Sync (Google / Outlook)',
-      'Basis-KI-Dialoglogik für Termin & Rückruf',
-      'E-Mail-Benachrichtigungen bei verpassten Anrufen',
-      'Standard DSG/DSGVO-Vertrag'
+      'Bis zu 120 Anrufe / Monat – nie wieder verpasste Kundenanrufe',
+      '1x Schweizer Telefonnummer (CH) – lokale Erreichbarkeit garantiert',
+      'Automatische Terminbuchung direkt in Google/Outlook Kalender – keine Doppelbuchungen mehr',
+      'Intelligente KI erkennt Terminwünsche und Rückrufanfragen automatisch',
+      'Sofortige E-Mail-Benachrichtigungen bei wichtigen Anrufen',
+      'DSG/DSGVO-konformer Vertrag – Datenschutz garantiert'
     ],
     cta: 'Starter wählen',
     priceNote: 'inkl. Standard DSG/DSGVO-Vertrag',
@@ -23,14 +23,14 @@ export const pricingPlans: PricingPlan[] = [
     price: '179',
     description: 'Für wachsende KMU & Vieltelefonierer',
     features: [
-      'Bis zu 350 Anrufe / Monat',
-      '2x Schweizer Telefonnummern (CH)',
-      'Erweiterte KI-Dialoglogik (Custom Prompts)',
-      'Voice Cloning (1 Stimme inklusive)',
-      'Mehrsprachig: DE / EN (optional FR/IT vorbereiten)',
-      'SMS-Bestätigungen inklusive (z.B. Terminbestätigung)',
-      'Schweizer Support (E-Mail & optional Telefon)',
-      'Standard DSG/DSGVO-Vertrag inklusive'
+      'Bis zu 350 Anrufe / Monat – ideal für aktive Unternehmen mit hohem Anrufvolumen',
+      '2x Schweizer Telefonnummern (CH) – für mehrere Standorte oder Abteilungen',
+      'Maßgeschneiderte KI-Dialoge – passen Sie Gesprächsabläufe an Ihre Bedürfnisse an',
+      'Voice Cloning mit Ihrer eigenen Stimme – authentische Kundenkommunikation',
+      'Mehrsprachig: DE / EN (optional FR/IT) – perfekt für internationale Kunden',
+      'Automatische SMS-Bestätigungen – reduzieren No-Shows um bis zu 80%',
+      'Persönlicher Schweizer Support – E-Mail & optional Telefon direkt aus der Schweiz',
+      'DSG/DSGVO-konformer Vertrag – vollständige Compliance garantiert'
     ],
     cta: 'Business starten',
     highlight: true,
@@ -43,14 +43,14 @@ export const pricingPlans: PricingPlan[] = [
     price: '349',
     description: 'Für grössere Praxen & Gruppenpraxen',
     features: [
-      'Bis zu 800 Anrufe / Monat',
-      '3x Schweizer Telefonnummern (CH)',
-      'Erweiterte KI-Logik mit Branchen-Templates (z.B. Dental, Beauty, Handwerk)',
-      'Voice Cloning (2 Stimmen inklusive)',
-      'Voll mehrsprachig: DE / FR / IT / EN',
-      'API-Zugriff & CRM-Integration (bereit)',
-      'Priorisierter Support (Telefon & E-Mail)',
-      'Individuelle Onboarding-Session'
+      'Bis zu 800 Anrufe / Monat – für Unternehmen mit hohem Kundenkontakt',
+      '3x Schweizer Telefonnummern (CH) – perfekt für Multi-Location-Betriebe',
+      'Branchen-optimierte KI-Templates – vorkonfiguriert für Dental, Beauty, Handwerk & mehr',
+      'Voice Cloning mit 2 Stimmen – verschiedene Ansprechpartner für verschiedene Bereiche',
+      'Voll mehrsprachig: DE / FR / IT / EN – bedient alle Schweizer Sprachregionen',
+      'API-Zugriff & CRM-Integration – automatische Lead-Übergabe an HubSpot, Salesforce & Co.',
+      'Priority Support mit garantierten Antwortzeiten – Telefon & E-Mail',
+      'Persönliche Onboarding-Session – wir richten alles für Sie ein'
     ],
     cta: 'Premium starten',
     priceNote: 'inkl. Standard DSG/DSGVO-Vertrag',
@@ -61,11 +61,11 @@ export const pricingPlans: PricingPlan[] = [
     price: 'Auf Anfrage',
     description: 'Für Callcenter, Franchise-Ketten & Spitäler',
     features: [
-      '> 800 Anrufe / Monat',
-      'Mehrere Agenten / Lines',
-      'Custom KI-Dialogdesign',
-      'Dedizierter Ansprechpartner',
-      'SLA & spezielle Datenschutz-Optionen (z.B. Datenspeicherung CH/EU)'
+      'Unbegrenzte Anrufe / Monat – skalieren Sie nach Bedarf',
+      'Mehrere Agenten & Telefonnummern – für komplexe Organisationsstrukturen',
+      'Maßgeschneiderte KI-Dialoge – entwickelt speziell für Ihre Anforderungen',
+      'Dedizierter Account Manager – persönlicher Ansprechpartner für alle Belange',
+      'SLA-Garantien & erweiterte Datenschutz-Optionen – inkl. Datenspeicherung ausschließlich in CH/EU'
     ],
     cta: 'Gespräch vereinbaren',
     priceNote: 'Individuelle Preisgestaltung',

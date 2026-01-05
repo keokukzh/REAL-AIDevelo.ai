@@ -57,7 +57,7 @@ export const VoicePricing: React.FC<VoicePricingProps> = ({ onStartOnboarding, o
       <div className="container mx-auto px-6 relative z-10">
         <RevealSection className="text-center mb-16" staggerDelay={0.05}>
           <h2 className="text-4xl md:text-5xl font-bold font-display mb-4">Preise für Schweizer KMU.</h2>
-          <p className="text-gray-400 mb-6">Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt. Keine versteckten Gebühren.</p>
+          <p className="text-gray-400 mb-6">Ehrliche Preise, keine Überraschungen. Wählen Sie den Plan, der zu Ihrem Anrufvolumen passt – monatlich kündbar, ohne versteckte Gebühren.</p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
             <Button 
@@ -172,7 +172,16 @@ export const VoicePricing: React.FC<VoicePricingProps> = ({ onStartOnboarding, o
                       )}
                     </div>
                     {plan.priceNote && (
-                      <p className="text-xs text-gray-400">{plan.priceNote}</p>
+                      <p className="text-xs text-gray-400 mb-2">{plan.priceNote}</p>
+                    )}
+                    {plan.price !== 'Auf Anfrage' && (
+                      <div className="mt-3 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 inline-block">
+                        <p className="text-xs text-emerald-400 font-semibold">
+                          {plan.id === 'starter' && '~CHF 0.74 pro Anruf'}
+                          {plan.id === 'business' && '~CHF 0.51 pro Anruf'}
+                          {plan.id === 'premium' && '~CHF 0.44 pro Anruf'}
+                        </p>
+                      </div>
                     )}
                   </div>
 

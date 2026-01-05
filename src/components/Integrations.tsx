@@ -7,33 +7,45 @@ interface Integration {
   name: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   description: string;
+  details: string;
+  available: boolean;
 }
 
 const integrations: Integration[] = [
   {
     name: 'Google Calendar',
     icon: Calendar,
-    description: 'Nahtlose Integration mit Google Calendar',
+    description: 'Automatische Terminbuchung',
+    details: 'Termine werden direkt in Ihren Google Kalender eingetragen – keine Doppelbuchungen, vollständige Synchronisation',
+    available: true,
   },
   {
     name: 'Microsoft Outlook',
     icon: Mail,
-    description: 'Vollständige Outlook-Kalender-Unterstützung',
+    description: 'Outlook-Kalender-Integration',
+    details: 'Nahtlose Verbindung zu Outlook 365 – Termine, Besprechungen und Erinnerungen automatisch synchronisiert',
+    available: true,
   },
   {
     name: 'Calendly',
     icon: Calendar,
-    description: 'Direkte Verbindung zu Calendly',
+    description: 'Calendly-Integration',
+    details: 'Direkte Verbindung zu Ihrer Calendly-Instanz – einheitliche Terminverwaltung über alle Kanäle',
+    available: true,
   },
   {
-    name: 'WhatsApp',
+    name: 'WhatsApp Business',
     icon: MessageSquare,
-    description: 'WhatsApp Business Integration – gleicher Agent wie Telefon',
+    description: 'Multichannel-Kommunikation',
+    details: 'Gleicher Agent für Telefon & WhatsApp – einheitliche Wissensbasis, keine doppelte Pflege',
+    available: true,
   },
   {
     name: 'CRM-Systeme',
     icon: Briefcase,
-    description: 'HubSpot, Salesforce, Pipedrive & mehr',
+    description: 'HubSpot, Salesforce, Pipedrive',
+    details: 'Automatische Lead-Übergabe an Ihr CRM – qualifizierte Leads landen direkt in Ihrem System',
+    available: true,
   },
 ];
 
@@ -41,13 +53,25 @@ const IntegrationCard: React.FC<{ integration: Integration }> = ({ integration }
   const Icon = integration.icon;
   
   return (
-    <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-accent/30 hover:bg-white/10 transition-all backdrop-blur-sm hover:-translate-y-2 hover:shadow-xl hover:shadow-accent/10">
-      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center text-accent mb-4 group-hover:scale-110 transition-transform">
-        <Icon size={32} />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border-2 border-white/10 hover:border-accent/50 hover:bg-white/10 transition-all backdrop-blur-sm hover:shadow-xl hover:shadow-accent/20"
+    >
+      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-800 to-black border-2 border-white/10 flex items-center justify-center text-accent mb-4 group-hover:scale-110 transition-transform shadow-lg">
+        <Icon size={36} />
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2 text-center">{integration.name}</h3>
-      <p className="text-sm text-gray-400 text-center">{integration.description}</p>
-    </div>
+      <h3 className="text-lg font-bold text-white mb-1 text-center">{integration.name}</h3>
+      <p className="text-sm font-semibold text-accent mb-2 text-center">{integration.description}</p>
+      <p className="text-xs text-gray-400 text-center leading-relaxed">{integration.details}</p>
+      {integration.available && (
+        <div className="mt-3 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+          <span className="text-xs text-emerald-400 font-semibold">✓ Verfügbar</span>
+        </div>
+      )}
+    </motion.div>
   );
 };
 
@@ -67,7 +91,7 @@ export const Integrations: React.FC = () => {
           </p>
         </RevealSection>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {integrations.map((integration) => (
             <IntegrationCard key={integration.name} integration={integration} />
           ))}

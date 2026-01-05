@@ -1,20 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Mic } from 'lucide-react';
+import { Play, Pause, Mic, ArrowRight, Volume2 } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 
 interface VoiceDemoProps {
   onStartOnboarding?: () => void;
 }
 
+type DemoScenario = {
+  id: string;
+  title: string;
+  description: string;
+  audioFile: string;
+  transcript: string[];
+};
+
+const demoScenarios: DemoScenario[] = [
+  {
+    id: 'appointment',
+    title: 'Terminbuchung',
+    description: 'Automatische Terminbuchung in 30 Sekunden',
+    audioFile: '/audio/demo_de.mp3',
+    transcript: [
+      'Agent: "Guten Tag! Hier ist der digitale Assistent von Dr. Weber. Möchten Sie einen Termin für eine Untersuchung vereinbaren?"',
+      'Kunde: "Ja, gerne. Hätten Sie nächste Woche etwas frei?"',
+      'Agent: "Gerne. Ich habe am Donnerstag um 14:30 Uhr einen freien Termin. Passt Ihnen das?"',
+      'Kunde: "Perfekt, das passt mir gut."',
+      'Agent: "Ausgezeichnet! Ich habe den Termin für Sie gebucht. Sie erhalten gleich eine Bestätigung per SMS."',
+    ],
+  },
+  {
+    id: 'lead-qualification',
+    title: 'Lead-Qualifizierung',
+    description: 'Automatische Qualifizierung von Interessenten',
+    audioFile: '/audio/demo_de.mp3',
+    transcript: [
+      'Agent: "Guten Tag! Vielen Dank für Ihr Interesse. Können Sie mir kurz sagen, wofür Sie sich interessieren?"',
+      'Kunde: "Ich suche eine Lösung für meine Praxis."',
+      'Agent: "Verstehe. Wie viele Anrufe erhalten Sie pro Monat ungefähr?"',
+      'Kunde: "So etwa 200-300 Anrufe."',
+      'Agent: "Perfekt! Ich habe Ihre Anfrage notiert. Unser Team meldet sich heute noch bei Ihnen."',
+    ],
+  },
+];
+
 export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [selectedScenario, setSelectedScenario] = useState<DemoScenario>(demoScenarios[0]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Initialize audio
-    audioRef.current = new Audio('/audio/demo_de.mp3');
-    audioRef.current.onended = () => setIsPlaying(false);
+    // Initialize audio with selected scenario
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    audioRef.current = new Audio(selectedScenario.audioFile);
+    audioRef.current.onended = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    
+    audioRef.current.onloadedmetadata = () => {
+      if (audioRef.current) {
+        setDuration(audioRef.current.duration);
+      }
+    };
+    
+    audioRef.current.ontimeupdate = () => {
+      if (audioRef.current) {
+        setCurrentTime(audioRef.current.currentTime);
+      }
+    };
     
     return () => {
         if (audioRef.current) {
@@ -22,17 +82,15 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
             audioRef.current = null;
         }
     };
-  }, []);
+  }, [selectedScenario]);
 
   useEffect(() => {
     if (audioRef.current) {
         if (isPlaying) {
             audioRef.current.play().catch((e: Error) => {
-              // Silently handle audio play errors (user interaction required, autoplay blocked, etc.)
               setIsPlaying(false);
-              // Only log in development for debugging
               if (import.meta.env.DEV) {
-                console.warn("Audio playback failed (this is normal if autoplay is blocked):", e.message);
+                console.warn("Audio playback failed:", e.message);
               }
             });
         } else {
@@ -40,6 +98,20 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
         }
     }
   }, [isPlaying]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (audioRef.current) {
+      const newTime = parseFloat(e.target.value);
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
 
   return (
     <RevealSection className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden section-spacing" id="demo">
@@ -80,7 +152,7 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
               </div>
 
               {/* Subtitles with Timer */}
-              <div className="w-full bg-white/5 backdrop-blur-md rounded-xl p-4 min-h-[100px] border border-white/5">
+              <div className="w-full bg-white/5 backdrop-blur-md rounded-xl p-4 min-h-[120px] border border-white/5">
                 <AnimatePresence mode='wait'>
                     {isPlaying ? (
                         <motion.div
@@ -92,14 +164,15 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
                         >
                             <div className="flex items-center justify-center gap-2 mb-2">
                                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                <span className="text-xs text-green-400 font-mono">Terminbuchung läuft...</span>
+                                <span className="text-xs text-green-400 font-mono">{selectedScenario.title} läuft...</span>
                             </div>
-                            <p className="text-sm text-gray-200 text-center leading-relaxed">
-                                "Guten Tag! Hier ist der digitale Assistent von Dr. Weber. Möchten Sie einen Termin für eine Untersuchung vereinbaren?"
-                            </p>
-                            <p className="text-xs text-accent text-center mt-2">
-                                ✓ Termin gebucht: Donnerstag, 14:30 Uhr
-                            </p>
+                            <div className="space-y-1 max-h-20 overflow-y-auto">
+                              {selectedScenario.transcript.slice(0, 2).map((line, idx) => (
+                                <p key={idx} className="text-xs text-gray-200 leading-relaxed">
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.p 
@@ -109,10 +182,26 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
                             exit={{ opacity: 0 }}
                             className="text-sm text-gray-500 text-center italic"
                         >
-                            Drücken Sie Play für eine Demo der Terminbuchung in 30 Sekunden...
+                            Drücken Sie Play für eine Demo der {selectedScenario.title.toLowerCase()}...
                         </motion.p>
                     )}
                 </AnimatePresence>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full px-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-gray-400 font-mono">{formatTime(currentTime)}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent"
+                  />
+                  <span className="text-xs text-gray-400 font-mono">{formatTime(duration)}</span>
+                </div>
               </div>
 
               {/* Controls */}
@@ -136,12 +225,36 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
         <div className="space-y-8">
            <div>
              <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">
-               Terminbuchung in <br />
+               {selectedScenario.title} in <br />
                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">30 Sekunden</span>
              </h2>
-             <p className="text-xl text-gray-400 leading-relaxed mb-8">
-               Sehen Sie, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden qualifiziert und direkt einen Termin in Ihren Kalender bucht – alles in unter 30 Sekunden.
+             <p className="text-xl text-gray-400 leading-relaxed mb-6">
+               {selectedScenario.description}
              </p>
+
+             {/* Scenario Selector */}
+             <div className="flex gap-3 mb-8">
+               {demoScenarios.map((scenario) => (
+                 <button
+                   key={scenario.id}
+                   onClick={() => {
+                     setSelectedScenario(scenario);
+                     setIsPlaying(false);
+                     if (audioRef.current) {
+                       audioRef.current.pause();
+                       setCurrentTime(0);
+                     }
+                   }}
+                   className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                     selectedScenario.id === scenario.id
+                       ? 'border-accent bg-accent/10 text-accent'
+                       : 'border-slate-700 bg-slate-800/50 text-gray-400 hover:border-slate-600'
+                   }`}
+                 >
+                   {scenario.title}
+                 </button>
+               ))}
+             </div>
              
              <ul className="space-y-4 mb-8">
                 {['Versteht Schweizerdeutsch & Hochdeutsch', 'Erkennt Emotionen und Dringlichkeit', 'Kann unterbrochen werden (Full Duplex)'].map((item, i) => (
@@ -151,6 +264,23 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
                     </li>
                 ))}
              </ul>
+
+             {/* Full Transcript */}
+             {selectedScenario.transcript.length > 0 && (
+               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-6">
+                 <div className="flex items-center gap-2 mb-3">
+                   <Volume2 size={16} className="text-accent" />
+                   <h3 className="text-sm font-semibold text-white">Vollständiges Transkript</h3>
+                 </div>
+                 <div className="space-y-2 max-h-40 overflow-y-auto">
+                   {selectedScenario.transcript.map((line, idx) => (
+                     <p key={idx} className="text-xs text-gray-400 leading-relaxed">
+                       {line}
+                     </p>
+                   ))}
+                 </div>
+               </div>
+             )}
 
              <div className="flex flex-wrap gap-4">
                <button onClick={onStartOnboarding} className="text-white border-b border-accent pb-1 hover:text-accent transition-colors flex items-center gap-2 group">
@@ -172,22 +302,3 @@ export const VoiceDemo: React.FC<VoiceDemoProps> = ({ onStartOnboarding }) => {
     </RevealSection>
   );
 };
-
-// Icon component needed here for the import above
-const ArrowRight = ({ size, className }: { size: number, className?: string }) => (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-      className={className}
-    >
-        <path d="M5 12h14"></path>
-        <path d="m12 5 7 7-7 7"></path>
-    </svg>
-);

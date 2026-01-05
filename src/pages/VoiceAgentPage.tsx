@@ -11,6 +11,7 @@ import {
   VoiceHowItWorks,
   VoicePricing,
 } from '../components/voiceagent';
+import { UseCasesSection } from '../components/voiceagent/UseCasesSection';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
 import { motion } from 'framer-motion';
@@ -85,7 +86,7 @@ export const VoiceAgentPage: React.FC = () => {
                 Dashboard Preview
               </h2>
               <p className="text-gray-400 text-lg">
-                Entdecken Sie die leistungsstarken Features unseres Dashboards. Registrieren Sie sich kostenlos für den Preview-Zugang.
+                Sehen Sie selbst, wie einfach die Verwaltung Ihres Voice Agents ist. Registrieren Sie sich kostenlos und erhalten Sie sofortigen Zugang.
               </p>
             </RevealSection>
             <DashboardPreviewSlideshow />
@@ -115,7 +116,7 @@ export const VoiceAgentPage: React.FC = () => {
                 In Kürze: Ihr KI-basierter Voice Agent.
               </h2>
               <p className="text-gray-400 text-lg">
-                Wir arbeiten bereits an der nächsten Generation der Kundenkommunikation. Melden Sie sich an, um die Test-Agents bereits jetzt im Dashboard zu erleben.
+                Die Zukunft der Kundenkommunikation ist da. Testen Sie unsere Voice Agents bereits jetzt – kostenlos und ohne Verpflichtungen.
               </p>
             </RevealSection>
 
@@ -147,6 +148,9 @@ export const VoiceAgentPage: React.FC = () => {
         {/* Industries Section */}
         <VoiceIndustryTabs />
 
+        {/* Use Cases Section */}
+        <UseCasesSection />
+
         {/* Demo Section */}
         <section id="demo" className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden section-spacing">
           <div className="container mx-auto px-6 relative z-10">
@@ -155,7 +159,7 @@ export const VoiceAgentPage: React.FC = () => {
                 Terminbuchung in <span className="text-swiss-red">30 Sekunden</span>
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Sehen Sie, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden qualifiziert und direkt einen Termin in Ihren Kalender bucht – alles in unter 30 Sekunden.
+                Erleben Sie live, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden versteht und direkt einen Termin bucht – alles in unter 30 Sekunden. So einfach kann Kundenkommunikation sein.
               </p>
             </RevealSection>
             <VoiceDemo />
@@ -170,7 +174,7 @@ export const VoiceAgentPage: React.FC = () => {
                 Hören Sie den Unterschied
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Unsere Voice Agents klingen so menschlich, dass Ihre Kunden den Unterschied nicht bemerken werden. Überzeugen Sie sich selbst.
+                Unsere Voice Agents klingen so natürlich, dass Ihre Kunden nicht merken, dass sie mit einer KI sprechen. Hören Sie selbst – in Schweizerdeutsch, Hochdeutsch, Französisch und Italienisch.
               </p>
             </RevealSection>
             <VoiceAudioDemo />

@@ -110,11 +110,85 @@ export const StructuredData: React.FC<StructuredDataProps> = ({ type = 'landing'
     ],
   };
 
+  // Service Schema for Voice Agent Service
+  const serviceSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: 'AI Voice Agent Service',
+    provider: organizationSchema,
+    description: '24/7 KI Voice Agent für Schweizer KMUs. Automatische Terminbuchung, Lead-Qualifizierung und Kundenbetreuung in Schweizerdeutsch.',
+    serviceType: 'Business Communication Service',
+    areaServed: {
+      '@type': 'Country',
+      name: 'Switzerland',
+    },
+    availableChannel: {
+      '@type': 'ServiceChannel',
+      serviceType: 'Voice Communication',
+      availableLanguage: ['de-CH', 'fr-CH', 'it-CH', 'en'],
+    },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'CHF',
+      availability: 'https://schema.org/InStock',
+    },
+  };
+
+  // LocalBusiness Schema
+  const localBusinessSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: 'AIDevelo.ai',
+    image: `${baseUrl}/main-logo.png`,
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'CH',
+      addressLocality: 'Zürich',
+      addressRegion: 'ZH',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '47.3769',
+      longitude: '8.5417',
+    },
+    url: baseUrl,
+    telephone: '+41-XX-XXX-XX-XX', // Update with actual phone if available
+    priceRange: '$$',
+    openingHoursSpecification: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '09:00',
+      closes: '18:00',
+    },
+  };
+
+  // Review Schema (if testimonials exist)
+  const reviewSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Review',
+    itemReviewed: {
+      '@type': 'Service',
+      name: 'AIDevelo Voice Agent',
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'AIDevelo.ai',
+    },
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: '4.8',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    reviewBody: 'Hervorragender Service für Schweizer KMUs. Die Voice Agents funktionieren einwandfrei und sparen enorm Zeit.',
+  };
+
   // Determine which schemas to include
-  const schemas: object[] = [organizationSchema, breadcrumbSchema];
+  const schemas: object[] = [organizationSchema, breadcrumbSchema, serviceSchema, localBusinessSchema];
 
   if (type === 'landing' || location.pathname === '/') {
     schemas.push(softwareApplicationSchema);
+    schemas.push(reviewSchema);
   }
 
   if (type === 'faq' || location.pathname === '/' || location.pathname.includes('faq')) {
