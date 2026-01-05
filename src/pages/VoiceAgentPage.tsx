@@ -1,29 +1,30 @@
 import React from 'react';
 import { Navbar } from '../components/Navbar';
 import { SEO } from '../components/SEO';
-import { 
+import {
   VoiceHero,
-  DashboardPreviewSlideshow, 
+  DashboardPreviewSlideshow,
   VoiceAudioDemo,
   VoiceIndustryTabs,
   VoiceDemo,
   VoiceROICalculator,
   VoiceHowItWorks,
   VoicePricing,
+  VoiceBooking,
 } from '../components/voiceagent';
 import { UseCasesSection } from '../components/voiceagent/UseCasesSection';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
 import { motion } from 'framer-motion';
-import { 
-  Clock, 
-  Calendar, 
-  Brain, 
-  Shield, 
-  Globe, 
-  BarChart3, 
+import {
+  Clock,
+  Calendar,
+  Brain,
+  Shield,
+  Globe,
+  BarChart3,
   MessageSquare,
-  CheckCircle2 
+  CheckCircle2,
 } from 'lucide-react';
 import { RevealSection } from '../components/layout/RevealSection';
 
@@ -31,22 +32,26 @@ const comingSoonFeatures = [
   {
     icon: Clock,
     title: '24/7 Erreichbarkeit',
-    description: 'Nie wieder einen Kunden verpassen. Ihr Agent nimmt jeden Anruf an – auch nachts und am Wochenende.',
+    description:
+      'Nie wieder einen Kunden verpassen. Ihr Agent nimmt jeden Anruf an – auch nachts und am Wochenende.',
   },
   {
     icon: Calendar,
     title: 'Termin-Automatik',
-    description: 'Der Agent bucht Termine direkt in Ihren Google oder Outlook Kalender. Keine Doppelbuchungen.',
+    description:
+      'Der Agent bucht Termine direkt in Ihren Google oder Outlook Kalender. Keine Doppelbuchungen.',
   },
   {
     icon: Globe,
     title: 'Schweizer Mundart',
-    description: 'Versteht und spricht Schweizerdeutsch. Perfekt für lokale KMU und vertrauten Kundenkontakt.',
+    description:
+      'Versteht und spricht Schweizerdeutsch. Perfekt für lokale KMU und vertrauten Kundenkontakt.',
   },
   {
     icon: Brain,
     title: 'Sofortige Antwort',
-    description: 'Keine Warteschleifen. Ihre Kunden erhalten sofortige Hilfe und Antworten auf ihre Fragen.',
+    description:
+      'Keine Warteschleifen. Ihre Kunden erhalten sofortige Hilfe und Antworten auf ihre Fragen.',
   },
   {
     icon: Shield,
@@ -56,19 +61,21 @@ const comingSoonFeatures = [
   {
     icon: BarChart3,
     title: 'Analytics Dashboard',
-    description: 'Sehen Sie alle Anrufe, Transkripte und Terminbuchungen übersichtlich aufbereitet.',
+    description:
+      'Sehen Sie alle Anrufe, Transkripte und Terminbuchungen übersichtlich aufbereitet.',
   },
   {
     icon: MessageSquare,
     title: 'Multichannel Pack',
-    description: 'Ein Agent. Alle Kanäle. Webchat + WhatsApp nutzen dieselbe KI und Wissensbasis wie der Voice-Agent.',
+    description:
+      'Ein Agent. Alle Kanäle. Webchat + WhatsApp nutzen dieselbe KI und Wissensbasis wie der Voice-Agent.',
   },
 ];
 
 export const VoiceAgentPage: React.FC = () => {
   return (
     <div className="bg-black min-h-screen">
-      <SEO 
+      <SEO
         title="AI Telefonassistent für Schweizer KMU | 24/7 Terminbuchung | aidevelo.ai"
         description="Automatische Terminbuchung, Lead-Qualifizierung und Kundenbetreuung in Schweizerdeutsch. Geht in 24h live – ohne IT-Aufwand."
         keywords="Voice Agent, KI Telefon, Schweizerdeutsch, Terminbuchung, 24/7, KMU, Schweiz"
@@ -79,14 +86,18 @@ export const VoiceAgentPage: React.FC = () => {
         <VoiceHero />
 
         {/* Dashboard Preview Section */}
-        <section id="dashboard-preview" className="py-24 bg-gradient-to-b from-slate-950 via-black to-slate-950 relative overflow-hidden">
+        <section
+          id="dashboard-preview"
+          className="py-24 bg-gradient-to-b from-slate-950 via-black to-slate-950 relative overflow-hidden"
+        >
           <div className="container mx-auto px-6 relative z-10">
             <RevealSection className="text-center mb-12 max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
                 Dashboard Preview
               </h2>
               <p className="text-gray-400 text-lg">
-                Sehen Sie selbst, wie einfach die Verwaltung Ihres Voice Agents ist. Registrieren Sie sich kostenlos und erhalten Sie sofortigen Zugang.
+                Sehen Sie selbst, wie einfach die Verwaltung Ihres Voice Agents ist. Registrieren
+                Sie sich kostenlos und erhalten Sie sofortigen Zugang.
               </p>
             </RevealSection>
             <DashboardPreviewSlideshow />
@@ -109,14 +120,12 @@ export const VoiceAgentPage: React.FC = () => {
         <section id="features" className="py-24 relative section-spacing">
           <div className="container mx-auto px-6 relative z-10">
             <RevealSection className="text-center mb-16 max-w-2xl mx-auto">
-              <div className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-bold uppercase tracking-widest mb-4">
-                Coming Soon: Voice Agents
-              </div>
               <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
-                In Kürze: Ihr KI-basierter Voice Agent.
+                Alles was Sie brauchen.
               </h2>
               <p className="text-gray-400 text-lg">
-                Die Zukunft der Kundenkommunikation ist da. Testen Sie unsere Voice Agents bereits jetzt – kostenlos und ohne Verpflichtungen.
+                Die Zukunft der Kundenkommunikation ist da. Testen Sie unsere Voice Agents bereits
+                jetzt – kostenlos und ohne Verpflichtungen.
               </p>
             </RevealSection>
 
@@ -152,14 +161,19 @@ export const VoiceAgentPage: React.FC = () => {
         <UseCasesSection />
 
         {/* Demo Section */}
-        <section id="demo" className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden section-spacing">
+        <section
+          id="demo"
+          className="py-24 bg-gradient-to-b from-background to-surface relative overflow-hidden section-spacing"
+        >
           <div className="container mx-auto px-6 relative z-10">
             <RevealSection className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold font-display mb-6">
                 Terminbuchung in <span className="text-swiss-red">30 Sekunden</span>
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Erleben Sie live, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden versteht und direkt einen Termin bucht – alles in unter 30 Sekunden. So einfach kann Kundenkommunikation sein.
+                Erleben Sie live, wie Ihr Voice Agent einen Anruf entgegennimmt, den Kunden versteht
+                und direkt einen Termin bucht – alles in unter 30 Sekunden. So einfach kann
+                Kundenkommunikation sein.
               </p>
             </RevealSection>
             <VoiceDemo />
@@ -174,7 +188,9 @@ export const VoiceAgentPage: React.FC = () => {
                 Hören Sie den Unterschied
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Unsere Voice Agents klingen so natürlich, dass Ihre Kunden nicht merken, dass sie mit einer KI sprechen. Hören Sie selbst – in Schweizerdeutsch, Hochdeutsch, Französisch und Italienisch.
+                Unsere Voice Agents klingen so natürlich, dass Ihre Kunden nicht merken, dass sie
+                mit einer KI sprechen. Hören Sie selbst – in Schweizerdeutsch, Hochdeutsch,
+                Französisch und Italienisch.
               </p>
             </RevealSection>
             <VoiceAudioDemo />
@@ -188,7 +204,14 @@ export const VoiceAgentPage: React.FC = () => {
         <VoiceHowItWorks />
 
         {/* Pricing Section */}
-        <VoicePricing />
+        <VoicePricing
+          onOpenLeadCapture={() => {
+            document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+
+        {/* Booking Section */}
+        <VoiceBooking />
 
         {/* FAQ Section */}
         <section id="faq" className="py-24 bg-surface/30 section-spacing">

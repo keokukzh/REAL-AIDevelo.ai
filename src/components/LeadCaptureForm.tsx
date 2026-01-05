@@ -3,7 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 import { FloatingInput } from './ui/FloatingInput';
 import { demoService, DemoRequest } from '../services/demoService';
-import { Loader2, CheckCircle2, AlertCircle, Calendar, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Calendar,
+  Shield,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 import { trackFormStart, trackFormSubmit, trackCTAClick } from '../lib/analytics';
 
 interface LeadCaptureFormProps {
@@ -32,10 +40,12 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
     }
   }, [formData.name, formData.email, formStarted]);
 
-  const handleChange = (field: keyof DemoRequest) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setError(null);
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+  const handleChange =
+    (field: keyof DemoRequest) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setError(null);
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    };
 
   const validateStep1 = () => {
     if (!formData.name.trim()) return 'Bitte geben Sie Ihren Namen an.';
@@ -87,7 +97,9 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
       setSuccess(true);
     } catch (err) {
       trackFormSubmit('lead_capture', false);
-      setError('Senden fehlgeschlagen. Bitte versuchen Sie es erneut oder buchen Sie direkt einen Termin.');
+      setError(
+        'Senden fehlgeschlagen. Bitte versuchen Sie es erneut oder buchen Sie direkt einen Termin.',
+      );
     } finally {
       setLoading(false);
     }
@@ -103,8 +115,12 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
         <div className="flex items-center gap-3 text-emerald-300">
           <CheckCircle2 className="w-6 h-6" />
           <div>
-            <p className="font-semibold">Vielen Dank! Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>
-            <p className="text-sm text-emerald-100/80">Sie erhalten in Kürze eine Bestätigung per E-Mail.</p>
+            <p className="font-semibold">
+              Vielen Dank! Wir melden uns innerhalb von 24 Stunden bei Ihnen.
+            </p>
+            <p className="text-sm text-emerald-100/80">
+              Sie erhalten in Kürze eine Bestätigung per E-Mail.
+            </p>
           </div>
         </div>
         <a
@@ -129,18 +145,22 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
       {/* Progress Indicator */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            step >= 1 ? 'bg-accent text-black' : 'bg-gray-700 text-gray-400'
-          }`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step >= 1 ? 'bg-accent text-black' : 'bg-gray-700 text-gray-400'
+            }`}
+          >
             1
           </div>
           <span className={`text-sm ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>Kontakt</span>
         </div>
         <div className="flex-1 h-[1px] bg-gray-700 mx-4" />
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            step >= 2 ? 'bg-accent text-black' : 'bg-gray-700 text-gray-400'
-          }`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step >= 2 ? 'bg-accent text-black' : 'bg-gray-700 text-gray-400'
+            }`}
+          >
             2
           </div>
           <span className={`text-sm ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>Details</span>
@@ -175,6 +195,7 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
               required
               value={formData.name}
               onChange={handleChange('name')}
+              autoComplete="name"
               showSuccess={!!formData.name && !error}
             />
 
@@ -182,6 +203,7 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
               id="lead-email"
               label="E-Mail-Adresse"
               type="email"
+              inputMode="email"
               required
               value={formData.email}
               onChange={handleChange('email')}
@@ -229,12 +251,16 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
                 label="Firma"
                 value={formData.company}
                 onChange={handleChange('company')}
+                autoComplete="organization"
               />
               <FloatingInput
                 id="lead-phone"
                 label="Telefon"
+                type="tel"
+                inputMode="tel"
                 value={formData.phone}
                 onChange={handleChange('phone')}
+                autoComplete="tel"
               />
             </div>
 
@@ -301,4 +327,3 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ className = ''
     </form>
   );
 };
-

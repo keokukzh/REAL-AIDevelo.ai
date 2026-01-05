@@ -19,12 +19,12 @@ export const VoiceHero: React.FC<VoiceHeroProps> = ({ onStartOnboarding, onScrol
   const prefersReducedMotion = useReducedMotion();
 
   // Split headline for kinetic typography
-  const headlineWords = useMemo(() => ['Ihr', '24/7', 'Teamqualifizierer'], []);
+  const headlineWords = useMemo(() => ['Die', 'intelligente', 'Sprach-KI'], []);
 
   const subheadlineWords = useMemo(() => ['für', 'Schweizer', 'KMUs'], []);
 
   const scrollToDemo = () => {
-    const demoSection = document.getElementById('demo');
+    const demoSection = document.getElementById('booking');
     if (demoSection) {
       const headerOffset = 80;
       const elementPosition = demoSection.getBoundingClientRect().top;
@@ -132,9 +132,8 @@ export const VoiceHero: React.FC<VoiceHeroProps> = ({ onStartOnboarding, onScrol
             {/* Subheading */}
             <div className="text-lg md:text-xl text-slate-200 max-w-xl leading-relaxed font-light mx-auto lg:mx-0 mb-8">
               <p>
-                Verpassen Sie nie wieder einen Kunden. Automatische Terminbuchung,
-                Lead-Qualifizierung und Kundenbetreuung in Schweizerdeutsch. Geht in 24h live – ohne
-                IT-Aufwand.
+                Verpassen Sie nie wieder einen Anruf. Unsere KI-Telefonassistenten buchen Termine,
+                qualifizieren Leads und beantworten Fragen – 24/7 in perfektem Schweizerdeutsch.
               </p>
             </div>
 
@@ -199,12 +198,30 @@ export const VoiceHero: React.FC<VoiceHeroProps> = ({ onStartOnboarding, onScrol
                 className="border-2 border-slate-600 hover:border-cyan-400 hover:bg-slate-800/80 px-6 sm:px-8 py-6 sm:py-7 text-sm sm:text-base font-semibold transition-all duration-200 min-h-[44px] min-w-[44px]"
                 aria-label="Zur Demo-Sektion scrollen"
               >
-                Demo anhören
+                Erstes Demo anfordern
               </Button>
             </div>
             <p className="text-sm text-slate-400 mt-4">
               24/7 erreichbar, Termin-Ready in 24h. Keine verpassten Anrufe mehr.
             </p>
+
+            {/* Trust Badges */}
+            <div className="flex flex-wrap gap-4 sm:gap-6 mt-8 items-center justify-center lg:justify-start border-t border-slate-800/50 pt-6">
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>DSGVO-konform</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>Server in der Schweiz</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm font-medium">
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-red-600 text-white text-[8px] font-bold">
+                  CH
+                </span>
+                <span>Made in Switzerland</span>
+              </div>
+            </div>
           </motion.div>
 
           {/* Right Column: Hero Phone Visual */}

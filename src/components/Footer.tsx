@@ -9,23 +9,23 @@ export const Footer: React.FC = () => {
   const prefersReducedMotion = useReducedMotion();
 
   const linkVariants = {
-    hover: prefersReducedMotion ? {} : { x: 4, color: '#00E0FF' }
+    hover: prefersReducedMotion ? {} : { x: 4, color: '#00E0FF' },
   };
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    
+
     // Safe anchor validation: only allow safe anchor IDs (not Supabase tokens)
     const SAFE_ANCHOR_REGEX = /^#[A-Za-z][A-Za-z0-9_-]*$/;
     if (!SAFE_ANCHOR_REGEX.test(href)) {
       // Ignore unsafe hashes (e.g., #access_token=..., #code=...)
       return;
     }
-    
+
     // If not on landing page, navigate to home with section hash
     if (location.pathname !== '/') {
-        navigate('/', { state: { scrollTarget: href } });
-        return;
+      navigate('/', { state: { scrollTarget: href } });
+      return;
     }
 
     // Scroll to section on current page
@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth"
+        behavior: 'smooth',
       });
     }
   };
@@ -46,18 +46,24 @@ export const Footer: React.FC = () => {
     <footer className="bg-black border-t border-white/10 pt-16 pb-8">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          
           <div className="col-span-1 md:col-span-1">
             <div className="mb-6">
-              <img src="/main-logo.png" alt="AIDevelo.ai Logo - Intelligente Sprach-KI für Schweizer KMUs" className="h-8 w-auto object-contain" />
+              <img
+                src="/main-logo.png"
+                alt="AIDevelo.ai Logo - Intelligente Sprach-KI für Schweizer KMUs"
+                className="h-8 w-auto object-contain"
+              />
             </div>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Die intelligente Sprach-KI für Schweizer KMUs. 
-              Verpassen Sie nie wieder einen Anruf.
+              Die intelligente Sprach-KI für Schweizer KMUs. Verpassen Sie nie wieder einen Anruf.
             </p>
             <div className="mt-6 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
-                <span className="text-xs font-mono text-gray-400">Made in Zürich</span>
+              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+              <span className="text-xs font-mono text-gray-400">Made in Zürich</span>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+              <span className="text-xs font-mono text-gray-400">DSGVO-konform</span>
             </div>
           </div>
 
@@ -65,12 +71,14 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Produkt</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="#features" 
-                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#features')} 
+                  href="#features"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                    scrollToSection(e, '#features')
+                  }
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Funktionen Sektion navigieren"
                 >
@@ -84,12 +92,14 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="#industries" 
-                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#industries')} 
+                  href="#industries"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                    scrollToSection(e, '#industries')
+                  }
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Branchen Sektion navigieren"
                 >
@@ -103,12 +113,12 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="#demo" 
-                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')} 
+                  href="#demo"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#demo')}
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Live Demo Sektion navigieren"
                 >
@@ -122,12 +132,14 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="#how-it-works" 
-                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#how-it-works')} 
+                  href="#how-it-works"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                    scrollToSection(e, '#how-it-works')
+                  }
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Ablauf Sektion navigieren"
                 >
@@ -141,12 +153,14 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="#pricing" 
-                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => scrollToSection(e, '#pricing')} 
+                  href="#pricing"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                    scrollToSection(e, '#pricing')
+                  }
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu Preise Sektion navigieren"
                 >
@@ -166,12 +180,15 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Rechtliches</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="/impressum" 
-                  onClick={(e) => { e.preventDefault(); navigate('/impressum'); }}
+                  href="/impressum"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/impressum');
+                  }}
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zum Impressum navigieren"
                 >
@@ -185,12 +202,15 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="/datenschutz" 
-                  onClick={(e) => { e.preventDefault(); navigate('/datenschutz'); }}
+                  href="/datenschutz"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/datenschutz');
+                  }}
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zur Datenschutzerklärung navigieren"
                 >
@@ -204,12 +224,15 @@ export const Footer: React.FC = () => {
                 </motion.a>
               </li>
               <li>
-                <motion.a 
-                  whileHover="hover" 
+                <motion.a
+                  whileHover="hover"
                   variants={linkVariants}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
-                  href="/agb" 
-                  onClick={(e) => { e.preventDefault(); navigate('/agb'); }}
+                  href="/agb"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/agb');
+                  }}
                   className="inline-block transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] flex items-center group relative"
                   aria-label="Zu den AGB navigieren"
                 >
@@ -230,8 +253,8 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-gray-400">
               <li>Zürich, Schweiz</li>
               <li>
-                <motion.a 
-                  href="mailto:hello@aidevelo.ai" 
+                <motion.a
+                  href="mailto:hello@aidevelo.ai"
                   whileHover={prefersReducedMotion ? {} : { x: 4, color: '#00E0FF' }}
                   transition={{ duration: 0.2, ease: [0.19, 1, 0.22, 1] }}
                   className="hover:text-accent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-1 min-h-[44px] inline-flex items-center group relative"
@@ -251,7 +274,9 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-600 text-xs">© {new Date().getFullYear()} AIDevelo.ai Switzerland. Alle Rechte vorbehalten.</p>
+          <p className="text-gray-600 text-xs">
+            © {new Date().getFullYear()} AIDevelo.ai Switzerland. Alle Rechte vorbehalten.
+          </p>
           <div className="flex gap-4">
             {/* Social Icons - Add actual links when social media accounts are available */}
             {/* Example:

@@ -12,3 +12,4 @@ export * from './VoiceCaseStudies';
 export * from './VoiceAudioUploadOption';
 export * from './VoiceOnboarding';
 export * from './VoiceAgentsComingSoon';
+export * from './VoiceBooking';
