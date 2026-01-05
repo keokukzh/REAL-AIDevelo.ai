@@ -20,6 +20,9 @@ function initializeSupabaseAdmin(): SupabaseClient {
   supabaseServiceRoleKey = supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+      return createMockSupabaseClient();
+    }
     throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
   }
 
@@ -29,6 +32,50 @@ function initializeSupabaseAdmin(): SupabaseClient {
       persistSession: false,
     },
   });
+}
+
+// Mock Supabase Client for Dev Bypass
+function createMockSupabaseClient(): any {
+  console.warn('[supabaseDb] Using MOCK Supabase Client (Dev Bypass)');
+
+  const mockQueryBuilder = () => ({
+    select: () => ({
+      eq: () => ({
+        limit: () => ({
+          maybeSingle: async () => ({ data: null, error: null }),
+          single: async () => ({ data: null, error: null }),
+        }),
+        maybeSingle: async () => ({ data: null, error: null }),
+        single: async () => ({ data: null, error: null }),
+      }),
+      maybeSingle: async () => ({ data: null, error: null }),
+      limit: () => ({
+        maybeSingle: async () => ({ data: null, error: null }),
+      }),
+      order: () => ({
+        limit: async () => ({ data: [], error: null }),
+      }),
+    }),
+    insert: (data: any) => ({
+      select: () => ({
+        single: async () => ({ data: { id: 'dev-id', ...data }, error: null }),
+      }),
+    }),
+    update: () => ({
+      eq: () => ({
+        select: () => ({
+          single: async () => ({ data: { id: 'dev-id' }, error: null }),
+        }),
+      }),
+    }),
+  });
+
+  return {
+    from: (table: string) => mockQueryBuilder(),
+    auth: {
+      getUser: async () => ({ data: { user: { id: 'dev-user' } }, error: null }),
+    },
+  };
 }
 
 // Lazy singleton - only initialize when first accessed
@@ -54,8 +101,18 @@ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
 export async function ensureUserRow(
   authUserId: string,
   email?: string,
-  name?: string
+  name?: string,
 ): Promise<{ id: string; org_id: string; supabase_user_id: string; email: string | null }> {
+  // Dev Bypass
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    return {
+      id: 'dev-user-id',
+      org_id: 'dev-org-id',
+      supabase_user_id: authUserId,
+      email: email || 'dev@example.com',
+    };
+  }
+
   // Check if user exists
   const { data: existingUser, error: findError } = await supabaseAdmin
     .from('users')
@@ -80,14 +137,18 @@ export async function ensureUserRow(
     if (orgError) {
       // Check if it's a unique constraint violation (race condition - another request created org)
       // In this case, we should retry fetching the user
-      if (orgError.code === '23505' || orgError.message?.includes('duplicate') || orgError.message?.includes('unique')) {
+      if (
+        orgError.code === '23505' ||
+        orgError.message?.includes('duplicate') ||
+        orgError.message?.includes('unique')
+      ) {
         // Race condition: another request created the org, retry fetching user
         const { data: retryUser, error: retryError } = await supabaseAdmin
           .from('users')
           .select('id, org_id, supabase_user_id, email')
           .eq('supabase_user_id', authUserId)
           .maybeSingle();
-        
+
         if (retryUser && !retryError) {
           return retryUser;
         }
@@ -111,7 +172,7 @@ export async function ensureUserRow(
       .select('id, org_id, supabase_user_id, email')
       .eq('supabase_user_id', authUserId)
       .maybeSingle();
-    
+
     if (retryUser && !retryError) {
       return retryUser;
     }
@@ -131,14 +192,18 @@ export async function ensureUserRow(
 
   if (userError) {
     // Check if it's a unique constraint violation (race condition - another request created user)
-    if (userError.code === '23505' || userError.message?.includes('duplicate') || userError.message?.includes('unique')) {
+    if (
+      userError.code === '23505' ||
+      userError.message?.includes('duplicate') ||
+      userError.message?.includes('unique')
+    ) {
       // Race condition: another request created the user, fetch it
       const { data: existingUser, error: fetchError } = await supabaseAdmin
         .from('users')
         .select('id, org_id, supabase_user_id, email')
         .eq('supabase_user_id', authUserId)
         .maybeSingle();
-      
+
       if (existingUser && !fetchError) {
         return existingUser;
       }
@@ -160,8 +225,13 @@ export async function ensureUserRow(
  */
 export async function ensureOrgForUser(
   authUserId: string,
-  email?: string
+  email?: string,
 ): Promise<{ id: string; name: string }> {
+  // Dev Bypass
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    return { id: 'dev-org-id', name: 'Dev Organization' };
+  }
+
   // Get user first
   const { data: user, error: userError } = await supabaseAdmin
     .from('users')
@@ -181,7 +251,9 @@ export async function ensureOrgForUser(
       .maybeSingle();
 
     if (orgError || !org) {
-      throw new Error(`Organization not found after user creation: ${orgError?.message || 'Unknown error'}`);
+      throw new Error(
+        `Organization not found after user creation: ${orgError?.message || 'Unknown error'}`,
+      );
     }
 
     return org;
@@ -207,8 +279,18 @@ export async function ensureOrgForUser(
  */
 export async function ensureDefaultLocation(
   orgId: string,
-  locationName?: string
+  locationName?: string,
 ): Promise<{ id: string; name: string; timezone: string; business_type: string | null }> {
+  // Dev Bypass
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    return {
+      id: 'dev-location-id',
+      name: locationName || 'Hauptstandort',
+      timezone: 'Europe/Zurich',
+      business_type: null,
+    };
+  }
+
   // Check if default location exists
   const { data: existingLocation, error: findError } = await supabaseAdmin
     .from('locations')
@@ -225,7 +307,10 @@ export async function ensureDefaultLocation(
       await vectorStore.ensureCollection(existingLocation.id);
     } catch (error) {
       // Log warning but don't fail if Qdrant is unavailable
-      console.warn(`[SupabaseDb] Failed to ensure Qdrant collection for existing locationId=${existingLocation.id}:`, error);
+      console.warn(
+        `[SupabaseDb] Failed to ensure Qdrant collection for existing locationId=${existingLocation.id}:`,
+        error,
+      );
     }
     return existingLocation;
   }
@@ -253,7 +338,10 @@ export async function ensureDefaultLocation(
     console.log(`[SupabaseDb] Ensured Qdrant collection for locationId=${newLocation.id}`);
   } catch (error) {
     // Log warning but don't fail location creation if Qdrant is unavailable
-    console.warn(`[SupabaseDb] Failed to ensure Qdrant collection for locationId=${newLocation.id}:`, error);
+    console.warn(
+      `[SupabaseDb] Failed to ensure Qdrant collection for locationId=${newLocation.id}:`,
+      error,
+    );
   }
 
   return newLocation;
@@ -263,9 +351,7 @@ export async function ensureDefaultLocation(
  * Ensure agent config exists for location
  * Idempotent: returns existing config if found, creates new if not
  */
-export async function ensureAgentConfig(
-  locationId: string
-): Promise<{
+export async function ensureAgentConfig(locationId: string): Promise<{
   id: string;
   location_id: string;
   eleven_agent_id: string | null;
@@ -280,6 +366,26 @@ export async function ensureAgentConfig(
   booking_required_fields_json: any;
   booking_default_duration_min: number;
 }> {
+  // Dev Bypass
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    return {
+      id: 'dev-config-id',
+      location_id: locationId,
+      eleven_agent_id:
+        process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj',
+      setup_state: 'ready',
+      persona_gender: 'female',
+      persona_age_range: '25-35',
+      goals_json: ['Termine vereinbaren'],
+      services_json: [],
+      business_type: 'general',
+      greeting_template: 'Gruezi! Dies ist ein Dev-Agent.',
+      company_name: 'Dev Company',
+      booking_required_fields_json: ['name', 'phone'],
+      booking_default_duration_min: 30,
+    };
+  }
+
   // Check if agent config exists (use maybeSingle to avoid error if not found)
   const { data: existingConfig, error: findError } = await supabaseAdmin
     .from('agent_configs')
@@ -291,14 +397,15 @@ export async function ensureAgentConfig(
   if (existingConfig && !findError) {
     // Auto-update if eleven_agent_id is missing
     if (!existingConfig.eleven_agent_id) {
-      const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+      const defaultElevenAgentId =
+        process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
       const { data: updatedConfig, error: updateError } = await supabaseAdmin
         .from('agent_configs')
         .update({ eleven_agent_id: defaultElevenAgentId })
         .eq('id', existingConfig.id)
         .select('*')
         .single();
-      
+
       if (!updateError && updatedConfig) {
         console.log(`[ensureAgentConfig] Auto-set default Agent ID for locationId=${locationId}`);
         return updatedConfig;
@@ -314,7 +421,8 @@ export async function ensureAgentConfig(
 
   // Agent config doesn't exist - create it
   // Default Agent ID for immediate testing: agent_1601kcmqt4efe41bzwykaytm2yrj
-  const defaultElevenAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+  const defaultElevenAgentId =
+    process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
 
   // Get location name for default company_name
   const { data: locationData } = await supabaseAdmin
@@ -322,7 +430,7 @@ export async function ensureAgentConfig(
     .select('name')
     .eq('id', locationId)
     .maybeSingle();
-  
+
   const defaultCompanyName = locationData?.name || 'Unser Unternehmen';
 
   const { data: newConfig, error: createError } = await supabaseAdmin
@@ -346,14 +454,18 @@ export async function ensureAgentConfig(
 
   if (createError) {
     // Check if it's a unique constraint violation (race condition)
-    if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
+    if (
+      createError.code === '23505' ||
+      createError.message?.includes('duplicate') ||
+      createError.message?.includes('unique')
+    ) {
       // Race condition: another request created the config, fetch it
       const { data: existingConfigAfterRace, error: fetchError } = await supabaseAdmin
         .from('agent_configs')
         .select('*')
         .eq('location_id', locationId)
         .maybeSingle();
-      
+
       if (existingConfigAfterRace && !fetchError) {
         return existingConfigAfterRace;
       }
@@ -367,4 +479,3 @@ export async function ensureAgentConfig(
 
   return newConfig;
 }
-
