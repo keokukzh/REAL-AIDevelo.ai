@@ -131,6 +131,7 @@ import webdesignRoutes from './routes/webdesignRoutes';
 import webdesignRequestRoutes from './routes/webdesignRequestRoutes';
 import testAgentsRoutes from './routes/testAgentsRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import retellRoutes from './routes/retellRoutes';
 import devCalendarRoutes from './routes/devCalendarRoutes';
 import devRagRoutes from './routes/devRagRoutes';
 import devElevenLabsRoutes from './routes/devElevenLabsRoutes';
@@ -499,6 +500,7 @@ v1Router.use('/webdesign', webdesignRoutes);
 v1Router.use('/webdesign-requests', webdesignRequestRoutes);
 v1Router.use('/test-agents', testAgentsRoutes);
 v1Router.use('/calendar', calendarRoutes);
+v1Router.use('/retell', retellRoutes); // Retell integration scaffold
 v1Router.use('/rag', ragRoutes); // Auth applied per-route
 v1Router.use('/analytics', analyticsRoutes); // Auth applied per-route
 v1Router.use('/analytics/exports', analyticsExportRoutes); // Auth applied per-route

@@ -16,19 +16,19 @@ import { toast } from '../components/ui/Toast';
 import { extractErrorMessage } from '../lib/errorUtils';
 import { supabase } from '../lib/supabase';
 import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
-import { 
-  Settings, 
-  Mail, 
-  Lock, 
-  Building, 
-  MapPin, 
-  Clock, 
-  Phone, 
-  Calendar, 
+import {
+  Settings,
+  Mail,
+  Lock,
+  Building,
+  MapPin,
+  Clock,
+  Phone,
+  Calendar,
   XCircle,
   Info,
   Bot,
-  Save
+  Save,
 } from 'lucide-react';
 import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 
@@ -43,7 +43,7 @@ export const SettingsPage = () => {
   const updateAgentConfig = useUpdateAgentConfig();
   const [elevenAgentId, setElevenAgentId] = useState<string>('');
   const [isSavingAgentId, setIsSavingAgentId] = useState(false);
-  
+
   // New fields for agent configuration
   const [companyName, setCompanyName] = useState<string>('');
   const [greetingTemplate, setGreetingTemplate] = useState<string>('');
@@ -51,7 +51,7 @@ export const SettingsPage = () => {
   const [bookingRequiredFields, setBookingRequiredFields] = useState<string[]>([]);
   const [bookingDurationMin, setBookingDurationMin] = useState<number>(30);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
-  
+
   // Available booking field options
   const availableBookingFields = [
     { id: 'name', label: 'Name' },
@@ -62,7 +62,7 @@ export const SettingsPage = () => {
     { id: 'timezone', label: 'Zeitzone' },
     { id: 'notes', label: 'Notizen/Details' },
   ];
-  
+
   // Get breadcrumbs for this page
   const breadcrumbs = nav.getBreadcrumbs(location.pathname);
 
@@ -83,7 +83,7 @@ export const SettingsPage = () => {
       setBookingRequiredFields(
         Array.isArray((overview.agent_config as any).booking_required_fields_json)
           ? (overview.agent_config as any).booking_required_fields_json
-          : ['name', 'phone', 'service', 'preferredTime', 'timezone']
+          : ['name', 'phone', 'service', 'preferredTime', 'timezone'],
       );
       setBookingDurationMin((overview.agent_config as any).booking_default_duration_min || 30);
     }
@@ -100,12 +100,13 @@ export const SettingsPage = () => {
         'https://real-aidevelo-ai.onrender.com',
         globalThis.location.origin,
       ];
-      
-      const isAllowedOrigin = allowedOrigins.some(allowed => 
-        event.origin === allowed || 
-        event.origin.includes(allowed.replace('https://', '').replace('http://', ''))
+
+      const isAllowedOrigin = allowedOrigins.some(
+        (allowed) =>
+          event.origin === allowed ||
+          event.origin.includes(allowed.replace('https://', '').replace('http://', '')),
       );
-      
+
       if (!isAllowedOrigin) {
         console.warn('[SettingsPage] Rejected postMessage from origin:', event.origin);
         return;
@@ -117,9 +118,10 @@ export const SettingsPage = () => {
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
         refetch();
       } else if (event.data?.type === 'calendar-oauth-error') {
-        const errorMsg = typeof event.data.message === 'string' 
-          ? event.data.message 
-          : 'Fehler beim Verbinden des Kalenders';
+        const errorMsg =
+          typeof event.data.message === 'string'
+            ? event.data.message
+            : 'Fehler beim Verbinden des Kalenders';
         toast.error(errorMsg);
       }
     };
@@ -132,13 +134,17 @@ export const SettingsPage = () => {
   const handleConnectCalendar = async () => {
     try {
       const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
-        '/calendar/google/auth'
+        '/calendar/google/auth',
       );
       if (response.data?.success && response.data.data?.authUrl) {
-        const isMockUrl = response.data.data.authUrl.includes('/calendar/') && response.data.data.authUrl.includes('code=mock_code');
-        
+        const isMockUrl =
+          response.data.data.authUrl.includes('/calendar/') &&
+          response.data.data.authUrl.includes('code=mock_code');
+
         if (isMockUrl) {
-          toast.warning('OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.');
+          toast.warning(
+            'OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.',
+          );
           return;
         }
 
@@ -149,9 +155,9 @@ export const SettingsPage = () => {
         const authWindow = globalThis.open(
           response.data.data.authUrl,
           'Calendar OAuth',
-          `width=${width},height=${height},left=${left},top=${top}`
+          `width=${width},height=${height},left=${left},top=${top}`,
         );
-        
+
         if (!authWindow) {
           toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
           return;
@@ -166,12 +172,13 @@ export const SettingsPage = () => {
             'https://www.aidevelo.ai',
             globalThis.location.origin,
           ];
-          
-          const isAllowed = allowedOrigins.some(origin => 
-            event.origin === origin || 
-            event.origin.includes(origin.replace('https://', '').replace('http://', ''))
+
+          const isAllowed = allowedOrigins.some(
+            (origin) =>
+              event.origin === origin ||
+              event.origin.includes(origin.replace('https://', '').replace('http://', '')),
           );
-          
+
           if (!isAllowed) {
             return;
           }
@@ -188,9 +195,10 @@ export const SettingsPage = () => {
               pollInterval = null;
             }
           } else if (event.data?.type === 'calendar-oauth-error') {
-            const errorMsg = typeof event.data.message === 'string' 
-              ? event.data.message 
-              : 'Fehler beim Verbinden des Kalenders';
+            const errorMsg =
+              typeof event.data.message === 'string'
+                ? event.data.message
+                : 'Fehler beim Verbinden des Kalenders';
             toast.error(errorMsg);
             authWindow?.close();
             window.removeEventListener('message', messageListener);
@@ -207,14 +215,14 @@ export const SettingsPage = () => {
         const maxPolls = 30;
         pollInterval = setInterval(() => {
           pollCount++;
-          
+
           if (authWindow?.closed) {
             if (pollInterval) {
               clearInterval(pollInterval);
               pollInterval = null;
             }
             window.removeEventListener('message', messageListener);
-            
+
             if (pollCount < maxPolls) {
               setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
@@ -227,7 +235,7 @@ export const SettingsPage = () => {
             }
             return;
           }
-          
+
           if (pollCount >= maxPolls) {
             if (pollInterval) {
               clearInterval(pollInterval);
@@ -294,21 +302,24 @@ export const SettingsPage = () => {
 
   // Test ElevenLabs Agent ID
   const [isTestingAgent, setIsTestingAgent] = useState(false);
-  const [agentTestResult, setAgentTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  
+  const [agentTestResult, setAgentTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
   const handleTestAgentId = async () => {
     if (!elevenAgentId.trim()) {
       toast.warning('Bitte gib eine Agent ID ein');
       return;
     }
-    
+
     setIsTestingAgent(true);
     setAgentTestResult(null);
-    
+
     try {
       const { testElevenLabsAgent } = await import('../services/elevenLabsAgentService');
       const result = await testElevenLabsAgent(elevenAgentId.trim(), overview?.location?.id);
-      
+
       if (result.success && result.agentExists) {
         setAgentTestResult({
           success: true,
@@ -333,7 +344,7 @@ export const SettingsPage = () => {
       setIsTestingAgent(false);
     }
   };
-  
+
   // Handle saving all agent config fields
   const handleSaveAgentConfig = async () => {
     if (!overview?.agent_config) {
@@ -351,7 +362,7 @@ export const SettingsPage = () => {
         booking_required_fields_json: bookingRequiredFields,
         booking_default_duration_min: bookingDurationMin,
       });
-      
+
       toast.success('Agent-Konfiguration gespeichert');
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
@@ -367,24 +378,24 @@ export const SettingsPage = () => {
   const handleSaveAgentId = async () => {
     await handleSaveAgentConfig();
   };
-  
+
   // Toggle booking required field
   const toggleBookingField = (fieldId: string) => {
-    setBookingRequiredFields(prev => {
+    setBookingRequiredFields((prev) => {
       if (prev.includes(fieldId)) {
-        return prev.filter(id => id !== fieldId);
+        return prev.filter((id) => id !== fieldId);
       } else {
         return [...prev, fieldId];
       }
     });
   };
-  
+
   // Move field up/down in order
   const moveBookingField = (fieldId: string, direction: 'up' | 'down') => {
-    setBookingRequiredFields(prev => {
+    setBookingRequiredFields((prev) => {
       const index = prev.indexOf(fieldId);
       if (index === -1) return prev;
-      
+
       const newFields = [...prev];
       if (direction === 'up' && index > 0) {
         [newFields[index - 1], newFields[index]] = [newFields[index], newFields[index - 1]];
@@ -430,9 +441,7 @@ export const SettingsPage = () => {
                 <p className="text-gray-400 mb-4">
                   {error instanceof Error ? error.message : 'Unbekannter Fehler'}
                 </p>
-                <Button onClick={() => globalThis.location.reload()}>
-                  Seite neu laden
-                </Button>
+                <Button onClick={() => globalThis.location.reload()}>Seite neu laden</Button>
               </div>
             </div>
           </div>
@@ -445,11 +454,14 @@ export const SettingsPage = () => {
   const calendarConnected = overview.status.calendar === 'connected';
   const phoneConnected = overview.status.phone === 'connected';
 
-  const phoneHealth: 'ok' | 'error' | 'warning' = 
-    overview.status.phone === 'connected' ? 'ok' : 
-    overview.status.phone === 'needs_compliance' ? 'warning' : 'error';
-  
-  const calendarHealth: 'ok' | 'error' | 'warning' = 
+  const phoneHealth: 'ok' | 'error' | 'warning' =
+    overview.status.phone === 'connected'
+      ? 'ok'
+      : overview.status.phone === 'needs_compliance'
+        ? 'warning'
+        : 'error';
+
+  const calendarHealth: 'ok' | 'error' | 'warning' =
     overview.status.calendar === 'connected' ? 'ok' : 'error';
 
   return (
@@ -457,7 +469,10 @@ export const SettingsPage = () => {
       <SideNav />
 
       <main className="flex-1 ml-64 flex flex-col min-w-0" role="main">
-        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
+        <header
+          className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg"
+          role="banner"
+        >
           <nav aria-label="Breadcrumb">
             <ol className="flex items-center gap-3 text-gray-400">
               <li>
@@ -466,8 +481,12 @@ export const SettingsPage = () => {
             </ol>
           </nav>
           {lastRefresh && (
-            <output className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
-              Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+            <output
+              className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-800"
+              aria-live="polite"
+            >
+              Letzte Aktualisierung:{' '}
+              {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
             </output>
           )}
         </header>
@@ -487,20 +506,20 @@ export const SettingsPage = () => {
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">E-Mail-Adresse</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                      E-Mail-Adresse
+                    </label>
                     <p className="text-white font-medium">{userEmail}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
                   <Lock className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Passwort</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                      Passwort
+                    </label>
                     <p className="text-gray-400 text-sm mb-2">Passwort zurücksetzen</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handlePasswordReset}
-                    >
+                    <Button variant="outline" size="sm" onClick={handlePasswordReset}>
                       Passwort-Reset-E-Mail senden
                     </Button>
                   </div>
@@ -514,7 +533,9 @@ export const SettingsPage = () => {
                 <div className="flex items-center gap-3">
                   <Building className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Organisationsname</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                      Organisationsname
+                    </label>
                     <p className="text-white font-medium">{overview.organization.name}</p>
                     <p className="text-gray-400 text-xs mt-1">Read-only</p>
                   </div>
@@ -528,14 +549,18 @@ export const SettingsPage = () => {
                 <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Standortname</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                      Standortname
+                    </label>
                     <p className="text-white font-medium">{overview.location.name}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
                   <Clock className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Zeitzone</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                      Zeitzone
+                    </label>
                     <p className="text-white font-medium">{overview.location.timezone}</p>
                   </div>
                 </div>
@@ -553,8 +578,8 @@ export const SettingsPage = () => {
                       ElevenLabs Agent ID
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
-                      Die Agent ID von ElevenLabs, die für Voice Calls verwendet wird. 
-                      Du findest diese in deinem ElevenLabs Dashboard.
+                      Die Agent ID von ElevenLabs, die für Voice Calls verwendet wird. Du findest
+                      diese in deinem ElevenLabs Dashboard.
                     </p>
                     <div className="flex gap-2">
                       <input
@@ -571,7 +596,9 @@ export const SettingsPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={handleTestAgentId}
-                        disabled={isTestingAgent || !elevenAgentId.trim() || !overview?.agent_config}
+                        disabled={
+                          isTestingAgent || !elevenAgentId.trim() || !overview?.agent_config
+                        }
                         title="Test Agent ID (nur in Development verfügbar)"
                       >
                         {isTestingAgent ? (
@@ -606,20 +633,20 @@ export const SettingsPage = () => {
                       </Button>
                     </div>
                     {agentTestResult && (
-                      <div className={`mt-2 p-3 rounded-lg border ${
-                        agentTestResult.success 
-                          ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                          : 'bg-red-500/10 border-red-500/30 text-red-400'
-                      }`}>
+                      <div
+                        className={`mt-2 p-3 rounded-lg border ${
+                          agentTestResult.success
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                            : 'bg-red-500/10 border-red-500/30 text-red-400'
+                        }`}
+                      >
                         <p className="text-sm">
                           {agentTestResult.success ? '✓' : '✗'} {agentTestResult.message}
                         </p>
                       </div>
                     )}
                     {overview?.agent_config?.eleven_agent_id && (
-                      <p className="text-green-400 text-xs mt-2">
-                        ✓ Agent ID ist konfiguriert
-                      </p>
+                      <p className="text-green-400 text-xs mt-2">✓ Agent ID ist konfiguriert</p>
                     )}
                     {!overview?.agent_config?.eleven_agent_id && (
                       <p className="text-yellow-400 text-xs mt-2">
@@ -657,7 +684,9 @@ export const SettingsPage = () => {
                       Begrüßungstext
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
-                      Der Text, mit dem der Agent Anrufer begrüßt. Verwende <code className="text-blue-400">{'{{company_name}}'}</code> als Platzhalter für den Firmennamen.
+                      Der Text, mit dem der Agent Anrufer begrüßt. Verwende{' '}
+                      <code className="text-blue-400">{'{{company_name}}'}</code> als Platzhalter
+                      für den Firmennamen.
                     </p>
                     <textarea
                       value={greetingTemplate}
@@ -677,8 +706,8 @@ export const SettingsPage = () => {
                       Test-Telefonnummer
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
-                      Deine Telefonnummer für Testanrufe (E.164 Format, z.B. +41791234567). 
-                      Diese wird beim "Agent testen" verwendet.
+                      Deine Telefonnummer für Testanrufe (E.164 Format, z.B. +41791234567). Diese
+                      wird beim "Agent testen" verwendet.
                     </p>
                     <input
                       type="tel"
@@ -754,7 +783,10 @@ export const SettingsPage = () => {
                     </div>
                     {bookingRequiredFields.length > 0 && (
                       <p className="text-xs text-gray-500 mt-2">
-                        Reihenfolge: {bookingRequiredFields.map(id => availableBookingFields.find(f => f.id === id)?.label).join(' → ')}
+                        Reihenfolge:{' '}
+                        {bookingRequiredFields
+                          .map((id) => availableBookingFields.find((f) => f.id === id)?.label)
+                          .join(' → ')}
                       </p>
                     )}
                   </div>
@@ -817,23 +849,29 @@ export const SettingsPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-white font-medium">Twilio Telefon</h3>
-                        <StatusBadge status={phoneHealth === 'ok' ? 'completed' : phoneHealth === 'warning' ? 'pending' : 'failed'} />
+                        <StatusBadge
+                          status={
+                            phoneHealth === 'ok'
+                              ? 'completed'
+                              : phoneHealth === 'warning'
+                                ? 'pending'
+                                : 'failed'
+                          }
+                        />
                       </div>
                       <p className="text-gray-400 text-sm mb-2">
-                        {phoneConnected 
-                          ? overview.phone_number 
-                            ? `Verbunden: ${overview.phone_number}` 
+                        {phoneConnected
+                          ? overview.phone_number
+                            ? `Verbunden: ${overview.phone_number}`
                             : 'Verbunden'
                           : 'Nicht verbunden'}
                       </p>
                       {phoneConnected ? (
-                        <p className="text-gray-500 text-xs">Telefonnummer kann nicht getrennt werden</p>
+                        <p className="text-gray-500 text-xs">
+                          Telefonnummer kann nicht getrennt werden
+                        </p>
                       ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={handleConnectPhone}
-                        >
+                        <Button variant="outline" size="sm" onClick={handleConnectPhone}>
                           Telefon verbinden
                         </Button>
                       )}
@@ -848,7 +886,7 @@ export const SettingsPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-white font-medium">
-                          {overview.calendar_provider 
+                          {overview.calendar_provider
                             ? `${overview.calendar_provider.charAt(0).toUpperCase() + overview.calendar_provider.slice(1)} Calendar`
                             : 'Google Calendar'}
                         </h3>
@@ -858,11 +896,14 @@ export const SettingsPage = () => {
                         <>
                           {overview.calendar_connected_email && (
                             <p className="text-gray-400 text-sm mb-2">
-                              Verbunden mit: <span className="font-medium text-white">{overview.calendar_connected_email}</span>
+                              Verbunden mit:{' '}
+                              <span className="font-medium text-white">
+                                {overview.calendar_connected_email}
+                              </span>
                             </p>
                           )}
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={handleDisconnectCalendar}
                             className="text-red-400 border-red-500/30 hover:bg-red-500/10"
@@ -874,11 +915,7 @@ export const SettingsPage = () => {
                       ) : (
                         <>
                           <p className="text-gray-400 text-sm mb-2">Nicht verbunden</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={handleConnectCalendar}
-                          >
+                          <Button variant="outline" size="sm" onClick={handleConnectCalendar}>
                             Kalender verbinden
                           </Button>
                         </>
@@ -900,7 +937,8 @@ export const SettingsPage = () => {
                         Affiliate-Link
                       </label>
                       <p className="text-gray-400 text-sm mb-3">
-                        Teile diesen Link mit Kunden, um ElevenLabs-Accounts zu empfehlen. Du erhältst 22% Provision für 12 Monate.
+                        Teile diesen Link mit Kunden, um ElevenLabs-Accounts zu empfehlen. Du
+                        erhältst 22% Provision für 12 Monate.
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -942,8 +980,12 @@ export const SettingsPage = () => {
                   <div className="flex items-center gap-3">
                     <Info className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
-                      <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Backend Version</label>
-                      <p className="text-white font-mono text-sm">{overview._backendSha.substring(0, 7)}</p>
+                      <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                        Backend Version
+                      </label>
+                      <p className="text-white font-mono text-sm">
+                        {overview._backendSha.substring(0, 7)}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -951,14 +993,16 @@ export const SettingsPage = () => {
                   <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
                     <Clock className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
-                      <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Letzte Aktualisierung</label>
+                      <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">
+                        Letzte Aktualisierung
+                      </label>
                       <p className="text-white font-medium">
-                        {lastRefresh.toLocaleString('de-CH', { 
-                          day: '2-digit', 
-                          month: '2-digit', 
+                        {lastRefresh.toLocaleString('de-CH', {
+                          day: '2-digit',
+                          month: '2-digit',
                           year: 'numeric',
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
