@@ -8,6 +8,7 @@ import './index.css';
 import './styles/design-tokens.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
+import './retell/loadRetellWidget';
 
 // #region agent log
 // Runtime CSP + CORB diagnostics (no secrets)
@@ -64,7 +65,7 @@ if (globalThis.window) {
         }),
       }).catch(() => {});
     },
-    true
+    true,
   );
 
   w.addEventListener('unhandledrejection', (e) => {
@@ -82,7 +83,10 @@ if (globalThis.window) {
         data: {
           name: reason?.name,
           message: reason?.message,
-          stackHead: typeof reason?.stack === 'string' ? reason.stack.split('\n').slice(0, 4).join('\n') : undefined,
+          stackHead:
+            typeof reason?.stack === 'string'
+              ? reason.stack.split('\n').slice(0, 4).join('\n')
+              : undefined,
         },
         timestamp: Date.now(),
       }),
@@ -102,7 +106,7 @@ const originalWarn = console.warn;
 
 console.error = (...args: any[]) => {
   const message = args[0]?.toString() || '';
-  
+
   // Suppress Web3/wallet-related warnings
   if (
     message.includes('Segmented') ||
@@ -114,7 +118,7 @@ console.error = (...args: any[]) => {
   ) {
     return;
   }
-  
+
   // Suppress browser extension warnings (lockdown, SES, intrinsics)
   if (
     message.includes('lockdown-install.js') ||
@@ -125,21 +129,18 @@ console.error = (...args: any[]) => {
   ) {
     return;
   }
-  
+
   originalError.apply(console, args);
 };
 
 console.warn = (...args: any[]) => {
   const message = args[0]?.toString() || '';
-  
+
   // Suppress non-critical warnings
-  if (
-    message.includes('Segmented') ||
-    message.includes('wallet')
-  ) {
+  if (message.includes('Segmented') || message.includes('wallet')) {
     return;
   }
-  
+
   // Suppress browser extension warnings (lockdown, SES, intrinsics)
   if (
     message.includes('lockdown-install.js') ||
@@ -150,13 +151,13 @@ console.warn = (...args: any[]) => {
   ) {
     return;
   }
-  
+
   originalWarn.apply(console, args);
 };
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error('Could not find root element to mount to');
 }
 
 const root = ReactDOM.createRoot(rootElement);
@@ -167,5 +168,5 @@ root.render(
         <App />
       </ThemeProvider>
     </HelmetProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

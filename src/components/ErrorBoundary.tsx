@@ -47,8 +47,8 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <h2 className="text-2xl font-bold mb-4">Etwas ist schiefgelaufen</h2>
             <p className="text-gray-400 mb-6">
-              Es tut uns leid, aber es ist ein unerwarteter Fehler aufgetreten. 
-              Bitte versuchen Sie es erneut oder kontaktieren Sie uns, wenn das Problem weiterhin besteht.
+              Es tut uns leid, aber es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie
+              es erneut oder kontaktieren Sie uns, wenn das Problem weiterhin besteht.
             </p>
             {this.state.error && (
               <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-left">
@@ -65,10 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <RefreshCw size={16} className="mr-2" />
                 Zur Startseite
               </Button>
-              <Button 
-                onClick={() => globalThis.location.reload()} 
-                variant="outline"
-              >
+              <Button onClick={() => globalThis.location.reload()} variant="outline">
                 Seite neu laden
               </Button>
             </div>
