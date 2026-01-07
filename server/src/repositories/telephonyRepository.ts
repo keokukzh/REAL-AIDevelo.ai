@@ -1,7 +1,7 @@
 import { PoolClient } from 'pg';
 import { PhoneNumber, Telephony } from '../models/types';
 import { BadRequestError, NotFoundError } from '../utils/errors';
-import { getPool, query, transaction } from '../services/database';
+import { getPgPool as getPool, query, transaction } from '../db/pg';
 
 interface PhoneNumberRow {
   id: string;
@@ -47,13 +47,15 @@ export const telephonyRepository = {
        FROM phone_numbers
        WHERE status = 'available' AND UPPER(country) = UPPER($1)
        ORDER BY created_at ASC`,
-      [country]
+      [country],
     );
     return rows.map(mapRow);
   },
 
-  async assignNumber(agentId: string, phoneNumberId: string): Promise<{ phoneNumber: PhoneNumber; telephony: Telephony }>
-  {
+  async assignNumber(
+    agentId: string,
+    phoneNumberId: string,
+  ): Promise<{ phoneNumber: PhoneNumber; telephony: Telephony }> {
     return transaction(async (client) => {
       await ensureAgentExists(client, agentId);
 
@@ -62,7 +64,7 @@ export const telephonyRepository = {
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,
-        [phoneNumberId]
+        [phoneNumberId],
       );
 
       if (phoneRes.rowCount === 0) {
@@ -87,28 +89,34 @@ export const telephonyRepository = {
         `UPDATE phone_numbers
          SET status = 'assigned', assigned_agent_id = $1, updated_at = now()
          WHERE id = $2`,
-        [agentId, phoneNumberId]
+        [agentId, phoneNumberId],
       );
 
       await client.query(
         `UPDATE agents
          SET telephony = $1, updated_at = now()
          WHERE id = $2`,
-        [telephony, agentId]
+        [telephony, agentId],
       );
 
-      return { phoneNumber: mapRow({ ...phone, status: 'assigned', assigned_agent_id: agentId }), telephony };
+      return {
+        phoneNumber: mapRow({ ...phone, status: 'assigned', assigned_agent_id: agentId }),
+        telephony,
+      };
     });
   },
 
-  async updateNumberSettings(phoneNumberId: string, settings: Record<string, unknown>): Promise<PhoneNumber> {
+  async updateNumberSettings(
+    phoneNumberId: string,
+    settings: Record<string, unknown>,
+  ): Promise<PhoneNumber> {
     const rows = await query<PhoneNumberRow>(
       `UPDATE phone_numbers
        SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('settings', $2::jsonb),
            updated_at = now()
        WHERE id = $1
        RETURNING id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata`,
-      [phoneNumberId, JSON.stringify(settings)]
+      [phoneNumberId, JSON.stringify(settings)],
     );
 
     if (!rows.length) {
@@ -123,7 +131,7 @@ export const telephonyRepository = {
       `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
        FROM phone_numbers
        WHERE id = $1`,
-      [phoneNumberId]
+      [phoneNumberId],
     );
 
     if (!rows.length) {
@@ -133,7 +141,11 @@ export const telephonyRepository = {
     return mapRow(rows[0]);
   },
 
-  async setNumberStatus(agentId: string, phoneNumberId: string, status: 'active' | 'inactive'): Promise<PhoneNumber> {
+  async setNumberStatus(
+    agentId: string,
+    phoneNumberId: string,
+    status: 'active' | 'inactive',
+  ): Promise<PhoneNumber> {
     return transaction(async (client) => {
       await ensureAgentExists(client, agentId);
 
@@ -142,7 +154,7 @@ export const telephonyRepository = {
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,
-        [phoneNumberId]
+        [phoneNumberId],
       );
 
       if (phoneRes.rowCount === 0) {
@@ -158,7 +170,7 @@ export const telephonyRepository = {
         `UPDATE phone_numbers
          SET status = $1, updated_at = now()
          WHERE id = $2`,
-        [status, phoneNumberId]
+        [status, phoneNumberId],
       );
 
       // Patch telephony blob on agent
@@ -167,7 +179,7 @@ export const telephonyRepository = {
          SET telephony = jsonb_set(COALESCE(telephony, '{}'::jsonb), '{status}', to_jsonb($1::text)),
              updated_at = now()
          WHERE id = $2`,
-        [status, agentId]
+        [status, agentId],
       );
 
       return mapRow({ ...phone, status });

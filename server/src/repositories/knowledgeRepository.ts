@@ -1,5 +1,5 @@
 import { KnowledgeDocument, KnowledgeSourceType, KnowledgeStatus } from '../models/types';
-import { getPool, query } from '../services/database';
+import { getPgPool as getPool, query } from '../db/pg';
 
 interface KnowledgeRow {
   id: string;
@@ -50,7 +50,7 @@ export const knowledgeRepository = {
        FROM rag_documents
        ${agentId ? 'WHERE agent_id = $1' : ''}
        ORDER BY created_at DESC`,
-      agentId ? [agentId] : []
+      agentId ? [agentId] : [],
     );
 
     return rows.map(mapRow);
@@ -64,7 +64,7 @@ export const knowledgeRepository = {
        FROM rag_documents
        WHERE id = $1
        LIMIT 1`,
-      [id]
+      [id],
     );
 
     return rows[0] ? mapRow(rows[0]) : null;
@@ -96,7 +96,7 @@ export const knowledgeRepository = {
         params.fileSize || null,
         params.fileType || null,
         params.fileName || null,
-      ]
+      ],
     );
 
     return mapRow(rows[0]);
@@ -118,7 +118,7 @@ export const knowledgeRepository = {
            updated_at = now()
        WHERE id = $1
        RETURNING id, agent_id, source_type, title, url, locale, tags, status, chunk_count, error, original_file_name, file_type, created_at, updated_at`,
-      [params.id, params.status, params.chunkCount ?? null, params.error ?? null]
+      [params.id, params.status, params.chunkCount ?? null, params.error ?? null],
     );
 
     return rows[0] ? mapRow(rows[0]) : null;

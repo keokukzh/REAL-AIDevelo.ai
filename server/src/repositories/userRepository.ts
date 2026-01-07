@@ -1,5 +1,5 @@
 import { User } from '../models/types';
-import { getPool, query } from '../services/database';
+import { getPgPool as getPool, query } from '../db/pg';
 
 interface UserRow {
   id: string;
@@ -30,7 +30,7 @@ export const userRepository = {
        FROM users
        WHERE LOWER(email) = LOWER($1)
        LIMIT 1`,
-      [email]
+      [email],
     );
 
     return rows[0] ? mapRow(rows[0]) : null;
@@ -44,7 +44,7 @@ export const userRepository = {
        FROM users
        WHERE id = $1
        LIMIT 1`,
-      [id]
+      [id],
     );
 
     return rows[0] ? mapRow(rows[0]) : null;
@@ -57,7 +57,7 @@ export const userRepository = {
        ON CONFLICT (email) DO UPDATE SET
          name = EXCLUDED.name
        RETURNING id, name, email, created_at`,
-      [input.id || null, input.name, input.email || null]
+      [input.id || null, input.name, input.email || null],
     );
 
     return mapRow(rows[0]);

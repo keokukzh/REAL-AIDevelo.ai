@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getPool } from '../services/database';
+import { getPgPool as getPool } from '../db/pg';
 import { AppError } from '../utils/errors';
 import { AuditLoggingService, CallLoggingService } from '../services/loggingService';
 
@@ -82,7 +82,7 @@ router.post('/export-data', async (req: Request, res: Response) => {
       'user_data',
       userId,
       { email, exportDate: new Date().toISOString() },
-      req.ip
+      req.ip,
     );
 
     // Return JSON export
@@ -104,7 +104,7 @@ router.post('/export-data', async (req: Request, res: Response) => {
 /**
  * POST /api/privacy/delete-data
  * Delete all user data (right to be forgotten - GDPR/nDSG)
- * 
+ *
  * ⚠️ WARNING: This is a destructive operation and cannot be undone!
  * Requires explicit confirmation and will delete:
  * - User account and profile
@@ -167,7 +167,7 @@ router.post('/delete-data', async (req: Request, res: Response) => {
           timestamp: new Date().toISOString(),
           deleted_items: ['user', 'agents', 'calls', 'documents'],
         },
-        req.ip
+        req.ip,
       );
 
       // Delete in order (respecting foreign keys)
@@ -175,14 +175,14 @@ router.post('/delete-data', async (req: Request, res: Response) => {
       await client.query(
         `DELETE FROM rag_documents 
          WHERE agent_id IN (SELECT id FROM agents WHERE user_id = $1)`,
-        [userId]
+        [userId],
       );
 
       // 2. Delete call logs
       await client.query(
         `DELETE FROM call_logs 
          WHERE agent_id IN (SELECT id FROM agents WHERE user_id = $1)`,
-        [userId]
+        [userId],
       );
 
       // 3. Delete agents
@@ -197,7 +197,7 @@ router.post('/delete-data', async (req: Request, res: Response) => {
         `UPDATE audit_logs 
          SET user_id = 'DELETED_USER', details = '{}' 
          WHERE user_id = $1`,
-        [userId]
+        [userId],
       );
 
       await client.query('COMMIT');
