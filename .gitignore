@@ -42,6 +42,9 @@ workflows/.executions/
 vendor/
 
 # Build artifacts and logs
+/db/
+.continue/
+
 build_log.txt
 build_output.txt
 *.tmp
