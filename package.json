@@ -36,7 +36,8 @@
     "lint:changed": "node scripts/lint-changed.mjs",
     "lint:api-prefix": "node scripts/check-api-prefix.mjs",
     "analyze:bundle": "node scripts/analyze-bundle.mjs",
-    "mcp:setup": "node scripts/setup-mcp.cjs"
+    "mcp:setup": "node scripts/setup-mcp.cjs",
+    "postbuild": "node scripts/copy-assets.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
