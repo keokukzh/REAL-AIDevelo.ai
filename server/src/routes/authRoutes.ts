@@ -9,6 +9,9 @@ import { AuthPayload } from '../shared/types/auth';
 import { validateRequest } from '../middleware/validateRequest';
 import { loginSchema, refreshSchema, registerSchema } from '../validators/authValidators';
 import { sendSuccess } from '../utils/apiResponse';
+import { calendarService } from '../services/calendarService';
+import { verifySupabaseAuth, AuthenticatedRequest } from '../middleware/supabaseAuth';
+import { ensureDefaultLocation, ensureOrgForUser, ensureUserRow } from '../services/supabaseDb';
 
 const router = Router();
 
@@ -35,156 +38,252 @@ const router = Router();
  *       201:
  *         description: User created and default agent provisioned when applicable
  */
-router.post('/register', validateRequest(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, name, userId } = req.body || {};
-    const normalizedEmail = typeof email === 'string' ? email.trim() : undefined;
-
-    if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      return next(new BadRequestError('Invalid email format'));
-    }
-
-    const useDatabase = userRepository.isDatabaseEnabled();
-    const existing = normalizedEmail && useDatabase
-      ? await userRepository.findByEmail(normalizedEmail)
-      : normalizedEmail
-        ? db.getUserByEmail(normalizedEmail)
-        : undefined;
-
-    const id = existing?.id || userId || uuidv4();
-
-    const user = existing || (
-      useDatabase
-        ? await userRepository.upsertUser({ id, name: name || 'Neuer Benutzer', email: normalizedEmail })
-        : db.saveUser({
-            id,
-            name: name || 'Neuer Benutzer',
-            email: normalizedEmail,
-            createdAt: new Date(),
-          })
-    );
-
-    // Keep in-memory store in sync for dev/demo flows
-    db.saveUser({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      createdAt: user.createdAt || new Date(),
-    });
-
-    let defaultAgentId: string | undefined;
+router.post(
+  '/register',
+  validateRequest(registerSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!(await defaultAgentService.hasDefaultAgent(user.id))) {
-        const agent = await defaultAgentService.provisionDefaultAgent(user.id, user.email);
-        defaultAgentId = agent.id;
+      const { email, name, userId } = req.body || {};
+      const normalizedEmail = typeof email === 'string' ? email.trim() : undefined;
+
+      if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return next(new BadRequestError('Invalid email format'));
       }
-    } catch (error) {
-      console.warn('[Auth] Default agent provisioning failed (non-blocking):', error);
-    }
 
-    const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: 'user',
-    });
+      const useDatabase = userRepository.isDatabaseEnabled();
+      const existing =
+        normalizedEmail && useDatabase
+          ? await userRepository.findByEmail(normalizedEmail)
+          : normalizedEmail
+            ? db.getUserByEmail(normalizedEmail)
+            : undefined;
 
-    const payload: AuthPayload = {
-      user,
-      tokens,
-    };
+      const id = existing?.id || userId || uuidv4();
 
-    sendSuccess(
-      res,
-      {
-        ...payload,
-        defaultAgentId,
-      },
-      defaultAgentId
-        ? 'User registriert und Standard-Agent angelegt.'
-        : 'User registriert.',
-      existing ? 200 : 201
-    );
-  } catch (error) {
-    next(error);
-  }
-});
+      const user =
+        existing ||
+        (useDatabase
+          ? await userRepository.upsertUser({
+              id,
+              name: name || 'Neuer Benutzer',
+              email: normalizedEmail,
+            })
+          : db.saveUser({
+              id,
+              name: name || 'Neuer Benutzer',
+              email: normalizedEmail,
+              createdAt: new Date(),
+            }));
 
-router.post('/login', validateRequest(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, name, userId } = req.body || {};
-    const normalizedEmail = typeof email === 'string' ? email.trim() : undefined;
+      // Keep in-memory store in sync for dev/demo flows
+      db.saveUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt || new Date(),
+      });
 
-    if (!normalizedEmail) {
-      return next(new BadRequestError('E-Mail ist erforderlich'));
-    }
+      let defaultAgentId: string | undefined;
+      try {
+        if (!(await defaultAgentService.hasDefaultAgent(user.id))) {
+          const agent = await defaultAgentService.provisionDefaultAgent(user.id, user.email);
+          defaultAgentId = agent.id;
+        }
+      } catch (error) {
+        console.warn('[Auth] Default agent provisioning failed (non-blocking):', error);
+      }
 
-    const useDatabase = userRepository.isDatabaseEnabled();
-    const existing = useDatabase
-      ? await userRepository.findByEmail(normalizedEmail)
-      : db.getUserByEmail(normalizedEmail);
+      const tokens = generateTokens({
+        userId: user.id,
+        email: user.email,
+        role: 'user',
+      });
 
-    const id = existing?.id || userId || normalizedEmail;
-    const user = existing || (
-      useDatabase
-        ? await userRepository.upsertUser({ id, name: name || 'Benutzer', email: normalizedEmail })
-        : db.saveUser({
-            id,
-            name: name || 'Benutzer',
-            email: normalizedEmail,
-            createdAt: new Date(),
-          })
-    );
-
-    const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: 'user',
-    });
-
-    sendSuccess(
-      res,
-      {
+      const payload: AuthPayload = {
         user,
         tokens,
-      } satisfies AuthPayload,
-      'Login erfolgreich'
-    );
-  } catch (error) {
-    next(error);
-  }
-});
+      };
 
-router.post('/refresh', validateRequest(refreshSchema), async (req: Request, res: Response, next: NextFunction) => {
+      sendSuccess(
+        res,
+        {
+          ...payload,
+          defaultAgentId,
+        },
+        defaultAgentId ? 'User registriert und Standard-Agent angelegt.' : 'User registriert.',
+        existing ? 200 : 201,
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.post(
+  '/login',
+  validateRequest(loginSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, name, userId } = req.body || {};
+      const normalizedEmail = typeof email === 'string' ? email.trim() : undefined;
+
+      if (!normalizedEmail) {
+        return next(new BadRequestError('E-Mail ist erforderlich'));
+      }
+
+      const useDatabase = userRepository.isDatabaseEnabled();
+      const existing = useDatabase
+        ? await userRepository.findByEmail(normalizedEmail)
+        : db.getUserByEmail(normalizedEmail);
+
+      const id = existing?.id || userId || normalizedEmail;
+      const user =
+        existing ||
+        (useDatabase
+          ? await userRepository.upsertUser({
+              id,
+              name: name || 'Benutzer',
+              email: normalizedEmail,
+            })
+          : db.saveUser({
+              id,
+              name: name || 'Benutzer',
+              email: normalizedEmail,
+              createdAt: new Date(),
+            }));
+
+      const tokens = generateTokens({
+        userId: user.id,
+        email: user.email,
+        role: 'user',
+      });
+
+      sendSuccess(
+        res,
+        {
+          user,
+          tokens,
+        } satisfies AuthPayload,
+        'Login erfolgreich',
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.post(
+  '/refresh',
+  validateRequest(refreshSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { refreshToken } = req.body || {};
+      if (!refreshToken) {
+        return next(new BadRequestError('Refresh Token ist erforderlich'));
+      }
+
+      const decoded = verifyRefreshToken(refreshToken);
+      const useDatabase = userRepository.isDatabaseEnabled();
+      const user = useDatabase
+        ? await userRepository.findById(decoded.userId)
+        : db.getUser(decoded.userId);
+
+      if (!user) {
+        return next(new UnauthorizedError('Unbekannter Benutzer'));
+      }
+
+      const tokens = generateTokens({
+        userId: user.id,
+        email: user.email,
+        role: 'user',
+      });
+
+      sendSuccess(
+        res,
+        {
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
+        'Token aktualisiert',
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// Microsoft 365 OAuth Authorization
+router.get(
+  '/microsoft/authorize',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) {
+        return next(new UnauthorizedError('Please log in to connect your calendar'));
+      }
+
+      const { supabaseUserId, email } = req.supabaseUser;
+      const user = await ensureUserRow(supabaseUserId, email);
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      const publicBaseUrl =
+        process.env.PUBLIC_BASE_URL ||
+        (process.env.NODE_ENV === 'production'
+          ? 'https://real-aidevelo-ai.onrender.com'
+          : 'http://localhost:5000');
+      const baseUrl = publicBaseUrl.replace(/\/$/, '');
+      const redirectUri = `${baseUrl}/api/auth/microsoft/callback`;
+
+      const { authUrl } = await calendarService.getOutlookAuthUrl(redirectUri, location.id);
+      res.json({ success: true, authUrl });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// Microsoft 365 OAuth Callback
+router.get('/microsoft/callback', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { refreshToken } = req.body || {};
-    if (!refreshToken) {
-      return next(new BadRequestError('Refresh Token ist erforderlich'));
+    const { code, state } = req.query;
+    if (!code || !state || typeof code !== 'string' || typeof state !== 'string') {
+      return next(new BadRequestError('Code and state are required'));
     }
 
-    const decoded = verifyRefreshToken(refreshToken);
-    const useDatabase = userRepository.isDatabaseEnabled();
-    const user = useDatabase
-      ? await userRepository.findById(decoded.userId)
-      : db.getUser(decoded.userId);
-
-    if (!user) {
-      return next(new UnauthorizedError('Unbekannter Benutzer'));
+    // Since we use the same state mechanism as calendarRoutes
+    const { verifySignedState } = require('../utils/oauthState');
+    let stateData: { locationId: string; provider: string };
+    try {
+      stateData = verifySignedState(state);
+    } catch (error) {
+      return next(new BadRequestError('Invalid OAuth state'));
     }
 
-    const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: 'user',
-    });
+    const publicBaseUrl =
+      process.env.PUBLIC_BASE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://real-aidevelo-ai.onrender.com'
+        : 'http://localhost:5000');
+    const baseUrl = publicBaseUrl.replace(/\/$/, '');
+    const redirectUri = `${baseUrl}/api/auth/microsoft/callback`;
 
-    sendSuccess(
-      res,
-      {
-        token: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      },
-      'Token aktualisiert'
-    );
+    const tokens = await calendarService.exchangeOutlookCode(code, redirectUri);
+    await calendarService.storeToken(stateData.locationId, tokens);
+
+    // Redirect or return HTML to close window
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script>
+            window.opener.postMessage({ type: 'calendar-oauth-success', provider: 'outlook' }, '*');
+            window.close();
+          </script>
+          <p>Microsoft Calendar connected successfully. You can close this window.</p>
+        </body>
+      </html>
+    `);
   } catch (error) {
     next(error);
   }

@@ -163,87 +163,7 @@ export const SettingsPage = () => {
           return;
         }
 
-        let pollInterval: NodeJS.Timeout | null = null;
-
-        const messageListener = (event: MessageEvent) => {
-          const allowedOrigins = [
-            'https://real-aidevelo-ai.onrender.com',
-            'https://aidevelo.ai',
-            'https://www.aidevelo.ai',
-            globalThis.location.origin,
-          ];
-
-          const isAllowed = allowedOrigins.some(
-            (origin) =>
-              event.origin === origin ||
-              event.origin.includes(origin.replace('https://', '').replace('http://', '')),
-          );
-
-          if (!isAllowed) {
-            return;
-          }
-
-          if (event.data?.type === 'calendar-oauth-success') {
-            console.log('[SettingsPage] Calendar OAuth success via postMessage');
-            toast.success('Kalender erfolgreich verbunden');
-            queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-            refetch();
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-          } else if (event.data?.type === 'calendar-oauth-error') {
-            const errorMsg =
-              typeof event.data.message === 'string'
-                ? event.data.message
-                : 'Fehler beim Verbinden des Kalenders';
-            toast.error(errorMsg);
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-          }
-        };
-
-        window.addEventListener('message', messageListener);
-
-        let pollCount = 0;
-        const maxPolls = 30;
-        pollInterval = setInterval(() => {
-          pollCount++;
-
-          if (authWindow?.closed) {
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-            window.removeEventListener('message', messageListener);
-
-            if (pollCount < maxPolls) {
-              setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-                refetch().then((result) => {
-                  if (result.data?.status?.calendar === 'connected') {
-                    toast.success('Kalender erfolgreich verbunden');
-                  }
-                });
-              }, 2000);
-            }
-            return;
-          }
-
-          if (pollCount >= maxPolls) {
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-            window.removeEventListener('message', messageListener);
-          }
-        }, 1000);
+        handleAuthWindow(authWindow);
       } else {
         throw new Error('Keine Auth-URL erhalten');
       }
@@ -252,6 +172,122 @@ export const SettingsPage = () => {
       const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Kalenders');
       toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
     }
+  };
+
+  const handleConnectMicrosoftCalendar = async () => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
+        '/calendar/outlook/auth',
+      );
+      if (response.data?.success && response.data.data?.authUrl) {
+        const width = 600;
+        const height = 700;
+        const left = globalThis.screen.width / 2 - width / 2;
+        const top = globalThis.screen.height / 2 - height / 2;
+        const authWindow = globalThis.open(
+          response.data.data.authUrl,
+          'Microsoft Calendar OAuth',
+          `width=${width},height=${height},left=${left},top=${top}`,
+        );
+
+        if (!authWindow) {
+          toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
+          return;
+        }
+
+        handleAuthWindow(authWindow);
+      } else {
+        throw new Error('Keine Auth-URL erhalten');
+      }
+    } catch (error: unknown) {
+      console.error('[SettingsPage] Microsoft Calendar connection error:', error);
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Microsoft Kalenders');
+      toast.error(`Fehler beim Verbinden des Microsoft Kalenders: ${errorMsg}`);
+    }
+  };
+
+  const handleAuthWindow = (authWindow: Window) => {
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const messageListener = (event: MessageEvent) => {
+      const allowedOrigins = [
+        'https://real-aidevelo-ai.onrender.com',
+        'https://aidevelo.ai',
+        'https://www.aidevelo.ai',
+        globalThis.location.origin,
+      ];
+
+      const isAllowed = allowedOrigins.some(
+        (origin) =>
+          event.origin === origin ||
+          event.origin.includes(origin.replace('https://', '').replace('http://', '')),
+      );
+
+      if (!isAllowed) {
+        return;
+      }
+
+      if (event.data?.type === 'calendar-oauth-success') {
+        console.log('[SettingsPage] Calendar OAuth success via postMessage');
+        toast.success('Kalender erfolgreich verbunden');
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        refetch();
+        authWindow?.close();
+        window.removeEventListener('message', messageListener);
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+      } else if (event.data?.type === 'calendar-oauth-error') {
+        const errorMsg =
+          typeof event.data.message === 'string'
+            ? event.data.message
+            : 'Fehler beim Verbinden des Kalenders';
+        toast.error(errorMsg);
+        authWindow?.close();
+        window.removeEventListener('message', messageListener);
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+      }
+    };
+
+    window.addEventListener('message', messageListener);
+
+    let pollCount = 0;
+    const maxPolls = 30;
+    pollInterval = setInterval(() => {
+      pollCount++;
+
+      if (authWindow?.closed) {
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+        window.removeEventListener('message', messageListener);
+
+        if (pollCount < maxPolls) {
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+            refetch().then((result) => {
+              if (result.data?.status?.calendar === 'connected') {
+                toast.success('Kalender erfolgreich verbunden');
+              }
+            });
+          }, 2000);
+        }
+        return;
+      }
+
+      if (pollCount >= maxPolls) {
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+        window.removeEventListener('message', messageListener);
+      }
+    }, 1000);
   };
 
   // Handle calendar disconnect
@@ -915,9 +951,18 @@ export const SettingsPage = () => {
                       ) : (
                         <>
                           <p className="text-gray-400 text-sm mb-2">Nicht verbunden</p>
-                          <Button variant="outline" size="sm" onClick={handleConnectCalendar}>
-                            Kalender verbinden
-                          </Button>
+                          <div className="flex flex-col gap-2">
+                            <Button variant="outline" size="sm" onClick={handleConnectCalendar}>
+                              Google Calendar verbinden
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleConnectMicrosoftCalendar}
+                            >
+                              Microsoft 365 verbinden
+                            </Button>
+                          </div>
                         </>
                       )}
                     </div>

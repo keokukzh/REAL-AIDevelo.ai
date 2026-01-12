@@ -93,7 +93,7 @@ export class CalendarTool {
    */
   async checkAvailability(
     input: CheckAvailabilityInput,
-    calendarType: 'google' | 'outlook' = 'google'
+    calendarType: 'google' | 'outlook' = 'google',
   ): Promise<CheckAvailabilityOutput> {
     try {
       const timezone = input.timezone || 'Europe/Zurich';
@@ -115,7 +115,11 @@ export class CalendarTool {
         end = range.end;
       } else if (input.date) {
         // Default business hours 09:00-17:00
-        const range = buildDateRangeFromBusinessHours(input.date, { from: '09:00', to: '17:00' }, timezone);
+        const range = buildDateRangeFromBusinessHours(
+          input.date,
+          { from: '09:00', to: '17:00' },
+          timezone,
+        );
         start = range.start;
         end = range.end;
       } else {
@@ -150,7 +154,7 @@ export class CalendarTool {
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-          }
+          },
         );
 
         // Parse busy intervals
@@ -164,7 +168,7 @@ export class CalendarTool {
           slotMinutes,
           minNoticeMinutes,
           maxResults,
-          timezone
+          timezone,
         );
 
         return {
@@ -175,7 +179,43 @@ export class CalendarTool {
               start: formatISODateTime(start, timezone),
               end: formatISODateTime(end, timezone),
             },
-            slots: slots.map(slot => ({
+            slots: slots.map((slot) => ({
+              start: formatISODateTime(slot.start, timezone),
+              end: formatISODateTime(slot.end, timezone),
+              label: slot.label,
+            })),
+          },
+        };
+      } else if (calendarType === 'outlook') {
+        const { microsoftCalendarService } = require('../../services/microsoftCalendarService');
+        const msEvents = await microsoftCalendarService.listEvents(accessToken, start, end);
+
+        // Transform MS events to busy intervals
+        const busyIntervals = msEvents.map((event: any) => ({
+          start: event.start.dateTime,
+          end: event.end.dateTime,
+        }));
+
+        // Generate available slots
+        const slots = generateSlots(
+          start,
+          end,
+          busyIntervals,
+          slotMinutes,
+          minNoticeMinutes,
+          maxResults,
+          timezone,
+        );
+
+        return {
+          success: true,
+          data: {
+            timezone,
+            range: {
+              start: formatISODateTime(start, timezone),
+              end: formatISODateTime(end, timezone),
+            },
+            slots: slots.map((slot) => ({
               start: formatISODateTime(slot.start, timezone),
               end: formatISODateTime(slot.end, timezone),
               label: slot.label,
@@ -183,10 +223,9 @@ export class CalendarTool {
           },
         };
       } else {
-        // Outlook Calendar API integration would go here
         return {
           success: false,
-          error: 'Outlook calendar not yet implemented',
+          error: `Provider ${calendarType} not implemented`,
         };
       }
     } catch (error: any) {
@@ -214,7 +253,7 @@ export class CalendarTool {
    */
   async createAppointment(
     input: CreateAppointmentInput,
-    calendarType: 'google' | 'outlook' = 'google'
+    calendarType: 'google' | 'outlook' = 'google',
   ): Promise<CreateAppointmentOutput> {
     try {
       const calendarId = input.calendarId || 'primary';
@@ -237,10 +276,11 @@ export class CalendarTool {
       if (calendarType === 'google') {
         // Build description with AI BOOKED marker if this is an AI-created appointment
         // Check if this is being called from the voice agent (via tool call)
-        const isAIBooked = input.description?.includes('[AI_BOOKED]') || 
-                          (input as any).aiBooked === true ||
-                          (input as any).aiBooked === 'true';
-        
+        const isAIBooked =
+          input.description?.includes('[AI_BOOKED]') ||
+          (input as any).aiBooked === true ||
+          (input as any).aiBooked === 'true';
+
         let description = input.description || '';
         if (isAIBooked && !description.includes('[AI_BOOKED]')) {
           description = description ? `[AI_BOOKED]\n${description}` : '[AI_BOOKED]';
@@ -280,7 +320,7 @@ export class CalendarTool {
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-          }
+          },
         );
 
         return {
@@ -293,11 +333,46 @@ export class CalendarTool {
             calendarId,
           },
         };
+      } else if (calendarType === 'outlook') {
+        const { microsoftCalendarService } = require('../../services/microsoftCalendarService');
+
+        const msEvent = {
+          subject: input.summary,
+          body: {
+            contentType: 'HTML',
+            content: input.description || '',
+          },
+          start: {
+            dateTime: formatISODateTime(start, timezone),
+            timeZone: timezone,
+          },
+          end: {
+            dateTime: formatISODateTime(end, timezone),
+            timeZone: timezone,
+          },
+          location: input.location ? { displayName: input.location } : undefined,
+          attendees: input.attendees?.map((a) => ({
+            emailAddress: { address: a.email },
+            type: 'required',
+          })),
+        };
+
+        const response = await microsoftCalendarService.createEvent(accessToken, msEvent);
+
+        return {
+          success: true,
+          data: {
+            eventId: response.id,
+            htmlLink: response.webLink || '',
+            start: formatISODateTime(start, timezone),
+            end: formatISODateTime(end, timezone),
+            calendarId: 'primary',
+          },
+        };
       } else {
-        // Outlook Calendar API call would go here
         return {
           success: false,
-          error: 'Outlook calendar not yet implemented',
+          error: `Provider ${calendarType} not implemented`,
         };
       }
     } catch (error: any) {
@@ -327,7 +402,7 @@ export class CalendarTool {
     eventId: string,
     input: CreateAppointmentInput,
     calendarType: 'google' | 'outlook' = 'google',
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
   ): Promise<CreateAppointmentOutput> {
     try {
       const timezone = input.timezone || 'Europe/Zurich';
@@ -369,7 +444,7 @@ export class CalendarTool {
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-          }
+          },
         );
 
         return {
@@ -382,10 +457,47 @@ export class CalendarTool {
             calendarId,
           },
         };
+      } else if (calendarType === 'outlook') {
+        const { microsoftCalendarService } = require('../../services/microsoftCalendarService');
+        const client = (microsoftCalendarService as any).getGraphClient(accessToken);
+
+        const msEvent = {
+          subject: input.summary,
+          body: {
+            contentType: 'HTML',
+            content: input.description || '',
+          },
+          start: {
+            dateTime: formatISODateTime(start, timezone),
+            timeZone: timezone,
+          },
+          end: {
+            dateTime: formatISODateTime(end, timezone),
+            timeZone: timezone,
+          },
+          location: input.location ? { displayName: input.location } : undefined,
+          attendees: input.attendees?.map((a) => ({
+            emailAddress: { address: a.email },
+            type: 'required',
+          })),
+        };
+
+        const response = await client.api(`/me/calendar/events/${eventId}`).patch(msEvent);
+
+        return {
+          success: true,
+          data: {
+            eventId: response.id,
+            htmlLink: response.webLink || '',
+            start: formatISODateTime(start, timezone),
+            end: formatISODateTime(end, timezone),
+            calendarId: 'primary',
+          },
+        };
       } else {
         return {
           success: false,
-          error: 'Outlook calendar not yet implemented',
+          error: `Provider ${calendarType} not implemented`,
         };
       }
     } catch (error: any) {
@@ -414,7 +526,7 @@ export class CalendarTool {
   async deleteEvent(
     eventId: string,
     calendarType: 'google' | 'outlook' = 'google',
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Refresh token if needed
@@ -428,16 +540,21 @@ export class CalendarTool {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
-          }
+          },
         );
 
         return {
           success: true,
         };
+      } else if (calendarType === 'outlook') {
+        const { microsoftCalendarService } = require('../../services/microsoftCalendarService');
+        const client = (microsoftCalendarService as any).getGraphClient(accessToken);
+        await client.api(`/me/calendar/events/${eventId}`).delete();
+        return { success: true };
       } else {
         return {
           success: false,
-          error: 'Outlook calendar not yet implemented',
+          error: `Provider ${calendarType} not implemented`,
         };
       }
     } catch (error: any) {
@@ -466,7 +583,7 @@ export class CalendarTool {
    */
   async createEvent(
     event: CalendarEvent,
-    calendarType: 'google' | 'outlook' = 'google'
+    calendarType: 'google' | 'outlook' = 'google',
   ): Promise<{ success: boolean; eventId?: string; error?: string }> {
     const result = await this.createAppointment(
       {
@@ -474,9 +591,9 @@ export class CalendarTool {
         start: event.start.toISOString(),
         end: event.end.toISOString(),
         description: event.description,
-        attendees: event.attendees?.map(email => ({ email })),
+        attendees: event.attendees?.map((email) => ({ email })),
       },
-      calendarType
+      calendarType,
     );
 
     if (result.success && result.data) {
@@ -492,7 +609,7 @@ export class CalendarTool {
     start: Date,
     end: Date,
     calendarType: 'google' | 'outlook' = 'google',
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
   ): Promise<CalendarEvent[]> {
     try {
       // Refresh token if needed
@@ -517,12 +634,12 @@ export class CalendarTool {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
-          }
+          },
         );
 
         // Transform Google Calendar events to CalendarEvent format
         const events: CalendarEvent[] = (response.data.items || []).map((item: any) => {
-          const eventStart = item.start?.dateTime 
+          const eventStart = item.start?.dateTime
             ? new Date(item.start.dateTime)
             : new Date(item.start?.date || start);
           const eventEnd = item.end?.dateTime
@@ -530,7 +647,7 @@ export class CalendarTool {
             : new Date(item.end?.date || end);
 
           // Check if event is AI-booked
-          const aiBooked = 
+          const aiBooked =
             item.description?.includes('[AI_BOOKED]') ||
             item.extendedProperties?.private?.aiBooked === 'true' ||
             item.extendedProperties?.private?.aiBooked === true;
@@ -551,9 +668,24 @@ export class CalendarTool {
         });
 
         return events;
+      } else if (calendarType === 'outlook') {
+        const { microsoftCalendarService } = require('../../services/microsoftCalendarService');
+        const msEvents = await microsoftCalendarService.listEvents(accessToken, start, end);
+
+        return msEvents.map((item: any) => ({
+          id: item.id,
+          title: item.subject || 'Kein Titel',
+          summary: item.subject || 'Kein Titel',
+          start: new Date(item.start.dateTime),
+          end: new Date(item.end.dateTime),
+          description: item.body?.content || '',
+          location: item.location?.displayName || '',
+          htmlLink: item.webLink || '',
+          attendees: item.attendees?.map((a: any) => a.emailAddress?.address || '') || [],
+          calendarId: 'primary',
+        }));
       } else {
-        // Outlook Calendar API call would go here
-        console.warn('[CalendarTool] Outlook calendar listEvents not yet implemented');
+        console.warn(`[CalendarTool] Provider ${calendarType} listEvents not yet implemented`);
         return [];
       }
     } catch (error: any) {
@@ -561,7 +693,9 @@ export class CalendarTool {
         throw new Error('Calendar not connected');
       }
       if (error.response?.data?.error) {
-        throw new Error(`Google API error: ${error.response.data.error.message || error.response.data.error}`);
+        throw new Error(
+          `Google API error: ${error.response.data.error.message || error.response.data.error}`,
+        );
       }
       throw error;
     }
@@ -573,14 +707,16 @@ export class CalendarTool {
   static getToolDefinition() {
     return {
       name: 'calendar',
-      description: 'Manage calendar events and check availability. Can check availability slots and create appointments.',
+      description:
+        'Manage calendar events and check availability. Can check availability slots and create appointments.',
       parameters: {
         type: 'object',
         properties: {
           action: {
             type: 'string',
             enum: ['check_availability', 'create_appointment'],
-            description: 'The action to perform: check_availability returns available time slots, create_appointment creates a calendar event',
+            description:
+              'The action to perform: check_availability returns available time slots, create_appointment creates a calendar event',
           },
           // check_availability parameters
           calendarId: {
@@ -595,12 +731,14 @@ export class CalendarTool {
           start: {
             type: 'string',
             format: 'date-time',
-            description: 'Start date/time in ISO 8601 format with timezone (e.g., 2025-12-16T09:00:00+01:00)',
+            description:
+              'Start date/time in ISO 8601 format with timezone (e.g., 2025-12-16T09:00:00+01:00)',
           },
           end: {
             type: 'string',
             format: 'date-time',
-            description: 'End date/time in ISO 8601 format with timezone (e.g., 2025-12-16T17:00:00+01:00)',
+            description:
+              'End date/time in ISO 8601 format with timezone (e.g., 2025-12-16T17:00:00+01:00)',
           },
           timezone: {
             type: 'string',
@@ -662,5 +800,3 @@ export class CalendarTool {
 export function createCalendarTool(locationId: string): CalendarTool {
   return new CalendarTool(locationId);
 }
-
-

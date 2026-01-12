@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS phone_numbers (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Google Calendar Integrations (one per location)
-CREATE TABLE IF NOT EXISTS google_calendar_integrations (
+-- Calendar Integrations (one per location per provider)
+CREATE TABLE IF NOT EXISTS calendar_connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   provider TEXT NOT NULL DEFAULT 'google',

@@ -90,6 +90,11 @@ const getOptionalEnvVars = () => ({
   RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '100',
   AUTH_RATE_LIMIT_MAX: process.env.AUTH_RATE_LIMIT_MAX || '10',
   VOICE_AGENT_RATE_LIMIT_MAX: process.env.VOICE_AGENT_RATE_LIMIT_MAX || '50',
+  // Microsoft 365 OAuth
+  MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID || '',
+  MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET || '',
+  MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID || 'common',
+  MICROSOFT_REDIRECT_URI: process.env.MICROSOFT_REDIRECT_URI || '',
 });
 
 const validateEnv = () => {
@@ -289,4 +294,9 @@ export const config = {
   rateLimitMaxRequests: parseInt(optionalEnvVars.RATE_LIMIT_MAX_REQUESTS, 10),
   authRateLimitMax: parseInt(optionalEnvVars.AUTH_RATE_LIMIT_MAX, 10),
   voiceAgentRateLimitMax: parseInt(optionalEnvVars.VOICE_AGENT_RATE_LIMIT_MAX, 10),
+  // Microsoft 365 OAuth
+  microsoftClientId: optionalEnvVars.MICROSOFT_CLIENT_ID,
+  microsoftClientSecret: optionalEnvVars.MICROSOFT_CLIENT_SECRET,
+  microsoftTenantId: optionalEnvVars.MICROSOFT_TENANT_ID,
+  microsoftRedirectUri: optionalEnvVars.MICROSOFT_REDIRECT_URI,
 };
