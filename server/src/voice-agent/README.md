@@ -50,6 +50,7 @@ A comprehensive voice agent service with RAG (Retrieval-Augmented Generation), r
 ### 1. Install Dependencies
 
 Dependencies are already installed in the server package. Required packages:
+
 - `@qdrant/js-client-rest` - Vector database client
 - `openai` - OpenAI API client
 - `@anthropic-ai/sdk` - Anthropic API client
@@ -102,20 +103,37 @@ CRM_WEBHOOK_URL=your_crm_webhook_url
 ### 3. Start Qdrant (Vector Database)
 
 For local development:
+
 ```bash
 docker run -p 6333:6333 qdrant/qdrant
 ```
 
 Or use Qdrant Cloud: https://cloud.qdrant.io
 
+## Telephony Integration (Twilio)
+
+### Twilio Webhook Setup
+
+To enable call logging in the dashboard, configure your Twilio phone number:
+
+1. Go to the **Twilio Console** → **Phone Numbers** → **Manage** → **Active numbers**.
+2. Select your phone number.
+3. Scroll down to **Voice & Fax** configuration.
+4. Under **A CALL COMES IN** (or Status Callback URL for more granular events):
+   - **Webhook URL**: `https://real-aidevelo-ai.onrender.com/api/voice-agent/webhook/call-completed`
+   - **HTTP Method**: `POST`
+5. Save the configuration.
+
 ## API Endpoints
 
 ### HTTP Endpoints
 
 #### POST `/api/voice-agent/query`
+
 Text query endpoint for webchat.
 
 **Request:**
+
 ```json
 {
   "customerId": "customer-123",
@@ -125,6 +143,7 @@ Text query endpoint for webchat.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -137,9 +156,11 @@ Text query endpoint for webchat.
 ```
 
 #### POST `/api/voice-agent/ingest`
+
 Document ingestion endpoint.
 
 **Request:**
+
 ```json
 {
   "customerId": "customer-123",
@@ -155,6 +176,7 @@ Document ingestion endpoint.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -166,9 +188,11 @@ Document ingestion endpoint.
 ```
 
 #### GET `/api/voice-agent/session/:sessionId`
+
 Get session information.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -186,9 +210,11 @@ Get session information.
 ```
 
 #### POST `/api/voice-agent/call-session`
+
 Create a new call session.
 
 **Request:**
+
 ```json
 {
   "customerId": "customer-123",
@@ -198,6 +224,7 @@ Create a new call session.
 ```
 
 #### DELETE `/api/voice-agent/call-session/:sessionId`
+
 End a call session.
 
 ### WebSocket Endpoint
@@ -207,8 +234,11 @@ End a call session.
 Real-time bidirectional audio streaming for voice calls.
 
 **Connection:**
+
 ```javascript
-const ws = new WebSocket('ws://localhost:5000/api/voice-agent/call-session?sessionId=xxx&customerId=xxx&agentId=xxx');
+const ws = new WebSocket(
+  'ws://localhost:5000/api/voice-agent/call-session?sessionId=xxx&customerId=xxx&agentId=xxx',
+);
 
 // Send audio data
 ws.send(audioBuffer);
@@ -310,6 +340,7 @@ npm run dev
 ### Testing
 
 1. **Test RAG Query:**
+
    ```bash
    curl -X POST http://localhost:5000/api/voice-agent/query \
      -H "Content-Type: application/json" \
@@ -344,5 +375,3 @@ npm run dev
 - Calendar and notification tools are placeholders and need proper OAuth2/SMTP implementation.
 - Document ingestion currently expects raw text. Add PDF/DOCX parsing for production.
 - WebSocket audio streaming needs proper audio format handling (PCM, Opus, etc.).
-
-

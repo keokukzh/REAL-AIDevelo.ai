@@ -15,7 +15,10 @@ import { VoiceAgent } from '../../models/types';
 import { resolveLocationId } from '../../utils/locationIdResolver';
 import { BadRequestError } from '../../utils/errors';
 import { voiceAgentConfig } from '../config';
-import { twilioMediaStreamService, TwilioStreamMessage } from '../../services/twilioMediaStreamService';
+import {
+  twilioMediaStreamService,
+  TwilioStreamMessage,
+} from '../../services/twilioMediaStreamService';
 import { elevenLabsBridgeService } from '../../services/elevenLabsBridgeService';
 import { config } from '../../config/env';
 import { supabaseAdmin } from '../../services/supabaseDb';
@@ -41,9 +44,11 @@ router.post('/query', async (req: Request, res: Response) => {
     }
 
     // Get agent info
-    const agent = db.getAllAgents().find((a: VoiceAgent) => 
-      a.businessProfile.contact.email === customerId || a.id === customerId
-    );
+    const agent = db
+      .getAllAgents()
+      .find(
+        (a: VoiceAgent) => a.businessProfile.contact.email === customerId || a.id === customerId,
+      );
 
     // Resolve locationId from request context
     let locationId: string;
@@ -55,7 +60,9 @@ router.post('/query', async (req: Request, res: Response) => {
       });
       locationId = resolution.locationId;
       locationSource = resolution.source;
-      console.log(`[VoiceAgentRoutes] Resolved locationId=${locationId} from source=${locationSource}`);
+      console.log(
+        `[VoiceAgentRoutes] Resolved locationId=${locationId} from source=${locationSource}`,
+      );
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -83,7 +90,9 @@ router.post('/query', async (req: Request, res: Response) => {
         ragResultCount = ragContext.resultCount;
         ragInjectedChars = ragContext.injectedChars;
 
-        console.log(`[RAG] query="${query.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${locationId}`);
+        console.log(
+          `[RAG] query="${query.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${locationId}`,
+        );
       } catch (error: any) {
         console.error('[RAG] failed, continuing without context:', error.message);
         // Graceful fallback: continue without RAG context
@@ -101,7 +110,7 @@ router.post('/query', async (req: Request, res: Response) => {
         companyName: agent?.businessProfile.companyName,
         industry: agent?.businessProfile.industry,
         tools: toolRegistry.getToolDefinitions(),
-      }
+      },
     );
 
     // Inject RAG context text if available
@@ -155,7 +164,7 @@ router.post('/query', async (req: Request, res: Response) => {
 /**
  * POST /api/voice-agent/ingest
  * Document ingestion endpoint (LEGACY - use /api/rag/documents instead)
- * 
+ *
  * @deprecated Use /api/rag/documents for new integrations
  * Supports both customerId (legacy) and locationId (new)
  */
@@ -175,12 +184,14 @@ router.post('/ingest', async (req: Request, res: Response) => {
 
     // Log deprecation warning if customerId is used
     if (customerId && !locationId) {
-      console.warn('[VoiceAgentRoutes] /ingest endpoint: customerId is deprecated, use locationId instead');
+      console.warn(
+        '[VoiceAgentRoutes] /ingest endpoint: customerId is deprecated, use locationId instead',
+      );
     }
 
     const result = await documentIngestionService.ingestDocuments(
       targetLocationId, // Use locationId (or customerId as fallback)
-      documents
+      documents,
     );
 
     res.json({
@@ -277,286 +288,370 @@ router.delete('/call-session/:sessionId', (req: Request, res: Response) => {
  * POST /api/voice-agent/elevenlabs-stream-token
  * Get WebSocket URL for ElevenLabs Conversational API
  * Returns the WebSocket URL with API key embedded (secure for server-side use)
- * 
+ *
  * Rate-limited: 5 requests per hour per user
  * Quota-checked: Blocks if ElevenLabs credits < 5%
  */
-router.post('/elevenlabs-stream-token', verifySupabaseAuth, elevenLabsQuotaCheck, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const { customerId, agentId, voiceId } = req.body;
+router.post(
+  '/elevenlabs-stream-token',
+  verifySupabaseAuth,
+  elevenLabsQuotaCheck,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { customerId, agentId, voiceId } = req.body;
 
-    if (!customerId || !agentId) {
-      return res.status(400).json({
-        success: false,
-        error: 'customerId and agentId are required',
+      if (!customerId || !agentId) {
+        return res.status(400).json({
+          success: false,
+          error: 'customerId and agentId are required',
+        });
+      }
+
+      // Check for mock mode
+      if (process.env.ELEVENLABS_MOCK_MODE === 'true') {
+        const { getMockWebSocketUrl, mockAgentVerification } =
+          await import('../../services/mockElevenLabsService');
+        const mockAgent = mockAgentVerification(agentId);
+
+        console.log('[VoiceAgentRoutes] MOCK MODE: Returning mock WebSocket URL');
+
+        return res.json({
+          success: true,
+          data: {
+            wsUrl: getMockWebSocketUrl(agentId),
+            agentId: agentId,
+            customerId,
+            voiceId: voiceId || undefined,
+            mockMode: true,
+            mockAgentName: mockAgent.name,
+          },
+        });
+      }
+
+      // Get ElevenLabs API key from config
+      const apiKey = config.elevenLabsApiKey;
+
+      if (!apiKey || !config.isElevenLabsConfigured) {
+        return res.status(400).json({
+          success: false,
+          error: 'ElevenLabs API key not configured',
+        });
+      }
+
+      // Resolve eleven_agent_id and locationId from agent_configs table
+      // agentId might be agent_configs.id, so we need to get the eleven_agent_id and location_id
+      let elevenAgentId: string | null = null;
+      let locationId: string | null = null;
+
+      // Try to get eleven_agent_id and location_id from agent_configs table
+      const { data: agentConfig } = await supabaseAdmin
+        .from('agent_configs')
+        .select('eleven_agent_id, location_id')
+        .eq('id', agentId)
+        .maybeSingle();
+
+      if (agentConfig?.eleven_agent_id) {
+        elevenAgentId = agentConfig.eleven_agent_id;
+        locationId = agentConfig.location_id;
+      } else {
+        // If agentId is already an eleven_agent_id, use it directly
+        // Otherwise, use default or fail
+        const defaultAgentId =
+          process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
+        elevenAgentId = defaultAgentId;
+
+        // Try to resolve locationId from customerId (which might be locationId)
+        if (customerId) {
+          const { data: locationCheck } = await supabaseAdmin
+            .from('locations')
+            .select('id')
+            .eq('id', customerId)
+            .maybeSingle();
+          if (locationCheck) {
+            locationId = customerId;
+          }
+        }
+      }
+
+      if (!elevenAgentId) {
+        return res.status(400).json({
+          success: false,
+          error: 'ElevenLabs Agent ID not found. Please configure the Agent ID in Settings.',
+        });
+      }
+
+      // Verify that the agent exists in ElevenLabs BEFORE creating WebSocket connection
+      // This provides better error messages upfront
+      // Cache verification result for 5 minutes to reduce API calls
+      const agentVerificationCacheKey = `elevenlabs:agent_verification:${elevenAgentId}`;
+
+      let agentVerified = false;
+      let agentName: string | null = null;
+
+      // Check cache first
+      const cachedVerification = await cacheService.get<{ verified: boolean; name: string }>(
+        agentVerificationCacheKey,
+      );
+      if (cachedVerification) {
+        agentVerified = cachedVerification.verified;
+        agentName = cachedVerification.name;
+        console.log('[VoiceAgentRoutes] Agent verification from cache:', {
+          agentId: elevenAgentId,
+          agentName,
+        });
+      } else {
+        // Not in cache, verify via API
+        try {
+          const agentCheckResponse = await axios.get(
+            `https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(elevenAgentId)}`,
+            {
+              headers: {
+                'xi-api-key': apiKey,
+              },
+              timeout: 5000,
+            },
+          );
+
+          // Track character costs from response headers (per API reference)
+          // Note: GET requests typically don't consume characters, but we track for completeness
+          const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
+          extractElevenLabsCosts(agentCheckResponse, `convai/agents/${elevenAgentId}`);
+
+          if (agentCheckResponse.data) {
+            agentVerified = true;
+            agentName = agentCheckResponse.data.name || null;
+            console.log('[VoiceAgentRoutes] Agent verified in ElevenLabs:', {
+              agentId: elevenAgentId,
+              agentName,
+            });
+
+            // Cache successful verification for 5 minutes
+            await cacheService.set(
+              agentVerificationCacheKey,
+              {
+                verified: true,
+                name: agentName || '',
+              },
+              CacheTTL.agentVerification || 300,
+            );
+          }
+        } catch (error: any) {
+          // If agent doesn't exist, return error immediately with helpful message
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            console.error('[VoiceAgentRoutes] Agent not found in ElevenLabs:', {
+              agentId: elevenAgentId,
+              source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+              databaseAgentId: agentConfig?.eleven_agent_id || null,
+              defaultAgentId:
+                process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj',
+            });
+
+            return res.status(404).json({
+              success: false,
+              error: 'Agent not found',
+              message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
+              agentId: elevenAgentId,
+              source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+              suggestion: agentConfig?.eleven_agent_id
+                ? 'The Agent ID from your database does not exist. Please update it in Settings.'
+                : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
+            });
+          }
+
+          // For other errors (network, timeout), log but continue - WebSocket will validate
+          console.warn(
+            '[VoiceAgentRoutes] Agent verification failed (non-404), continuing anyway:',
+            {
+              error: error.message,
+              status: axios.isAxiosError(error) ? error.response?.status : 'unknown',
+            },
+          );
+        }
+      }
+
+      // Get signed URL from ElevenLabs for secure connection
+      // This keeps the API key server-side and provides a temporary signed URL
+      // Cache signed URLs for 1 minute (they're temporary but can be reused briefly)
+      const signedUrlCacheKey = `elevenlabs:signed_url:${elevenAgentId}`;
+
+      let wsUrl: string;
+      let cachedSignedUrl = await cacheService.get<string>(signedUrlCacheKey);
+
+      if (cachedSignedUrl) {
+        wsUrl = cachedSignedUrl;
+        console.log('[VoiceAgentRoutes] Using cached signed URL');
+      } else {
+        try {
+          const signedUrlResponse = await axios.get(
+            `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(elevenAgentId)}`,
+            {
+              headers: {
+                'xi-api-key': apiKey,
+              },
+              timeout: 10000,
+            },
+          );
+
+          // Track character costs from response headers (per API reference)
+          // Note: GET requests typically don't consume characters, but we track for completeness
+          const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
+          extractElevenLabsCosts(signedUrlResponse, 'convai/conversation/get-signed-url');
+
+          if (signedUrlResponse.data?.signed_url) {
+            wsUrl = signedUrlResponse.data.signed_url;
+            console.log('[VoiceAgentRoutes] Got signed URL from ElevenLabs');
+
+            // Cache signed URL for 1 minute
+            await cacheService.set(signedUrlCacheKey, wsUrl, CacheTTL.signedUrl || 60);
+          } else {
+            // Fallback: Use direct URL with agent_id (for public agents)
+            wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
+            console.log('[VoiceAgentRoutes] Using direct URL with agent_id (fallback)');
+          }
+        } catch (signedUrlError: any) {
+          // Check if this is an agent not found error
+          if (axios.isAxiosError(signedUrlError) && signedUrlError.response?.status === 404) {
+            const errorData = signedUrlError.response?.data;
+            console.error('[VoiceAgentRoutes] Agent not found when getting signed URL:', {
+              agentId: elevenAgentId,
+              error: errorData,
+              source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+              message:
+                'The specified agent ID does not exist in ElevenLabs. Please verify the agent ID in Settings or Render environment variables.',
+            });
+            return res.status(404).json({
+              success: false,
+              error: 'Agent not found',
+              message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
+              agentId: elevenAgentId,
+              source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+              suggestion: agentConfig?.eleven_agent_id
+                ? 'The Agent ID from your database does not exist. Please update it in Settings.'
+                : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
+            });
+          }
+
+          // For other errors, fallback to direct URL
+          console.warn(
+            '[VoiceAgentRoutes] Failed to get signed URL, using direct URL:',
+            signedUrlError.message,
+          );
+          wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
+        }
+      }
+
+      // Build conversation initiation data for browser parity with phone calls
+      let conversationInitData: any = null;
+      if (locationId) {
+        try {
+          const { loadConversationInitContext, buildConversationInitData } =
+            await import('../utils/conversationInitBuilder');
+          const initContext = await loadConversationInitContext(locationId, {
+            testMode: true, // Browser test mode
+          });
+          conversationInitData = await buildConversationInitData(initContext);
+        } catch (initError: any) {
+          console.warn(
+            '[VoiceAgentRoutes] Failed to build conversation init data:',
+            initError.message,
+          );
+          // Continue without init data (agent will use defaults)
+        }
+      }
+
+      console.log('[VoiceAgentRoutes] Generated stream token', {
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length || 0,
+        elevenAgentId,
+        customerId,
+        locationId: locationId || 'none',
+        wsUrlPrefix: wsUrl.substring(0, 80) + '...',
+        source: agentConfig?.eleven_agent_id ? 'database' : 'default',
+        hasInitData: !!conversationInitData,
       });
-    }
 
-    // Check for mock mode
-    if (process.env.ELEVENLABS_MOCK_MODE === 'true') {
-      const { getMockWebSocketUrl, mockAgentVerification } = await import('../../services/mockElevenLabsService');
-      const mockAgent = mockAgentVerification(agentId);
-      
-      console.log('[VoiceAgentRoutes] MOCK MODE: Returning mock WebSocket URL');
-      
-      return res.json({
+      res.json({
         success: true,
         data: {
-          wsUrl: getMockWebSocketUrl(agentId),
-          agentId: agentId,
+          wsUrl,
+          agentId: elevenAgentId, // Return the actual ElevenLabs agent ID
           customerId,
           voiceId: voiceId || undefined,
-          mockMode: true,
-          mockAgentName: mockAgent.name,
+          conversation_initiation_client_data: conversationInitData || undefined,
         },
       });
-    }
-
-    // Get ElevenLabs API key from config
-    const apiKey = config.elevenLabsApiKey;
-
-    if (!apiKey || !config.isElevenLabsConfigured) {
-      return res.status(400).json({
+    } catch (error: any) {
+      console.error('[VoiceAgentRoutes] Error generating stream token:', {
+        error: error.message,
+        stack: error.stack,
+        customerId: req.body?.customerId,
+        agentId: req.body?.agentId,
+      });
+      res.status(500).json({
         success: false,
-        error: 'ElevenLabs API key not configured',
+        error: error.message || 'Failed to generate stream token',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       });
     }
+  },
+);
 
-    // Resolve eleven_agent_id and locationId from agent_configs table
-    // agentId might be agent_configs.id, so we need to get the eleven_agent_id and location_id
-    let elevenAgentId: string | null = null;
-    let locationId: string | null = null;
+/**
+ * POST /api/voice-agent/webhook/call-completed
+ * Twilio call completion webhook
+ */
+router.post('/webhook/call-completed', async (req: Request, res: Response) => {
+  try {
+    const { CallSid, CallStatus, CallDuration, From, To, RecordingUrl, Direction } = req.body;
 
-    // Try to get eleven_agent_id and location_id from agent_configs table
-    const { data: agentConfig } = await supabaseAdmin
-      .from('agent_configs')
-      .select('eleven_agent_id, location_id')
-      .eq('id', agentId)
+    console.log(`[VoiceAgentWebhook] Call completed: ${CallSid} status=${CallStatus} to=${To}`);
+
+    // Resolve locationId from phone number
+    const { data: phoneData } = await supabaseAdmin
+      .from('phone_numbers')
+      .select('location_id')
+      .or(`e164.eq.${To},e164.eq.${From}`) // Try both in case of outbound/inbound mixup
+      .limit(1)
       .maybeSingle();
 
-    if (agentConfig?.eleven_agent_id) {
-      elevenAgentId = agentConfig.eleven_agent_id;
-      locationId = agentConfig.location_id;
-    } else {
-      // If agentId is already an eleven_agent_id, use it directly
-      // Otherwise, use default or fail
-      const defaultAgentId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
-      elevenAgentId = defaultAgentId;
-      
-      // Try to resolve locationId from customerId (which might be locationId)
-      if (customerId) {
-        const { data: locationCheck } = await supabaseAdmin
-          .from('locations')
-          .select('id')
-          .eq('id', customerId)
-          .maybeSingle();
-        if (locationCheck) {
-          locationId = customerId;
-        }
-      }
+    const locationId = phoneData?.location_id;
+
+    if (!locationId) {
+      console.warn(
+        `[VoiceAgentWebhook] Location not found for call: ${CallSid} (To: ${To}, From: ${From})`,
+      );
     }
 
-    if (!elevenAgentId) {
-      return res.status(400).json({
-        success: false,
-        error: 'ElevenLabs Agent ID not found. Please configure the Agent ID in Settings.',
-      });
-    }
-
-    // Verify that the agent exists in ElevenLabs BEFORE creating WebSocket connection
-    // This provides better error messages upfront
-    // Cache verification result for 5 minutes to reduce API calls
-    const agentVerificationCacheKey = `elevenlabs:agent_verification:${elevenAgentId}`;
-    
-    let agentVerified = false;
-    let agentName: string | null = null;
-    
-    // Check cache first
-    const cachedVerification = await cacheService.get<{ verified: boolean; name: string }>(agentVerificationCacheKey);
-    if (cachedVerification) {
-      agentVerified = cachedVerification.verified;
-      agentName = cachedVerification.name;
-      console.log('[VoiceAgentRoutes] Agent verification from cache:', {
-        agentId: elevenAgentId,
-        agentName,
-      });
-    } else {
-      // Not in cache, verify via API
-      try {
-        const agentCheckResponse = await axios.get(
-          `https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(elevenAgentId)}`,
-          {
-            headers: {
-              'xi-api-key': apiKey,
-            },
-            timeout: 5000,
-          }
-        );
-
-        // Track character costs from response headers (per API reference)
-        // Note: GET requests typically don't consume characters, but we track for completeness
-        const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
-        extractElevenLabsCosts(agentCheckResponse, `convai/agents/${elevenAgentId}`);
-
-        if (agentCheckResponse.data) {
-          agentVerified = true;
-          agentName = agentCheckResponse.data.name || null;
-          console.log('[VoiceAgentRoutes] Agent verified in ElevenLabs:', {
-            agentId: elevenAgentId,
-            agentName,
-          });
-          
-          // Cache successful verification for 5 minutes
-          await cacheService.set(agentVerificationCacheKey, {
-            verified: true,
-            name: agentName || '',
-          }, CacheTTL.agentVerification || 300);
-        }
-      } catch (error: any) {
-        // If agent doesn't exist, return error immediately with helpful message
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          console.error('[VoiceAgentRoutes] Agent not found in ElevenLabs:', {
-            agentId: elevenAgentId,
-            source: agentConfig?.eleven_agent_id ? 'database' : 'default',
-            databaseAgentId: agentConfig?.eleven_agent_id || null,
-            defaultAgentId: process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj',
-          });
-          
-          return res.status(404).json({
-            success: false,
-            error: 'Agent not found',
-            message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
-            agentId: elevenAgentId,
-            source: agentConfig?.eleven_agent_id ? 'database' : 'default',
-            suggestion: agentConfig?.eleven_agent_id 
-              ? 'The Agent ID from your database does not exist. Please update it in Settings.'
-              : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
-          });
-        }
-        
-        // For other errors (network, timeout), log but continue - WebSocket will validate
-        console.warn('[VoiceAgentRoutes] Agent verification failed (non-404), continuing anyway:', {
-          error: error.message,
-          status: axios.isAxiosError(error) ? error.response?.status : 'unknown',
-        });
-      }
-    }
-
-    // Get signed URL from ElevenLabs for secure connection
-    // This keeps the API key server-side and provides a temporary signed URL
-    // Cache signed URLs for 1 minute (they're temporary but can be reused briefly)
-    const signedUrlCacheKey = `elevenlabs:signed_url:${elevenAgentId}`;
-    
-    let wsUrl: string;
-    let cachedSignedUrl = await cacheService.get<string>(signedUrlCacheKey);
-    
-    if (cachedSignedUrl) {
-      wsUrl = cachedSignedUrl;
-      console.log('[VoiceAgentRoutes] Using cached signed URL');
-    } else {
-      try {
-        const signedUrlResponse = await axios.get(
-          `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(elevenAgentId)}`,
-          {
-            headers: {
-              'xi-api-key': apiKey,
-            },
-            timeout: 10000,
-          }
-        );
-
-        // Track character costs from response headers (per API reference)
-        // Note: GET requests typically don't consume characters, but we track for completeness
-        const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
-        extractElevenLabsCosts(signedUrlResponse, 'convai/conversation/get-signed-url');
-
-        if (signedUrlResponse.data?.signed_url) {
-          wsUrl = signedUrlResponse.data.signed_url;
-          console.log('[VoiceAgentRoutes] Got signed URL from ElevenLabs');
-          
-          // Cache signed URL for 1 minute
-          await cacheService.set(signedUrlCacheKey, wsUrl, CacheTTL.signedUrl || 60);
-        } else {
-          // Fallback: Use direct URL with agent_id (for public agents)
-          wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
-          console.log('[VoiceAgentRoutes] Using direct URL with agent_id (fallback)');
-        }
-      } catch (signedUrlError: any) {
-        // Check if this is an agent not found error
-        if (axios.isAxiosError(signedUrlError) && signedUrlError.response?.status === 404) {
-          const errorData = signedUrlError.response?.data;
-          console.error('[VoiceAgentRoutes] Agent not found when getting signed URL:', {
-            agentId: elevenAgentId,
-            error: errorData,
-            source: agentConfig?.eleven_agent_id ? 'database' : 'default',
-            message: 'The specified agent ID does not exist in ElevenLabs. Please verify the agent ID in Settings or Render environment variables.',
-          });
-          return res.status(404).json({
-            success: false,
-            error: 'Agent not found',
-            message: `The ElevenLabs Agent ID "${elevenAgentId}" does not exist or is not accessible with your API key. Please verify the Agent ID in Settings or check your ElevenLabs dashboard.`,
-            agentId: elevenAgentId,
-            source: agentConfig?.eleven_agent_id ? 'database' : 'default',
-            suggestion: agentConfig?.eleven_agent_id 
-              ? 'The Agent ID from your database does not exist. Please update it in Settings.'
-              : 'No Agent ID configured. Please set ELEVENLABS_AGENT_ID_DEFAULT in environment variables or configure it in Settings.',
-          });
-        }
-        
-        // For other errors, fallback to direct URL
-        console.warn('[VoiceAgentRoutes] Failed to get signed URL, using direct URL:', signedUrlError.message);
-        wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(elevenAgentId)}`;
-      }
-    }
-
-    // Build conversation initiation data for browser parity with phone calls
-    let conversationInitData: any = null;
-    if (locationId) {
-      try {
-        const { loadConversationInitContext, buildConversationInitData } = await import('../utils/conversationInitBuilder');
-        const initContext = await loadConversationInitContext(locationId, {
-          testMode: true, // Browser test mode
-        });
-        conversationInitData = await buildConversationInitData(initContext);
-      } catch (initError: any) {
-        console.warn('[VoiceAgentRoutes] Failed to build conversation init data:', initError.message);
-        // Continue without init data (agent will use defaults)
-      }
-    }
-
-    console.log('[VoiceAgentRoutes] Generated stream token', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-      elevenAgentId,
-      customerId,
-      locationId: locationId || 'none',
-      wsUrlPrefix: wsUrl.substring(0, 80) + '...',
-      source: agentConfig?.eleven_agent_id ? 'database' : 'default',
-      hasInitData: !!conversationInitData,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        wsUrl,
-        agentId: elevenAgentId, // Return the actual ElevenLabs agent ID
-        customerId,
-        voiceId: voiceId || undefined,
-        conversation_initiation_client_data: conversationInitData || undefined,
+    // Save or Update Call-Log
+    const callLogData = {
+      call_sid: CallSid,
+      location_id: locationId || null,
+      from_e164: From,
+      to_e164: To,
+      outcome: CallStatus,
+      duration_sec: parseInt(CallDuration || '0', 10),
+      direction: Direction || 'inbound',
+      ended_at: new Date().toISOString(),
+      notes_json: {
+        recording_url: RecordingUrl || null,
+        completed_at: new Date().toISOString(),
       },
-    });
+    };
+
+    const { error: upsertError } = await supabaseAdmin
+      .from('call_logs')
+      .upsert(callLogData, { onConflict: 'call_sid' });
+
+    if (upsertError) {
+      console.error('[VoiceAgentWebhook] Error logging call:', upsertError);
+      throw upsertError;
+    }
+
+    console.log('✅ Call logged successfully:', CallSid);
+    res.status(200).send('OK');
   } catch (error: any) {
-    console.error('[VoiceAgentRoutes] Error generating stream token:', {
-      error: error.message,
-      stack: error.stack,
-      customerId: req.body?.customerId,
-      agentId: req.body?.agentId,
-    });
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to generate stream token',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-    });
+    console.error('❌ Webhook error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -704,10 +799,10 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       try {
         const text = typeof data === 'string' ? data : (data as Buffer).toString('utf8');
         const message: TwilioStreamMessage = JSON.parse(text);
-        
+
         // Handle message in service
         twilioMediaStreamService.handleMessage(session, message);
-        
+
         // Bridge integration
         if (message.event === 'start' && message.start) {
           // Extract phoneNumber from customParameters (sent via TwiML <Parameter>)
@@ -715,8 +810,10 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
           if (phoneNumber) {
             session.phoneNumber = phoneNumber;
           }
-          console.log(`[TwilioMediaStream] start event customParameters callSid=${callSid} to=${phoneNumber || 'none'}`);
-          
+          console.log(
+            `[TwilioMediaStream] start event customParameters callSid=${callSid} to=${phoneNumber || 'none'}`,
+          );
+
           // Create bridge to ElevenLabs when stream starts
           // Bridge will try call_logs first, then fallback to phoneNumber from customParameters
           elevenLabsBridgeService.createBridge(callSid, session, phoneNumber).catch((error) => {
@@ -724,7 +821,11 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
             // Close session if bridge creation fails
             twilioMediaStreamService.cleanupSession(callSid, 'Bridge creation failed');
           });
-        } else if (message.event === 'media' && message.media?.payload && message.media.track === 'inbound') {
+        } else if (
+          message.event === 'media' &&
+          message.media?.payload &&
+          message.media.track === 'inbound'
+        ) {
           // Forward inbound audio to ElevenLabs bridge
           elevenLabsBridgeService.handleTwilioAudioByCallSid(callSid, message.media.payload);
         } else if (message.event === 'stop') {
@@ -732,7 +833,10 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
           elevenLabsBridgeService.closeBridge(callSid, 'Twilio stream stopped');
         }
       } catch (error: any) {
-        console.error(`[TwilioMediaStream] Error processing message callSid=${callSid}:`, error?.message || error);
+        console.error(
+          `[TwilioMediaStream] Error processing message callSid=${callSid}:`,
+          error?.message || error,
+        );
       }
     });
   });
@@ -763,7 +867,9 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
         if (event === 'start') {
           const startStreamSid = message?.start?.streamSid;
           const callSid = message?.start?.callSid;
-          console.log(`[TwilioStream] start streamSid=${startStreamSid || 'unknown'} callSid=${callSid || 'unknown'}`);
+          console.log(
+            `[TwilioStream] start streamSid=${startStreamSid || 'unknown'} callSid=${callSid || 'unknown'}`,
+          );
           return;
         }
 
@@ -782,7 +888,9 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
 
         if (event === 'stop') {
           const stopStreamSid = message?.stop?.streamSid;
-          console.log(`[TwilioStream] stop streamSid=${stopStreamSid || 'unknown'} frames=${frames} bytes=${bytes}`);
+          console.log(
+            `[TwilioStream] stop streamSid=${stopStreamSid || 'unknown'} frames=${frames} bytes=${bytes}`,
+          );
           ws.close();
           return;
         }
@@ -892,24 +1000,28 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
           ws.send(audio, { binary: true });
         },
         onTranscription: (text: string, isFinal: boolean) => {
-          ws.send(JSON.stringify({
-            type: 'transcription',
-            text,
-            isFinal,
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'transcription',
+              text,
+              isFinal,
+            }),
+          );
         },
         onError: (error: Error) => {
           console.error(`[ElevenLabs] Error in session ${sessionId}:`, error);
-          ws.send(JSON.stringify({
-            type: 'error',
-            error: error.message,
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              error: error.message,
+            }),
+          );
         },
         onClose: () => {
           console.log(`[ElevenLabs] Streaming session closed: ${sessionId}`);
           ws.close();
         },
-      }
+      },
     );
 
     try {
@@ -931,10 +1043,12 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
           }
         } catch (error: any) {
           console.error(`[ElevenLabs] Error processing message: ${error.message}`);
-          ws.send(JSON.stringify({
-            type: 'error',
-            error: 'Failed to process message',
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              error: 'Failed to process message',
+            }),
+          );
         }
       });
 
@@ -950,7 +1064,4 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
   });
 }
 
-
 export default router;
-
-
