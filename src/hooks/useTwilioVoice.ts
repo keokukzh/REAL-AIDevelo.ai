@@ -77,11 +77,21 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
       try {
         setState((prev) => ({ ...prev, isCalling: true, callStatus: 'connecting' }));
 
+        // Fetch config to get the Twilio phone number
+        const { data } = await apiClient.get<{ config: { twilioPhoneNumber: string } }>(
+          '/test-call/config',
+        );
+        const destination = data.config.twilioPhoneNumber;
+
+        if (!destination) {
+          throw new Error('Twilio phone number not configured');
+        }
+
         // Connect using Twilio Device
         // We pass params that will be sent to the TwiML App
         const call = await deviceRef.current.connect({
           params: {
-            To: '+19522951346',
+            To: destination,
             AgentId: agentId || '',
             LocationId: locationId,
           },
