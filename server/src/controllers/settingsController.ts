@@ -64,7 +64,7 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
 
     // 3. Check calendar integrations
     const { data: integrations } = await supabaseAdmin
-      .from('google_calendar_integrations')
+      .from('calendar_connections')
       .select('*')
       .eq('location_id', location.id)
       .maybeSingle();

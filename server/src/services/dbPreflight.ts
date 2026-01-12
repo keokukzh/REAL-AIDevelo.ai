@@ -7,7 +7,7 @@ const REQUIRED_TABLES = [
   'locations',
   'agent_configs',
   'phone_numbers',
-  'google_calendar_integrations',
+  'calendar_connections',
   'call_logs',
   'porting_requests',
 ] as const;

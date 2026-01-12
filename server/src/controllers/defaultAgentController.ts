@@ -176,7 +176,7 @@ export const createDefaultAgent = async (
 
     // Step 6: Load calendar status
     const { data: calendarData } = await supabaseAdmin
-      .from('google_calendar_integrations')
+      .from('calendar_connections')
       .select('id')
       .eq('location_id', location.id)
       .limit(1)
@@ -397,7 +397,7 @@ export const getDashboardOverview = async (
         .maybeSingle(),
       // Load calendar status and provider
       supabaseAdmin
-        .from('google_calendar_integrations')
+        .from('calendar_connections')
         .select('id, provider, connected_email')
         .eq('location_id', location.id)
         .eq('provider', 'google')
