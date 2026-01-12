@@ -45,7 +45,10 @@ export async function createCheckoutSession(
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: successUrl,
     cancel_url: cancelUrl,
-    metadata: { supabaseUserId, userId: user.id },
+    metadata: {
+      supabaseUserId,
+      userId: user.id,
+    },
   });
 
   return session;
