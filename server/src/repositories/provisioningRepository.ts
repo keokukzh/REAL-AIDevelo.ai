@@ -40,11 +40,11 @@ export async function ensureUserRow(
   // Check if user exists
   const { data: existingUser, error: findError } = await client
     .from('users')
-    .select('id, org_id, supabase_user_id, email, role')
+    .select('id, org_id, supabase_user_id, email')
     .eq('supabase_user_id', authUserId)
     .maybeSingle();
 
-  if (existingUser && !findError) return existingUser;
+  if (existingUser && !findError) return { ...existingUser, role: 'user' };
 
   // Create Org if needed
   let orgId = '';
@@ -89,7 +89,7 @@ export async function ensureUserRow(
       supabase_user_id: authUserId,
       email: email || null,
     })
-    .select('id, org_id, supabase_user_id, email, role')
+    .select('id, org_id, supabase_user_id, email')
     .single();
 
   if (userError) {
@@ -105,7 +105,8 @@ export async function ensureUserRow(
   }
 
   if (!newUser) throw new Error('Failed to create user: No data');
-  return newUser;
+  // Add role default to match signature until refactor
+  return { ...newUser, role: 'user' };
 }
 
 /**
