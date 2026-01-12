@@ -8,7 +8,7 @@
 
 ## Medium Priority
 
-- [ ] Add rate-limiting to all API endpoints
+- [x] Add rate-limiting to all API endpoints
 - [ ] Implement webhook signature verification (Twilio)
 - [ ] Add comprehensive error logging (Sentry)
 
