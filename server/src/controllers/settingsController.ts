@@ -11,82 +11,106 @@ import { InternalServerError, UnauthorizedError } from '../utils/errors';
 import axios from 'axios';
 import { config } from '../config/env';
 
-/**
- * GET /api/settings
- * Loads all settings for the authenticated user
- */
 export const getSettings = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.supabaseUser) {
       return next(new UnauthorizedError('Unauthorized'));
     }
 
-    const { supabaseUserId, email } = req.supabaseUser;
+    const { supabaseUserId, email: authEmail } = req.supabaseUser;
 
-    // Ensure user, org, location, and agent config exist
-    const userRow = await ensureUserRow(supabaseUserId, email || undefined);
-    const org = await ensureOrgForUser(supabaseUserId, email || undefined);
-    const location = await ensureDefaultLocation(org.id);
-    const agentConfig = await ensureAgentConfig(location.id);
+    // 1. Ensure/Fetch core entities
+    await ensureUserRow(supabaseUserId, authEmail || undefined);
 
-    // Get ElevenLabs Credits if API key is provided
-    let elevenLabsCredits = null;
-    const elevenLabsApiKey = config.elevenLabsApiKey; // Fallback to system key if needed
+    // Fetch full user data
+    const { data: user, error: userFetchError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('supabase_user_id', supabaseUserId)
+      .single();
+
+    if (userFetchError || !user) {
+      throw userFetchError || new Error('User not found after provisioning');
+    }
+
+    const organization = await ensureOrgForUser(supabaseUserId, authEmail || undefined);
+    const location = await ensureDefaultLocation(organization.id);
+
+    // Fetch all agents (agentConfigs) for the location
+    const { data: agents } = await supabaseAdmin
+      .from('agent_configs')
+      .select('*')
+      .eq('location_id', location.id);
+
+    // 2. Get ElevenLabs Credits if API key is provided
+    let quota = null;
+    const elevenLabsApiKey = user.elevenlabs_api_key || config.elevenLabsApiKey;
 
     if (elevenLabsApiKey) {
       try {
-        const response = await axios.get('https://api.elevenlabs.io/v1/user/subscription', {
+        const quotaRes = await axios.get('https://api.elevenlabs.io/v1/user/subscription', {
           headers: { 'xi-api-key': elevenLabsApiKey },
         });
-        const data = response.data;
-        elevenLabsCredits = {
-          characterCount: data.character_count,
-          characterLimit: data.character_limit,
-          percentageUsed: ((data.character_count / data.character_limit) * 100).toFixed(1),
+        const d = quotaRes.data;
+        quota = {
+          characterCount: d.character_count,
+          characterLimit: d.character_limit,
+          percentageUsed: ((d.character_count / d.character_limit) * 100).toFixed(1),
         };
       } catch (error) {
         console.error('[SettingsController] ElevenLabs Credits fetch error:', error);
       }
     }
 
-    // Check calendar connection
-    const { data: calendarIntegration } = await supabaseAdmin
+    // 3. Check calendar integrations
+    const { data: integrations } = await supabaseAdmin
       .from('google_calendar_integrations')
-      .select('id')
+      .select('*')
       .eq('location_id', location.id)
       .maybeSingle();
 
-    // Check phone numbers
-    const { data: phoneNumbers } = await supabaseAdmin
-      .from('phone_numbers')
-      .select('*')
-      .eq('location_id', location.id);
-
-    const settingsResponse: any = {
+    // 4. Assemble standard response
+    const response: any = {
       success: true,
       user: {
-        id: userRow.id,
-        email: userRow.email,
-        name: userRow.id, // Fallback
-        company: org.name,
+        id: user.id,
+        email: user.email,
+        name: user.full_name || user.email?.split('@')[0],
+        company: user.company_name || organization.name,
+        phone: user.phone_number,
       },
-      subscription: { plan: 'free', status: 'active' },
-      agentConfig: [agentConfig],
-      elevenLabsCredits,
-      calendarConnected: !!calendarIntegration,
-      twilioConnected: !!process.env.TWILIO_ACCOUNT_SID,
+      organization: {
+        id: organization.id,
+        name: organization.name,
+      },
+      location: location || null,
+      agents: agents || [],
+      integrations: {
+        elevenLabs: {
+          connected: !!user.elevenlabs_api_key,
+          quota: quota || null,
+        },
+        calendar: {
+          connected: !!integrations,
+          provider: integrations?.provider || null,
+        },
+        twilio: {
+          connected: !!user.twilio_account_sid,
+        },
+      },
     };
 
-    // Add warning if quota is critical (> 95% used)
-    if (elevenLabsCredits && parseFloat(elevenLabsCredits.percentageUsed) > 95) {
-      settingsResponse.warning = {
+    // 5. Add Warning ONLY (never return 400 here)
+    if (quota && parseFloat(quota.percentageUsed) > 95) {
+      response.warning = {
         type: 'quota_critical',
-        message: `ElevenLabs credits critically low (${elevenLabsCredits.percentageUsed}% used)`,
         severity: 'high',
+        message: `ElevenLabs credits critically low (${quota.percentageUsed}% used). Please upgrade or wait for reset.`,
+        action: 'upgrade_plan',
       };
     }
 
-    res.json(settingsResponse);
+    return res.status(200).json(response);
   } catch (error: any) {
     console.error('[SettingsController] Error loading settings:', error);
     next(new InternalServerError(error.message || 'Failed to load settings'));
