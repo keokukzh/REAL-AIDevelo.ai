@@ -1,11 +1,10 @@
 import React, { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Menu, X, LogIn, ArrowLeft } from 'lucide-react';
-import { useNavigation, useNavigationWithLocation } from '../hooks/useNavigation';
+import { Menu, X, LogIn } from 'lucide-react';
+import { useNavigationWithLocation } from '../hooks/useNavigation';
 import { useNavbarState } from '../hooks/useNavbarState';
-import { ROUTES, NAVIGATION_ITEMS, SECTION_LINKS } from '../config/navigation';
-import { NavLink } from './navigation/NavLink';
+import { ROUTES, SECTION_LINKS } from '../config/navigation';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useAuthContext } from '../contexts/AuthContext';
 
@@ -15,15 +14,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
   const { nav, location } = useNavigationWithLocation();
-  const {
-    hidden,
-    scrolled,
-    mobileMenuOpen,
-    setMobileMenuOpen,
-    voiceAgentsDropdownOpen,
-    setVoiceAgentsDropdownOpen,
-    dropdownRef,
-  } = useNavbarState();
+  const { mobileMenuOpen, setMobileMenuOpen, scrolled } = useNavbarState();
   const { isAuthenticated } = useAuthContext();
 
   const prefersReducedMotion = useReducedMotion();
@@ -34,30 +25,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
   const scrollYSpring = useSpring(scrollY, { stiffness: 100, damping: 30 });
 
   // Logo movement animations (parallax effect)
-  const leftLogoY = useTransform(scrollYSpring, [0, 500], [0, -10], { clamp: true });
   const centerLogoY = useTransform(scrollYSpring, [0, 500], [0, -6], { clamp: true });
-  const rightLogoY = useTransform(scrollYSpring, [0, 500], [0, -10], { clamp: true });
-
-  // Subtle rotation on scroll
-  const leftLogoRotate = useTransform(scrollYSpring, [0, 1000], [0, 3], { clamp: true });
-  const rightLogoRotate = useTransform(scrollYSpring, [0, 1000], [0, -3], { clamp: true });
 
   // Wave glow effect based on scroll
   const waveOffset = useTransform(scrollYSpring, [0, 1000], [0, 360]);
   const glowIntensity = useTransform(scrollYSpring, [0, 300], [0.2, 0.7], { clamp: true });
 
   // Logo glow effects (scroll-based)
-  const leftLogoGlow = useTransform(
-    scrollYSpring,
-    [0, 300],
-    ['drop-shadow(0_0_0px_rgba(218,41,28,0))', 'drop-shadow(0_0_15px_rgba(218,41,28,0.8))'],
-  );
   const centerLogoGlow = useTransform(
-    scrollYSpring,
-    [0, 300],
-    ['drop-shadow(0_0_0px_rgba(0,224,255,0))', 'drop-shadow(0_0_15px_rgba(0,224,255,0.8))'],
-  );
-  const rightLogoGlow = useTransform(
     scrollYSpring,
     [0, 300],
     ['drop-shadow(0_0_0px_rgba(0,224,255,0))', 'drop-shadow(0_0_15px_rgba(0,224,255,0.8))'],
@@ -95,22 +70,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     setMobileMenuOpen(false);
   };
 
-  // Determine active routes for highlighting
-  const isActiveRoute = (path: string) => {
-    if (path === ROUTES.HOME) {
-      return location.pathname === ROUTES.HOME;
-    }
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
   return (
     <motion.header
-      variants={{
-        visible: { y: 0 },
-        hidden: { y: '-100%' },
-      }}
-      animate={hidden ? 'hidden' : 'visible'}
-      transition={{ duration: 0.35, ease: 'easeInOut' }}
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3' : 'py-4'}`}
     >
       <div className="container mx-auto px-4 sm:px-6">
@@ -164,13 +125,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   animate={{ opacity: 1, x: 0 }}
                   whileHover={{ x: -1 }}
                 >
-                  <ArrowLeft
-                    size={16}
-                    className="transition-transform group-hover:-translate-x-1"
-                  />
                   Alle Services
                 </motion.a>
               )}
+              <motion.a
+                href={ROUTES.PRICING}
+                onClick={(e) => {
+                  e.preventDefault();
+                  nav.goTo(ROUTES.PRICING);
+                }}
+                className={`ml-4 flex items-center gap-2 transition-all text-sm font-medium px-3 py-1.5 rounded-full ${location.pathname === ROUTES.PRICING ? 'text-white bg-white/10' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+                whileHover={{ scale: 1.05 }}
+              >
+                Preise
+              </motion.a>
             </div>
 
             {/* Center: Main Logo - Perfectly Centered */}
@@ -338,6 +306,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
                   <LogIn size={18} />
                   <span>{isAuthenticated ? 'Dashboard' : 'Login'}</span>
                 </motion.button>
+                <div className="text-xl font-semibold text-gray-400 mb-4">Navigationsmenü</div>
+                <motion.a
+                  href={ROUTES.PRICING}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    nav.goTo(ROUTES.PRICING);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`text-2xl font-bold hover:text-accent cursor-pointer rounded px-2 py-1 min-h-[44px] flex items-center ${location.pathname === ROUTES.PRICING ? 'text-accent' : 'text-white'}`}
+                  whileHover={{ scale: 1.05, x: 4 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Preise
+                </motion.a>
                 <div className="text-xl font-semibold text-gray-400 mb-4">Sektionen</div>
                 {SECTION_LINKS.map((link) => (
                   <motion.a

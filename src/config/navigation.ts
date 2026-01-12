@@ -28,6 +28,7 @@ export const ROUTES = {
   IMPRESSUM: '/impressum',
   DATENSCHUTZ: '/datenschutz',
   AGB: '/agb',
+  PRICING: '/pricing',
 } as const;
 
 /**
@@ -46,6 +47,12 @@ export const NAVIGATION_ITEMS = {
     path: ROUTES.WEBDESIGN,
     icon: null,
     ariaLabel: 'Zur Webdesign Seite navigieren',
+  },
+  PRICING: {
+    label: 'Preise',
+    path: ROUTES.PRICING,
+    icon: null,
+    ariaLabel: 'Zur Preisübersicht navigieren',
   },
   DASHBOARD: {
     label: 'Dashboard',
@@ -72,12 +79,12 @@ export const SECTION_LINKS = [
 /**
  * Type for navigation item
  */
-export type NavigationItem = typeof NAVIGATION_ITEMS[keyof typeof NAVIGATION_ITEMS];
+export type NavigationItem = (typeof NAVIGATION_ITEMS)[keyof typeof NAVIGATION_ITEMS];
 
 /**
  * Type for route paths
  */
-export type RoutePath = typeof ROUTES[keyof typeof ROUTES];
+export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
 /**
  * Route metadata for breadcrumbs, titles, and navigation context
@@ -216,6 +223,12 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     group: 'legal',
     parent: null,
   },
+  [ROUTES.PRICING]: {
+    title: 'Preise',
+    breadcrumb: 'Preise',
+    group: 'public',
+    parent: null,
+  },
 };
 
 /**
@@ -245,7 +258,7 @@ export const getRouteMeta = (path: string): RouteMeta | null => {
       };
     }
   }
-  
+
   // Handle calendar callback routes
   if (path.startsWith('/calendar/') && path.includes('/callback')) {
     return {
@@ -256,6 +269,6 @@ export const getRouteMeta = (path: string): RouteMeta | null => {
       requiresAuth: true,
     };
   }
-  
+
   return ROUTE_META[path] || null;
 };
