@@ -85,6 +85,11 @@ const getOptionalEnvVars = () => ({
   // ElevenLabs Affiliate
   ELEVENLABS_AFFILIATE_LINK:
     process.env.ELEVENLABS_AFFILIATE_LINK || process.env.ELEVENLABS_AFFILLIATE_LINK || '',
+  // Rate Limiting
+  RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
+  RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '100',
+  AUTH_RATE_LIMIT_MAX: process.env.AUTH_RATE_LIMIT_MAX || '10',
+  VOICE_AGENT_RATE_LIMIT_MAX: process.env.VOICE_AGENT_RATE_LIMIT_MAX || '50',
 });
 
 const validateEnv = () => {
@@ -279,4 +284,9 @@ export const config = {
   devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
   devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',
   devSeedUserId: process.env.DEV_SEED_USER_ID || '00000000-0000-0000-0000-000000000001',
+  // Rate Limiting
+  rateLimitWindowMs: parseInt(optionalEnvVars.RATE_LIMIT_WINDOW_MS, 10),
+  rateLimitMaxRequests: parseInt(optionalEnvVars.RATE_LIMIT_MAX_REQUESTS, 10),
+  authRateLimitMax: parseInt(optionalEnvVars.AUTH_RATE_LIMIT_MAX, 10),
+  voiceAgentRateLimitMax: parseInt(optionalEnvVars.VOICE_AGENT_RATE_LIMIT_MAX, 10),
 };

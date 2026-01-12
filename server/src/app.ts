@@ -17,7 +17,6 @@ import {
   corsMiddleware,
   optionsHandler,
   helmetMiddleware,
-  rateLimitMiddleware,
   varyOriginMiddleware,
 } from './middleware/security';
 import { timeoutMiddleware } from './middleware/timeout';
@@ -25,6 +24,13 @@ import { cacheMiddleware } from './middleware/cache';
 import { queryMonitorMiddleware } from './middleware/queryMonitor';
 import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
 import { devBypassAuth } from './middleware/devBypassAuth';
+import {
+  generalLimiter,
+  authLimiter,
+  voiceAgentLimiter,
+  webhookLimiter,
+  publicLimiter,
+} from './middleware/rateLimiter';
 
 // Consolidated Routes
 import apiV1Router from './routes/index';
@@ -55,7 +61,18 @@ app.use(helmetMiddleware);
 app.options('*', optionsHandler);
 app.use(corsMiddleware);
 app.use(varyOriginMiddleware);
-app.use(rateLimitMiddleware);
+
+// --- Rate Limiting ---
+// General Rate Limiter for all API routes
+app.use('/api/', generalLimiter);
+
+// Tiered Rate Limiters
+app.use('/api/auth/', authLimiter);
+app.use('/api/voice/', voiceAgentLimiter);
+app.use('/api/v1/voice/', voiceAgentLimiter); // Support v1 versioned calls
+app.use('/api/stripe/webhook', webhookLimiter); // Specific for Stripe webhooks
+app.use('/api/public/', publicLimiter);
+app.get('/health', publicLimiter); // Protect health checks
 
 // --- Compression & Body Parsing ---
 app.use(
