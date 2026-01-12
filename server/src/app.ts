@@ -31,6 +31,7 @@ import apiV1Router from './routes/index';
 // Setup services
 import { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
 import { PERFORMANCE } from './config/constants';
+import stripeRoutes from './routes/stripeRoutes';
 
 // --- Initialization ---
 initSentry();
@@ -62,6 +63,10 @@ app.use(
     },
   }),
 );
+
+// --- Stripe Webhook (MUST be before express.json()) ---
+app.use('/api/v1/stripe/webhook', stripeRoutes);
+app.use('/api/stripe/webhook', stripeRoutes);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

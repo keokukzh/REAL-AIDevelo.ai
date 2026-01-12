@@ -28,6 +28,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@qdrant/js-client-rest": "^1.16.2",
+    "@sentry/node": "^8.45.0",
     "@supabase/supabase-js": "^2.87.1",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
@@ -35,8 +36,8 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/morgan": "^1.9.9",
     "@types/multer": "^2.0.0",
-    "@types/nodemailer": "^6.4.14",
     "@types/node": "^20.11.19",
+    "@types/nodemailer": "^6.4.14",
     "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.4",
     "@types/pg": "^8.6.0",
@@ -65,13 +66,13 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.11.0",
     "socket.io": "^4.8.1",
+    "stripe": "^20.1.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "typescript": "^5.3.3",
     "uuid": "^13.0.0",
     "ws": "^8.18.3",
-    "zod": "^3.25.76",
-    "@sentry/node": "^8.45.0"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.15",
