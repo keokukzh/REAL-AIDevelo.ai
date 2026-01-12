@@ -63,16 +63,20 @@ CREATE TABLE IF NOT EXISTS phone_numbers (
 CREATE TABLE IF NOT EXISTS calendar_connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL DEFAULT 'google',
-  calendar_id TEXT NOT NULL DEFAULT 'primary',
+  provider TEXT NOT NULL CHECK (provider IN ('google', 'outlook', 'microsoft')),
   connected_email TEXT,
-  refresh_token_encrypted TEXT NOT NULL,
   access_token TEXT,
+  refresh_token_encrypted TEXT NOT NULL,
   expiry_ts TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true,
+  last_synced_at TIMESTAMPTZ,
+  metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(location_id, provider)
 );
+
+CREATE INDEX IF NOT EXISTS idx_calendar_connections_is_active ON calendar_connections(is_active);
 
 -- Call Logs
 CREATE TABLE IF NOT EXISTS call_logs (

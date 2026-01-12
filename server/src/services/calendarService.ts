@@ -611,4 +611,42 @@ export const calendarService = {
       provider: row.provider as 'google' | 'outlook',
     };
   },
+
+  /**
+   * Get all calendar connections for a location
+   */
+  async getConnections(locationId: string): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from('calendar_connections')
+      .select('id, provider, connected_email, created_at, updated_at') // Using connected_email
+      .eq('location_id', locationId);
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map((conn) => ({
+      id: conn.id,
+      provider: conn.provider,
+      email: conn.connected_email, // Map to email for frontend compatibility
+      connected_at: conn.created_at,
+      is_active: true, // Assuming active if present for now
+      last_synced_at: conn.updated_at,
+    }));
+  },
+
+  /**
+   * Delete a calendar connection
+   */
+  async deleteConnection(locationId: string, connectionId: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('calendar_connections')
+      .delete()
+      .eq('id', connectionId)
+      .eq('location_id', locationId); // Ensure ownership
+
+    if (error) {
+      throw error;
+    }
+  },
 };

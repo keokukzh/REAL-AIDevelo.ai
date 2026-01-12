@@ -1,350 +1,209 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { SideNav } from '../components/dashboard/SideNav';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Card } from '../components/newDashboard/ui/Card';
-import { Button } from '../components/newDashboard/ui/Button';
-import { AvailabilityModal } from '../components/dashboard/AvailabilityModal';
-import { CalendarEventModal } from '../components/dashboard/CalendarEventModal';
-import { CalendarView } from '../components/dashboard/CalendarView';
-import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents';
-import { apiClient } from '../services/apiClient';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from '../components/ui/Toast';
-import { logger } from '../lib/logger';
-import { CALENDAR_OAUTH_WINDOW } from '../config/constants';
-import { 
-  Calendar, 
-  Plus, 
-  Search,
-  AlertCircle
-} from 'lucide-react';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { FaMicrosoft, FaGoogle, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import apiClient from '../services/apiClient';
+
+interface CalendarConnection {
+  id: string;
+  provider: 'microsoft' | 'google' | 'outlook';
+  email: string; // Mapped from connected_email
+  connected_at: string;
+  is_active: boolean;
+  last_synced_at?: string;
+}
 
 export const CalendarPage = () => {
-  const { data: overview, isLoading, error, refetch } = useDashboardOverview();
-  const queryClient = useQueryClient();
-  
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | undefined>();
-  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>();
+  const [connections, setConnections] = useState<CalendarConnection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
 
-  const calendarConnected = overview?.status?.calendar === 'connected';
-  const locationId = overview?.location?.id || '';
+  useEffect(() => {
+    fetchConnections();
 
-  // Calculate date range for current view (we'll use month range for now, CalendarView will handle filtering)
-  const dateRange = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    return { start: monthStart, end: monthEnd };
-  }, [currentDate]);
+    // Check for OAuth callback success/error
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === 'microsoft') {
+      toast.success('Microsoft Calendar erfolgreich verbunden!');
+      window.history.replaceState({}, '', '/dashboard/calendar');
+    } else if (params.get('error')) {
+      toast.error('Verbindung fehlgeschlagen. Bitte versuche es erneut.');
+      window.history.replaceState({}, '', '/dashboard/calendar');
+    }
+  }, []);
 
-  // Fetch calendar events
-  const { events, refetch: refetchEvents } = useCalendarEvents({
-    locationId,
-    start: dateRange.start,
-    end: dateRange.end,
-    enabled: calendarConnected && !!locationId,
-  });
-
-  // Handle calendar connect
-  const handleConnectCalendar = async () => {
+  const fetchConnections = async () => {
     try {
-      const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>('/calendar/google/auth');
-      
-      if (response.data?.success && response.data.data?.authUrl) {
-        // Open OAuth window
-        const width = CALENDAR_OAUTH_WINDOW.WIDTH;
-        const height = CALENDAR_OAUTH_WINDOW.HEIGHT;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-
-        const authWindow = window.open(
-          response.data.data.authUrl,
-          'Calendar OAuth',
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
-
-        if (!authWindow) {
-          toast.error('Pop-up wurde blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
-          return;
-        }
-
-        // Listen for OAuth callback
-        const messageListener = (event: MessageEvent) => {
-          // Accept messages from backend (real-aidevelo-ai.onrender.com) or frontend
-          const allowedOrigins = [
-            'https://real-aidevelo-ai.onrender.com',
-            'https://aidevelo.ai',
-            'https://www.aidevelo.ai',
-            globalThis.location.origin,
-          ];
-          
-          const isAllowed = allowedOrigins.some(origin => 
-            event.origin === origin || 
-            event.origin.includes(origin.replace('https://', '').replace('http://', ''))
-          );
-          
-          if (!isAllowed) {
-            return;
-          }
-
-          if (event.data?.type === 'calendar-oauth-success') {
-            logger.info('[CalendarPage] Calendar OAuth success via postMessage');
-            toast.success('Kalender erfolgreich verbunden');
-            queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-            refetch();
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-          } else if (event.data?.type === 'calendar-oauth-error') {
-            const errorMsg = typeof event.data.message === 'string' 
-              ? event.data.message 
-              : 'Fehler bei der Kalender-Verbindung';
-            toast.error(errorMsg);
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-          }
-        };
-
-        window.addEventListener('message', messageListener);
-
-        // Check if window was closed manually
-        const checkClosed = setInterval(() => {
-          if (authWindow?.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', messageListener);
-          }
-        }, 1000);
-      } else {
-        throw new Error('Fehler beim Abrufen der OAuth-URL');
-      }
-    } catch (error: any) {
-      logger.error('[CalendarPage] Calendar connection error', error instanceof Error ? error : new Error(String(error)));
-      
-      // Extract error message from various error formats
-      let errorMsg = 'Unbekannter Fehler';
-      
-      if (error?.response?.data) {
-        // Handle Axios error response
-        const errorData = error.response.data;
-        if (typeof errorData.error === 'string') {
-          errorMsg = errorData.error;
-        } else if (typeof errorData.message === 'string') {
-          errorMsg = errorData.message;
-        } else if (typeof errorData === 'string') {
-          errorMsg = errorData;
-        } else if (errorData.error && typeof errorData.error === 'object') {
-          // If error is an object, try to extract message
-          errorMsg = errorData.error.message || errorData.error.error || JSON.stringify(errorData.error);
-        }
-      } else if (error?.message) {
-        errorMsg = error.message;
-      } else if (typeof error === 'string') {
-        errorMsg = error;
-      }
-      
-      toast.error(`Fehler beim Verbinden: ${errorMsg}`);
+      const response = await apiClient.get<{ connections: CalendarConnection[] }>(
+        '/calendar/connections',
+      );
+      setConnections(response.data.connections || []);
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+      // toast.error('Fehler beim Laden der Kalender-Verbindungen');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle calendar disconnect
-  const handleDisconnectCalendar = async () => {
-    if (!confirm('Möchten Sie den Kalender wirklich trennen?')) {
-      return;
-    }
-
+  const connectMicrosoft = async () => {
     try {
-      const response = await apiClient.delete('/calendar/google/disconnect');
-      if (response.data?.success) {
-        toast.success('Kalender erfolgreich getrennt');
-        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-        refetch();
-      } else {
-        throw new Error('Disconnect fehlgeschlagen');
-      }
-    } catch (error: any) {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Unbekannter Fehler';
-      toast.error(`Fehler beim Trennen: ${errorMsg}`);
+      setConnecting(true);
+      const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
+        '/calendar/outlook/auth',
+      );
+
+      if (!response.data.success || !response.data.data.authUrl)
+        throw new Error('Failed to get auth URL');
+
+      const { authUrl } = response.data.data;
+
+      // Redirect to Microsoft OAuth
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error connecting Microsoft:', error);
+      toast.error('Fehler beim Verbinden mit Microsoft');
+      setConnecting(false);
     }
   };
 
-  // Handle create appointment from availability slot (memoized)
-  const handleCreateFromSlot = useCallback((slot: { start: string; end: string }) => {
-    setSelectedSlot(slot);
-    setSelectedEvent(undefined);
-    setIsAvailabilityModalOpen(false);
-    setIsEventModalOpen(true);
-  }, []);
+  const disconnectCalendar = async (connectionId: string) => {
+    if (!confirm('Möchtest du diese Kalender-Verbindung wirklich trennen?')) return;
 
-  // Handle event click (memoized)
-  const handleEventClick = useCallback((event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setSelectedSlot(undefined);
-    setIsEventModalOpen(true);
-  }, []);
+    try {
+      await apiClient.delete(`/calendar/connections/${connectionId}`);
 
-  // Handle event edit (memoized)
-  const handleEventEdit = useCallback((event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setSelectedSlot(undefined);
-    setIsEventModalOpen(true);
-  }, []);
+      toast.success('Kalender erfolgreich getrennt');
+      fetchConnections();
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      toast.error('Fehler beim Trennen der Verbindung');
+    }
+  };
 
-  // Handle event delete (will be handled by CalendarEventModal) (memoized)
-  const handleEventDelete = useCallback(() => {
-    // Delete is handled in CalendarEventModal
-    refetchEvents();
-  }, [refetchEvents]);
+  // Normalize provider names
+  const microsoftConnection = connections.find(
+    (c) => c.provider === 'microsoft' || c.provider === 'outlook',
+  );
 
-  // Handle date click (create new event on that date) (memoized)
-  const handleDateClick = useCallback((date: Date) => {
-    const start = new Date(date);
-    start.setHours(9, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(9, 30, 0, 0);
-    
-    setSelectedSlot({
-      start: start.toISOString(),
-      end: end.toISOString(),
-    });
-    setSelectedEvent(undefined);
-    setIsEventModalOpen(true);
-  }, []);
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background flex font-sans text-white relative">
-        <SideNav />
-        <div className="flex-1 flex items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !overview) {
-    return (
-      <div className="min-h-screen bg-background flex font-sans text-white relative">
-        <SideNav />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <AlertCircle className="mx-auto mb-4 text-red-500" size={48} />
-            <h2 className="text-xl font-semibold text-white mb-2">Fehler beim Laden</h2>
-            <p className="text-gray-400">Die Kalender-Daten konnten nicht geladen werden.</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <FaSpinner className="animate-spin text-4xl text-cyan-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex font-sans text-white relative">
-      <SideNav />
-      
-      <main className="flex-1 ml-64 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-16 bg-black/60 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
-          <div>
-            <h1 className="text-2xl font-bold font-display text-white">Kalender</h1>
-            <p className="text-sm text-gray-400">Verwalte deine Termine und Kalender-Integration</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {calendarConnected ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAvailabilityModalOpen(true)}
-                >
-                  <Search size={16} className="mr-2" />
-                  Verfügbarkeit prüfen
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setSelectedEvent(undefined);
-                    setSelectedSlot(undefined);
-                    setIsEventModalOpen(true);
-                  }}
-                >
-                  <Plus size={16} className="mr-2" />
-                  Termin erstellen
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={handleConnectCalendar}
-              >
-                <Calendar size={16} className="mr-2" />
-                Google Calendar verbinden
-              </Button>
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Kalender-Integrationen</h1>
+        <p className="text-gray-400">
+          Verbinde deinen Kalender, damit der Voice Agent Termine verwalten kann
+        </p>
+      </div>
+
+      {/* Connection Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Microsoft 365 Calendar */}
+        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/10 p-3 rounded-lg">
+                <FaMicrosoft className="text-3xl text-blue-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white text-lg">Microsoft 365</h3>
+                <p className="text-sm text-gray-400">Outlook, Office 365</p>
+              </div>
+            </div>
+            {microsoftConnection?.is_active && (
+              <div className="bg-green-500/10 p-2 rounded-full">
+                <FaCheck className="text-green-500 text-xl" />
+              </div>
             )}
           </div>
-        </header>
 
-        {/* Main Content */}
-        <div className="flex-1 p-8">
-          {calendarConnected ? (
-            <CalendarView
-              events={events}
-              currentDate={currentDate}
-              onDateChange={setCurrentDate}
-              onEventClick={handleEventClick}
-              onEventEdit={handleEventEdit}
-              onEventDelete={handleEventDelete}
-              onDateClick={handleDateClick}
-              calendarConnected={calendarConnected}
-              calendarProvider={overview.calendar_provider}
-              onDisconnect={handleDisconnectCalendar}
-            />
-          ) : (
-            <Card 
-              title="Kalender-Integration"
-              description="Verbinde deinen Kalender für automatische Terminbuchungen"
-            >
-              <div className="text-center py-12">
-                <Calendar className="mx-auto mb-4 text-gray-400" size={64} />
-                <p className="text-gray-300 mb-6 text-lg">
-                  Verbinde deinen Kalender, um Termine automatisch zu verwalten
+          {microsoftConnection ? (
+            <div className="space-y-3">
+              <div className="bg-gray-900 rounded-lg p-3">
+                <p className="text-xs text-gray-400 mb-1">Verbundenes Konto</p>
+                <p className="text-sm text-white font-medium">{microsoftConnection.email}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Seit: {new Date(microsoftConnection.connected_at).toLocaleDateString('de-CH')}
                 </p>
-                <Button
-                  onClick={handleConnectCalendar}
-                  size="lg"
-                >
-                  <Calendar size={20} className="mr-2" />
-                  Google Calendar verbinden
-                </Button>
               </div>
-            </Card>
+              <button
+                onClick={() => disconnectCalendar(microsoftConnection.id)}
+                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <FaTimes /> Verbindung trennen
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={connectMicrosoft}
+              disabled={connecting}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              {connecting ? (
+                <>
+                  <FaSpinner className="animate-spin" /> Verbinde...
+                </>
+              ) : (
+                <>
+                  <FaMicrosoft /> Mit Microsoft verbinden
+                </>
+              )}
+            </button>
           )}
         </div>
-      </main>
 
-      {/* Modals */}
-      {locationId && (
-        <>
-          <AvailabilityModal
-            isOpen={isAvailabilityModalOpen}
-            onClose={() => setIsAvailabilityModalOpen(false)}
-            locationId={locationId}
-            onCreateAppointment={handleCreateFromSlot}
-          />
-          <CalendarEventModal
-            isOpen={isEventModalOpen}
-            onClose={() => {
-              setIsEventModalOpen(false);
-              setSelectedEvent(undefined);
-              setSelectedSlot(undefined);
-              refetchEvents();
-            }}
-            locationId={locationId}
-            event={selectedEvent}
-            initialSlot={selectedSlot}
-          />
-        </>
-      )}
+        {/* Google Calendar - Coming Soon */}
+        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 opacity-50 cursor-not-allowed">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-500/10 p-3 rounded-lg">
+                <FaGoogle className="text-3xl text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white text-lg">Google Calendar</h3>
+                <p className="text-sm text-gray-400">Gmail, Google Workspace</p>
+              </div>
+            </div>
+          </div>
+          <button
+            disabled
+            className="w-full bg-gray-700 text-gray-400 px-4 py-3 rounded-lg font-medium cursor-not-allowed"
+          >
+            Bald verfügbar
+          </button>
+        </div>
+      </div>
+
+      {/* Features & Instructions */}
+      <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-6">
+        <h4 className="font-semibold text-white mb-4 text-lg">✨ Funktionen</h4>
+        <ul className="space-y-3 text-sm text-gray-300">
+          <li className="flex items-start gap-3">
+            <FaCheck className="text-cyan-400 mt-1 flex-shrink-0" />
+            <span>Voice Agent kann freie Termine in deinem Kalender finden</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <FaCheck className="text-cyan-400 mt-1 flex-shrink-0" />
+            <span>Automatische Terminbuchung direkt im Gespräch</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <FaCheck className="text-cyan-400 mt-1 flex-shrink-0" />
+            <span>Echtzeit-Synchronisation mit deinem Kalender</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <FaCheck className="text-cyan-400 mt-1 flex-shrink-0" />
+            <span>Sichere OAuth 2.0 Authentifizierung - du behältst volle Kontrolle</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 };
+
+export default CalendarPage;

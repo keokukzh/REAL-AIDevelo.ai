@@ -12,6 +12,69 @@ const router = Router();
 
 /**
  * @swagger
+ * /calendar/connections:
+ *   get:
+ *     summary: List all calendar connections
+ *     tags: [Calendar]
+ *     responses:
+ *       200:
+ *         description: List of connections
+ */
+router.get(
+  '/connections',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { supabaseUserId, email } = req.supabaseUser!;
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      const connections = await calendarService.getConnections(location.id);
+
+      res.json({ connections });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /calendar/connections/{id}:
+ *   delete:
+ *     summary: Delete a calendar connection
+ *     tags: [Calendar]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Connection deleted
+ */
+router.delete(
+  '/connections/:id',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { supabaseUserId, email } = req.supabaseUser!;
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      await calendarService.deleteConnection(location.id, id);
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
  * /calendar/{provider}/auth:
  *   get:
  *     summary: Get OAuth URL for calendar provider
