@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaMicrosoft, FaGoogle, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import apiClient from '../services/apiClient';
+import { apiClient } from '../services/apiClient';
 
 interface CalendarConnection {
   id: string;
