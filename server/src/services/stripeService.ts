@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from './supabaseDb';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-12-15.clover' as any,
 });
 
 /**
@@ -101,7 +101,9 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
         .from('subscriptions')
         .update({
           status: subscription.status,
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          current_period_end: new Date(
+            (subscription as any).current_period_end * 1000,
+          ).toISOString(),
         })
         .eq('stripe_subscription_id', subscription.id);
       break;
