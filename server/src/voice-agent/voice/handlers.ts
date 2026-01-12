@@ -7,6 +7,11 @@ import { sessionStore } from './session';
 import { voiceAgentConfig } from '../config';
 import axios from 'axios';
 import { VoiceAgentSession } from '../types';
+import { AzureTTS } from '../../services/AzureTTS';
+import { DeepSeekLLM } from '../../services/DeepSeekLLM';
+
+const tts = new AzureTTS();
+const llm = new DeepSeekLLM();
 
 /**
  * Voice Pipeline Handlers
@@ -38,14 +43,10 @@ export class VoicePipelineHandler {
     // Get or create session
     const existingSession = sessionStore.get(this.options.sessionId);
     if (!existingSession) {
-      this.session = sessionStore.create(
-        this.options.customerId,
-        this.options.agentId,
-        {
-          companyName: this.options.companyName,
-          industry: this.options.industry,
-        }
-      );
+      this.session = sessionStore.create(this.options.customerId, this.options.agentId, {
+        companyName: this.options.companyName,
+        industry: this.options.industry,
+      });
     } else {
       this.session = existingSession;
     }
@@ -81,7 +82,9 @@ export class VoicePipelineHandler {
 
     // this.realtimeClient = new OpenAIRealtimeClient(callbacks);
     // await this.realtimeClient.connect();
-    console.warn('[VoicePipeline] OpenAI Realtime experiment removed - use ElevenLabs register-call instead');
+    console.warn(
+      '[VoicePipeline] OpenAI Realtime experiment removed - use ElevenLabs register-call instead',
+    );
   }
 
   /**
@@ -116,7 +119,9 @@ export class VoicePipelineHandler {
         ragResultCount = ragContext.resultCount;
         ragInjectedChars = ragContext.injectedChars;
 
-        console.log(`[RAG] query="${transcript.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${this.options.customerId}`);
+        console.log(
+          `[RAG] query="${transcript.substring(0, 50)}..." results=${ragResultCount} injectedChars=${ragInjectedChars} locationId=${this.options.customerId}`,
+        );
       } catch (error: any) {
         console.error('[RAG] failed, continuing without context:', error.message);
         // Graceful fallback: continue without RAG context
@@ -136,7 +141,7 @@ export class VoicePipelineHandler {
         companyName: this.options.companyName,
         industry: this.options.industry,
         conversationHistory,
-      }
+      },
     );
 
     // Inject RAG context text if available
@@ -145,9 +150,19 @@ export class VoicePipelineHandler {
     }
 
     // Get LLM response
-    const response = await chatService.chatComplete(transcript, {
-      context: promptContext,
-    });
+    // Get LLM response (using DeepSeek)
+    const messages: Array<{ role: string; content: string }> = [
+      {
+        role: 'system',
+        content: (promptContext as any).systemPrompt || 'You are a helpful assistant.',
+      },
+      ...(conversationHistory || []),
+      { role: 'user', content: transcript },
+    ];
+    const responseContent = await llm.chat(messages);
+
+    // Create a response object matching the old structure if needed, or just use content
+    const response = { content: responseContent };
 
     // Add assistant response to history
     this.session.context?.conversationHistory.push({
@@ -165,30 +180,11 @@ export class VoicePipelineHandler {
   }
 
   /**
-   * Generate TTS audio via ElevenLabs
+   * Generate TTS audio via Azure TTS (replaces ElevenLabs)
    */
   private async generateTTS(text: string): Promise<Buffer> {
     try {
-      const response = await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceAgentConfig.tts.defaultVoice}`,
-        {
-          text,
-          model_id: 'eleven_turbo_v2_5',
-        },
-        {
-          headers: {
-            'xi-api-key': voiceAgentConfig.tts.elevenLabsApiKey,
-            'Content-Type': 'application/json',
-          },
-          responseType: 'arraybuffer',
-        }
-      );
-
-      // Track character costs from response headers (per API reference)
-      const { extractElevenLabsCosts } = await import('../../utils/elevenLabsCostTracking');
-      extractElevenLabsCosts(response, `text-to-speech/${voiceAgentConfig.tts.defaultVoice}`);
-
-      return Buffer.from(response.data);
+      return await tts.synthesize(text);
     } catch (error) {
       console.error(`[VoicePipeline] TTS error: ${error}`);
       throw error;
@@ -203,7 +199,9 @@ export class VoicePipelineHandler {
     // if (this.realtimeClient) {
     //   this.realtimeClient.sendAudio(audio);
     // }
-    console.warn('[VoicePipeline] sendAudio not implemented - use ElevenLabs register-call instead');
+    console.warn(
+      '[VoicePipeline] sendAudio not implemented - use ElevenLabs register-call instead',
+    );
   }
 
   /**
@@ -231,4 +229,3 @@ export class VoicePipelineHandler {
     }
   }
 }
-

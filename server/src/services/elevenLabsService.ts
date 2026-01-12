@@ -21,26 +21,24 @@ export class ElevenLabsService {
         { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', category: 'premade' },
       ];
     }
-    
+
     try {
-      const response = await circuitBreakers.elevenLabs.execute(
-        () => retryApiCall(
-          () => axios.get(`${API_BASE}/voices`, {
+      const response = await circuitBreakers.elevenLabs.execute(() =>
+        retryApiCall(() =>
+          axios.get(`${API_BASE}/voices`, {
             headers: { 'xi-api-key': config.elevenLabsApiKey },
-            timeout: API_TIMEOUTS.ELEVENLABS_VOICE_FETCH
-          })
-        )
+            timeout: API_TIMEOUTS.ELEVENLABS_VOICE_FETCH,
+          }),
+        ),
       );
-      
+
       const allVoices = response.data.voices;
       // Simple logic to return relevant voices (in reality, we might filter by 'labels' or specific IDs known to be good)
       // For now, return top 10 to avoid payload bloat
       return allVoices.slice(0, 10);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        throw new InternalServerError(
-          `Failed to fetch voices from ElevenLabs: ${error.message}`
-        );
+        throw new InternalServerError(`Failed to fetch voices from ElevenLabs: ${error.message}`);
       }
       throw new InternalServerError('Failed to fetch voices from ElevenLabs');
     }
@@ -48,15 +46,15 @@ export class ElevenLabsService {
 
   /**
    * Create a Conversational Agent in ElevenLabs
-   * 
+   *
    * Creates a new conversational AI agent in ElevenLabs with the specified configuration.
    * The agent is configured with system prompt, voice settings, and language.
-   * 
+   *
    * @param agentName - Name of the agent
    * @param agentConfig - Agent configuration including systemPrompt, elevenLabs settings
    * @returns Promise resolving to ElevenLabs agent ID
    * @throws {InternalServerError} If agent creation fails or API key is invalid
-   * 
+   *
    * @example
    * ```typescript
    * const agentId = await elevenLabsService.createAgent('My Agent', {
@@ -72,27 +70,27 @@ export class ElevenLabsService {
         conversation_config: {
           agent: {
             prompt: {
-              prompt: agentConfig.systemPrompt
+              prompt: agentConfig.systemPrompt,
             },
-            first_message: "Grüezi, hier ist der virtuelle Assistent von " + agentName, // Dynamic first message
-            language: "de" // Default to German for now, mapped from agentConfig.primaryLocale
+            first_message: 'Grüezi, hier ist der virtuelle Assistent von ' + agentName, // Dynamic first message
+            language: 'de', // Default to German for now, mapped from agentConfig.primaryLocale
           },
           tts: {
-            voice_id: agentConfig.elevenLabs.voiceId
-          }
-        }
+            voice_id: agentConfig.elevenLabs.voiceId,
+          },
+        },
       };
 
-      const response = await circuitBreakers.elevenLabs.execute(
-        () => retryApiCall(
-          () => axios.post(`${API_BASE}/convai/agents/create`, payload, {
-            headers: { 
+      const response = await circuitBreakers.elevenLabs.execute(() =>
+        retryApiCall(() =>
+          axios.post(`${API_BASE}/convai/agents/create`, payload, {
+            headers: {
               'xi-api-key': config.elevenLabsApiKey,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            timeout: API_TIMEOUTS.ELEVENLABS_AGENT_CREATION
-          })
-        )
+            timeout: API_TIMEOUTS.ELEVENLABS_AGENT_CREATION,
+          }),
+        ),
       );
 
       // Track character costs from response headers (per API reference)
@@ -100,133 +98,56 @@ export class ElevenLabsService {
 
       return response.data.agent_id;
     } catch (error) {
-        // Detailed error logging
-        if (axios.isAxiosError(error)) {
-          const errorMessage = error.response?.data 
-            ? JSON.stringify(error.response.data)
-            : error.message;
-          throw new InternalServerError(
-            `ElevenLabs Agent Creation Failed: ${errorMessage}`
-          );
-        }
-        throw new InternalServerError('Failed to create agent in ElevenLabs');
+      // Detailed error logging
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data
+          ? JSON.stringify(error.response.data)
+          : error.message;
+        throw new InternalServerError(`ElevenLabs Agent Creation Failed: ${errorMessage}`);
+      }
+      throw new InternalServerError('Failed to create agent in ElevenLabs');
     }
   }
 
   /**
    * Generate speech from text using ElevenLabs TTS
    */
-  async generateSpeech(text: string, voiceId: string = '21m00Tcm4TlvDq8ikWAM', modelId: string = 'eleven_multilingual_v2'): Promise<Buffer> {
-    // Check if API key is configured
-    if (!config.isElevenLabsConfigured) {
-      throw new InternalServerError(
-        'ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in your .env file. ' +
-        'Get your API key from: https://elevenlabs.io/app/settings/api-keys'
-      );
-    }
-    
+  /**
+   * Generate speech from text using Azure TTS (cost optimized from ElevenLabs)
+   */
+  async generateSpeech(
+    text: string,
+    voiceId: string = '21m00Tcm4TlvDq8ikWAM',
+    modelId: string = 'eleven_multilingual_v2',
+  ): Promise<Buffer> {
     try {
-      const response = await circuitBreakers.elevenLabs.execute(
-        () => retryApiCall(
-          () => axios.post(
-            `${API_BASE}/text-to-speech/${voiceId}`,
-            {
-              text,
-              model_id: modelId,
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-              },
-            },
-            {
-              headers: {
-                'xi-api-key': config.elevenLabsApiKey,
-                'Content-Type': 'application/json',
-              },
-              responseType: 'arraybuffer',
-              timeout: API_TIMEOUTS.ELEVENLABS,
-            }
-          )
-        )
-      );
-
-      // Track character costs from response headers (per API reference)
-      extractElevenLabsCosts(response, `text-to-speech/${voiceId}`);
-
-      return Buffer.from(response.data);
+      const { AzureTTS } = await import('./AzureTTS');
+      const tts = new AzureTTS();
+      return await tts.synthesize(text);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        let errorMessage = error.message;
-        
-        // Try to parse error response
-        if (error.response?.data) {
-          try {
-            // If data is already an object, stringify it
-            if (typeof error.response.data === 'object' && !Buffer.isBuffer(error.response.data)) {
-              errorMessage = JSON.stringify(error.response.data);
-            } 
-            // If data is a Buffer or ArrayBuffer, try to parse as text
-            else if (Buffer.isBuffer(error.response.data) || error.response.data instanceof ArrayBuffer) {
-              let text: string;
-              if (Buffer.isBuffer(error.response.data)) {
-                text = error.response.data.toString('utf-8');
-              } else {
-                text = Buffer.from(new Uint8Array(error.response.data)).toString('utf-8');
-              }
-              try {
-                const parsed = JSON.parse(text);
-                errorMessage = JSON.stringify(parsed);
-              } catch {
-                errorMessage = text || error.message;
-              }
-            }
-            // If data is a string, use it directly
-            else if (typeof error.response.data === 'string') {
-              errorMessage = error.response.data;
-            }
-            // Otherwise stringify
-            else {
-              errorMessage = JSON.stringify(error.response.data);
-            }
-          } catch (parseError) {
-            // If parsing fails, use status text or default message
-            errorMessage = error.response.statusText || error.message;
-          }
-        }
-        
-        // Extract meaningful error message
-        let userFriendlyMessage = 'ElevenLabs TTS Generation Failed';
-        if (error.response?.status === 401) {
-          userFriendlyMessage = 'ElevenLabs API-Schlüssel ungültig oder abgelaufen. Bitte überprüfen Sie Ihre API-Konfiguration.';
-        } else if (error.response?.status === 429) {
-          userFriendlyMessage = 'ElevenLabs API-Rate-Limit erreicht. Bitte versuchen Sie es später erneut.';
-        } else if (error.response?.status === 400) {
-          userFriendlyMessage = 'Ungültige Anfrage an ElevenLabs API. Bitte überprüfen Sie die Parameter.';
-        } else if (errorMessage && errorMessage.length < 500) {
-          // Only include error message if it's not too long
-          userFriendlyMessage = `ElevenLabs TTS Generation Failed: ${errorMessage}`;
-        }
-        
-        throw new InternalServerError(userFriendlyMessage);
-      }
-      throw new InternalServerError('Failed to generate speech from ElevenLabs');
+      console.error('Azure TTS synthesis failed:', error);
+      throw new InternalServerError('Failed to generate speech');
     }
   }
 
-    /**
+  /**
    * Trigger a test simulation
    * NOTE: This is a simplified call assuming we want to start a session or similar.
    * The actual 'simulate' endpoint might vary or require Stream integration.
    */
   async getAgentLink(agentId: string) {
-       // Return the widget link for simplicity in V1
-       return `https://elevenlabs.io/app/talk-to?agent_id=${agentId}`;
+    // Return the widget link for simplicity in V1
+    return `https://elevenlabs.io/app/talk-to?agent_id=${agentId}`;
   }
 
   /**
    * Create a voice clone from audio
    */
-  async createVoiceClone(audioBuffer: Buffer, name: string, mimeType: string = 'audio/mpeg'): Promise<string> {
+  async createVoiceClone(
+    audioBuffer: Buffer,
+    name: string,
+    mimeType: string = 'audio/mpeg',
+  ): Promise<string> {
     if (!config.isElevenLabsConfigured) {
       throw new InternalServerError('ElevenLabs API key is not configured');
     }
@@ -241,25 +162,23 @@ export class ElevenLabsService {
         contentType: mimeType,
       });
 
-      const response = await retryApiCall(
-        () => axios.post(`${API_BASE}/voices/add`, formData, {
+      const response = await retryApiCall(() =>
+        axios.post(`${API_BASE}/voices/add`, formData, {
           headers: {
             'xi-api-key': config.elevenLabsApiKey,
             'Content-Type': 'multipart/form-data',
           },
           timeout: API_TIMEOUTS.ELEVENLABS_VOICE_CLONE,
-        })
+        }),
       );
 
       return response.data.voice_id;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `ElevenLabs Voice Clone Creation Failed: ${errorMessage}`
-        );
+        throw new InternalServerError(`ElevenLabs Voice Clone Creation Failed: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to create voice clone in ElevenLabs');
     }
@@ -288,12 +207,10 @@ export class ElevenLabsService {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to get voice clone: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to get voice clone: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to get voice clone from ElevenLabs');
     }
@@ -314,12 +231,10 @@ export class ElevenLabsService {
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to delete voice clone: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to delete voice clone: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to delete voice clone from ElevenLabs');
     }
@@ -328,19 +243,22 @@ export class ElevenLabsService {
   /**
    * Update an agent in ElevenLabs
    */
-  async updateAgent(agentId: string, updates: {
-    name?: string;
-    prompt?: string;
-    voiceId?: string;
-    firstMessage?: string;
-  }): Promise<void> {
+  async updateAgent(
+    agentId: string,
+    updates: {
+      name?: string;
+      prompt?: string;
+      voiceId?: string;
+      firstMessage?: string;
+    },
+  ): Promise<void> {
     if (!config.isElevenLabsConfigured) {
       throw new InternalServerError('ElevenLabs API key is not configured');
     }
 
     try {
       const payload: any = {};
-      
+
       if (updates.name) payload.name = updates.name;
       if (updates.prompt || updates.voiceId || updates.firstMessage) {
         payload.conversation_config = {};
@@ -367,12 +285,10 @@ export class ElevenLabsService {
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to update agent in ElevenLabs: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to update agent in ElevenLabs: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to update agent in ElevenLabs');
     }
@@ -400,12 +316,10 @@ export class ElevenLabsService {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to get agent status: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to get agent status: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to get agent status from ElevenLabs');
     }
@@ -453,23 +367,23 @@ export class ElevenLabsService {
         timeout: 10000,
       });
 
-      return response.data.phone_numbers?.map((pn: any) => ({
-        id: pn.id,
-        providerSid: pn.provider_sid || pn.id,
-        number: pn.number,
-        country: pn.country || country,
-        status: pn.status || 'available',
-        assignedAgentId: pn.agent_id,
-        capabilities: pn.capabilities || { voice: true },
-      })) || [];
+      return (
+        response.data.phone_numbers?.map((pn: any) => ({
+          id: pn.id,
+          providerSid: pn.provider_sid || pn.id,
+          number: pn.number,
+          country: pn.country || country,
+          status: pn.status || 'available',
+          assignedAgentId: pn.agent_id,
+          capabilities: pn.capabilities || { voice: true },
+        })) || []
+      );
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to fetch phone numbers: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to fetch phone numbers: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to fetch phone numbers from ElevenLabs');
     }
@@ -488,7 +402,7 @@ export class ElevenLabsService {
       let targetPhoneNumberId = phoneNumberId;
       if (!targetPhoneNumberId) {
         const availableNumbers = await this.getAvailablePhoneNumbers('CH');
-        const available = availableNumbers.find(pn => pn.status === 'available');
+        const available = availableNumbers.find((pn) => pn.status === 'available');
         if (!available) {
           throw new InternalServerError('No available phone numbers found');
         }
@@ -504,7 +418,7 @@ export class ElevenLabsService {
             'Content-Type': 'application/json',
           },
           timeout: 30000,
-        }
+        },
       );
 
       return {
@@ -518,12 +432,10 @@ export class ElevenLabsService {
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to assign phone number: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to assign phone number: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to assign phone number in ElevenLabs');
     }
@@ -541,7 +453,7 @@ export class ElevenLabsService {
       const payload: any = {
         agent_id: settings.agentId,
       };
-      
+
       if (settings.greetingMessage) {
         payload.greeting_message = settings.greetingMessage;
       }
@@ -561,12 +473,10 @@ export class ElevenLabsService {
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to update phone number settings: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to update phone number settings: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to update phone number settings in ElevenLabs');
     }
@@ -594,12 +504,10 @@ export class ElevenLabsService {
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data 
+        const errorMessage = error.response?.data
           ? JSON.stringify(error.response.data)
           : error.message;
-        throw new InternalServerError(
-          `Failed to get phone number status: ${errorMessage}`
-        );
+        throw new InternalServerError(`Failed to get phone number status: ${errorMessage}`);
       }
       throw new InternalServerError('Failed to get phone number status from ElevenLabs');
     }
