@@ -4,13 +4,42 @@ import { BadRequestError, InternalServerError } from '../utils/errors';
 import axios from 'axios';
 import { config } from '../config/env';
 
+export const getCredits = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const apiKey = (req.headers['x-elevenlabs-api-key'] as string) || config.elevenLabsApiKey;
+
+    if (!apiKey) {
+      return next(new BadRequestError('ElevenLabs API Key required'));
+    }
+
+    const response = await axios.get('https://api.elevenlabs.io/v1/user/subscription', {
+      headers: { 'xi-api-key': apiKey },
+    });
+
+    const data = response.data;
+    res.json({
+      success: true,
+      data: {
+        characterCount: data.character_count,
+        characterLimit: data.character_limit,
+        percentageUsed: ((data.character_count / data.character_limit) * 100).toFixed(1),
+        nextResetDate: data.next_character_count_reset_unix,
+        tier: data.tier,
+        status: data.status,
+      },
+    });
+  } catch (error: any) {
+    next(new InternalServerError('Failed to fetch ElevenLabs credits'));
+  }
+};
+
 export const getVoices = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const locale = req.query.locale as string || 'de';
+    const locale = (req.query.locale as string) || 'de';
     const voices = await elevenLabsService.getVoices(locale);
     res.json({
-        success: true,
-        data: voices
+      success: true,
+      data: voices,
     });
   } catch (error) {
     next(error);
@@ -89,7 +118,7 @@ export const testConnection = async (req: Request, res: Response, next: NextFunc
       results.tests.push({
         name: 'API Key Validation',
         status: 'failed',
-        error: axios.isAxiosError(error) 
+        error: axios.isAxiosError(error)
           ? `${error.response?.status}: ${error.response?.statusText || error.message}`
           : 'Unknown error',
       });

@@ -33,6 +33,7 @@ import analyticsExportRoutes from './analyticsExportRoutes';
 import cronRoutes from './cronRoutes';
 import scheduledReportsRoutes from './scheduledReportsRoutes';
 import leadRoutes from './leadRoutes';
+import settingsRoutes from './settingsRoutes';
 
 import devCalendarRoutes from './devCalendarRoutes';
 import devRagRoutes from './devRagRoutes';
@@ -101,6 +102,7 @@ router.use('/test-agents', testAgentsRoutes);
 router.use('/calendar', calendarRoutes);
 router.use('/rag', ragRoutes);
 router.use('/onboarding', onboardingAIAssistantRoutes);
+router.use('/settings', settingsRoutes);
 
 // Voice Agent & Tools
 router.use('/voice-agent', voiceAgentRoutes);

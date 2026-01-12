@@ -4,7 +4,12 @@
  */
 
 import { Router } from 'express';
-import { getVoices, generateSpeech, testConnection } from '../controllers/elevenLabsController';
+import {
+  getVoices,
+  generateSpeech,
+  testConnection,
+  getCredits,
+} from '../controllers/elevenLabsController';
 
 const router = Router();
 
@@ -143,5 +148,17 @@ router.post('/generate-speech', generateSpeech);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/test', testConnection);
+
+/**
+ * @swagger
+ * /elevenlabs/credits:
+ *   get:
+ *     summary: Get ElevenLabs subscription credits
+ *     tags: [ElevenLabs]
+ *     responses:
+ *       200:
+ *         description: Credits retrieved successfully
+ */
+router.get('/credits', getCredits);
 
 export default router;
