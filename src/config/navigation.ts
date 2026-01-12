@@ -29,6 +29,7 @@ export const ROUTES = {
   DATENSCHUTZ: '/datenschutz',
   AGB: '/agb',
   PRICING: '/pricing',
+  SUBSCRIPTION: '/dashboard/subscription',
 } as const;
 
 /**
@@ -228,6 +229,13 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     breadcrumb: 'Preise',
     group: 'public',
     parent: null,
+  },
+  [ROUTES.SUBSCRIPTION]: {
+    title: 'Abonnement',
+    breadcrumb: 'Abonnement',
+    group: 'dashboard',
+    parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
   },
 };
 

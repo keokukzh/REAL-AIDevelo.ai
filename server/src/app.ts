@@ -33,6 +33,7 @@ import { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
 import { PERFORMANCE } from './config/constants';
 import stripeRoutes from './routes/stripeRoutes';
 import stripeWebhookRouter from './routes/stripeWebhook';
+import subscriptionRoutes from './routes/subscriptionRoutes';
 
 // --- Initialization ---
 initSentry();
@@ -127,6 +128,7 @@ app.use(
 // --- Routes ---
 // Versioned API
 app.use('/api/v1', attachApiVersionHeader, apiV1Router);
+app.use('/api/subscription', subscriptionRoutes);
 // Legacy Shim
 app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, apiV1Router);
 

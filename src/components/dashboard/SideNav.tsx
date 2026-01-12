@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, PhoneCall, Settings, BookOpen, BarChart3, HelpCircle, MessageSquare } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Calendar,
+  PhoneCall,
+  Settings,
+  BookOpen,
+  BarChart3,
+  HelpCircle,
+  MessageSquare,
+  CreditCard,
+} from 'lucide-react';
 import { NavItem } from '../newDashboard/NavItem';
 import { useDashboardOverview } from '../../hooks/useDashboardOverview';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -34,7 +44,7 @@ export const SideNav: React.FC = () => {
   const getInitials = (name: string | null | undefined): string => {
     if (!name) return 'U';
     // Split on spaces and filter out empty strings (handles consecutive spaces)
-    const parts = name.split(' ').filter(part => part.length > 0);
+    const parts = name.split(' ').filter((part) => part.length > 0);
     if (parts.length >= 2) {
       // Both parts are guaranteed to be non-empty after filtering
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -48,7 +58,7 @@ export const SideNav: React.FC = () => {
   const initials = getInitials(organizationName);
 
   return (
-    <nav 
+    <nav
       className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 z-50 border-r border-slate-800/50 lg:translate-x-0 transition-transform duration-300"
       aria-label="Main navigation"
     >
@@ -58,9 +68,9 @@ export const SideNav: React.FC = () => {
           className="focus:outline-none focus:ring-2 focus:ring-swiss-red focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md p-2 transition-all duration-200 hover:scale-105 hover:shadow-glow-red cursor-pointer"
           aria-label="Navigate to dashboard"
         >
-          <img 
-            src="/logo-studio-white.png" 
-            alt="AIDevelo Studio" 
+          <img
+            src="/logo-studio-white.png"
+            alt="AIDevelo Studio"
             className="h-10 w-auto object-contain"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -69,56 +79,62 @@ export const SideNav: React.FC = () => {
           />
         </button>
       </div>
-      
+
       <div className="p-4 space-y-1 flex-1 overflow-y-auto">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-2">
           Operations
         </div>
-        <NavItem 
-          icon={LayoutDashboard} 
-          label="Übersicht" 
-          active={isActive(ROUTES.DASHBOARD)} 
-          onClick={() => navigate(ROUTES.DASHBOARD)} 
+        <NavItem
+          icon={LayoutDashboard}
+          label="Übersicht"
+          active={isActive(ROUTES.DASHBOARD)}
+          onClick={() => navigate(ROUTES.DASHBOARD)}
         />
-        <NavItem 
-          icon={PhoneCall} 
-          label="Anrufprotokoll" 
-          active={isActive(ROUTES.CALLS)} 
-          onClick={() => navigate(ROUTES.CALLS)} 
+        <NavItem
+          icon={PhoneCall}
+          label="Anrufprotokoll"
+          active={isActive(ROUTES.CALLS)}
+          onClick={() => navigate(ROUTES.CALLS)}
         />
-        <NavItem 
-          icon={Calendar} 
-          label="Kalender" 
-          active={isActive(ROUTES.CALENDAR)} 
-          onClick={() => navigate(ROUTES.CALENDAR)} 
+        <NavItem
+          icon={Calendar}
+          label="Kalender"
+          active={isActive(ROUTES.CALENDAR)}
+          onClick={() => navigate(ROUTES.CALENDAR)}
         />
-        <NavItem 
-          icon={BarChart3} 
-          label="Analytics" 
-          active={isActive(ROUTES.ANALYTICS)} 
-          onClick={() => navigate(ROUTES.ANALYTICS)} 
+        <NavItem
+          icon={BarChart3}
+          label="Analytics"
+          active={isActive(ROUTES.ANALYTICS)}
+          onClick={() => navigate(ROUTES.ANALYTICS)}
         />
-        <NavItem 
-          icon={BookOpen} 
-          label="Knowledge Base" 
-          active={isActive(ROUTES.KNOWLEDGE_BASE)} 
-          onClick={() => navigate(ROUTES.KNOWLEDGE_BASE)} 
+        <NavItem
+          icon={BookOpen}
+          label="Knowledge Base"
+          active={isActive(ROUTES.KNOWLEDGE_BASE)}
+          onClick={() => navigate(ROUTES.KNOWLEDGE_BASE)}
         />
-        
+
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3 mt-6">
           Konfiguration
         </div>
-        <NavItem 
-          icon={MessageSquare} 
-          label="Kanäle" 
-          active={isActive(ROUTES.CHANNELS)} 
-          onClick={() => navigate(ROUTES.CHANNELS)} 
+        <NavItem
+          icon={MessageSquare}
+          label="Kanäle"
+          active={isActive(ROUTES.CHANNELS)}
+          onClick={() => navigate(ROUTES.CHANNELS)}
         />
-        <NavItem 
-          icon={Settings} 
-          label="Einstellungen" 
-          active={isActive(ROUTES.SETTINGS)} 
-          onClick={() => navigate(ROUTES.SETTINGS)} 
+        <NavItem
+          icon={CreditCard}
+          label="Abonnement"
+          active={isActive(ROUTES.SUBSCRIPTION)}
+          onClick={() => navigate(ROUTES.SUBSCRIPTION)}
+        />
+        <NavItem
+          icon={Settings}
+          label="Einstellungen"
+          active={isActive(ROUTES.SETTINGS)}
+          onClick={() => navigate(ROUTES.SETTINGS)}
         />
       </div>
 
@@ -131,8 +147,8 @@ export const SideNav: React.FC = () => {
             <p className="font-medium text-sm truncate text-white">{organizationName}</p>
             <p className="text-xs text-gray-400 truncate">{userEmail || 'Benutzer'}</p>
           </div>
-          <Settings 
-            className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors flex-shrink-0" 
+          <Settings
+            className="w-4 h-4 text-gray-500 hover:text-white cursor-pointer transition-colors flex-shrink-0"
             onClick={() => navigate(ROUTES.SETTINGS)}
             aria-label="Einstellungen"
           />

@@ -81,6 +81,9 @@ const ChannelsPage = React.lazy(() =>
 const TestCallPage = React.lazy(() =>
   import('./pages/TestCallPage').then((m) => ({ default: m.TestCallPage })),
 );
+const SubscriptionDashboard = React.lazy(() =>
+  import('./pages/SubscriptionDashboard').then((m) => ({ default: m.SubscriptionDashboard })),
+);
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -339,6 +342,16 @@ function AppContent() {
                 <ProtectedRoute>
                   <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                     <SettingsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/subscription"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                    <SubscriptionDashboard />
                   </Suspense>
                 </ProtectedRoute>
               }
