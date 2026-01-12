@@ -121,9 +121,9 @@ CREATE TRIGGER trg_phone_numbers_updated
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
-DROP TRIGGER IF EXISTS trg_google_calendar_integrations_updated ON google_calendar_integrations;
-CREATE TRIGGER trg_google_calendar_integrations_updated
-  BEFORE UPDATE ON google_calendar_integrations
+DROP TRIGGER IF EXISTS trg_calendar_connections_updated ON calendar_connections;
+CREATE TRIGGER trg_calendar_connections_updated
+  BEFORE UPDATE ON calendar_connections
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
@@ -136,8 +136,8 @@ CREATE INDEX IF NOT EXISTS idx_phone_numbers_location ON phone_numbers(location_
 CREATE INDEX IF NOT EXISTS idx_phone_numbers_e164 ON phone_numbers(e164);
 CREATE INDEX IF NOT EXISTS idx_call_logs_location ON call_logs(location_id);
 CREATE INDEX IF NOT EXISTS idx_call_logs_started_at ON call_logs(started_at);
-CREATE INDEX IF NOT EXISTS idx_google_calendar_integrations_location ON google_calendar_integrations(location_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_google_calendar_integrations_location_provider ON google_calendar_integrations(location_id, provider);
+CREATE INDEX IF NOT EXISTS idx_calendar_connections_location ON calendar_connections(location_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_connections_location_provider ON calendar_connections(location_id, provider);
 CREATE INDEX IF NOT EXISTS idx_porting_requests_location ON porting_requests(location_id);
 
 -- Composite indexes for common query patterns
