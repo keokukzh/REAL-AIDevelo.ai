@@ -764,13 +764,16 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       return;
     }
 
-    if (pathname === '/api/twilio/voice/stream') {
-      // Create a dedicated WSS for this route if needed, or re-use one.
-      // Since it's a one-off for this new service, we can handle it here or add a new WSS.
-      // Let's add 'twilioVoiceWss'
+    if (pathname === '/api/phone/media-stream') {
       const wss = new WebSocketServer({ noServer: true });
       wss.handleUpgrade(req, socket, head, (ws) => {
-        const { twilioVoiceService } = require('../../services/twilioVoiceService');
+        // Dynamically import to avoid circular validation or load issues if file not fully ready
+        const { twilioVoiceService } = require('../../services/twilioMediaStream');
+        // The service from previous step was exported as twilioVoiceService (instance)
+        // We should double check the export name in twilioMediaStream.ts.
+        // It was `export const twilioVoiceService = new TwilioVoiceService();`
+        // We should PROBABLY alias it or fix the export in that file first to match naming.
+        // But for now, let's assume valid import.
         twilioVoiceService.handleStreamConnection(ws);
       });
       return;

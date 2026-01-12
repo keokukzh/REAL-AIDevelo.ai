@@ -38,9 +38,9 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
     try {
       setState((prev) => ({ ...prev, isCalling: false, error: null }));
 
-      const response = await apiClient.get<{ token: string }>(
-        `/twilio/voice/token?locationId=${locationId}`,
-      );
+      const response = await apiClient.post<{ token: string }>('/phone/token', {
+        identity: `user_${locationId}`,
+      });
       const token = response.data.token;
 
       const device = new Device(token, {
@@ -48,6 +48,7 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
         codecPreferences: [Call.Codec.PCMU, Call.Codec.Opus],
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       device.on('error', (err: any) => {
         console.error('Twilio Device Error:', err);
         setState((prev) => ({ ...prev, error: err.message, callStatus: 'error' }));
@@ -60,6 +61,7 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
 
       await device.register();
       deviceRef.current = device;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Setup failed:', err);
       setState((prev) => ({ ...prev, error: err.message || 'Setup failed' }));
@@ -79,7 +81,7 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
         // We pass params that will be sent to the TwiML App
         const call = await deviceRef.current.connect({
           params: {
-            To: 'voice_agent', // Dummy number/target, routed by server's outgoing handler
+            To: '+19522951346',
             AgentId: agentId || '',
             LocationId: locationId,
           },
@@ -96,10 +98,12 @@ export function useTwilioVoice(options: UseTwilioVoiceOptions) {
           callRef.current = null;
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         call.on('error', (err: any) => {
           console.error('Call Error:', err);
           setState((prev) => ({ ...prev, callStatus: 'error', error: err.message }));
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error('Connect failed:', err);
         setState((prev) => ({
