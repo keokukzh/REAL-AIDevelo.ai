@@ -25,6 +25,7 @@ const DefaultAgentResponseSchema = z.object({
   user: z.object({
     id: z.string().uuid(),
     email: z.string().nullable(),
+    role: z.string().optional(),
   }),
   organization: z.object({
     id: z.string().uuid(),
@@ -67,7 +68,7 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
       ended_at: z.string().nullable(),
       duration_sec: z.number().nullable(),
       outcome: z.string().nullable(),
-    })
+    }),
   ),
   phone_number: z.string().nullable().optional(),
   phone_number_sid: z.string().nullable().optional(),
@@ -75,15 +76,18 @@ const DashboardOverviewResponseSchema = DefaultAgentResponseSchema.extend({
   calendar_connected_email: z.string().nullable().optional(),
   last_activity: z.string().nullable().optional(),
   gateway_health: z.enum(['ok', 'warning', 'error']).optional(),
-  elevenlabs_quota: z.object({
-    character_count: z.number(),
-    character_limit: z.number(),
-    percentageUsed: z.number(),
-    remaining: z.number(),
-    canUse: z.boolean(),
-    warning: z.boolean(),
-    status: z.enum(['ok', 'warning', 'critical']),
-  }).nullable().optional(),
+  elevenlabs_quota: z
+    .object({
+      character_count: z.number(),
+      character_limit: z.number(),
+      percentageUsed: z.number(),
+      remaining: z.number(),
+      canUse: z.boolean(),
+      warning: z.boolean(),
+      status: z.enum(['ok', 'warning', 'critical']),
+    })
+    .nullable()
+    .optional(),
   elevenlabs_affiliate_link: z.string().nullable().optional(),
 });
 
@@ -93,16 +97,16 @@ type DashboardOverviewResponse = z.infer<typeof DashboardOverviewResponseSchema>
 /**
  * POST /api/agent/default
  * Idempotent: ensures user, org, location, and agent config exist
- * 
+ *
  * This endpoint is idempotent - multiple calls with the same user will not create duplicates.
  * It ensures all required resources exist: user row, organization, default location, and agent config.
- * 
+ *
  * @param req - Authenticated request with supabaseUser
  * @param res - Express response
  * @param next - Express next function for error handling
  * @returns JSON response with user, organization, location, agent_config, and status
  * @throws {InternalServerError} If any step fails (user creation, org creation, location creation, agent config creation)
- * 
+ *
  * @example
  * ```typescript
  * POST /api/agent/default
@@ -122,7 +126,7 @@ type DashboardOverviewResponse = z.infer<typeof DashboardOverviewResponseSchema>
 export const createDefaultAgent = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // Fail-fast: Check schema preflight
@@ -178,7 +182,9 @@ export const createDefaultAgent = async (
       .limit(1)
       .maybeSingle();
 
-    const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
+    const calendarStatus: 'not_connected' | 'connected' = calendarData
+      ? 'connected'
+      : 'not_connected';
 
     // Determine agent status
     const agentStatus: 'ready' | 'needs_setup' =
@@ -188,6 +194,7 @@ export const createDefaultAgent = async (
       user: {
         id: user.id,
         email: user.email || null,
+        role: user.role || 'user',
       },
       organization: {
         id: org.id,
@@ -209,7 +216,9 @@ export const createDefaultAgent = async (
         business_type: agentConfig.business_type,
         greeting_template: (agentConfig as any).greeting_template ?? null,
         company_name: (agentConfig as any).company_name ?? null,
-        booking_required_fields_json: Array.isArray((agentConfig as any).booking_required_fields_json)
+        booking_required_fields_json: Array.isArray(
+          (agentConfig as any).booking_required_fields_json,
+        )
           ? (agentConfig as any).booking_required_fields_json
           : [],
         booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
@@ -234,24 +243,37 @@ export const createDefaultAgent = async (
   } catch (error) {
     // Generate request ID for tracking
     const requestIdHeader = req.headers['x-request-id'];
-    const requestId = Array.isArray(requestIdHeader) 
-      ? requestIdHeader[0] 
+    const requestId = Array.isArray(requestIdHeader)
+      ? requestIdHeader[0]
       : requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    
+
     // Determine which step failed
     let failedStep = 'unknown';
     if (error instanceof Error) {
-      if (error.message.includes('ensureUserRow') || error.message.includes('create organization') || error.message.includes('create user')) {
+      if (
+        error.message.includes('ensureUserRow') ||
+        error.message.includes('create organization') ||
+        error.message.includes('create user')
+      ) {
         failedStep = 'ensureUserRow';
-      } else if (error.message.includes('ensureOrgForUser') || error.message.includes('Organization not found')) {
+      } else if (
+        error.message.includes('ensureOrgForUser') ||
+        error.message.includes('Organization not found')
+      ) {
         failedStep = 'ensureOrgForUser';
-      } else if (error.message.includes('ensureDefaultLocation') || error.message.includes('create location')) {
+      } else if (
+        error.message.includes('ensureDefaultLocation') ||
+        error.message.includes('create location')
+      ) {
         failedStep = 'ensureDefaultLocation';
-      } else if (error.message.includes('ensureAgentConfig') || error.message.includes('create agent config')) {
+      } else if (
+        error.message.includes('ensureAgentConfig') ||
+        error.message.includes('create agent config')
+      ) {
         failedStep = 'ensureAgentConfig';
       }
     }
-    
+
     StructuredLoggingService.error(
       'Error creating default agent',
       error instanceof Error ? error : new Error('Unknown error'),
@@ -259,18 +281,19 @@ export const createDefaultAgent = async (
         requestId,
         step: failedStep,
       },
-      req
+      req,
     );
-    
+
     // Use next(error) pattern for consistent error handling
-    const appError = error instanceof z.ZodError
-      ? new InternalServerError('Response validation failed')
-      : new InternalServerError('Failed to create default agent');
-    
+    const appError =
+      error instanceof z.ZodError
+        ? new InternalServerError('Response validation failed')
+        : new InternalServerError('Failed to create default agent');
+
     // Add step and requestId to error for debugging
     (appError as any).step = failedStep;
     (appError as any).requestId = requestId;
-    
+
     next(appError);
   }
 };
@@ -278,7 +301,7 @@ export const createDefaultAgent = async (
 /**
  * GET /api/dashboard/overview
  * Returns dashboard overview with recent calls, phone status, and calendar status
- * 
+ *
  * This endpoint provides a comprehensive overview of the user's dashboard including:
  * - User and organization information
  * - Location details
@@ -286,15 +309,15 @@ export const createDefaultAgent = async (
  * - Phone connection status
  * - Calendar integration status
  * - Recent call history (last 10 calls)
- * 
+ *
  * The response is cached for 30 seconds to reduce database load.
- * 
+ *
  * @param req - Authenticated request with supabaseUser
  * @param res - Express response
  * @param next - Express next function for error handling
  * @returns JSON response with dashboard overview data
  * @throws {InternalServerError} If any step fails (user/org/location/agent config creation, data fetching)
- * 
+ *
  * @example
  * ```typescript
  * GET /api/dashboard/overview
@@ -317,7 +340,7 @@ export const createDefaultAgent = async (
 export const getDashboardOverview = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // Fail-fast: Check schema preflight
@@ -339,12 +362,12 @@ export const getDashboardOverview = async (
     // Check cache first (user-specific cache key)
     const cacheKey = CacheKeys.dashboardOverview(supabaseUserId);
     const cached = await cacheService.get<DashboardOverviewResponse>(cacheKey);
-    
+
     if (cached) {
       // Add cache hit header
       res.setHeader('X-Cache', 'HIT');
       res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
-      
+
       return res.json({
         success: true,
         data: cached,
@@ -410,10 +433,13 @@ export const getDashboardOverview = async (
     // Compute Twilio Gateway health
     // Green when: phone connected + Twilio creds present + webhook URL configured
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
-    const hasTwilioCreds = !!(process.env.TWILIO_AUTH_TOKEN || (process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET));
+    const hasTwilioCreds = !!(
+      process.env.TWILIO_AUTH_TOKEN ||
+      (process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET)
+    );
     const hasWebhookUrl = !!publicBaseUrl;
     const expectedWebhookUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/inbound` : null;
-    
+
     let gatewayHealth: 'ok' | 'warning' | 'error' = 'error';
     if (phoneStatusEnum === 'connected' && hasTwilioCreds && hasWebhookUrl) {
       gatewayHealth = 'ok';
@@ -422,18 +448,19 @@ export const getDashboardOverview = async (
     }
 
     // Process calendar status
-    const calendarStatus: 'not_connected' | 'connected' = calendarData ? 'connected' : 'not_connected';
+    const calendarStatus: 'not_connected' | 'connected' = calendarData
+      ? 'connected'
+      : 'not_connected';
     const calendarProvider = calendarData?.provider || null;
 
     // Calculate last activity (most recent call timestamp)
-    const lastActivity = recentCalls && recentCalls.length > 0 
-      ? recentCalls[0].started_at 
-      : null;
+    const lastActivity = recentCalls && recentCalls.length > 0 ? recentCalls[0].started_at : null;
 
     const response: DashboardOverviewResponse = {
       user: {
         id: user.id,
         email: user.email || null,
+        role: user.role || 'user',
       },
       organization: {
         id: org.id,
@@ -455,7 +482,9 @@ export const getDashboardOverview = async (
         business_type: agentConfig.business_type,
         greeting_template: (agentConfig as any).greeting_template ?? null,
         company_name: (agentConfig as any).company_name ?? null,
-        booking_required_fields_json: Array.isArray((agentConfig as any).booking_required_fields_json)
+        booking_required_fields_json: Array.isArray(
+          (agentConfig as any).booking_required_fields_json,
+        )
           ? (agentConfig as any).booking_required_fields_json
           : [],
         booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
@@ -491,7 +520,10 @@ export const getDashboardOverview = async (
       }
     } catch (quotaError: any) {
       // Log but don't fail the request
-      console.warn('[DefaultAgentController] Failed to fetch ElevenLabs quota:', quotaError.message);
+      console.warn(
+        '[DefaultAgentController] Failed to fetch ElevenLabs quota:',
+        quotaError.message,
+      );
     }
 
     // Add affiliate link from config (if available)
@@ -517,26 +549,39 @@ export const getDashboardOverview = async (
   } catch (error) {
     // Generate request ID for tracking
     const requestIdHeader = req.headers['x-request-id'];
-    const requestId = Array.isArray(requestIdHeader) 
-      ? requestIdHeader[0] 
+    const requestId = Array.isArray(requestIdHeader)
+      ? requestIdHeader[0]
       : requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    
+
     // Determine which step failed
     let failedStep = 'unknown';
     if (error instanceof Error) {
-      if (error.message.includes('ensureUserRow') || error.message.includes('create organization') || error.message.includes('create user')) {
+      if (
+        error.message.includes('ensureUserRow') ||
+        error.message.includes('create organization') ||
+        error.message.includes('create user')
+      ) {
         failedStep = 'ensureUserRow';
-      } else if (error.message.includes('ensureOrgForUser') || error.message.includes('Organization not found')) {
+      } else if (
+        error.message.includes('ensureOrgForUser') ||
+        error.message.includes('Organization not found')
+      ) {
         failedStep = 'ensureOrgForUser';
-      } else if (error.message.includes('ensureDefaultLocation') || error.message.includes('create location')) {
+      } else if (
+        error.message.includes('ensureDefaultLocation') ||
+        error.message.includes('create location')
+      ) {
         failedStep = 'ensureDefaultLocation';
-      } else if (error.message.includes('ensureAgentConfig') || error.message.includes('create agent config')) {
+      } else if (
+        error.message.includes('ensureAgentConfig') ||
+        error.message.includes('create agent config')
+      ) {
         failedStep = 'ensureAgentConfig';
       } else if (error.message.includes('recent calls') || error.message.includes('call_logs')) {
         failedStep = 'loadRecentCalls';
       }
     }
-    
+
     StructuredLoggingService.error(
       'Error getting dashboard overview',
       error instanceof Error ? error : new Error('Unknown error'),
@@ -544,18 +589,19 @@ export const getDashboardOverview = async (
         requestId,
         step: failedStep,
       },
-      req
+      req,
     );
-    
+
     // Use next(error) pattern for consistent error handling
-    const appError = error instanceof z.ZodError
-      ? new InternalServerError('Response validation failed')
-      : new InternalServerError('Failed to get dashboard overview');
-    
+    const appError =
+      error instanceof z.ZodError
+        ? new InternalServerError('Response validation failed')
+        : new InternalServerError('Failed to get dashboard overview');
+
     // Add step and requestId to error for debugging
     (appError as any).step = failedStep;
     (appError as any).requestId = requestId;
-    
+
     next(appError);
   }
 };
@@ -563,17 +609,17 @@ export const getDashboardOverview = async (
 /**
  * POST /api/agent/test-call
  * Initiate a test call for the agent
- * 
+ *
  * Creates an outbound call via Twilio to test the voice agent.
  * Requires a connected phone number for the location.
- * 
+ *
  * @param req - Authenticated request with body: { to: string }
  * @param res - Express response
  * @param next - Express next function for error handling
  * @returns JSON response with call SID and status
  * @throws {BadRequestError} If phone number not connected or missing 'to' parameter
  * @throws {InternalServerError} If PUBLIC_BASE_URL not configured or Twilio call fails
- * 
+ *
  * @example
  * ```typescript
  * POST /api/agent/test-call
@@ -592,7 +638,7 @@ export const getDashboardOverview = async (
 export const testAgentCall = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -614,7 +660,7 @@ export const testAgentCall = async (
         }),
         setHeader: () => {},
       } as any;
-      
+
       await elevenLabsQuotaCheck(req, mockRes, next);
     } catch (quotaError: any) {
       // If quota check fails, log but continue (fail-open)
@@ -645,7 +691,11 @@ export const testAgentCall = async (
       .maybeSingle();
 
     if (!phoneData?.e164) {
-      return next(new BadRequestError('No connected phone number found. Please connect a phone number first.'));
+      return next(
+        new BadRequestError(
+          'No connected phone number found. Please connect a phone number first.',
+        ),
+      );
     }
 
     // Get agent config to check for admin_test_number
@@ -656,9 +706,10 @@ export const testAgentCall = async (
       .maybeSingle();
 
     // Use admin_test_number if provided, otherwise use the 'to' parameter
-    const targetNumber = (agentConfig?.admin_test_number && agentConfig.admin_test_number.trim()) 
-      ? agentConfig.admin_test_number.trim() 
-      : to;
+    const targetNumber =
+      agentConfig?.admin_test_number && agentConfig.admin_test_number.trim()
+        ? agentConfig.admin_test_number.trim()
+        : to;
 
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     if (!publicBaseUrl) {
@@ -717,10 +768,8 @@ export const testAgentCall = async (
       'Error initiating test call',
       error instanceof Error ? error : new Error(String(error)),
       {},
-      req
+      req,
     );
     next(error);
   }
 };
-
-

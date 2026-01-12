@@ -34,6 +34,7 @@ import { PERFORMANCE } from './config/constants';
 import stripeRoutes from './routes/stripeRoutes';
 import stripeWebhookRouter from './routes/stripeWebhook';
 import subscriptionRoutes from './routes/subscriptionRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 // --- Initialization ---
 initSentry();
@@ -129,6 +130,7 @@ app.use(
 // Versioned API
 app.use('/api/v1', attachApiVersionHeader, apiV1Router);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/admin', adminRoutes);
 // Legacy Shim
 app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, apiV1Router);
 

@@ -136,6 +136,14 @@ export const SideNav: React.FC = () => {
           active={isActive(ROUTES.SETTINGS)}
           onClick={() => navigate(ROUTES.SETTINGS)}
         />
+        {overview?.user?.role === 'admin' && (
+          <NavItem
+            icon={BarChart3}
+            label="Admin Insights"
+            active={location.pathname === '/admin/dashboard'}
+            onClick={() => navigate('/admin/dashboard')}
+          />
+        )}
       </div>
 
       <div className="p-4 border-t border-slate-800 bg-slate-900/50 space-y-3">

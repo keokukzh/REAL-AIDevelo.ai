@@ -6,6 +6,7 @@ import {
 } from '../services/stripeService';
 import { verifySupabaseAuth, AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { supabaseAdmin } from '../services/supabaseDb';
+import { config } from '../config/env';
 
 const router = Router();
 
@@ -27,8 +28,8 @@ router.post(
       const session = await createCheckoutSession(
         supabaseUserId,
         priceId,
-        `${process.env.FRONTEND_URL}/dashboard/settings?success=true`,
-        `${process.env.FRONTEND_URL}/pricing?canceled=true`,
+        `${config.frontendUrl}/dashboard/settings?success=true`,
+        `${config.frontendUrl}/pricing?canceled=true`,
       );
 
       res.json({ sessionId: session.id, url: session.url });
@@ -64,7 +65,7 @@ router.post(
 
       const session = await createPortalSession(
         user.stripe_customer_id,
-        `${process.env.FRONTEND_URL}/dashboard/settings`,
+        `${config.frontendUrl}/dashboard/settings`,
       );
 
       res.json({ url: session.url });

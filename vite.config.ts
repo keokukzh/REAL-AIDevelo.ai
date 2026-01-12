@@ -11,8 +11,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     build: {
-      chunkSizeWarningLimit: 500, // Reduced from 1200KB to 500KB
-      // Disable source maps in production to avoid eval() usage
+      outDir: 'dist',
+      emptyOutDir: true,
+      chunkSizeWarningLimit: 500,
       sourcemap: false,
       rollupOptions: {
         output: {

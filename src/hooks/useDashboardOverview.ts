@@ -7,6 +7,7 @@ export interface DashboardOverview {
   user: {
     id: string;
     email: string | null;
+    role?: string;
   };
   organization: {
     id: string;
@@ -69,7 +70,9 @@ export const useDashboardOverview = () => {
   React.useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         setHasSession(!!session?.access_token);
       } catch (error) {
         console.error('[useDashboardOverview] Error checking session:', error);
@@ -81,7 +84,9 @@ export const useDashboardOverview = () => {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setHasSession(!!session?.access_token);
     });
 
@@ -93,15 +98,16 @@ export const useDashboardOverview = () => {
     queryFn: async () => {
       try {
         const response = await apiClient.get<{ success: boolean; data: DashboardOverview }>(
-          '/dashboard/overview'
+          '/dashboard/overview',
         );
         if (!response.data?.success || !response.data.data) {
           throw new Error('Failed to load dashboard overview');
         }
         // Extract backend SHA from response headers (axios lowercases header names)
-        const backendSha = response.headers['x-aidevelo-backend-sha'] || 
-                          response.headers['X-Aidevelo-Backend-Sha'] || 
-                          'unknown';
+        const backendSha =
+          response.headers['x-aidevelo-backend-sha'] ||
+          response.headers['X-Aidevelo-Backend-Sha'] ||
+          'unknown';
         return {
           ...response.data.data,
           _backendSha: typeof backendSha === 'string' ? backendSha : 'unknown',
@@ -127,4 +133,3 @@ export const useDashboardOverview = () => {
     staleTime: 30000, // 30 seconds
   });
 };
-

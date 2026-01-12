@@ -84,6 +84,9 @@ const TestCallPage = React.lazy(() =>
 const SubscriptionDashboard = React.lazy(() =>
   import('./pages/SubscriptionDashboard').then((m) => ({ default: m.SubscriptionDashboard })),
 );
+const AdminDashboard = React.lazy(() =>
+  import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })),
+);
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -162,9 +165,9 @@ function AppContent() {
           message: 'Route change / env snapshot',
           data: {
             pathname: location.pathname,
-            mode: (import.meta as any).env?.MODE,
-            dev: !!(import.meta as any).env?.DEV,
-            prod: !!(import.meta as any).env?.PROD,
+            mode: import.meta.env.MODE,
+            dev: import.meta.env.DEV,
+            prod: import.meta.env.PROD,
             reactQueryDevtoolsEnabled: ReactQueryDevtools !== null,
           },
           timestamp: Date.now(),
@@ -426,6 +429,16 @@ function AppContent() {
                 <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                   <DemoChatPage />
                 </Suspense>
+              }
+            />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                    <AdminDashboard />
+                  </Suspense>
+                </ProtectedRoute>
               }
             />
           </Routes>

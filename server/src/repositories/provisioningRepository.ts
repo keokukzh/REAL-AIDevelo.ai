@@ -18,13 +18,20 @@ export async function ensureUserRow(
   authUserId: string,
   email?: string,
   name?: string,
-): Promise<{ id: string; org_id: string; supabase_user_id: string; email: string | null }> {
+): Promise<{
+  id: string;
+  org_id: string;
+  supabase_user_id: string;
+  email: string | null;
+  role: string;
+}> {
   if (isDevBypass()) {
     return {
       id: 'dev-user-id',
       org_id: 'dev-org-id',
       supabase_user_id: authUserId,
       email: email || 'dev@example.com',
+      role: 'admin', // Dev bypass defaults to admin for testing
     };
   }
 
@@ -33,7 +40,7 @@ export async function ensureUserRow(
   // Check if user exists
   const { data: existingUser, error: findError } = await client
     .from('users')
-    .select('id, org_id, supabase_user_id, email')
+    .select('id, org_id, supabase_user_id, email, role')
     .eq('supabase_user_id', authUserId)
     .maybeSingle();
 
@@ -82,7 +89,7 @@ export async function ensureUserRow(
       supabase_user_id: authUserId,
       email: email || null,
     })
-    .select('id, org_id, supabase_user_id, email')
+    .select('id, org_id, supabase_user_id, email, role')
     .single();
 
   if (userError) {

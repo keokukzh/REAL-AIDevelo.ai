@@ -1,7 +1,8 @@
 import Stripe from 'stripe';
 import { supabaseAdmin } from './supabaseDb';
+import { config } from '../config/env';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(config.stripeSecretKey!, {
   apiVersion: '2025-12-15.clover' as any,
 });
 
@@ -70,11 +71,7 @@ export async function createPortalSession(customerId: string, returnUrl: string)
  * Handle Webhook Events
  */
 export async function handleWebhook(signature: string, payload: Buffer): Promise<void> {
-  const event = stripe.webhooks.constructEvent(
-    payload,
-    signature,
-    process.env.STRIPE_WEBHOOK_SECRET!,
-  );
+  const event = stripe.webhooks.constructEvent(payload, signature, config.stripeWebhookSecret!);
 
   console.log('[StripeWebhook] Event:', event.type);
 
@@ -84,12 +81,22 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
       const userId = session.metadata?.userId;
       const subscriptionId = session.subscription as string;
 
-      if (userId) {
+      if (userId && subscriptionId) {
+        // Fetch subscription details to get current_period_end and customer
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
         await supabaseAdmin.from('subscriptions').upsert(
           {
             user_id: userId,
             stripe_subscription_id: subscriptionId,
+            stripe_customer_id: subscription.customer as string,
             status: 'active',
+            current_period_start: new Date(
+              (subscription as any).current_period_start * 1000,
+            ).toISOString(),
+            current_period_end: new Date(
+              (subscription as any).current_period_end * 1000,
+            ).toISOString(),
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'stripe_subscription_id' },
@@ -98,17 +105,46 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
       break;
     }
 
+    case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
-      await supabaseAdmin
-        .from('subscriptions')
-        .update({
-          status: subscription.status,
-          current_period_end: new Date(
-            (subscription as any).current_period_end * 1000,
-          ).toISOString(),
-        })
-        .eq('stripe_subscription_id', subscription.id);
+      const userId = subscription.metadata?.userId;
+
+      if (userId) {
+        await supabaseAdmin.from('subscriptions').upsert(
+          {
+            user_id: userId,
+            stripe_subscription_id: subscription.id,
+            stripe_customer_id: subscription.customer as string,
+            status: subscription.status,
+            current_period_start: new Date(
+              (subscription as any).current_period_start * 1000,
+            ).toISOString(),
+            current_period_end: new Date(
+              (subscription as any).current_period_end * 1000,
+            ).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'stripe_subscription_id' },
+        );
+      } else {
+        // Fallback: update by stripe_subscription_id if exists
+        await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            status: subscription.status,
+            current_period_start: new Date(
+              (subscription as any).current_period_start * 1000,
+            ).toISOString(),
+            current_period_end: new Date(
+              (subscription as any).current_period_end * 1000,
+            ).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_subscription_id', subscription.id);
+      }
       break;
     }
 
@@ -116,8 +152,25 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
       const subscription = event.data.object as Stripe.Subscription;
       await supabaseAdmin
         .from('subscriptions')
-        .update({ status: 'canceled' })
+        .update({
+          status: 'canceled',
+          updated_at: new Date().toISOString(),
+        })
         .eq('stripe_subscription_id', subscription.id);
+      break;
+    }
+
+    case 'invoice.payment_succeeded': {
+      const invoice = event.data.object as Stripe.Invoice;
+      console.log(`[StripeWebhook] Payment succeeded for invoice ${invoice.id}`);
+      // Optional: Log payment in a 'payments' table or similar
+      break;
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      console.log(`[StripeWebhook] Payment failed for invoice ${invoice.id}`);
+      // Optional: Notify user or update subscription status if past_due
       break;
     }
 
