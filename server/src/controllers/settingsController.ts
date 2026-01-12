@@ -62,7 +62,8 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
       .select('*')
       .eq('location_id', location.id);
 
-    res.json({
+    const settingsResponse: any = {
+      success: true,
       user: {
         id: userRow.id,
         email: userRow.email,
@@ -74,7 +75,18 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
       elevenLabsCredits,
       calendarConnected: !!calendarIntegration,
       twilioConnected: !!process.env.TWILIO_ACCOUNT_SID,
-    });
+    };
+
+    // Add warning if quota is critical (> 95% used)
+    if (elevenLabsCredits && parseFloat(elevenLabsCredits.percentageUsed) > 95) {
+      settingsResponse.warning = {
+        type: 'quota_critical',
+        message: `ElevenLabs credits critically low (${elevenLabsCredits.percentageUsed}% used)`,
+        severity: 'high',
+      };
+    }
+
+    res.json(settingsResponse);
   } catch (error: any) {
     console.error('[SettingsController] Error loading settings:', error);
     next(new InternalServerError(error.message || 'Failed to load settings'));

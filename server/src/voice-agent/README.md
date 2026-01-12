@@ -354,21 +354,6 @@ npm run dev
      -d '{"customerId":"test","documents":[{"content":"Test document"}]}'
    ```
 
-## TODOs / Future Improvements
-
-- [ ] Add PDF/DOCX text extraction (currently expects raw text)
-- [ ] Implement proper OAuth2 flow for Google/Outlook Calendar
-- [ ] Add email sending with nodemailer
-- [ ] Implement reranking model for RAG
-- [ ] Add conversation memory/context management
-- [ ] Implement proper error recovery and retry logic
-- [ ] Add monitoring and logging
-- [ ] Add unit and integration tests
-- [ ] Migrate from in-memory session store to database
-- [ ] Add rate limiting per customer
-- [ ] Implement voice activity detection (VAD)
-- [ ] Add support for multiple languages
-
 ## Notes
 
 - The service uses in-memory session storage. For production, migrate to a database.
