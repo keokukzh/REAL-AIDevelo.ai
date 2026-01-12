@@ -764,6 +764,18 @@ export function setupWebSocketServer(httpServer: HTTPServer): void {
       return;
     }
 
+    if (pathname === '/api/twilio/voice/stream') {
+      // Create a dedicated WSS for this route if needed, or re-use one.
+      // Since it's a one-off for this new service, we can handle it here or add a new WSS.
+      // Let's add 'twilioVoiceWss'
+      const wss = new WebSocketServer({ noServer: true });
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        const { twilioVoiceService } = require('../../services/twilioVoiceService');
+        twilioVoiceService.handleStreamConnection(ws);
+      });
+      return;
+    }
+
     socket.destroy();
   });
 

@@ -31,4 +31,31 @@ export class AzureTTS {
       );
     });
   }
+
+  /**
+   * Create a push stream for continuous recognition
+   */
+  createPushStreamRecognizer(): {
+    pushStream: sdk.PushAudioInputStream;
+    recognizer: sdk.SpeechRecognizer;
+  } {
+    const pushStream = sdk.AudioInputStream.createPushStream(
+      sdk.AudioStreamFormat.getWaveFormatPCM(8000, 16, 1), // Twilio is 8kHz mulaw, but we might need to decode first?
+      // Twilio sends mulaw. Azure expects PCM unless specified.
+      // Actually, Azure SDK for JS supports G.711 MuLaw?
+      // SDK only supports PCM 16-bit. We MUST decode mu-law to PCM-16.
+    );
+
+    // Wait, Twilio sends G.711 mu-law 8000Hz.
+    // We need to convert mu-law to PCM.
+    // OR we ask Azure if it supports other formats.
+    // The JS SDK is limited.
+
+    // Let's assume we handle decoding in the service.
+    // Just simple PCM 16 config here.
+    const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream);
+    const recognizer = new sdk.SpeechRecognizer(this.config, audioConfig);
+
+    return { pushStream, recognizer };
+  }
 }

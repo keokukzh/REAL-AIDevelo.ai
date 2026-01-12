@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useWebRTC } from '../hooks/useWebRTC';
+import { useTwilioVoice } from '../hooks/useTwilioVoice';
 import { useLocationId } from '../hooks/useAuth';
 import { useDashboardOverview } from '../hooks/useDashboardOverview';
 import { Phone, PhoneOff, Loader, MessageSquare, Mic } from 'lucide-react';
@@ -35,21 +35,21 @@ export const TestCallPage: React.FC = () => {
   // 1. All useRef hooks first (stable references)
   const audioRef = useRef<HTMLAudioElement>(null);
   const chatCallSidRef = useRef<string | null>(null);
-  
+
   // 2. All useState hooks
   const [mode, setMode] = useState<TestMode>('voice');
   const [callDuration, setCallDuration] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChatMessage, setIsSendingChatMessage] = useState(false);
-  
+
   // 3. Custom hooks
   const locationId = useLocationId();
   const dashboardData = useDashboardOverview();
   const agentId = dashboardData.data?.agent_config?.id;
 
-  // 4. WebRTC hook
-  const webRTC = useWebRTC({
+  // 4. WebRTC hook (using Twilio Voice implementation)
+  const webRTC = useTwilioVoice({
     locationId: locationId || '',
     agentId,
   });
@@ -58,7 +58,7 @@ export const TestCallPage: React.FC = () => {
   useEffect(() => {
     if (webRTC.isInCall) {
       const interval = setInterval(() => {
-        setCallDuration(prev => prev + 1);
+        setCallDuration((prev) => prev + 1);
       }, 1000);
       return () => clearInterval(interval);
     } else {
@@ -79,7 +79,7 @@ export const TestCallPage: React.FC = () => {
       text: messageText,
       timestamp: new Date().toISOString(),
     };
-    setChatMessages(prev => [...prev, userMessage]);
+    setChatMessages((prev) => [...prev, userMessage]);
     setChatInput('');
 
     try {
@@ -112,12 +112,12 @@ export const TestCallPage: React.FC = () => {
           timestamp: new Date().toISOString(),
           toolCalls: response.data.toolCalls,
         };
-        setChatMessages(prev => [...prev, assistantMessage]);
+        setChatMessages((prev) => [...prev, assistantMessage]);
 
         // Play audio response
         if (response.data.audio_url && audioRef.current) {
           audioRef.current.src = response.data.audio_url;
-          audioRef.current.play().catch(err => {
+          audioRef.current.play().catch((err) => {
             console.error('Failed to play audio:', err);
           });
         }
@@ -126,13 +126,14 @@ export const TestCallPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('[TestCallPage] Chat message error:', error);
-      const errorMessage = error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
+      const errorMessage =
+        error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
       const errorMsg: ChatMessage = {
         role: 'assistant',
         text: `Fehler: ${errorMessage}`,
         timestamp: new Date().toISOString(),
       };
-      setChatMessages(prev => [...prev, errorMsg]);
+      setChatMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsSendingChatMessage(false);
     }
@@ -150,7 +151,7 @@ export const TestCallPage: React.FC = () => {
     if (mode === 'voice') {
       return webRTC.transcript;
     }
-    return chatMessages.map(msg => ({
+    return chatMessages.map((msg) => ({
       role: msg.role,
       text: msg.text,
       timestamp: msg.timestamp,
@@ -166,7 +167,7 @@ export const TestCallPage: React.FC = () => {
           className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
         >
           <Phone className="w-4 h-4" />
-          Mit FreeSWITCH verbinden
+          Mit Twilio verbinden
         </button>
       );
     }
@@ -265,7 +266,9 @@ export const TestCallPage: React.FC = () => {
             <div className="bg-white/5 rounded-lg p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-gray-400">Verbindungsstatus:</span>
-                <span className={`font-semibold ${webRTC.isConnected ? 'text-green-500' : 'text-red-500'}`}>
+                <span
+                  className={`font-semibold ${webRTC.isConnected ? 'text-green-500' : 'text-red-500'}`}
+                >
                   {webRTC.isConnected ? 'Verbunden' : 'Nicht verbunden'}
                 </span>
               </div>
@@ -288,9 +291,7 @@ export const TestCallPage: React.FC = () => {
                   <div className="font-semibold mb-2">Verbindungsfehler:</div>
                   <div className="mb-2">{webRTC.error}</div>
                   <div className="text-xs text-red-300/80 mt-2">
-                    <p>Hinweis: FreeSWITCH muss auf dem konfigurierten Server laufen.</p>
-                    <p>Für lokale Tests: Stellen Sie sicher, dass FreeSWITCH auf localhost:7443 läuft.</p>
-                    <p>Für Production: FreeSWITCH muss auf dem konfigurierten Host erreichbar sein.</p>
+                    <p>Hinweis: Überprüfen Sie Ihre Internetverbindung und Berechtigungen.</p>
                   </div>
                 </div>
               )}
@@ -379,7 +380,7 @@ export const TestCallPage: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-white">{entry.text}</p>
-                    
+
                     {/* Tool Calls Display */}
                     {toolCalls && toolCalls.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-700">
@@ -394,7 +395,10 @@ export const TestCallPage: React.FC = () => {
                           }
 
                           // Format calendar appointment
-                          if (toolCall.name === 'calendar' && toolCall.arguments?.action === 'create_appointment') {
+                          if (
+                            toolCall.name === 'calendar' &&
+                            toolCall.arguments?.action === 'create_appointment'
+                          ) {
                             const args = toolCall.arguments;
                             const result = toolCall.result as any;
                             if (result?.success && result?.data) {
@@ -402,7 +406,8 @@ export const TestCallPage: React.FC = () => {
                               const startDate = new Date(event.start);
                               return (
                                 <div key={toolIndex} className="text-xs text-green-400 mb-1">
-                                  📅 Termin erstellt: {startDate.toLocaleString('de-CH')} - {args.summary || 'Termin'}
+                                  📅 Termin erstellt: {startDate.toLocaleString('de-CH')} -{' '}
+                                  {args.summary || 'Termin'}
                                 </div>
                               );
                             }
@@ -431,14 +436,18 @@ export const TestCallPage: React.FC = () => {
               <p>Verbinden Sie sich mit FreeSWITCH und starten Sie einen Test-Call.</p>
               <p className="mt-2">Der Agent wird Ihre Sprache transkribieren und antworten.</p>
             </div>
-            
+
             {/* Info Box for Production */}
             {import.meta.env.PROD && !webRTC.isConnected && (
               <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-300 text-sm">
                 <div className="font-semibold mb-2">⚠️ FreeSWITCH in Production</div>
                 <p className="text-xs text-yellow-200/80">
-                  FreeSWITCH ist für Production noch nicht eingerichtet. 
-                  Für lokale Tests können Sie FreeSWITCH mit <code className="bg-yellow-500/20 px-1 rounded">docker-compose up freeswitch</code> starten.
+                  FreeSWITCH ist für Production noch nicht eingerichtet. Für lokale Tests können Sie
+                  FreeSWITCH mit{' '}
+                  <code className="bg-yellow-500/20 px-1 rounded">
+                    docker-compose up freeswitch
+                  </code>{' '}
+                  starten.
                 </p>
                 <p className="text-xs text-yellow-200/80 mt-2">
                   Die WebRTC-Test-Funktion ist derzeit nur für lokale Entwicklung verfügbar.
@@ -463,4 +472,3 @@ export const TestCallPage: React.FC = () => {
     </div>
   );
 };
-

@@ -29,31 +29,31 @@ const safeLogAgent = (message: string, data: any) => {
 export const createAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { businessProfile, config, subscription, voiceCloning, purchaseId } = req.body;
-    
+
     console.log('[AgentController] createAgent called', {
       hasBusinessProfile: !!businessProfile,
       hasConfig: !!config,
       companyName: businessProfile?.companyName,
       path: req.path,
       method: req.method,
-      origin: req.headers.origin
+      origin: req.headers.origin,
     });
-    
+
     safeLogAgent('createAgent controller entry', {
       hasBusinessProfile: !!businessProfile,
       hasConfig: !!config,
       companyName: businessProfile?.companyName,
-      subscriptionPlanId: subscription?.planId
+      subscriptionPlanId: subscription?.planId,
     });
-    
+
     // 1. Generate System Prompt based on profile and recording consent
     const recordingConsent = config.recordingConsent ?? false;
     const systemPrompt = generateSystemPrompt(businessProfile, { recordingConsent });
-    
+
     // 2. Enhance config with generated prompt (if not provided specifically)
     const finalConfig = {
       ...config,
-      systemPrompt: config.systemPrompt || systemPrompt
+      systemPrompt: config.systemPrompt || systemPrompt,
     };
 
     // 3. Handle Voice Cloning if provided
@@ -69,35 +69,39 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       elevenLabsAgentId: '', // Will be populated async
       businessProfile,
       config: finalConfig,
-      subscription: subscription ? {
-        planId: subscription.planId,
-        planName: subscription.planName,
-        purchaseId: subscription.purchaseId || purchaseId || '',
-        purchasedAt: subscription.purchasedAt ? new Date(subscription.purchasedAt) : new Date(),
-        status: 'active',
-      } : undefined,
-      voiceCloning: voiceCloning?.voiceId ? {
-        voiceId: voiceCloning.voiceId,
-        voiceName: voiceCloning.voiceName,
-        audioUrl: voiceCloning.audioUrl,
-        createdAt: voiceCloning.createdAt ? new Date(voiceCloning.createdAt) : new Date(),
-      } : undefined,
+      subscription: subscription
+        ? {
+            planId: subscription.planId,
+            planName: subscription.planName,
+            purchaseId: subscription.purchaseId || purchaseId || '',
+            purchasedAt: subscription.purchasedAt ? new Date(subscription.purchasedAt) : new Date(),
+            status: 'active',
+          }
+        : undefined,
+      voiceCloning: voiceCloning?.voiceId
+        ? {
+            voiceId: voiceCloning.voiceId,
+            voiceName: voiceCloning.voiceName,
+            audioUrl: voiceCloning.audioUrl,
+            createdAt: voiceCloning.createdAt ? new Date(voiceCloning.createdAt) : new Date(),
+          }
+        : undefined,
       status: 'creating', // Status indicating async job in progress
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
+
     safeLogAgent('Before DB saveAgent', {
       agentId: newAgent.id,
       status: newAgent.status,
-      companyName: newAgent.businessProfile.companyName
+      companyName: newAgent.businessProfile.companyName,
     });
-    
+
     db.saveAgent(newAgent);
 
     safeLogAgent('After DB saveAgent', {
       agentId: newAgent.id,
-      status: newAgent.status
+      status: newAgent.status,
     });
 
     // 5. Link purchase to agent if purchaseId provided
@@ -117,12 +121,12 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
     safeLogAgent('Sending response to client', {
       agentId: newAgent.id,
       status: newAgent.status,
-      hasElevenLabsId: !!newAgent.elevenLabsAgentId
+      hasElevenLabsId: !!newAgent.elevenLabsAgentId,
     });
-    
+
     res.status(201).json({
       success: true,
-      data: newAgent
+      data: newAgent,
     });
 
     // 7. Run ElevenLabs agent creation asynchronously (don't block request)
@@ -131,17 +135,17 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
         safeLogAgent('Before ElevenLabs API call', {
           agentId: newAgent.id,
           companyName: businessProfile.companyName,
-          voiceId: finalConfig.elevenLabs.voiceId
+          voiceId: finalConfig.elevenLabs.voiceId,
         });
-        
+
         const elevenLabsAgentId = await elevenLabsService.createAgent(
           `${businessProfile.companyName} - Assistant`,
-          finalConfig
+          finalConfig,
         );
-        
+
         safeLogAgent('After ElevenLabs API call', {
           agentId: newAgent.id,
-          elevenLabsAgentId: elevenLabsAgentId
+          elevenLabsAgentId: elevenLabsAgentId,
         });
 
         // Update agent with elevenLabsAgentId and setup phone numbers
@@ -153,11 +157,14 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
           try {
             const availableNumbers = await elevenLabsService.getAvailablePhoneNumbers('CH');
             const numbersToAssign = availableNumbers
-              .filter(pn => pn.status === 'available')
+              .filter((pn) => pn.status === 'available')
               .slice(0, phoneNumberLimit);
 
             if (numbersToAssign.length > 0) {
-              const assignedNumber = await elevenLabsService.assignPhoneNumber(elevenLabsAgentId, numbersToAssign[0].id);
+              const assignedNumber = await elevenLabsService.assignPhoneNumber(
+                elevenLabsAgentId,
+                numbersToAssign[0].id,
+              );
               newAgent.telephony = {
                 phoneNumber: assignedNumber.number,
                 phoneNumberId: assignedNumber.id,
@@ -184,7 +191,6 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
         console.error('[AgentController] Async agent creation failed:', error);
       }
     });
-
   } catch (error) {
     next(error);
   }
@@ -216,7 +222,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
     const agentId = req.params.id;
     const { phoneNumberId } = req.body; // Optional: specific phone number to activate
     const agent = db.getAgent(agentId);
-    
+
     if (!agent) {
       return next(new NotFoundError('Agent'));
     }
@@ -224,7 +230,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
     if (agent.status === 'active' || agent.status === 'live') {
       return res.json({
         success: true,
-        data: { ...agent, message: 'Agent is already active' }
+        data: { ...agent, message: 'Agent is already active' },
       });
     }
 
@@ -236,7 +242,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
     if (agent.telephony?.phoneNumberId) {
       try {
         const targetPhoneNumberId = phoneNumberId || agent.telephony.phoneNumberId;
-        
+
         // Update phone number settings to activate
         await elevenLabsService.updatePhoneNumberSettings(targetPhoneNumberId, {
           agentId: agent.elevenLabsAgentId,
@@ -278,7 +284,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       data: agent,
-      message: 'Agent successfully activated. Status will update to "live" shortly.'
+      message: 'Agent successfully activated. Status will update to "live" shortly.',
     });
   } catch (error) {
     next(new InternalServerError('Failed to activate agent'));
@@ -292,7 +298,7 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
   try {
     const agentId = req.params.id;
     const agent = db.getAgent(agentId);
-    
+
     if (!agent) {
       return next(new NotFoundError('Agent'));
     }
@@ -308,7 +314,9 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
       // Update phone number status if assigned
       if (agent.telephony?.phoneNumberId) {
         try {
-          const phoneStatus = await elevenLabsService.getPhoneNumberStatus(agent.telephony.phoneNumberId);
+          const phoneStatus = await elevenLabsService.getPhoneNumberStatus(
+            agent.telephony.phoneNumberId,
+          );
           if (agent.telephony) {
             agent.telephony.status = phoneStatus.status as any;
           }
@@ -327,7 +335,7 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
           agent,
           elevenLabsStatus,
         },
-        message: 'Agent synchronized successfully'
+        message: 'Agent synchronized successfully',
       });
     } catch (error) {
       next(error);
@@ -348,7 +356,7 @@ export const createDefaultAgent = async (req: Request, res: Response, next: Next
     if (!userId) {
       return res.status(400).json({
         success: false,
-        error: 'userId is required'
+        error: 'userId is required',
       });
     }
 
@@ -356,7 +364,7 @@ export const createDefaultAgent = async (req: Request, res: Response, next: Next
     if (await defaultAgentService.hasDefaultAgent(userId)) {
       return res.status(409).json({
         success: false,
-        error: 'Default agent already exists for this user'
+        error: 'Default agent already exists for this user',
       });
     }
 
@@ -366,10 +374,61 @@ export const createDefaultAgent = async (req: Request, res: Response, next: Next
     res.status(201).json({
       success: true,
       data: agent,
-      message: 'Default agent created successfully. You can now customize it in the dashboard.'
+      message: 'Default agent created successfully. You can now customize it in the dashboard.',
     });
   } catch (error) {
     console.error('[AgentController] Failed to create default agent:', error);
     next(new InternalServerError('Failed to create default agent'));
+  }
+};
+
+/**
+ * Initiate an outbound call from the agent
+ */
+export const initiateCall = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { to } = req.body;
+    const agentId = req.params.id;
+
+    if (!to) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Target phone number (to) is required' });
+    }
+
+    // Verify agent exists
+    const agent = db.getAgent(agentId);
+    if (!agent) {
+      return next(new NotFoundError('Agent'));
+    }
+
+    // Use Twilio to initiate call
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+    if (!accountSid || !authToken || !fromNumber) {
+      return next(new InternalServerError('Twilio not configured'));
+    }
+
+    const client = require('twilio')(accountSid, authToken);
+
+    // We point the call to our incoming handler which connects to the stream
+    const call = await client.calls.create({
+      url: `https://${req.headers.host}/api/twilio/voice/incoming`,
+      to,
+      from: fromNumber,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        callSid: call.sid,
+        status: call.status,
+      },
+    });
+  } catch (error: any) {
+    console.error('[AgentController] Failed to initiate call:', error);
+    next(new InternalServerError(`Failed to initiate call: ${error.message}`));
   }
 };

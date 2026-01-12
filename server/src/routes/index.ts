@@ -14,6 +14,7 @@ import syncRoutes from './syncRoutes';
 import knowledgeRoutes from './knowledgeRoutes';
 import privacyRoutes from './privacyRoutes';
 import twilioRoutes from './twilioRoutes';
+import twilioVoiceRoutes from './twilioVoice';
 import freeswitchRoutes from './freeswitchRoutes';
 import testCallRoutes from './testCallRoutes';
 import provisionRoutes from './provisionRoutes';
@@ -57,6 +58,7 @@ const router = express.Router();
 router.use('/db', dbRoutes);
 router.use('/debug', debugRoutes);
 router.use('/privacy', privacyRoutes);
+router.use('/twilio/voice', twilioVoiceRoutes);
 router.use('/twilio', twilioRoutes); // Often handles callbacks
 router.use('/freeswitch', freeswitchRoutes); // Internal
 router.use('/webchat', webchatRoutes);
