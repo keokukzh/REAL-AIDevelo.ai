@@ -191,6 +191,7 @@ export const calendarService = {
       refreshToken: tokens.refreshToken,
       expiresAt: tokens.expiresAt instanceof Date ? tokens.expiresAt.getTime() : tokens.expiresAt,
       provider: 'outlook',
+      email: tokens.email,
     };
   },
 
