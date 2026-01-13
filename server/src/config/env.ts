@@ -97,6 +97,8 @@ const getOptionalEnvVars = () => ({
   MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET || '',
   MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID || 'common',
   MICROSOFT_REDIRECT_URI: process.env.MICROSOFT_REDIRECT_URI || '',
+  // Analytics Export
+  ENABLE_ANALYTICS_EXPORT: process.env.ENABLE_ANALYTICS_EXPORT !== 'false',
 });
 
 const validateEnv = () => {
@@ -280,7 +282,9 @@ export const config = {
   enableScheduledReports: optionalEnvVars.ENABLE_SCHEDULED_REPORTS === 'true',
   cronSecret: optionalEnvVars.CRON_SECRET,
   // Dev bypass auth (only in development/test)
-  devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
+  devBypassAuth:
+    process.env.DEV_BYPASS_AUTH === 'true' || process.env.ENABLE_DEV_BYPASS_AUTH === 'true',
+  enableAnalyticsExport: optionalEnvVars.ENABLE_ANALYTICS_EXPORT,
   devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',
   devSeedUserId: process.env.DEV_SEED_USER_ID || '00000000-0000-0000-0000-000000000001',
   // Rate Limiting

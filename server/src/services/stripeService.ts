@@ -85,7 +85,7 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
         // Fetch subscription details to get current_period_end and customer
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-        await supabaseAdmin.from('subscriptions').upsert(
+        await supabaseAdmin.from('user_subscriptions').upsert(
           {
             user_id: userId,
             stripe_subscription_id: subscriptionId,
@@ -111,7 +111,7 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
       const userId = subscription.metadata?.userId;
 
       if (userId) {
-        await supabaseAdmin.from('subscriptions').upsert(
+        await supabaseAdmin.from('user_subscriptions').upsert(
           {
             user_id: userId,
             stripe_subscription_id: subscription.id,
@@ -131,7 +131,7 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
       } else {
         // Fallback: update by stripe_subscription_id if exists
         await supabaseAdmin
-          .from('subscriptions')
+          .from('user_subscriptions')
           .update({
             status: subscription.status,
             current_period_start: new Date(
@@ -151,7 +151,7 @@ export async function handleWebhook(signature: string, payload: Buffer): Promise
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       await supabaseAdmin
-        .from('subscriptions')
+        .from('user_subscriptions')
         .update({
           status: 'canceled',
           updated_at: new Date().toISOString(),

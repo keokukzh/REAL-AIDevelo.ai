@@ -24,6 +24,7 @@ import { cacheMiddleware } from './middleware/cache';
 import { queryMonitorMiddleware } from './middleware/queryMonitor';
 import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
 import { devBypassAuth } from './middleware/devBypassAuth';
+import { attachBackendSha } from './middleware/backendSha';
 import {
   generalLimiter,
   authLimiter,
@@ -61,6 +62,7 @@ app.use(helmetMiddleware);
 app.options('*', optionsHandler);
 app.use(corsMiddleware);
 app.use(varyOriginMiddleware);
+app.use(attachBackendSha);
 
 // --- Rate Limiting ---
 // General Rate Limiter for all API routes
@@ -131,7 +133,7 @@ app.use((req, res, next) => {
 });
 
 // --- Auth Middleware (Dev Bypass) ---
-if (process.env.DEV_BYPASS_AUTH === 'true' && process.env.NODE_ENV !== 'production') {
+if (config.devBypassAuth && !config.isProduction) {
   StructuredLoggingService.warn('Dev bypass auth ENABLED');
   app.use('/api', devBypassAuth);
 }

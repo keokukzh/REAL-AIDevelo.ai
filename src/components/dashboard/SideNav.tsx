@@ -136,7 +136,7 @@ export const SideNav: React.FC = () => {
           active={isActive(ROUTES.SETTINGS)}
           onClick={() => navigate(ROUTES.SETTINGS)}
         />
-        {overview?.user?.role === 'admin' && (
+        {(overview?.user?.role === 'admin' || user?.user_metadata?.role === 'admin') && (
           <NavItem
             icon={BarChart3}
             label="Admin Insights"

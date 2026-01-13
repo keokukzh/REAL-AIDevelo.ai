@@ -1,10 +1,37 @@
 import React, { useState, useMemo } from 'react';
 import { SideNav } from '../components/dashboard/SideNav';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { useCallsSummary, useTopSources, CallsSummaryFilters, TopSourcesFilters } from '../hooks/useCallAnalytics';
+import {
+  useCallsSummary,
+  useTopSources,
+  CallsSummaryFilters,
+  TopSourcesFilters,
+} from '../hooks/useCallAnalytics';
 import { exportCsv, exportPdf, ExportFilters } from '../hooks/useCallAnalyticsExport';
-import { useScheduledReports, useCreateScheduledReport, useUpdateScheduledReport, useDeleteScheduledReport, useTestScheduledReport } from '../hooks/useScheduledReports';
-import { Filter, RefreshCw, AlertCircle, BarChart3, Database, Clock, CheckCircle, FileText, Bot, Download, Mail, Plus, Trash2, Play, Calendar } from 'lucide-react';
+import {
+  useScheduledReports,
+  useCreateScheduledReport,
+  useUpdateScheduledReport,
+  useDeleteScheduledReport,
+  useTestScheduledReport,
+} from '../hooks/useScheduledReports';
+import {
+  Filter,
+  RefreshCw,
+  AlertCircle,
+  BarChart3,
+  Database,
+  Clock,
+  CheckCircle,
+  FileText,
+  Bot,
+  Download,
+  Mail,
+  Plus,
+  Trash2,
+  Play,
+  Calendar,
+} from 'lucide-react';
 import { toast } from '../components/ui/Toast';
 
 export const AnalyticsPage = () => {
@@ -15,21 +42,37 @@ export const AnalyticsPage = () => {
   const [outcome, setOutcome] = useState('');
 
   // Build filters
-  const summaryFilters: CallsSummaryFilters = useMemo(() => ({
-    ...(dateFrom && { dateFrom }),
-    ...(dateTo && { dateTo }),
-    ...(direction && { direction: direction as 'inbound' | 'outbound' }),
-    ...(outcome && { outcome }),
-  }), [dateFrom, dateTo, direction, outcome]);
+  const summaryFilters: CallsSummaryFilters = useMemo(
+    () => ({
+      ...(dateFrom && { dateFrom }),
+      ...(dateTo && { dateTo }),
+      ...(direction && { direction: direction as 'inbound' | 'outbound' }),
+      ...(outcome && { outcome }),
+    }),
+    [dateFrom, dateTo, direction, outcome],
+  );
 
-  const topSourcesFilters: TopSourcesFilters = useMemo(() => ({
-    ...(dateFrom && { dateFrom }),
-    ...(dateTo && { dateTo }),
-    limit: 10,
-  }), [dateFrom, dateTo]);
+  const topSourcesFilters: TopSourcesFilters = useMemo(
+    () => ({
+      ...(dateFrom && { dateFrom }),
+      ...(dateTo && { dateTo }),
+      limit: 10,
+    }),
+    [dateFrom, dateTo],
+  );
 
-  const { data: summary, isLoading: isLoadingSummary, error: summaryError, refetch: refetchSummary } = useCallsSummary(summaryFilters);
-  const { data: topSources, isLoading: isLoadingSources, error: sourcesError, refetch: refetchSources } = useTopSources(topSourcesFilters);
+  const {
+    data: summary,
+    isLoading: isLoadingSummary,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useCallsSummary(summaryFilters);
+  const {
+    data: topSources,
+    isLoading: isLoadingSources,
+    error: sourcesError,
+    refetch: refetchSources,
+  } = useTopSources(topSourcesFilters);
 
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -41,7 +84,9 @@ export const AnalyticsPage = () => {
   const deleteReport = useDeleteScheduledReport();
   const testReport = useTestScheduledReport();
   const [showNewReportForm, setShowNewReportForm] = useState(false);
-  const [newReportFrequency, setNewReportFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [newReportFrequency, setNewReportFrequency] = useState<'daily' | 'weekly' | 'monthly'>(
+    'weekly',
+  );
   const [newReportRecipients, setNewReportRecipients] = useState('');
 
   const handleRefetch = () => {
@@ -135,7 +180,10 @@ export const AnalyticsPage = () => {
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition-colors"
               disabled={isLoadingSummary || isLoadingSources}
             >
-              <RefreshCw size={16} className={isLoadingSummary || isLoadingSources ? 'animate-spin' : ''} />
+              <RefreshCw
+                size={16}
+                className={isLoadingSummary || isLoadingSources ? 'animate-spin' : ''}
+              />
               Aktualisieren
             </button>
           </div>
@@ -147,35 +195,55 @@ export const AnalyticsPage = () => {
             <Filter size={18} className="text-gray-400" />
             <h2 className="text-lg font-semibold">Filter</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Date From */}
             <div>
-              <label htmlFor="date-from" className="block text-xs text-gray-400 mb-2">Von Datum</label>
+              <label htmlFor="date-from" className="block text-xs text-gray-400 mb-2">
+                Von Datum
+              </label>
               <input
                 id="date-from"
                 type="date"
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(e) => {
+                  const newDateFrom = e.target.value;
+                  if (dateTo && newDateFrom && newDateFrom > dateTo) {
+                    toast.error('Das Startdatum kann nicht nach dem Enddatum liegen.');
+                    return;
+                  }
+                  setDateFrom(newDateFrom);
+                }}
                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-accent"
               />
             </div>
 
             {/* Date To */}
             <div>
-              <label htmlFor="date-to" className="block text-xs text-gray-400 mb-2">Bis Datum</label>
+              <label htmlFor="date-to" className="block text-xs text-gray-400 mb-2">
+                Bis Datum
+              </label>
               <input
                 id="date-to"
                 type="date"
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(e) => {
+                  const newDateTo = e.target.value;
+                  if (dateFrom && newDateTo && newDateTo < dateFrom) {
+                    toast.error('Das Enddatum kann nicht vor dem Startdatum liegen.');
+                    return;
+                  }
+                  setDateTo(newDateTo);
+                }}
                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-accent"
               />
             </div>
 
             {/* Direction */}
             <div>
-              <label htmlFor="direction" className="block text-xs text-gray-400 mb-2">Richtung</label>
+              <label htmlFor="direction" className="block text-xs text-gray-400 mb-2">
+                Richtung
+              </label>
               <select
                 id="direction"
                 value={direction}
@@ -190,7 +258,9 @@ export const AnalyticsPage = () => {
 
             {/* Outcome */}
             <div>
-              <label htmlFor="outcome" className="block text-xs text-gray-400 mb-2">Status</label>
+              <label htmlFor="outcome" className="block text-xs text-gray-400 mb-2">
+                Status
+              </label>
               <select
                 id="outcome"
                 value={outcome}
@@ -273,7 +343,9 @@ export const AnalyticsPage = () => {
                   <span className="text-xs text-gray-400">Transcript Coverage</span>
                   <FileText size={16} className="text-gray-400" />
                 </div>
-                <p className="text-2xl font-bold">{formatPercentage(summary.transcriptCoverageRate)}</p>
+                <p className="text-2xl font-bold">
+                  {formatPercentage(summary.transcriptCoverageRate)}
+                </p>
               </div>
 
               {/* RAG Usage Rate */}
@@ -305,15 +377,21 @@ export const AnalyticsPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <span className="text-xs text-gray-400">Ø Queries/Call</span>
-                    <p className="text-lg font-medium">{summary.ragAverages.avgQueries.toFixed(2)}</p>
+                    <p className="text-lg font-medium">
+                      {summary.ragAverages.avgQueries.toFixed(2)}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-400">Ø Results/Call</span>
-                    <p className="text-lg font-medium">{summary.ragAverages.avgResults.toFixed(2)}</p>
+                    <p className="text-lg font-medium">
+                      {summary.ragAverages.avgResults.toFixed(2)}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-400">Ø Injected Chars/Call</span>
-                    <p className="text-lg font-medium">{Math.round(summary.ragAverages.avgInjectedChars).toLocaleString()}</p>
+                    <p className="text-lg font-medium">
+                      {Math.round(summary.ragAverages.avgInjectedChars).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -346,16 +424,27 @@ export const AnalyticsPage = () => {
                   </thead>
                   <tbody>
                     {topSources.items.map((item, idx) => (
-                      <tr key={`${item.documentId}-${idx}`} className="border-b border-gray-800 hover:bg-gray-900/50">
+                      <tr
+                        key={`${item.documentId}-${idx}`}
+                        className="border-b border-gray-800 hover:bg-gray-900/50"
+                      >
                         <td className="py-2 px-3 text-gray-300">{item.title || '-'}</td>
-                        <td className="py-2 px-3 text-gray-400 truncate max-w-[200px]" title={item.fileName}>
+                        <td
+                          className="py-2 px-3 text-gray-400 truncate max-w-[200px]"
+                          title={item.fileName}
+                        >
                           {item.fileName || '-'}
                         </td>
-                        <td className="py-2 px-3 text-gray-400 font-mono text-xs truncate max-w-[150px]" title={item.documentId}>
+                        <td
+                          className="py-2 px-3 text-gray-400 font-mono text-xs truncate max-w-[150px]"
+                          title={item.documentId}
+                        >
                           {item.documentId}
                         </td>
                         <td className="py-2 px-3 text-gray-300 text-right">{item.count}</td>
-                        <td className="py-2 px-3 text-gray-300 text-right font-mono">{item.avgScore.toFixed(3)}</td>
+                        <td className="py-2 px-3 text-gray-300 text-right font-mono">
+                          {item.avgScore.toFixed(3)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -397,7 +486,9 @@ export const AnalyticsPage = () => {
                   <label className="block text-xs text-gray-400 mb-2">Frequenz</label>
                   <select
                     value={newReportFrequency}
-                    onChange={(e) => setNewReportFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
+                    onChange={(e) =>
+                      setNewReportFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')
+                    }
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm"
                   >
                     <option value="daily">Täglich</option>
@@ -406,7 +497,9 @@ export const AnalyticsPage = () => {
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-gray-400 mb-2">Empfänger (kommagetrennt)</label>
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Empfänger (kommagetrennt)
+                  </label>
                   <input
                     type="text"
                     value={newReportRecipients}
@@ -423,7 +516,10 @@ export const AnalyticsPage = () => {
                       toast.error('Bitte Empfänger eingeben');
                       return;
                     }
-                    const recipients = newReportRecipients.split(',').map(r => r.trim()).filter(r => r);
+                    const recipients = newReportRecipients
+                      .split(',')
+                      .map((r) => r.trim())
+                      .filter((r) => r);
                     try {
                       await createReport.mutateAsync({
                         frequency: newReportFrequency,
@@ -465,18 +561,24 @@ export const AnalyticsPage = () => {
           ) : scheduledReports && scheduledReports.length > 0 ? (
             <div className="space-y-3">
               {scheduledReports.map((report) => (
-                <div key={report.id} className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
+                <div
+                  key={report.id}
+                  className="bg-gray-900/50 rounded-lg p-4 border border-gray-700"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${report.enabled ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-gray-700 text-gray-400 border border-gray-600'}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${report.enabled ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-gray-700 text-gray-400 border border-gray-600'}`}
+                        >
                           {report.enabled ? 'Aktiv' : 'Deaktiviert'}
                         </span>
                         <span className="text-sm text-gray-300 capitalize">{report.frequency}</span>
                         <Calendar size={14} className="text-gray-400" />
                         {report.next_run_at && (
                           <span className="text-xs text-gray-400">
-                            Nächster Lauf: {new Date(report.next_run_at).toLocaleDateString('de-DE')}
+                            Nächster Lauf:{' '}
+                            {new Date(report.next_run_at).toLocaleDateString('de-DE')}
                           </span>
                         )}
                       </div>

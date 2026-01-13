@@ -12,7 +12,11 @@ import { ReportFilters } from '../utils/pdfReportGenerator';
  * GET /api/reports/scheduled
  * List scheduled reports for location
  */
-export const listScheduledReports = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const listScheduledReports = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -76,7 +80,11 @@ export const listScheduledReports = async (req: AuthenticatedRequest, res: Respo
  * POST /api/reports/scheduled
  * Create a new scheduled report
  */
-export const createScheduledReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const createScheduledReport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -149,7 +157,11 @@ export const createScheduledReport = async (req: AuthenticatedRequest, res: Resp
  * PATCH /api/reports/scheduled/:id
  * Update a scheduled report
  */
-export const updateScheduledReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const updateScheduledReport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -197,7 +209,11 @@ export const updateScheduledReport = async (req: AuthenticatedRequest, res: Resp
       // Recompute next_run_at if frequency changed
       if (req.body.frequency !== existing.frequency) {
         const now = new Date();
-        updates.next_run_at = computeNextRunAt(req.body.frequency, existing.timezone, now).toISOString();
+        updates.next_run_at = computeNextRunAt(
+          req.body.frequency,
+          existing.timezone,
+          now,
+        ).toISOString();
       }
     }
     if (req.body.timezone) updates.timezone = req.body.timezone;
@@ -239,7 +255,11 @@ export const updateScheduledReport = async (req: AuthenticatedRequest, res: Resp
  * DELETE /api/reports/scheduled/:id
  * Delete a scheduled report
  */
-export const deleteScheduledReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const deleteScheduledReport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -301,7 +321,11 @@ export const deleteScheduledReport = async (req: AuthenticatedRequest, res: Resp
  * POST /api/reports/scheduled/:id/test
  * Send a test report immediately (rate-limited)
  */
-export const testScheduledReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const testScheduledReport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -343,11 +367,13 @@ export const testScheduledReport = async (req: AuthenticatedRequest, res: Respon
 
     // Determine date range
     const dateTo = (report.filters as any)?.dateTo || new Date().toISOString().split('T')[0];
-    const dateFrom = (report.filters as any)?.dateTo || (() => {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return d.toISOString().split('T')[0];
-    })();
+    const dateFrom =
+      (report.filters as any)?.dateFrom ||
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        return d.toISOString().split('T')[0];
+      })();
 
     const subject = `Test Analytics Report - ${dateFrom} to ${dateTo}`;
     const text = `This is a test analytics report.\n\nPeriod: ${dateFrom} to ${dateTo}\nLocation ID: ${locationId}`;
@@ -357,11 +383,13 @@ export const testScheduledReport = async (req: AuthenticatedRequest, res: Respon
       to: report.recipients,
       subject,
       text,
-      attachments: [{
-        filename: `analytics_report_test_${locationId}_${dateFrom}_${dateTo}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
+      attachments: [
+        {
+          filename: `analytics_report_test_${locationId}_${dateFrom}_${dateTo}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
     });
 
     if (!emailResult.success) {
