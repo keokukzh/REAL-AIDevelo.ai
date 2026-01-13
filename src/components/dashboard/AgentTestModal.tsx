@@ -163,7 +163,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       const response = await apiClient.post<{
         success: boolean;
         data: { callSid: string; status: string };
-      }>('/agent/test-call', {
+      }>('/dashboard/agent/test-call', {
         to: testPhoneNumber.trim(),
       });
 
