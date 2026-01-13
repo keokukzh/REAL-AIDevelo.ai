@@ -1,6 +1,6 @@
 /**
  * Conversation Initiation Data Builder
- * 
+ *
  * Builds conversation_initiation_client_data consistently for phone + browser
  * This ensures parity between browser test and real phone calls
  */
@@ -11,7 +11,6 @@ export interface ConversationInitContext {
   locationId: string;
   agentConfig: {
     id: string;
-    eleven_agent_id: string | null;
     greeting_template: string | null;
     company_name: string | null;
     booking_required_fields_json: string[];
@@ -50,34 +49,32 @@ export interface ConversationInitiationClientData {
 }
 
 /**
- * Build conversation_initiation_client_data for ElevenLabs agent
- * 
+ * Build conversation_initiation_client_data
+ *
  * This function ensures that both browser and phone calls use the same
  * dynamic variables and configuration, guaranteeing behavioral parity.
  */
 export async function buildConversationInitData(
-  context: ConversationInitContext
+  context: ConversationInitContext,
 ): Promise<ConversationInitiationClientData> {
-  const {
-    locationId,
-    agentConfig,
-    location,
-    callContext = {},
-  } = context;
+  const { locationId, agentConfig, location, callContext = {} } = context;
 
   // Resolve company name (from agent config, location name, or default)
   const companyName = agentConfig.company_name || location.name || 'Unser Unternehmen';
 
   // Build greeting (use template if available, otherwise default)
-  let greeting = agentConfig.greeting_template || `Grüezi, hier ist ${companyName}. Wie kann ich Ihnen helfen?`;
-  
+  let greeting =
+    agentConfig.greeting_template || `Grüezi, hier ist ${companyName}. Wie kann ich Ihnen helfen?`;
+
   // Replace {{company_name}} placeholder if present
   greeting = greeting.replace(/\{\{company_name\}\}/g, companyName);
 
   // Get required booking fields (default to standard set if not configured)
-  const requiredFields = Array.isArray(agentConfig.booking_required_fields_json) && agentConfig.booking_required_fields_json.length > 0
-    ? agentConfig.booking_required_fields_json
-    : ['name', 'phone', 'service', 'preferredTime', 'timezone'];
+  const requiredFields =
+    Array.isArray(agentConfig.booking_required_fields_json) &&
+    agentConfig.booking_required_fields_json.length > 0
+      ? agentConfig.booking_required_fields_json
+      : ['name', 'phone', 'service', 'preferredTime', 'timezone'];
 
   // Build dynamic variables
   const dynamicVariables: Record<string, any> = {
@@ -111,12 +108,13 @@ export async function buildConversationInitData(
 
   // Build conversation config override (optional first message)
   // IMPORTANT: first_message triggers the agent to speak immediately
-  const conversationConfigOverride: ConversationInitiationClientData['conversation_config_override'] = {
-    agent: {
-      first_message: greeting,
-      language: 'de', // Default to German, can be made configurable later
-    },
-  };
+  const conversationConfigOverride: ConversationInitiationClientData['conversation_config_override'] =
+    {
+      agent: {
+        first_message: greeting,
+        language: 'de', // Default to German, can be made configurable later
+      },
+    };
 
   return {
     dynamic_variables: dynamicVariables,
@@ -130,17 +128,21 @@ export async function buildConversationInitData(
  */
 export async function loadConversationInitContext(
   locationId: string,
-  callContext?: ConversationInitContext['callContext']
+  callContext?: ConversationInitContext['callContext'],
 ): Promise<ConversationInitContext> {
   // Load agent config
   const { data: agentConfigData, error: agentError } = await supabaseAdmin
     .from('agent_configs')
-    .select('id, eleven_agent_id, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, services_json, goals_json')
+    .select(
+      'id, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, services_json, goals_json',
+    )
     .eq('location_id', locationId)
     .maybeSingle();
 
   if (agentError || !agentConfigData) {
-    throw new Error(`Agent config not found for locationId=${locationId}: ${agentError?.message || 'Not found'}`);
+    throw new Error(
+      `Agent config not found for locationId=${locationId}: ${agentError?.message || 'Not found'}`,
+    );
   }
 
   // Load location
@@ -151,14 +153,15 @@ export async function loadConversationInitContext(
     .maybeSingle();
 
   if (locationError || !locationData) {
-    throw new Error(`Location not found for locationId=${locationId}: ${locationError?.message || 'Not found'}`);
+    throw new Error(
+      `Location not found for locationId=${locationId}: ${locationError?.message || 'Not found'}`,
+    );
   }
 
   return {
     locationId,
     agentConfig: {
       id: agentConfigData.id,
-      eleven_agent_id: agentConfigData.eleven_agent_id,
       greeting_template: agentConfigData.greeting_template,
       company_name: agentConfigData.company_name,
       booking_required_fields_json: Array.isArray(agentConfigData.booking_required_fields_json)

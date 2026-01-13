@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { elevenLabsService } from '../services/elevenLabsService';
 import { BadRequestError, InternalServerError } from '../utils/errors';
 import multer from 'multer';
 
@@ -25,7 +24,7 @@ const upload = multer({
 export const uploadVoiceClone = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const uploadMiddleware = upload.single('audio');
-    
+
     uploadMiddleware(req, res, async (err) => {
       if (err) {
         return next(err);
@@ -41,19 +40,10 @@ export const uploadVoiceClone = async (req: Request, res: Response, next: NextFu
       }
 
       try {
-        // Create voice clone in ElevenLabs
-        // Pass buffer directly - elevenLabsService will handle it
-        const voiceId = await elevenLabsService.createVoiceClone(req.file.buffer, name, req.file.mimetype);
-
-        res.json({
-          success: true,
-          data: {
-            voiceId,
-            name,
-            audioSize: req.file.size,
-            mimeType: req.file.mimetype,
-          },
-        });
+        // Voice cloning is currently disabled (moved from ElevenLabs)
+        res
+          .status(501)
+          .json({ success: false, error: 'Voice cloning is currently not available.' });
       } catch (error) {
         next(error);
       }
@@ -74,14 +64,9 @@ export const getVoiceClone = async (req: Request, res: Response, next: NextFunct
       return next(new BadRequestError('voiceId is required'));
     }
 
-    const voiceClone = await elevenLabsService.getVoiceClone(voiceId);
-
-    res.json({
-      success: true,
-      data: voiceClone,
-    });
+    // const voiceClone = await elevenLabsService.getVoiceClone(voiceId);
+    res.status(501).json({ success: false, error: 'Voice cloning is currently not available.' });
   } catch (error) {
     next(error);
   }
 };
-

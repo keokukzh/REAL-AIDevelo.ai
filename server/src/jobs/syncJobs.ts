@@ -7,8 +7,9 @@ import { syncAllAgents } from '../services/syncService';
 export function registerSyncJobs() {
   // Register handler for agent sync
   jobQueue.registerHandler('sync_agent', async (data: { agentId: string }) => {
-    const { syncAgentWithElevenLabs } = await import('../services/syncService');
-    return await syncAgentWithElevenLabs(data.agentId);
+    // Current placeholder logic
+    console.log(`[SyncJobs] Syncing agent ${data.agentId} (Placeholder)`);
+    return { success: true };
   });
 
   // Register handler for sync all agents
@@ -51,4 +52,3 @@ export function scheduleStatusChecks() {
   setTimeout(runStatusCheck, interval);
   setInterval(runStatusCheck, interval);
 }
-

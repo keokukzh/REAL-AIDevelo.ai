@@ -217,7 +217,6 @@ export async function ensureAgentConfig(locationId: string): Promise<any> {
     return {
       id: 'dev-config-id',
       location_id: locationId,
-      eleven_agent_id: process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_mock',
       setup_state: 'ready',
       persona_gender: 'female',
       persona_age_range: '25-35',
@@ -240,17 +239,6 @@ export async function ensureAgentConfig(locationId: string): Promise<any> {
     .maybeSingle();
 
   if (existingConfig) {
-    if (!existingConfig.eleven_agent_id) {
-      // Patch missing ID
-      const defId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
-      const { data: updated } = await client
-        .from('agent_configs')
-        .update({ eleven_agent_id: defId })
-        .eq('id', existingConfig.id)
-        .select()
-        .single();
-      if (updated) return updated;
-    }
     return existingConfig;
   }
 
@@ -261,13 +249,11 @@ export async function ensureAgentConfig(locationId: string): Promise<any> {
     .eq('id', locationId)
     .maybeSingle();
   const companyName = loc?.name || 'Unser Unternehmen';
-  const defId = process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
 
   const { data: newConfig, error } = await client
     .from('agent_configs')
     .insert({
       location_id: locationId,
-      eleven_agent_id: defId,
       setup_state: 'needs_persona',
       persona_gender: 'female',
       persona_age_range: '25-35',

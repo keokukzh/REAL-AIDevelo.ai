@@ -14,7 +14,7 @@ RESTful API for managing AI Voice Agents for Swiss SMEs.
 
 ## Features
 - Create and manage voice agents
-- Integrate with ElevenLabs for voice synthesis
+- Integrate with Azure Speech for voice synthesis
 - Run automated tests on agents
 - Swiss compliance (nDSG) focused
 
@@ -32,54 +32,54 @@ For support, please contact the development team.
       `,
       contact: {
         name: 'AIDevelo.ai Support',
-        email: 'support@aidevelo.ai'
+        email: 'support@aidevelo.ai',
       },
       license: {
         name: 'ISC',
-        url: 'https://opensource.org/licenses/ISC'
-      }
+        url: 'https://opensource.org/licenses/ISC',
+      },
     },
     servers: [
       {
-        url: config.isProduction 
-          ? 'https://api.aidevelo.ai/api' 
+        url: config.isProduction
+          ? 'https://api.aidevelo.ai/api'
           : `http://localhost:${config.port}/api`,
-        description: config.isProduction ? 'Production server' : 'Development server'
-      }
+        description: config.isProduction ? 'Production server' : 'Development server',
+      },
     ],
     tags: [
       {
         name: 'Agents',
-        description: 'Operations for managing AI voice agents'
+        description: 'Operations for managing AI voice agents',
       },
       {
-        name: 'ElevenLabs',
-        description: 'Operations for ElevenLabs voice integration'
+        name: 'Voices',
+        description: 'Operations for voice synthesis integration',
       },
       {
         name: 'Tests',
-        description: 'Operations for running automated tests on agents'
+        description: 'Operations for running automated tests on agents',
       },
       {
         name: 'Health',
-        description: 'Health check endpoints'
+        description: 'Health check endpoints',
       },
       {
         name: 'Knowledge',
-        description: 'Knowledge ingestion and retrieval'
+        description: 'Knowledge ingestion and retrieval',
       },
       {
         name: 'Telephony',
-        description: 'Phone number assignment, activation, and webhooks'
+        description: 'Phone number assignment, activation, and webhooks',
       },
       {
         name: 'Payments',
-        description: 'Payment and billing operations (Stripe)'
+        description: 'Payment and billing operations (Stripe)',
       },
       {
         name: 'Voice',
-        description: 'Voice cloning and media endpoints'
-      }
+        description: 'Voice cloning and media endpoints',
+      },
     ],
     components: {
       schemas: {
@@ -88,33 +88,33 @@ For support, please contact the development team.
           properties: {
             success: {
               type: 'boolean',
-              example: false
+              example: false,
             },
             error: {
               type: 'string',
-              description: 'Error message'
+              description: 'Error message',
             },
             details: {
               type: 'object',
               description: 'Additional error details (validation errors, etc.)',
-              additionalProperties: true
-            }
+              additionalProperties: true,
+            },
           },
-          required: ['success', 'error']
+          required: ['success', 'error'],
         },
         SuccessResponse: {
           type: 'object',
           properties: {
             success: {
               type: 'boolean',
-              example: true
+              example: true,
             },
             data: {
               type: 'object',
-              description: 'Response data'
-            }
+              description: 'Response data',
+            },
           },
-          required: ['success', 'data']
+          required: ['success', 'data'],
         },
         BusinessProfile: {
           type: 'object',
@@ -125,21 +125,21 @@ For support, please contact the development team.
               minLength: 1,
               maxLength: 100,
               example: 'Müller Sanitär AG',
-              description: 'Company name'
+              description: 'Company name',
             },
             industry: {
               type: 'string',
               minLength: 1,
               maxLength: 50,
               example: 'Handwerk / Sanitär',
-              description: 'Industry sector'
+              description: 'Industry sector',
             },
             website: {
               type: 'string',
               format: 'uri',
               nullable: true,
               example: 'https://www.mueller-sanitaer.ch',
-              description: 'Company website URL'
+              description: 'Company website URL',
             },
             location: {
               type: 'object',
@@ -149,16 +149,16 @@ For support, please contact the development team.
                   type: 'string',
                   enum: ['CH'],
                   example: 'CH',
-                  description: 'Country code (currently only CH supported)'
+                  description: 'Country code (currently only CH supported)',
                 },
                 city: {
                   type: 'string',
                   minLength: 1,
                   maxLength: 50,
                   example: 'Zürich',
-                  description: 'City name'
-                }
-              }
+                  description: 'City name',
+                },
+              },
             },
             contact: {
               type: 'object',
@@ -168,28 +168,28 @@ For support, please contact the development team.
                   type: 'string',
                   pattern: '^[\\d\\s\\+\\-\\(\\)]+$',
                   example: '+41 44 123 45 67',
-                  description: 'Phone number'
+                  description: 'Phone number',
                 },
                 email: {
                   type: 'string',
                   format: 'email',
                   example: 'info@mueller-sanitaer.ch',
-                  description: 'Email address'
-                }
-              }
+                  description: 'Email address',
+                },
+              },
             },
             openingHours: {
               type: 'object',
               additionalProperties: {
-                type: 'string'
+                type: 'string',
               },
               example: {
                 'Mon-Fri': '08:00-18:00',
-                'Sat': '09:00-12:00'
+                Sat: '09:00-12:00',
               },
-              description: 'Opening hours by day/period'
-            }
-          }
+              description: 'Opening hours by day/period',
+            },
+          },
         },
         AgentConfig: {
           type: 'object',
@@ -199,45 +199,44 @@ For support, please contact the development team.
               type: 'string',
               pattern: '^[a-z]{2}-[A-Z]{2}$',
               example: 'de-CH',
-              description: 'Primary locale (language-country code)'
+              description: 'Primary locale (language-country code)',
             },
             fallbackLocales: {
               type: 'array',
               items: {
-                type: 'string'
+                type: 'string',
               },
               maxItems: 5,
               example: ['en-US', 'fr-CH'],
-              description: 'Fallback locales if primary is not available'
+              description: 'Fallback locales if primary is not available',
             },
             systemPrompt: {
               type: 'string',
               maxLength: 5000,
               nullable: true,
               example: 'You are a helpful assistant...',
-              description: 'Custom system prompt (optional, will be generated if not provided)'
+              description: 'Custom system prompt (optional, will be generated if not provided)',
             },
-            elevenLabs: {
+            voiceSettings: {
               type: 'object',
               required: ['voiceId', 'modelId'],
               properties: {
                 voiceId: {
                   type: 'string',
                   minLength: 1,
-                  maxLength: 50,
-                  example: '21m00Tcm4TlvDq8ikWAM',
-                  description: 'ElevenLabs voice ID'
+                  maxLength: 100,
+                  example: 'de-CH-LeniNeural',
+                  description: 'Voice ID',
                 },
                 modelId: {
                   type: 'string',
-                  minLength: 1,
-                  maxLength: 50,
-                  example: 'eleven_turbo_v2_5',
-                  description: 'ElevenLabs model ID'
-                }
-              }
-            }
-          }
+                  nullable: true,
+                  example: 'azure-tts',
+                  description: 'Model ID',
+                },
+              },
+            },
+          },
         },
         VoiceAgent: {
           type: 'object',
@@ -246,69 +245,69 @@ For support, please contact the development team.
               type: 'string',
               format: 'uuid',
               example: '123e4567-e89b-12d3-a456-426614174000',
-              description: 'Internal agent ID (UUID)'
+              description: 'Internal agent ID (UUID)',
             },
-            elevenLabsAgentId: {
+            externalAgentId: {
               type: 'string',
               nullable: true,
               example: 'agent_abc123',
-              description: 'External ElevenLabs agent ID'
+              description: 'External provider agent ID',
             },
             businessProfile: {
-              $ref: '#/components/schemas/BusinessProfile'
+              $ref: '#/components/schemas/BusinessProfile',
             },
             config: {
-              $ref: '#/components/schemas/AgentConfig'
+              $ref: '#/components/schemas/AgentConfig',
             },
             status: {
               type: 'string',
               enum: ['draft', 'configuring', 'production_ready', 'live'],
               example: 'production_ready',
-              description: 'Agent status'
+              description: 'Agent status',
             },
             createdAt: {
               type: 'string',
               format: 'date-time',
               example: '2024-01-15T10:30:00Z',
-              description: 'Creation timestamp'
+              description: 'Creation timestamp',
             },
             updatedAt: {
               type: 'string',
               format: 'date-time',
               example: '2024-01-15T10:30:00Z',
-              description: 'Last update timestamp'
-            }
+              description: 'Last update timestamp',
+            },
           },
-          required: ['id', 'businessProfile', 'config', 'status', 'createdAt', 'updatedAt']
+          required: ['id', 'businessProfile', 'config', 'status', 'createdAt', 'updatedAt'],
         },
         CreateAgentRequest: {
           type: 'object',
           required: ['businessProfile', 'config'],
           properties: {
             businessProfile: {
-              $ref: '#/components/schemas/BusinessProfile'
+              $ref: '#/components/schemas/BusinessProfile',
             },
             config: {
-              $ref: '#/components/schemas/AgentConfig'
-            }
-          }
+              $ref: '#/components/schemas/AgentConfig',
+            },
+          },
         },
         Voice: {
           type: 'object',
           properties: {
             voice_id: {
               type: 'string',
-              example: '21m00Tcm4TlvDq8ikWAM'
+              example: '21m00Tcm4TlvDq8ikWAM',
             },
             name: {
               type: 'string',
-              example: 'Rachel'
+              example: 'Rachel',
             },
             category: {
               type: 'string',
-              example: 'premade'
-            }
-          }
+              example: 'premade',
+            },
+          },
         },
         TestResult: {
           type: 'object',
@@ -316,22 +315,22 @@ For support, please contact the development team.
             agentId: {
               type: 'string',
               format: 'uuid',
-              example: '123e4567-e89b-12d3-a456-426614174000'
+              example: '123e4567-e89b-12d3-a456-426614174000',
             },
             timestamp: {
               type: 'string',
               format: 'date-time',
-              example: '2024-01-15T10:30:00Z'
+              example: '2024-01-15T10:30:00Z',
             },
             score: {
               type: 'number',
               minimum: 0,
               maximum: 100,
-              example: 95
+              example: 95,
             },
             passed: {
               type: 'boolean',
-              example: true
+              example: true,
             },
             details: {
               type: 'array',
@@ -340,47 +339,60 @@ For support, please contact the development team.
                 properties: {
                   case: {
                     type: 'string',
-                    example: 'Greeting'
+                    example: 'Greeting',
                   },
                   status: {
                     type: 'string',
-                    example: 'passed'
+                    example: 'passed',
                   },
                   latencyMs: {
                     type: 'number',
-                    example: 450
-                  }
-                }
-              }
-            }
-          }
+                    example: 450,
+                  },
+                },
+              },
+            },
+          },
         },
         KnowledgeDocument: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid', example: 'a3d8e9b2-5f8c-4d2d-9c2c-1f9b2a1c3d4e' },
-            agentId: { type: 'string', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000' },
+            agentId: {
+              type: 'string',
+              format: 'uuid',
+              example: '123e4567-e89b-12d3-a456-426614174000',
+            },
             sourceType: { type: 'string', enum: ['upload', 'url'], example: 'upload' },
             title: { type: 'string', example: 'Pricing FAQ' },
-            url: { type: 'string', format: 'uri', nullable: true, example: 'https://example.com/faq' },
+            url: {
+              type: 'string',
+              format: 'uri',
+              nullable: true,
+              example: 'https://example.com/faq',
+            },
             locale: { type: 'string', example: 'de-CH' },
             tags: { type: 'array', items: { type: 'string' }, example: ['pricing', 'faq'] },
-            status: { type: 'string', enum: ['queued', 'processing', 'ready', 'failed'], example: 'ready' },
+            status: {
+              type: 'string',
+              enum: ['queued', 'processing', 'ready', 'failed'],
+              example: 'ready',
+            },
             chunkCount: { type: 'integer', example: 24 },
             error: { type: 'string', nullable: true, example: 'Failed to parse PDF' },
             fileName: { type: 'string', example: 'pricing.pdf' },
             fileType: { type: 'string', example: 'application/pdf' },
             createdAt: { type: 'string', format: 'date-time', example: '2024-02-01T10:00:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', example: '2024-02-01T10:05:00Z' }
-          }
+            updatedAt: { type: 'string', format: 'date-time', example: '2024-02-01T10:05:00Z' },
+          },
         },
         KnowledgeJob: {
           type: 'object',
           properties: {
             success: { type: 'boolean', example: true },
             data: { $ref: '#/components/schemas/KnowledgeDocument' },
-            message: { type: 'string', example: 'Upload queued for ingestion' }
-          }
+            message: { type: 'string', example: 'Upload queued for ingestion' },
+          },
         },
         PhoneNumber: {
           type: 'object',
@@ -389,25 +401,33 @@ For support, please contact the development team.
             providerSid: { type: 'string', example: 'PNxxxxxxxx' },
             number: { type: 'string', example: '+41445556677' },
             country: { type: 'string', example: 'CH' },
-            status: { type: 'string', enum: ['available', 'assigned', 'active', 'inactive'], example: 'assigned' },
+            status: {
+              type: 'string',
+              enum: ['available', 'assigned', 'active', 'inactive'],
+              example: 'assigned',
+            },
             capabilities: {
               type: 'object',
               properties: {
                 voice: { type: 'boolean', example: true },
-                sms: { type: 'boolean', example: false }
-              }
+                sms: { type: 'boolean', example: false },
+              },
             },
             assignedAgentId: { type: 'string', format: 'uuid', nullable: true },
-            metadata: { type: 'object', additionalProperties: true, nullable: true }
-          }
+            metadata: { type: 'object', additionalProperties: true, nullable: true },
+          },
         },
         PaymentSession: {
           type: 'object',
           properties: {
             sessionId: { type: 'string', example: 'cs_test_a1B2C3D4E5' },
-            url: { type: 'string', format: 'uri', example: 'https://checkout.stripe.com/c/pay/cs_test_a1B2C3D4E5' }
-          }
-        }
+            url: {
+              type: 'string',
+              format: 'uri',
+              example: 'https://checkout.stripe.com/c/pay/cs_test_a1B2C3D4E5',
+            },
+          },
+        },
       },
       responses: {
         ValidationError: {
@@ -415,7 +435,7 @@ For support, please contact the development team.
           content: {
             'application/json': {
               schema: {
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Error',
               },
               example: {
                 success: false,
@@ -423,40 +443,40 @@ For support, please contact the development team.
                 details: [
                   {
                     path: ['businessProfile', 'companyName'],
-                    message: 'Company name is required'
-                  }
-                ]
-              }
-            }
-          }
+                    message: 'Company name is required',
+                  },
+                ],
+              },
+            },
+          },
         },
         NotFound: {
           description: 'Resource not found',
           content: {
             'application/json': {
               schema: {
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Error',
               },
               example: {
                 success: false,
-                error: 'Agent not found'
-              }
-            }
-          }
+                error: 'Agent not found',
+              },
+            },
+          },
         },
         InternalServerError: {
           description: 'Internal server error',
           content: {
             'application/json': {
               schema: {
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Error',
               },
               example: {
                 success: false,
-                error: 'Internal Server Error'
-              }
-            }
-          }
+                error: 'Internal Server Error',
+              },
+            },
+          },
         },
         RateLimitError: {
           description: 'Rate limit exceeded',
@@ -467,22 +487,17 @@ For support, please contact the development team.
                 properties: {
                   message: {
                     type: 'string',
-                    example: 'Too many requests from this IP, please try again later.'
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                    example: 'Too many requests from this IP, please try again later.',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
-  apis: [
-    './src/routes/*.ts',
-    './src/controllers/*.ts',
-    './src/app.ts'
-  ]
+  apis: ['./src/routes/*.ts', './src/controllers/*.ts', './src/app.ts'],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-

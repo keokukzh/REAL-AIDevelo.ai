@@ -3,7 +3,7 @@
  * Supports multiple TTS backends with unified interface
  */
 
-import { elevenLabsService } from '../../services/elevenLabsService';
+import { AzureTTS } from '../../services/AzureTTS';
 
 export interface TTSOptions {
   language?: string;
@@ -21,6 +21,26 @@ export interface TTSProvider {
    * @returns Audio buffer (WAV format, 16kHz PCM)
    */
   synthesize(text: string, voicePreset: string, options?: TTSOptions): Promise<Buffer>;
+}
+
+/**
+ * Azure TTS Provider
+ * Uses Azure Cognitive Services for high-quality TTS
+ */
+export class AzureTTSProvider implements TTSProvider {
+  private azureTTS: AzureTTS;
+
+  constructor() {
+    this.azureTTS = new AzureTTS();
+  }
+
+  async synthesize(text: string, _voicePreset: string, _options?: TTSOptions): Promise<Buffer> {
+    try {
+      return await this.azureTTS.synthesize(text);
+    } catch (error: any) {
+      throw new Error(`Azure TTS synthesis failed: ${error.message}`);
+    }
+  }
 }
 
 /**
@@ -64,7 +84,7 @@ export class ParlerTTSProvider implements TTSProvider {
           },
           responseType: 'arraybuffer',
           timeout: 30000, // 30s timeout for synthesis
-        }
+        },
       );
 
       const audioBuffer = Buffer.from(response.data);
@@ -92,26 +112,18 @@ export class ParlerTTSProvider implements TTSProvider {
     return hash.digest('hex');
   }
 
-  private async getCachedAudio(cacheKey: string): Promise<Buffer | null> {
+  private async getCachedAudio(_cacheKey: string): Promise<Buffer | null> {
     try {
-      // Try MinIO cache first
-      const minioEndpoint = process.env.MINIO_ENDPOINT || 'minio:9000';
-      const minioAccessKey = process.env.MINIO_ACCESS_KEY || 'minioadmin';
-      const minioSecretKey = process.env.MINIO_SECRET_KEY || 'minioadmin';
-      const minioBucket = process.env.MINIO_BUCKET || 'tts-cache';
-
-      // For now, return null (MinIO integration can be added later)
-      // This is a placeholder for cache implementation
+      // Placeholder for cache implementation
       return null;
     } catch {
       return null;
     }
   }
 
-  private async cacheAudio(cacheKey: string, audio: Buffer): Promise<void> {
+  private async cacheAudio(_cacheKey: string, _audio: Buffer): Promise<void> {
     try {
-      // Store in MinIO cache (implementation can be added later)
-      // For now, this is a no-op
+      // Placeholder
     } catch {
       // Cache failures should not break synthesis
     }
@@ -148,39 +160,12 @@ export class PiperTTSProvider implements TTSProvider {
           },
           responseType: 'arraybuffer',
           timeout: 20000, // 20s timeout (Piper is faster)
-        }
+        },
       );
 
       return Buffer.from(response.data);
     } catch (error: any) {
       throw new Error(`Piper TTS synthesis failed: ${error.message}`);
-    }
-  }
-}
-
-/**
- * ElevenLabs TTS Provider
- * Uses ElevenLabs API for high-quality TTS
- */
-export class ElevenLabsTTSProvider implements TTSProvider {
-  // Map voice presets to ElevenLabs voice IDs
-  private voicePresetMap: Record<string, string> = {
-    'SwissProfessionalDE': '21m00Tcm4TlvDq8ikWAM', // Rachel - professional
-    'FriendlyFemaleDE': 'EXAVITQu4vr4xnSDxMaL', // Sarah - friendly
-    'NeutralDE': '21m00Tcm4TlvDq8ikWAM', // Rachel - neutral
-  };
-
-  async synthesize(text: string, voicePreset: string, options?: TTSOptions): Promise<Buffer> {
-    try {
-      // Map voice preset to ElevenLabs voice ID
-      const voiceId = this.voicePresetMap[voicePreset] || '21m00Tcm4TlvDq8ikWAM';
-      
-      // Use multilingual model for German
-      const modelId = options?.language === 'de' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5';
-      
-      return await elevenLabsService.generateSpeech(text, voiceId, modelId);
-    } catch (error: any) {
-      throw new Error(`ElevenLabs TTS synthesis failed: ${error.message}`);
     }
   }
 }
@@ -201,7 +186,7 @@ export class OpenAITTSProvider implements TTSProvider {
     }
   }
 
-  async synthesize(text: string, voicePreset: string, options?: TTSOptions): Promise<Buffer> {
+  async synthesize(text: string, _voicePreset: string, _options?: TTSOptions): Promise<Buffer> {
     if (!this.client) {
       throw new Error('OpenAI API key not configured');
     }
@@ -225,21 +210,19 @@ export class OpenAITTSProvider implements TTSProvider {
 /**
  * Get TTS provider based on configuration
  * Priority:
- * 1. TTS_PROVIDER env var (if set: elevenlabs, parler, piper, openai)
- * 2. TTS_SERVICE_URL env var (if set, use Parler/Piper)
- * 3. ELEVENLABS_API_KEY (if set, use ElevenLabs)
- * 4. OPENAI_API_KEY (if set, use OpenAI)
- * 5. Default: Parler (fallback)
+ * 1. TTS_PROVIDER env var (if set: azure, parler, piper, openai)
+ * 2. AZURE_SPEECH_KEY (if set, use Azure)
+ * 3. OPENAI_API_KEY (if set, use OpenAI)
+ * 4. Default: Azure (fallback)
  */
 export function getTTSProvider(): TTSProvider {
   const explicitProvider = process.env.TTS_PROVIDER;
-  const ttsServiceUrl = process.env.TTS_SERVICE_URL;
-  const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+  const azureSpeechKey = process.env.AZURE_SPEECH_KEY;
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   // If explicit provider is set, use it
-  if (explicitProvider === 'elevenlabs') {
-    return new ElevenLabsTTSProvider();
+  if (explicitProvider === 'azure') {
+    return new AzureTTSProvider();
   }
   if (explicitProvider === 'openai') {
     return new OpenAITTSProvider();
@@ -251,14 +234,9 @@ export function getTTSProvider(): TTSProvider {
     return new PiperTTSProvider();
   }
 
-  // If TTS_SERVICE_URL is set, use Parler/Piper
-  if (ttsServiceUrl) {
-    return new ParlerTTSProvider();
-  }
-
-  // If ElevenLabs API key is available, use ElevenLabs
-  if (elevenLabsApiKey && elevenLabsApiKey !== '' && elevenLabsApiKey !== 'PLACEHOLDER_FOR_TESTING') {
-    return new ElevenLabsTTSProvider();
+  // If Azure Speech Key is available, use Azure
+  if (azureSpeechKey && azureSpeechKey !== '') {
+    return new AzureTTSProvider();
   }
 
   // If OpenAI API key is available, use OpenAI
@@ -266,9 +244,8 @@ export function getTTSProvider(): TTSProvider {
     return new OpenAITTSProvider();
   }
 
-  // Fallback to Parler
-  return new ParlerTTSProvider();
+  // Fallback to Azure
+  return new AzureTTSProvider();
 }
 
 export const ttsProvider = getTTSProvider();
-

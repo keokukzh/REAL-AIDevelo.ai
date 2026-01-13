@@ -42,26 +42,6 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
       .select('*')
       .eq('location_id', location.id);
 
-    // 2. Get ElevenLabs Credits if API key is provided
-    let quota = null;
-    const elevenLabsApiKey = user.elevenlabs_api_key || config.elevenLabsApiKey;
-
-    if (elevenLabsApiKey) {
-      try {
-        const quotaRes = await axios.get('https://api.elevenlabs.io/v1/user/subscription', {
-          headers: { 'xi-api-key': elevenLabsApiKey },
-        });
-        const d = quotaRes.data;
-        quota = {
-          characterCount: d.character_count,
-          characterLimit: d.character_limit,
-          percentageUsed: ((d.character_count / d.character_limit) * 100).toFixed(1),
-        };
-      } catch (error) {
-        console.error('[SettingsController] ElevenLabs Credits fetch error:', error);
-      }
-    }
-
     // 3. Check calendar integrations
     const { data: integrations } = await supabaseAdmin
       .from('calendar_connections')
@@ -86,10 +66,6 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
       location: location || null,
       agents: agents || [],
       integrations: {
-        elevenLabs: {
-          connected: !!user.elevenlabs_api_key,
-          quota: quota || null,
-        },
         calendar: {
           connected: !!integrations,
           provider: integrations?.provider || null,
@@ -99,16 +75,6 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response, next
         },
       },
     };
-
-    // 5. Add Warning ONLY (never return 400 here)
-    if (quota && parseFloat(quota.percentageUsed) > 95) {
-      response.warning = {
-        type: 'quota_critical',
-        severity: 'high',
-        message: `ElevenLabs credits critically low (${quota.percentageUsed}% used). Please upgrade or wait for reset.`,
-        action: 'upgrade_plan',
-      };
-    }
 
     return res.status(200).json(response);
   } catch (error: any) {
@@ -133,7 +99,7 @@ export const updateSettings = async (
 
     const { supabaseUserId, email } = req.supabaseUser;
     const updates = req.body;
-    const allowedFields = ['full_name', 'company_name', 'phone_number', 'elevenlabs_api_key'];
+    const allowedFields = ['full_name', 'company_name', 'phone_number'];
 
     const filteredUpdates = Object.keys(updates)
       .filter((key) => allowedFields.includes(key))

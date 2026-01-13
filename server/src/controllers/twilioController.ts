@@ -3,7 +3,10 @@ import { supabaseAdmin } from '../services/supabaseDb';
 import { logger, serializeError, redact } from '../utils/logger';
 import axios from 'axios';
 import { config } from '../config/env';
-import { loadConversationInitContext, buildConversationInitData } from '../voice-agent/utils/conversationInitBuilder';
+import {
+  loadConversationInitContext,
+  buildConversationInitData,
+} from '../voice-agent/utils/conversationInitBuilder';
 
 function escapeXml(value: string): string {
   return value
@@ -44,7 +47,9 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
 
       if (locationId) {
         // Upsert call_logs entry
-        const timestamp = req.body.Timestamp ? new Date(req.body.Timestamp).toISOString() : new Date().toISOString();
+        const timestamp = req.body.Timestamp
+          ? new Date(req.body.Timestamp).toISOString()
+          : new Date().toISOString();
         const callData: any = {
           location_id: locationId,
           call_sid: callSid,
@@ -72,166 +77,108 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
             .update(callData)
             .eq('id', existingCall.id);
           if (updateError) {
-            logger.error('twilio.inbound.call_log_update_failed', updateError, redact({
-              callSid,
-              locationId,
-            }), req);
+            logger.error(
+              'twilio.inbound.call_log_update_failed',
+              updateError,
+              redact({
+                callSid,
+                locationId,
+              }),
+              req,
+            );
           }
         } else {
           const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
           if (insertError) {
-            logger.error('twilio.inbound.call_log_insert_failed', insertError, redact({
-              callSid,
-              locationId,
-            }), req);
+            logger.error(
+              'twilio.inbound.call_log_insert_failed',
+              insertError,
+              redact({
+                callSid,
+                locationId,
+              }),
+              req,
+            );
           }
         }
 
-        logger.info('twilio.inbound.call_log_upserted', redact({
-          callSid,
-          locationId,
-          to,
-        }), req);
+        logger.info(
+          'twilio.inbound.call_log_upserted',
+          redact({
+            callSid,
+            locationId,
+            to,
+          }),
+          req,
+        );
       }
     }
   } catch (error: any) {
-    logger.error('twilio.inbound.call_log_upsert_failed', error, redact({
-      callSid,
-      to,
-      from,
-    }), req);
+    logger.error(
+      'twilio.inbound.call_log_upsert_failed',
+      error,
+      redact({
+        callSid,
+        to,
+        from,
+      }),
+      req,
+    );
     // Continue even if call log upsert fails
   }
 
-    // Step 2: Use ElevenLabs register-call (replaces Media Streams)
-    // @deprecated This path is deprecated. Use self-hosted voice agent with FreeSWITCH instead.
-  // This is the canonical approach per Stop Conditions: register-call must return TwiML
-  
-  // Check for mock mode
-  if (process.env.ELEVENLABS_MOCK_MODE === 'true') {
-    const { getMockTwiML } = await import('../services/mockElevenLabsService');
-    logger.info('twilio.inbound.mock_mode', redact({
-      callSid,
-      locationId,
-    }), req);
-    const mockTwiml = getMockTwiML();
-    res.status(200).type('text/xml').send(mockTwiml);
-    return;
-  }
-  
   // Preconditions check
   if (!locationId) {
-    logger.warn('twilio.inbound.location_not_resolved', redact({
-      callSid,
-      to,
-      from,
-    }), req);
-    const fallbackTwiml = buildTwiML(
-      `  <Say voice="alice">Entschuldigung, die Verbindung konnte nicht hergestellt werden. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
+    logger.warn(
+      'twilio.inbound.location_not_resolved',
+      redact({
+        callSid,
+        to,
+        from,
+      }),
+      req,
     );
-    res.status(200).type('text/xml').send(fallbackTwiml);
-    return;
-  }
-
-  // Check ElevenLabs API key
-  const elevenLabsApiKey = config.elevenLabsApiKey;
-  if (!elevenLabsApiKey || !config.isElevenLabsConfigured) {
-    logger.error('twilio.inbound.elevenlabs_not_configured', new Error('ELEVENLABS_API_KEY not configured'), redact({
-      callSid,
-      locationId,
-    }), req);
     const fallbackTwiml = buildTwiML(
-      `  <Say voice="alice">Entschuldigung, der Service ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
+      `  <Say voice="alice">Entschuldigung, die Verbindung konnte nicht hergestellt werden. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`,
     );
     res.status(200).type('text/xml').send(fallbackTwiml);
     return;
   }
 
   try {
-    // Load conversation initiation context
-    const initContext = await loadConversationInitContext(locationId, {
-      from,
-      to,
-      callSid,
-      testMode: false,
-    });
+    const wsBaseUrl = getWebSocketBaseUrl(req);
+    const streamUrl = `${wsBaseUrl}/api/phone/media-stream`;
 
-    // Get agent ID (required for register-call)
-    const agentId = initContext.agentConfig.eleven_agent_id || process.env.ELEVENLABS_AGENT_ID_DEFAULT || 'agent_1601kcmqt4efe41bzwykaytm2yrj';
-    
-    if (!agentId) {
-      throw new Error('ElevenLabs Agent ID not found');
-    }
-
-    // Build conversation initiation data
-    const conversationInitData = await buildConversationInitData(initContext);
-
-    // Call ElevenLabs register-call API
-    logger.info('twilio.inbound.registering_call', redact({
-      callSid,
-      locationId,
-      agentId,
-      from,
-      to,
-    }), req);
-
-    const registerCallResponse = await axios.post(
-      'https://api.elevenlabs.io/v1/convai/twilio/register-call',
-      {
-        agent_id: agentId,
-        from_number: from,
-        to_number: to,
-        direction: 'inbound',
-        conversation_initiation_client_data: conversationInitData,
-      },
-      {
-        headers: {
-          'xi-api-key': elevenLabsApiKey,
-          'Content-Type': 'application/json',
-        },
-        timeout: 10000,
-      }
-    );
-
-    // Track character costs from response headers (per API reference)
-    const { extractElevenLabsCosts } = await import('../utils/elevenLabsCostTracking');
-    extractElevenLabsCosts(registerCallResponse, 'convai/twilio/register-call');
-
-    // ElevenLabs returns TwiML directly as text/xml
-    const twiml = registerCallResponse.data;
-
-    if (typeof twiml !== 'string' || !twiml.includes('<Response>')) {
-      logger.error('twilio.inbound.invalid_twiml_response', new Error('Invalid TwiML from ElevenLabs'), redact({
+    logger.info(
+      'twilio.inbound.starting_media_stream',
+      redact({
         callSid,
         locationId,
-        responseType: typeof twiml,
-        responsePreview: String(twiml).substring(0, 200),
-      }), req);
-      throw new Error('Invalid TwiML response from ElevenLabs');
-    }
+        streamUrl,
+      }),
+      req,
+    );
 
-    logger.info('twilio.inbound.register_call_success', redact({
-      callSid,
-      locationId,
-      agentId,
-      twimlLength: twiml.length,
-    }), req);
+    const twiml = buildTwiML(
+      `  <Connect>\n    <Stream url="${streamUrl}">\n      <Parameter name="locationId" value="${locationId}" />\n    </Stream>\n  </Connect>`,
+    );
 
-    // Return TwiML directly to Twilio
     res.status(200).type('text/xml').send(twiml);
   } catch (error: any) {
-    logger.error('twilio.inbound.register_call_failed', error, redact({
-      callSid,
-      locationId,
-      from,
-      to,
-      errorMessage: error.message,
-      errorStatus: axios.isAxiosError(error) ? error.response?.status : undefined,
-    }), req);
+    logger.error(
+      'twilio.inbound.stream_setup_failed',
+      error,
+      redact({
+        callSid,
+        locationId,
+        from,
+        to,
+      }),
+      req,
+    );
 
-    // Fallback TwiML on error
     const fallbackTwiml = buildTwiML(
-      `  <Say voice="alice">Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`
+      `  <Say voice="alice">Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.</Say>\n  <Hangup />`,
     );
     res.status(200).type('text/xml').send(fallbackTwiml);
   }
@@ -246,7 +193,7 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
 
   // Find location by phone number
   const phoneNumber = direction === 'inbound' ? to : from;
-  
+
   const { data: phoneData } = await supabaseAdmin
     .from('phone_numbers')
     .select('location_id')
@@ -265,7 +212,9 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
     .eq('call_sid', callSid)
     .maybeSingle();
 
-  const timestamp = req.body.Timestamp ? new Date(req.body.Timestamp).toISOString() : new Date().toISOString();
+  const timestamp = req.body.Timestamp
+    ? new Date(req.body.Timestamp).toISOString()
+    : new Date().toISOString();
   const callData: any = {
     location_id: phoneData.location_id,
     call_sid: callSid,
@@ -281,7 +230,8 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
   };
 
   const isCompleted = callStatus === 'completed';
-  const isTerminated = isCompleted || callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer';
+  const isTerminated =
+    isCompleted || callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer';
 
   if (isCompleted && duration !== null) {
     callData.duration_sec = duration;
@@ -298,35 +248,53 @@ async function persistCallEvent(callSid: string, req: Request): Promise<void> {
       .eq('id', existingCall.id);
 
     if (updateError) {
-      logger.error('twilio.status.call_log_update_failed', updateError, redact({
-        callSid,
-        locationId: phoneData.location_id,
-        callStatus,
-      }), req);
+      logger.error(
+        'twilio.status.call_log_update_failed',
+        updateError,
+        redact({
+          callSid,
+          locationId: phoneData.location_id,
+          callStatus,
+        }),
+        req,
+      );
     } else {
-      logger.info('twilio.status.call_log_updated', redact({
-        callSid,
-        callStatus,
-        locationId: phoneData.location_id,
-        updatedFields: Object.keys(callData),
-      }), req);
+      logger.info(
+        'twilio.status.call_log_updated',
+        redact({
+          callSid,
+          callStatus,
+          locationId: phoneData.location_id,
+          updatedFields: Object.keys(callData),
+        }),
+        req,
+      );
     }
   } else {
     // Create new call log
     const { error: insertError } = await supabaseAdmin.from('call_logs').insert(callData);
 
     if (insertError) {
-      logger.error('twilio.status.call_log_create_failed', insertError, redact({
-        callSid,
-        locationId: phoneData.location_id,
-        callStatus,
-      }), req);
+      logger.error(
+        'twilio.status.call_log_create_failed',
+        insertError,
+        redact({
+          callSid,
+          locationId: phoneData.location_id,
+          callStatus,
+        }),
+        req,
+      );
     } else {
-      logger.info('twilio.status.call_log_created', redact({
-        callSid,
-        callStatus,
-        locationId: phoneData.location_id,
-      }), req);
+      logger.info(
+        'twilio.status.call_log_created',
+        redact({
+          callSid,
+          callStatus,
+          locationId: phoneData.location_id,
+        }),
+        req,
+      );
     }
   }
 }
@@ -344,9 +312,14 @@ export async function handleVoiceStatusCallback(req: Request, res: Response): Pr
       await persistCallEvent(callSid, req);
     } catch (error) {
       // Log error but don't fail the webhook response
-      logger.error('twilio.status.persist_event_failed', error, redact({
-        callSid,
-      }), req);
+      logger.error(
+        'twilio.status.persist_event_failed',
+        error,
+        redact({
+          callSid,
+        }),
+        req,
+      );
     }
   }
 }

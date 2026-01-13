@@ -39,7 +39,7 @@ A comprehensive voice agent service with RAG (Retrieval-Augmented Generation), r
 ## Features
 
 - **RAG (Retrieval-Augmented Generation)**: Per-customer document indexing and retrieval
-- **Real-time Voice Pipeline**: OpenAI Realtime API for ASR, configurable LLM, ElevenLabs for TTS
+- **Real-time Voice Pipeline**: OpenAI Realtime API for ASR, configurable LLM, Azure Speech for TTS
 - **Multi-Provider LLM Support**: OpenAI, Anthropic, DeepSeek
 - **Tool Integration**: Calendar (Google/Outlook), CRM (webhooks), Notifications (SMS/Email)
 - **Session Management**: Call session tracking and conversation history
@@ -74,8 +74,9 @@ ASR_PROVIDER=openai_realtime
 # Uses OPENAI_API_KEY for OpenAI Realtime
 
 # TTS Configuration
-ELEVENLABS_API_KEY=your_elevenlabs_api_key
-ELEVENLABS_DEFAULT_VOICE=21m00Tcm4TlvDq8ikWAM
+AZURE_SPEECH_KEY=your_azure_speech_key
+AZURE_SPEECH_REGION=switzerlandnorth
+AZURE_DEFAULT_VOICE=de-CH-LeniNeural
 
 # Vector DB Configuration
 QDRANT_URL=http://localhost:6333

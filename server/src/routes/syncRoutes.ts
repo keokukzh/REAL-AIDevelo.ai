@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { syncAgentWithElevenLabs, syncAllAgents, handleElevenLabsWebhook } from '../services/syncService';
+import { syncAgent, syncAllAgents, handleWebhookEvent } from '../services/syncService';
 import { Request, Response, NextFunction } from 'express';
 import { BadRequestError } from '../utils/errors';
-import { verifyElevenLabsWebhook } from '../middleware/verifyElevenLabsWebhook';
 
 const router = Router();
 
@@ -10,7 +9,7 @@ const router = Router();
  * @swagger
  * /sync/agents/{agentId}:
  *   post:
- *     summary: Sync agent with ElevenLabs
+ *     summary: Sync agent
  *     tags: [Sync]
  *     parameters:
  *       - in: path
@@ -25,8 +24,8 @@ const router = Router();
 router.post('/agents/:agentId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { agentId } = req.params;
-    const result = await syncAgentWithElevenLabs(agentId);
-    
+    const result = await syncAgent(agentId);
+
     if (result.success) {
       res.json({
         success: true,
@@ -47,7 +46,7 @@ router.post('/agents/:agentId', async (req: Request, res: Response, next: NextFu
  * @swagger
  * /sync/agents:
  *   post:
- *     summary: Sync all agents with ElevenLabs
+ *     summary: Sync all agents
  *     tags: [Sync]
  *     responses:
  *       200:
@@ -69,44 +68,22 @@ router.post('/agents', async (req: Request, res: Response, next: NextFunction) =
  * @swagger
  * /sync/webhook:
  *   post:
- *     summary: Handle ElevenLabs webhook
+ *     summary: Handle sync webhook
  *     tags: [Sync]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - event
- *               - timestamp
- *             properties:
- *               event:
- *                 type: string
- *               agent_id:
- *                 type: string
- *               phone_number_id:
- *                 type: string
- *               voice_id:
- *                 type: string
- *               data:
- *                 type: object
- *               timestamp:
- *                 type: string
  *     responses:
  *       200:
  *         description: Webhook processed successfully
  */
-router.post('/webhook', verifyElevenLabsWebhook, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { event, timestamp } = req.body;
-    
+
     if (!event || !timestamp) {
       return next(new BadRequestError('event and timestamp are required'));
     }
 
-    const result = await handleElevenLabsWebhook(req.body);
-    
+    const result = await handleWebhookEvent(req.body);
+
     res.json({
       success: result.success,
       message: result.message,
@@ -117,4 +94,3 @@ router.post('/webhook', verifyElevenLabsWebhook, async (req: Request, res: Respo
 });
 
 export default router;
-

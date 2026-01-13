@@ -1,12 +1,10 @@
 /**
- * Tool Webhook Routes for ElevenLabs Conversational AI
- * 
- * These routes handle tool calls from ElevenLabs agents (calendar booking, etc.)
- * Protected by ElevenLabs webhook signature verification
+ * Tool Webhook Routes
+ *
+ * These routes handle tool calls for agents (calendar booking, etc.)
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { verifyElevenLabsWebhook } from '../../middleware/verifyElevenLabsWebhook';
 import { resolveLocationId } from '../../utils/locationIdResolver';
 import { createToolRegistry } from '../tools/toolRegistry';
 import { BadRequestError, InternalServerError } from '../../utils/errors';
@@ -16,12 +14,12 @@ const router = Router();
 
 /**
  * POST /api/voice-agent/tools/calendar
- * 
- * Handles calendar tool calls from ElevenLabs agent:
+ *
+ * Handles calendar tool calls:
  * - check_availability: Check available time slots
  * - create_appointment: Create calendar event
- * 
- * Expected request body from ElevenLabs:
+ *
+ * Expected request body:
  * {
  *   "tool_name": "calendar",
  *   "arguments": {
@@ -33,7 +31,7 @@ const router = Router();
  *   "to_number": "+41...", // Called number (if available)
  * }
  */
-router.post('/calendar', verifyElevenLabsWebhook, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/calendar', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tool_name, arguments: toolArgs, call_sid, from_number, to_number } = req.body;
 
@@ -47,7 +45,11 @@ router.post('/calendar', verifyElevenLabsWebhook, async (req: Request, res: Resp
 
     const { action } = toolArgs;
     if (!action || (action !== 'check_availability' && action !== 'create_appointment')) {
-      return next(new BadRequestError(`Invalid action: ${action}. Expected: check_availability or create_appointment`));
+      return next(
+        new BadRequestError(
+          `Invalid action: ${action}. Expected: check_availability or create_appointment`,
+        ),
+      );
     }
 
     // Resolve locationId from call context
@@ -106,7 +108,7 @@ router.post('/calendar', verifyElevenLabsWebhook, async (req: Request, res: Resp
         toolArgs: JSON.stringify(toolArgs).substring(0, 200),
       });
 
-      // Return error in a format ElevenLabs expects
+      // Return error
       res.status(400).json({
         success: false,
         tool_name: 'calendar',
@@ -126,14 +128,18 @@ router.post('/calendar', verifyElevenLabsWebhook, async (req: Request, res: Resp
  * POST /api/voice-agent/tools/*
  * Generic tool webhook handler (for future tools)
  */
-router.post('/*', verifyElevenLabsWebhook, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/*', async (req: Request, res: Response, next: NextFunction) => {
   const toolName = req.path.replace('/', '');
-  
-  logger.warn('tool_webhook.unknown_tool', {
-    toolName,
-    body: JSON.stringify(req.body).substring(0, 200),
-    error: `Unknown tool requested: ${toolName}`,
-  }, req);
+
+  logger.warn(
+    'tool_webhook.unknown_tool',
+    {
+      toolName,
+      body: JSON.stringify(req.body).substring(0, 200),
+      error: `Unknown tool requested: ${toolName}`,
+    },
+    req,
+  );
 
   res.status(404).json({
     success: false,

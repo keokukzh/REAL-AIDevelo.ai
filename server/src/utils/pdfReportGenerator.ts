@@ -23,7 +23,6 @@ export interface ReportSummary {
   avgDurationSec: number;
   transcriptCoverageRate: number;
   ragUsageRate: number;
-  elevenCoverageRate: number;
 }
 
 export interface TopSource {
@@ -39,7 +38,7 @@ export interface TopSource {
  */
 export async function fetchReportSummary(
   locationId: string,
-  filters: ReportFilters
+  filters: ReportFilters,
 ): Promise<ReportSummary> {
   let summaryQuery = supabaseAdmin
     .from('call_logs')
@@ -61,30 +60,37 @@ export async function fetchReportSummary(
     throw new Error(`Failed to fetch calls: ${summaryError.message}`);
   }
 
-  const totals = calls ? {
-    calls: calls.length,
-    completed: calls.filter((c: any) => c.outcome === 'completed' || c.outcome === 'success').length,
-    failed: calls.filter((c: any) => c.outcome === 'failed' || c.outcome === 'error').length,
-    busy: calls.filter((c: any) => c.outcome === 'busy').length,
-    noAnswer: calls.filter((c: any) => c.outcome === 'no-answer' || c.outcome === 'no_answer').length,
-    ringing: calls.filter((c: any) => c.outcome === 'ringing').length,
-    queued: calls.filter((c: any) => c.outcome === 'queued').length,
-  } : {
-    calls: 0,
-    completed: 0,
-    failed: 0,
-    busy: 0,
-    noAnswer: 0,
-    ringing: 0,
-    queued: 0,
-  };
+  const totals = calls
+    ? {
+        calls: calls.length,
+        completed: calls.filter((c: any) => c.outcome === 'completed' || c.outcome === 'success')
+          .length,
+        failed: calls.filter((c: any) => c.outcome === 'failed' || c.outcome === 'error').length,
+        busy: calls.filter((c: any) => c.outcome === 'busy').length,
+        noAnswer: calls.filter((c: any) => c.outcome === 'no-answer' || c.outcome === 'no_answer')
+          .length,
+        ringing: calls.filter((c: any) => c.outcome === 'ringing').length,
+        queued: calls.filter((c: any) => c.outcome === 'queued').length,
+      }
+    : {
+        calls: 0,
+        completed: 0,
+        failed: 0,
+        busy: 0,
+        noAnswer: 0,
+        ringing: 0,
+        queued: 0,
+      };
 
   const durations = calls
-    ? calls.map((c: any) => c.duration_sec).filter((d: any) => d !== null && d !== undefined && typeof d === 'number')
+    ? calls
+        .map((c: any) => c.duration_sec)
+        .filter((d: any) => d !== null && d !== undefined && typeof d === 'number')
     : [];
-  const avgDurationSec = durations.length > 0
-    ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length
-    : 0;
+  const avgDurationSec =
+    durations.length > 0
+      ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length
+      : 0;
 
   const callsWithTranscript = calls
     ? calls.filter((c: any) => {
@@ -93,7 +99,8 @@ export async function fetchReportSummary(
         return transcript.length > 0;
       })
     : [];
-  const transcriptCoverageRate = totals.calls > 0 ? (callsWithTranscript.length / totals.calls) * 100 : 0;
+  const transcriptCoverageRate =
+    totals.calls > 0 ? (callsWithTranscript.length / totals.calls) * 100 : 0;
 
   const callsWithRag = calls
     ? calls.filter((c: any) => {
@@ -104,20 +111,11 @@ export async function fetchReportSummary(
     : [];
   const ragUsageRate = totals.calls > 0 ? (callsWithRag.length / totals.calls) * 100 : 0;
 
-  const callsWithEleven = calls
-    ? calls.filter((c: any) => {
-        const notes = c.notes_json || {};
-        return notes.elevenConversationId && notes.elevenConversationId.length > 0;
-      })
-    : [];
-  const elevenCoverageRate = totals.calls > 0 ? (callsWithEleven.length / totals.calls) * 100 : 0;
-
   return {
     totals,
     avgDurationSec,
     transcriptCoverageRate,
     ragUsageRate,
-    elevenCoverageRate,
   };
 }
 
@@ -126,7 +124,7 @@ export async function fetchReportSummary(
  */
 export async function fetchTopSources(
   locationId: string,
-  filters: ReportFilters
+  filters: ReportFilters,
 ): Promise<TopSource[]> {
   let topSourcesQuery = supabaseAdmin
     .from('call_logs')
@@ -139,13 +137,16 @@ export async function fetchTopSources(
 
   const { data: callsForSources } = await topSourcesQuery;
 
-  const sourceMap = new Map<string, {
-    documentId: string;
-    title?: string;
-    fileName?: string;
-    scores: number[];
-    count: number;
-  }>();
+  const sourceMap = new Map<
+    string,
+    {
+      documentId: string;
+      title?: string;
+      fileName?: string;
+      scores: number[];
+      count: number;
+    }
+  >();
 
   if (callsForSources) {
     callsForSources.forEach((call: any) => {
@@ -185,9 +186,8 @@ export async function fetchTopSources(
       title: entry.title,
       fileName: entry.fileName,
       count: entry.count,
-      avgScore: entry.scores.length > 0
-        ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length
-        : 0,
+      avgScore:
+        entry.scores.length > 0 ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length : 0,
     }))
     .sort((a, b) => {
       if (b.count !== a.count) {
@@ -203,7 +203,7 @@ export async function fetchTopSources(
  */
 export async function generateReportPdfBuffer(
   locationId: string,
-  filters: ReportFilters
+  filters: ReportFilters,
 ): Promise<Buffer> {
   const [summary, topSources] = await Promise.all([
     fetchReportSummary(locationId, filters),
@@ -237,12 +237,13 @@ export async function generateReportPdfBuffer(
       doc.text('No data available for the selected period.');
     } else {
       doc.text(`Total Calls: ${summary.totals.calls}`);
-      doc.text(`Completed: ${summary.totals.completed} | Failed: ${summary.totals.failed} | Busy: ${summary.totals.busy} | No Answer: ${summary.totals.noAnswer}`);
+      doc.text(
+        `Completed: ${summary.totals.completed} | Failed: ${summary.totals.failed} | Busy: ${summary.totals.busy} | No Answer: ${summary.totals.noAnswer}`,
+      );
       doc.moveDown();
       doc.text(`Average Duration: ${Math.round(summary.avgDurationSec)}s`);
       doc.text(`Transcript Coverage: ${summary.transcriptCoverageRate.toFixed(1)}%`);
       doc.text(`RAG Usage Rate: ${summary.ragUsageRate.toFixed(1)}%`);
-      doc.text(`ElevenLabs Coverage: ${summary.elevenCoverageRate.toFixed(1)}%`);
     }
 
     doc.moveDown(2);
@@ -294,7 +295,7 @@ export async function generateReportPdfBuffer(
 export async function generateReportPdfStream(
   locationId: string,
   filters: ReportFilters,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
 ): Promise<void> {
   const [summary, topSources] = await Promise.all([
     fetchReportSummary(locationId, filters),
@@ -323,12 +324,13 @@ export async function generateReportPdfStream(
     doc.text('No data available for the selected period.');
   } else {
     doc.text(`Total Calls: ${summary.totals.calls}`);
-    doc.text(`Completed: ${summary.totals.completed} | Failed: ${summary.totals.failed} | Busy: ${summary.totals.busy} | No Answer: ${summary.totals.noAnswer}`);
+    doc.text(
+      `Completed: ${summary.totals.completed} | Failed: ${summary.totals.failed} | Busy: ${summary.totals.busy} | No Answer: ${summary.totals.noAnswer}`,
+    );
     doc.moveDown();
     doc.text(`Average Duration: ${Math.round(summary.avgDurationSec)}s`);
     doc.text(`Transcript Coverage: ${summary.transcriptCoverageRate.toFixed(1)}%`);
     doc.text(`RAG Usage Rate: ${summary.ragUsageRate.toFixed(1)}%`);
-    doc.text(`ElevenLabs Coverage: ${summary.elevenCoverageRate.toFixed(1)}%`);
   }
 
   doc.moveDown(2);

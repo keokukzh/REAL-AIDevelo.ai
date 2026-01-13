@@ -1,5 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createAgent, getAgents, getAgentById, activateAgent, syncAgent } from '../controllers/agentController';
+import {
+  createAgent,
+  getAgents,
+  getAgentById,
+  activateAgent,
+  syncAgent,
+} from '../controllers/agentController';
 import { createDefaultAgent } from '../controllers/defaultAgentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
 import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValidators';
@@ -61,16 +67,21 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/', (req, res, next) => {
-  console.log('[AgentRoutes] POST /agents received', {
-    path: req.path,
-    method: req.method,
-    origin: req.headers.origin,
-    contentType: req.headers['content-type'],
-    bodySize: JSON.stringify(req.body).length
-  });
-  next();
-}, validateRequest(CreateAgentSchema), createAgent);
+router.post(
+  '/',
+  (req, res, next) => {
+    console.log('[AgentRoutes] POST /agents received', {
+      path: req.path,
+      method: req.method,
+      origin: req.headers.origin,
+      contentType: req.headers['content-type'],
+      bodySize: JSON.stringify(req.body).length,
+    });
+    next();
+  },
+  validateRequest(CreateAgentSchema),
+  createAgent,
+);
 
 /**
  * @swagger
@@ -312,7 +323,7 @@ router.patch('/:id/activate', requireAuth, validateParams(AgentIdParamSchema), a
  * @swagger
  * /agents/{id}/sync:
  *   post:
- *     summary: Sync agent with ElevenLabs
+ *     summary: Sync agent
  *     tags: [Agents]
  *     parameters:
  *       - in: path
@@ -330,116 +341,40 @@ router.post('/:id/sync', requireAuth, validateParams(AgentIdParamSchema), syncAg
  * @swagger
  * /agents/{id}/test:
  *   post:
- *     summary: Test an agent (get streaming token for testing)
+ *     summary: Test an agent
  *     tags: [Agents]
- *     description: Returns a streaming token and configuration for testing the agent via voice interface
+ *     description: Returns configuration for testing the agent via voice interface
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               customerId:
- *                 type: string
- *                 description: Optional customer ID for testing (defaults to test-{timestamp})
- *               duration:
- *                 type: number
- *                 description: Test duration in seconds (defaults to 3600)
  *     responses:
  *       200:
  *         description: Test configuration retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     agentId:
- *                       type: string
- *                     customerId:
- *                       type: string
- *                     voiceId:
- *                       type: string
- *                     streamingToken:
- *                       type: string
- *                     websocketUrl:
- *                       type: string
- *       404:
- *         $ref: '#/components/responses/NotFound'
- *       500:
- *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/:id/test', requireAuth, validateParams(AgentIdParamSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    const { customerId, duration } = req.body;
-    
-    // Get agent config from Supabase
-    const agentConfig = await AgentService.getAgentConfigById(id);
-
-    if (!agentConfig.eleven_agent_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Agent has no ElevenLabs Agent ID configured',
-      });
-    }
-
-    // Get streaming token from voice-agent route
-    const testCustomerId = customerId || `test-${Date.now()}`;
-    const testDuration = duration || 3600;
-
-    // Forward request to voice-agent streaming token endpoint
-    const axios = require('axios');
-    const { config: appConfig } = require('../config/env');
-    const baseUrl = appConfig.publicBaseUrl || 'http://localhost:5000';
-    
+router.post(
+  '/:id/test',
+  requireAuth,
+  validateParams(AgentIdParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Get token from voice-agent service
-      const tokenResponse = await axios.post(`${baseUrl}/api/voice-agent/elevenlabs-stream-token`, {
-        customerId: testCustomerId,
-        agentId: agentConfig.eleven_agent_id,
-        voiceId: null, // Voice ID is managed by ElevenLabs agent
-        duration: testDuration,
-      }, {
-        headers: {
-          'Authorization': req.headers.authorization || '',
-        },
-      });
+      const { id } = req.params;
 
+      // Test logic modified as streaming is handled via Media Streams
       res.json({
         success: true,
+        message: 'Agent test available via Media Streams',
         data: {
           agentId: id,
-          customerId: testCustomerId,
-          elevenAgentId: agentConfig.eleven_agent_id,
-          streamingToken: tokenResponse.data.data.token,
-          websocketUrl: 'wss://api.elevenlabs.io/v1/convai',
-          testDuration: testDuration,
         },
       });
-    } catch (error: any) {
-      console.error('[AgentRoutes] Failed to get streaming token:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to generate streaming token for testing',
-        details: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -468,7 +403,7 @@ router.patch('/:id', requireAuth, validateParams(AgentIdParamSchema), async (req
   try {
     const { id } = req.params;
     const updates = req.body;
-    
+
     const agent = db.getAgentById(id);
     if (!agent) {
       return res.status(404).json({
@@ -479,7 +414,7 @@ router.patch('/:id', requireAuth, validateParams(AgentIdParamSchema), async (req
 
     // Update agent in database
     const updatedAgent = db.updateAgent(id, updates);
-    
+
     res.json({
       success: true,
       data: updatedAgent,
@@ -519,7 +454,7 @@ router.get('/:id/analytics', requireAuth, validateParams(AgentIdParamSchema), as
   try {
     const { id } = req.params;
     const { startDate, endDate } = req.query;
-    
+
     // Mock analytics data - in production, fetch from database
     res.json({
       success: true,
@@ -567,7 +502,7 @@ router.get('/:id/analytics', requireAuth, validateParams(AgentIdParamSchema), as
 router.get('/:id/calls', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Mock call history - in production, fetch from database
     res.json({
       success: true,
@@ -597,22 +532,27 @@ router.get('/:id/calls', requireAuth, validateParams(AgentIdParamSchema), async 
  *       200:
  *         description: Documents retrieved successfully
  */
-router.get('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Mock documents - in production, fetch from database/vector store
-    res.json({
-      success: true,
-      data: [],
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+router.get(
+  '/:id/rag/documents',
+  requireAuth,
+  validateParams(AgentIdParamSchema),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Mock documents - in production, fetch from database/vector store
+      res.json({
+        success: true,
+        data: [],
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -630,27 +570,32 @@ router.get('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema)
  *       200:
  *         description: Document uploaded successfully
  */
-router.post('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // In production, handle file upload and process with RAG service
-    res.json({
-      success: true,
-      data: {
-        id: 'doc-' + Date.now(),
-        agentId: id,
-        name: req.body.name || 'Document',
-        status: 'processing',
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+router.post(
+  '/:id/rag/documents',
+  requireAuth,
+  validateParams(AgentIdParamSchema),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // In production, handle file upload and process with RAG service
+      res.json({
+        success: true,
+        data: {
+          id: 'doc-' + Date.now(),
+          agentId: id,
+          name: req.body.name || 'Document',
+          status: 'processing',
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -673,21 +618,26 @@ router.post('/:id/rag/documents', requireAuth, validateParams(AgentIdParamSchema
  *       200:
  *         description: Document deleted successfully
  */
-router.delete('/:id/rag/documents/:docId', requireAuth, validateParams(AgentIdParamSchema), async (req, res) => {
-  try {
-    const { id, docId } = req.params;
-    
-    // In production, delete from database and vector store
-    res.json({
-      success: true,
-      message: 'Document deleted',
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+router.delete(
+  '/:id/rag/documents/:docId',
+  requireAuth,
+  validateParams(AgentIdParamSchema),
+  async (req, res) => {
+    try {
+      const { id, docId } = req.params;
+
+      // In production, delete from database and vector store
+      res.json({
+        success: true,
+        message: 'Document deleted',
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+);
 
 export default router;

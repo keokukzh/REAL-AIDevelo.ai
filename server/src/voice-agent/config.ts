@@ -2,21 +2,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// @deprecated ELEVENLABS_API_KEY is no longer required when using self-hosted voice agent
-// It is kept for backward compatibility with existing ElevenLabs integrations
-const requiredEnvVars = [
-  // 'ELEVENLABS_API_KEY', // Deprecated - optional now
-] as const;
-
 const validateEnv = () => {
-  const missing = requiredEnvVars.filter(key => !process.env[key]);
-  if (missing.length > 0) {
-    // Only warn, don't throw (for backward compatibility)
-    console.warn(
-      `Optional environment variables not set: ${missing.join(', ')}\n` +
-      `These are only needed for ElevenLabs integration (deprecated).`
-    );
-  }
+  // Add validation for critical environment variables here if needed
 };
 
 // Validate on import (non-blocking)
@@ -25,8 +12,17 @@ validateEnv();
 export const voiceAgentConfig = {
   // LLM Configuration
   llm: {
-    provider: (process.env.LLM_PROVIDER || 'openai') as 'openai' | 'anthropic' | 'deepseek' | 'vllm',
-    apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.VLLM_API_KEY || '',
+    provider: (process.env.LLM_PROVIDER || 'openai') as
+      | 'openai'
+      | 'anthropic'
+      | 'deepseek'
+      | 'vllm',
+    apiKey:
+      process.env.OPENAI_API_KEY ||
+      process.env.ANTHROPIC_API_KEY ||
+      process.env.DEEPSEEK_API_KEY ||
+      process.env.VLLM_API_KEY ||
+      '',
     model: process.env.LLM_MODEL || process.env.VLLM_MODEL || 'gpt-4o-mini',
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -36,7 +32,10 @@ export const voiceAgentConfig = {
 
   // ASR Configuration
   asr: {
-    provider: (process.env.ASR_PROVIDER || 'openai_realtime') as 'openai_realtime' | 'deepgram' | 'assemblyai',
+    provider: (process.env.ASR_PROVIDER || 'openai_realtime') as
+      | 'openai_realtime'
+      | 'deepgram'
+      | 'assemblyai',
     openaiRealtimeApiKey: process.env.OPENAI_API_KEY || '', // Reuses OpenAI key
     deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
     assemblyaiApiKey: process.env.ASSEMBLYAI_API_KEY || '',
@@ -44,8 +43,9 @@ export const voiceAgentConfig = {
 
   // TTS Configuration
   tts: {
-    elevenLabsApiKey: process.env.ELEVENLABS_API_KEY!,
-    defaultVoice: process.env.ELEVENLABS_DEFAULT_VOICE || '21m00Tcm4TlvDq8ikWAM',
+    azureSpeechKey: process.env.AZURE_SPEECH_KEY || '',
+    azureSpeechRegion: process.env.AZURE_SPEECH_REGION || 'switzerlandnorth',
+    defaultVoice: process.env.AZURE_DEFAULT_VOICE || 'de-CH-LeniNeural',
   },
 
   // Vector DB Configuration
@@ -61,8 +61,16 @@ export const voiceAgentConfig = {
   // Calendar Configuration
   calendar: {
     google: {
-      clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
+      clientId:
+        process.env.GOOGLE_OAUTH_CLIENT_ID ||
+        process.env.GOOGLE_CALENDAR_CLIENT_ID ||
+        process.env.GOOGLE_CLIENT_ID ||
+        '',
+      clientSecret:
+        process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
+        process.env.GOOGLE_CALENDAR_CLIENT_SECRET ||
+        process.env.GOOGLE_CLIENT_SECRET ||
+        '',
     },
     outlook: {
       clientId: process.env.OUTLOOK_CLIENT_ID || '',
@@ -104,5 +112,3 @@ export const voiceAgentConfig = {
     enabled: process.env.ENABLE_MEDIA_STREAMS === 'true', // Default false, must be explicitly enabled
   },
 };
-
-

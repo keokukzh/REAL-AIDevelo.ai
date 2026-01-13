@@ -187,7 +187,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
 };
 
 /**
- * Sync agent with ElevenLabs
+ * Sync agent
  */
 export const syncAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -199,7 +199,7 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
     }
 
     try {
-      // Syncing is now just a no-op or local update since we don't use ElevenLabs
+      // Syncing is now just a no-op or local update
       agent.updatedAt = new Date();
       db.saveAgent(agent);
 
