@@ -149,12 +149,12 @@ export const calendarService = {
       const userInfo = await oauth2.userinfo.get();
       const email = userInfo.data.email;
 
-      const token: CalendarToken & { email?: string } = {
+      const token: CalendarToken = {
         accessToken: tokens.access_token!,
         refreshToken: tokens.refresh_token || undefined,
         expiresAt: tokens.expiry_date || Date.now() + 3600 * 1000,
         provider: 'google',
-        email,
+        email: email || undefined,
       };
 
       console.log('✅ Google OAuth code exchanged successfully for:', email);
