@@ -30,6 +30,7 @@ export const ROUTES = {
   AGB: '/agb',
   PRICING: '/pricing',
   SUBSCRIPTION: '/dashboard/subscription',
+  TEST_CALL: '/dashboard/test-call',
 } as const;
 
 /**

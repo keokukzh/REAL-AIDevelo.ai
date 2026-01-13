@@ -2,10 +2,7 @@ import { chatService } from '../llm/chat';
 import { ragQueryService } from '../rag/query';
 import { ragContextBuilder } from '../rag/contextBuilder';
 import { sessionStore } from './session';
-// OPENAI REALTIME EXPERIMENT REMOVED - We use ElevenLabs register-call approach only
-// import { OpenAIRealtimeClient, RealtimeCallbacks } from './openaiRealtime';
 import { voiceAgentConfig } from '../config';
-import axios from 'axios';
 import { VoiceAgentSession } from '../types';
 import { AzureTTS } from '../../services/AzureTTS';
 import { DeepSeekLLM } from '../../services/DeepSeekLLM';
@@ -27,8 +24,6 @@ export interface VoicePipelineOptions {
 }
 
 export class VoicePipelineHandler {
-  // OPENAI REALTIME EXPERIMENT REMOVED
-  // private realtimeClient: OpenAIRealtimeClient | null = null;
   private session: VoiceAgentSession | null = null;
   private options: VoicePipelineOptions;
 
@@ -51,40 +46,7 @@ export class VoicePipelineHandler {
       this.session = existingSession;
     }
 
-    // OPENAI REALTIME EXPERIMENT REMOVED - We use ElevenLabs register-call approach only
-    // Setup Realtime client callbacks
-    // const callbacks: RealtimeCallbacks = {
-    //   onOpen: () => {
-    //     console.log(`[VoicePipeline] Session ${this.options.sessionId} connected`);
-    //   },
-    //   onTranscript: async (text: string, isFinal: boolean) => {
-    //     if (isFinal) {
-    //       await this.handleTranscript(text);
-    //     }
-    //   },
-    //   onAudio: async (audio: Buffer) => {
-    //     // Audio from OpenAI Realtime (TTS) - forward to client
-    //     // This would be handled by WebSocket to client
-    //   },
-    //   onError: (error: Error) => {
-    //     console.error(`[VoicePipeline] Error: ${error.message}`);
-    //     if (this.session) {
-    //       sessionStore.update(this.options.sessionId, { status: 'error' });
-    //     }
-    //   },
-    //   onClose: () => {
-    //     console.log(`[VoicePipeline] Session ${this.options.sessionId} closed`);
-    //     if (this.session) {
-    //       sessionStore.end(this.options.sessionId);
-    //     }
-    //   },
-    // };
-
-    // this.realtimeClient = new OpenAIRealtimeClient(callbacks);
-    // await this.realtimeClient.connect();
-    console.warn(
-      '[VoicePipeline] OpenAI Realtime experiment removed - use ElevenLabs register-call instead',
-    );
+    console.log(`[VoicePipeline] Pipeline initialized for session: ${this.options.sessionId}`);
   }
 
   /**
@@ -124,7 +86,6 @@ export class VoicePipelineHandler {
         );
       } catch (error: any) {
         console.error('[RAG] failed, continuing without context:', error.message);
-        // Graceful fallback: continue without RAG context
       }
     }
 
@@ -144,13 +105,11 @@ export class VoicePipelineHandler {
       },
     );
 
-    // Inject RAG context text if available
     if (ragContextText) {
       promptContext.ragContextText = ragContextText;
     }
 
-    // Get LLM response
-    // Get LLM response (using DeepSeek)
+    // Get LLM response using DeepSeek
     const messages: Array<{ role: string; content: string }> = [
       {
         role: 'system',
@@ -161,13 +120,10 @@ export class VoicePipelineHandler {
     ];
     const responseContent = await llm.chat(messages);
 
-    // Create a response object matching the old structure if needed, or just use content
-    const response = { content: responseContent };
-
     // Add assistant response to history
     this.session.context?.conversationHistory.push({
       role: 'assistant',
-      content: response.content,
+      content: responseContent,
       timestamp: new Date(),
     });
 
@@ -175,12 +131,12 @@ export class VoicePipelineHandler {
       context: this.session.context,
     });
 
-    // Generate TTS via ElevenLabs
-    await this.generateTTS(response.content);
+    // Generate TTS via Azure TTS
+    await this.generateTTS(responseContent);
   }
 
   /**
-   * Generate TTS audio via Azure TTS (replaces ElevenLabs)
+   * Generate TTS audio via Azure TTS
    */
   private async generateTTS(text: string): Promise<Buffer> {
     try {
@@ -195,35 +151,25 @@ export class VoicePipelineHandler {
    * Send audio input to ASR
    */
   sendAudio(audio: Buffer): void {
-    // OPENAI REALTIME EXPERIMENT REMOVED
-    // if (this.realtimeClient) {
-    //   this.realtimeClient.sendAudio(audio);
-    // }
-    console.warn(
-      '[VoicePipeline] sendAudio not implemented - use ElevenLabs register-call instead',
-    );
+    // This pipeline currently handles direct audio forwarding for traditional sessions
+    // Real-time phone streams are handled via Azure STT in twilioMediaStream.ts
+    console.warn('[VoicePipeline] sendAudio incoming - processing depends on session type');
   }
 
   /**
    * Send text input (for testing)
    */
   sendText(text: string): void {
-    // OPENAI REALTIME EXPERIMENT REMOVED
-    // if (this.realtimeClient) {
-    //   this.realtimeClient.sendText(text);
-    //   this.realtimeClient.requestResponse();
-    // }
-    console.warn('[VoicePipeline] sendText not implemented - use ElevenLabs register-call instead');
+    console.log(`[VoicePipeline] sendText: ${text}`);
+    this.handleTranscript(text).catch((err) => {
+      console.error('[VoicePipeline] Error handling text input:', err);
+    });
   }
 
   /**
    * Close pipeline
    */
   close(): void {
-    // OPENAI REALTIME EXPERIMENT REMOVED
-    // if (this.realtimeClient) {
-    //   this.realtimeClient.close();
-    // }
     if (this.session) {
       sessionStore.end(this.options.sessionId);
     }

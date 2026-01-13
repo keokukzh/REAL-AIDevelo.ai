@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Device, Call } from '@twilio/voice-sdk';
-import { apiClient } from '../services/apiClient';
+import { apiClient } from '../services/apiClient.js';
 
 export interface TwilioVoiceState {
   isConnected: boolean;

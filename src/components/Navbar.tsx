@@ -2,11 +2,11 @@ import React, { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Menu, X, LogIn } from 'lucide-react';
-import { useNavigationWithLocation } from '../hooks/useNavigation';
-import { useNavbarState } from '../hooks/useNavbarState';
-import { ROUTES, SECTION_LINKS } from '../config/navigation';
-import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useNavigationWithLocation } from '../hooks/useNavigation.js';
+import { useNavbarState } from '../hooks/useNavbarState.js';
+import { ROUTES, SECTION_LINKS } from '../config/navigation.js';
+import { useReducedMotion } from '../hooks/useReducedMotion.js';
+import { useAuthContext } from '../contexts/AuthContext.js';
 
 interface NavbarProps {
   onStartOnboarding?: () => void;

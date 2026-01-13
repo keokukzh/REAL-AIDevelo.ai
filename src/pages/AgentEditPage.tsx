@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ROUTES } from '../config/navigation';
+import { ROUTES } from '../config/navigation.js';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -15,10 +15,10 @@ import {
   Sparkles,
   Wand2,
 } from 'lucide-react';
-import { apiRequest, ApiRequestError } from '../services/api';
-import { Button } from '../components/ui/Button';
-import { industries } from '../data/industries';
-import { RAGManagementTab } from '../components/agent/RAGManagementTab';
+import { apiRequest, ApiRequestError } from '../services/api.js';
+import { Button } from '../components/ui/Button.js';
+import { industries } from '../data/industries.js';
+import { RAGManagementTab } from '../components/agent/RAGManagementTab.js';
 
 interface Agent {
   id: string;
@@ -41,7 +41,7 @@ interface Agent {
     fallbackLocales: string[];
     recordingConsent?: boolean;
     systemPrompt?: string;
-    elevenLabs: {
+    voiceSettings: {
       voiceId: string;
       modelId: string;
     };
@@ -143,8 +143,8 @@ export const AgentEditPage: React.FC = () => {
     });
     setVoiceForm({
       primaryLocale: agent.config.primaryLocale,
-      voiceId: agent.config.elevenLabs.voiceId,
-      modelId: agent.config.elevenLabs.modelId,
+      voiceId: agent.config.voiceSettings.voiceId,
+      modelId: agent.config.voiceSettings.modelId,
       systemPrompt: agent.config.systemPrompt || '',
       recordingConsent: agent.config.recordingConsent || false,
     });
@@ -157,8 +157,9 @@ export const AgentEditPage: React.FC = () => {
     try {
       const res = await apiRequest<{ data: Agent }>(`/agents/${id}`);
       setAgent(res.data);
-    } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Agent konnte nicht geladen werden.';
+    } catch (err: any) {
+      const msg =
+        err instanceof ApiRequestError ? err.message : 'Agent konnte nicht geladen werden.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -170,7 +171,7 @@ export const AgentEditPage: React.FC = () => {
     try {
       const res = await apiRequest<{ data: Array<{ id: string }> }>(`/agents/${id}/rag/documents`);
       setRagCount(res.data.length);
-    } catch (err) {
+    } catch (err: any) {
       setRagCount(0);
     }
   };
@@ -182,10 +183,15 @@ export const AgentEditPage: React.FC = () => {
       const params = new URLSearchParams();
       params.set('country', numberCountry);
       if (planId) params.set('planId', planId);
-      const res = await apiRequest<{ data: PhoneNumber[] }>(`/telephony/numbers?${params.toString()}`);
+      const res = await apiRequest<{ data: PhoneNumber[] }>(
+        `/telephony/numbers?${params.toString()}`,
+      );
       setAvailableNumbers(res.data);
-    } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Telefonnummern konnten nicht geladen werden.';
+    } catch (err: any) {
+      const msg =
+        err instanceof ApiRequestError
+          ? err.message
+          : 'Telefonnummern konnten nicht geladen werden.';
       setNumberError(msg);
       setAvailableNumbers([]);
     } finally {
@@ -203,8 +209,11 @@ export const AgentEditPage: React.FC = () => {
         data: updates,
       });
       await fetchAgent();
-    } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Änderungen konnten nicht gespeichert werden.';
+    } catch (err: any) {
+      const msg =
+        err instanceof ApiRequestError
+          ? err.message
+          : 'Änderungen konnten nicht gespeichert werden.';
       setError(msg);
     } finally {
       setSaving(false);
@@ -239,7 +248,7 @@ export const AgentEditPage: React.FC = () => {
         primaryLocale: voiceForm.primaryLocale,
         systemPrompt: voiceForm.systemPrompt,
         recordingConsent: voiceForm.recordingConsent,
-        elevenLabs: {
+        voiceSettings: {
           voiceId: voiceForm.voiceId,
           modelId: voiceForm.modelId,
         },
@@ -257,48 +266,52 @@ export const AgentEditPage: React.FC = () => {
         data: { agentId: id, phoneNumberId },
       });
       await Promise.all([fetchAgent(), fetchNumbers()]);
-    } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Telefonnummer konnte nicht zugewiesen werden.';
+    } catch (err: any) {
+      const msg =
+        err instanceof ApiRequestError
+          ? err.message
+          : 'Telefonnummer konnte nicht zugewiesen werden.';
       setNumberError(msg);
     } finally {
       setAssigningNumber(null);
     }
   };
 
-  const checklistItems = useMemo(
-    () => {
-      const email = agent?.businessProfile.contact.email?.trim() || '';
-      const company = agent?.businessProfile.companyName?.trim() || '';
-      const prompt = agent?.config?.systemPrompt?.trim() || '';
+  const checklistItems = useMemo(() => {
+    const email = agent?.businessProfile.contact.email?.trim() || '';
+    const company = agent?.businessProfile.companyName?.trim() || '';
+    const prompt = agent?.config?.systemPrompt?.trim() || '';
 
-      const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      const hasMeaningfulPrompt = prompt.length >= 30;
+    const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const hasMeaningfulPrompt = prompt.length >= 30;
 
-      return [
-        {
-          id: 'profile',
-          label: 'Gültiges Firmenprofil (Name + E-Mail)',
-          done: company.length >= 3 && hasValidEmail,
-        },
-        {
-          id: 'voice',
-          label: 'Voice & Prompt konfiguriert',
-          done: Boolean(agent?.config?.elevenLabs?.voiceId && agent?.config?.primaryLocale && hasMeaningfulPrompt),
-        },
-        {
-          id: 'knowledge',
-          label: 'Wissensbasis mit Dokumenten',
-          done: ragCount > 0,
-        },
-        {
-          id: 'phone',
-          label: 'Telefonnummer zugewiesen',
-          done: Boolean(agent?.telephony?.phoneNumber),
-        },
-      ];
-    },
-    [agent, ragCount]
-  );
+    return [
+      {
+        id: 'profile',
+        label: 'Gültiges Firmenprofil (Name + E-Mail)',
+        done: company.length >= 3 && hasValidEmail,
+      },
+      {
+        id: 'voice',
+        label: 'Voice & Prompt konfiguriert',
+        done: Boolean(
+          agent?.config?.voiceSettings?.voiceId &&
+          agent?.config?.primaryLocale &&
+          hasMeaningfulPrompt,
+        ),
+      },
+      {
+        id: 'knowledge',
+        label: 'Wissensbasis mit Dokumenten',
+        done: ragCount > 0,
+      },
+      {
+        id: 'phone',
+        label: 'Telefonnummer zugewiesen',
+        done: Boolean(agent?.telephony?.phoneNumber),
+      },
+    ];
+  }, [agent, ragCount]);
 
   if (loading) {
     return (
@@ -437,7 +450,9 @@ const TabNav: React.FC<{
   );
 };
 
-const ActivationChecklist: React.FC<{ items: Array<{ id: string; label: string; done: boolean }> }> = ({ items }) => {
+const ActivationChecklist: React.FC<{
+  items: Array<{ id: string; label: string; done: boolean }>;
+}> = ({ items }) => {
   const completed = items.filter((i) => i.done).length;
   const percent = Math.round((completed / items.length) * 100);
 
@@ -446,7 +461,9 @@ const ActivationChecklist: React.FC<{ items: Array<{ id: string; label: string; 
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm text-gray-400">Aktivierungs-Checkliste</p>
-          <h3 className="text-xl font-bold">{completed} / {items.length} abgeschlossen</h3>
+          <h3 className="text-xl font-bold">
+            {completed} / {items.length} abgeschlossen
+          </h3>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">Fortschritt</p>
@@ -513,14 +530,16 @@ const BusinessTab: React.FC<{
     phone: string;
     website: string;
   };
-  onChange: React.Dispatch<React.SetStateAction<{
-    companyName: string;
-    industry: string;
-    city: string;
-    email: string;
-    phone: string;
-    website: string;
-  }>>;
+  onChange: React.Dispatch<
+    React.SetStateAction<{
+      companyName: string;
+      industry: string;
+      city: string;
+      email: string;
+      phone: string;
+      website: string;
+    }>
+  >;
   onSave: () => Promise<void> | void;
   saving: boolean;
 }> = ({ form, onChange, onSave, saving }) => {
@@ -537,7 +556,9 @@ const BusinessTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="companyName">Firmenname *</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="companyName">
+            Firmenname *
+          </label>
           <input
             id="companyName"
             value={form.companyName}
@@ -546,7 +567,9 @@ const BusinessTab: React.FC<{
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="industry">Branche</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="industry">
+            Branche
+          </label>
           <select
             id="industry"
             value={form.industry}
@@ -561,7 +584,9 @@ const BusinessTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="city">Stadt</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="city">
+            Stadt
+          </label>
           <input
             id="city"
             value={form.city}
@@ -570,7 +595,9 @@ const BusinessTab: React.FC<{
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="website">Website</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="website">
+            Website
+          </label>
           <input
             id="website"
             value={form.website}
@@ -583,7 +610,9 @@ const BusinessTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="email">E-Mail *</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="email">
+            E-Mail *
+          </label>
           <input
             id="email"
             type="email"
@@ -594,7 +623,9 @@ const BusinessTab: React.FC<{
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="phone">Telefon</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="phone">
+            Telefon
+          </label>
           <input
             id="phone"
             type="tel"
@@ -608,7 +639,12 @@ const BusinessTab: React.FC<{
       </div>
 
       <div className="flex justify-end">
-        <Button variant="primary" onClick={onSave} disabled={saving} className="flex items-center gap-2">
+        <Button
+          variant="primary"
+          onClick={onSave}
+          disabled={saving}
+          className="flex items-center gap-2"
+        >
           <Save size={16} />
           {saving ? 'Speichert...' : 'Änderungen speichern'}
         </Button>
@@ -625,13 +661,15 @@ const VoiceTab: React.FC<{
     systemPrompt: string;
     recordingConsent: boolean;
   };
-  onChange: React.Dispatch<React.SetStateAction<{
-    primaryLocale: string;
-    voiceId: string;
-    modelId: string;
-    systemPrompt: string;
-    recordingConsent: boolean;
-  }>>;
+  onChange: React.Dispatch<
+    React.SetStateAction<{
+      primaryLocale: string;
+      voiceId: string;
+      modelId: string;
+      systemPrompt: string;
+      recordingConsent: boolean;
+    }>
+  >;
   onSave: () => Promise<void> | void;
   saving: boolean;
 }> = ({ form, onChange, onSave, saving }) => {
@@ -651,7 +689,9 @@ const VoiceTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="primaryLocale">Sprache</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="primaryLocale">
+            Sprache
+          </label>
           <select
             id="primaryLocale"
             value={form.primaryLocale}
@@ -666,17 +706,21 @@ const VoiceTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="voiceId">Voice ID</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="voiceId">
+            Voice ID
+          </label>
           <input
             id="voiceId"
             value={form.voiceId}
             onChange={(e) => onChange((prev) => ({ ...prev, voiceId: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none font-mono"
-            placeholder="pNInz6obpgDQGcFmaJgB"
+            placeholder="z.B. adam-professional"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="modelId">Modell</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="modelId">
+            Modell
+          </label>
           <input
             id="modelId"
             value={form.modelId}
@@ -700,7 +744,9 @@ const VoiceTab: React.FC<{
       </div>
 
       <div>
-        <label className="block text-sm text-gray-400 mb-2" htmlFor="systemPrompt">System Prompt</label>
+        <label className="block text-sm text-gray-400 mb-2" htmlFor="systemPrompt">
+          System Prompt
+        </label>
         <textarea
           id="systemPrompt"
           value={form.systemPrompt}
@@ -716,7 +762,12 @@ const VoiceTab: React.FC<{
       </div>
 
       <div className="flex justify-end">
-        <Button variant="primary" onClick={onSave} disabled={saving} className="flex items-center gap-2">
+        <Button
+          variant="primary"
+          onClick={onSave}
+          disabled={saving}
+          className="flex items-center gap-2"
+        >
           <Save size={16} />
           {saving ? 'Speichert...' : 'Voice speichern'}
         </Button>
@@ -771,7 +822,9 @@ const PhoneTab: React.FC<{
 
       <div className="bg-white/5 border border-white/10 rounded-lg p-4">
         <p className="text-sm text-gray-400 mb-2">Aktuelle Nummer</p>
-        <p className="text-lg font-semibold">{agent.telephony?.phoneNumber || 'Keine Nummer zugewiesen'}</p>
+        <p className="text-lg font-semibold">
+          {agent.telephony?.phoneNumber || 'Keine Nummer zugewiesen'}
+        </p>
         {agent.telephony?.providerSid && (
           <p className="text-xs text-gray-500">Provider SID: {agent.telephony.providerSid}</p>
         )}
@@ -779,7 +832,9 @@ const PhoneTab: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="numberCountry">Land</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="numberCountry">
+            Land
+          </label>
           <select
             id="numberCountry"
             value={numberCountry}
@@ -792,7 +847,9 @@ const PhoneTab: React.FC<{
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="planId">Plan</label>
+          <label className="block text-sm text-gray-400 mb-1" htmlFor="planId">
+            Plan
+          </label>
           <select
             id="planId"
             value={planId || ''}
@@ -806,7 +863,12 @@ const PhoneTab: React.FC<{
           </select>
         </div>
         <div className="flex items-end">
-          <Button variant="primary" onClick={onRefresh} disabled={numbersLoading} className="w-full">
+          <Button
+            variant="primary"
+            onClick={onRefresh}
+            disabled={numbersLoading}
+            className="w-full"
+          >
             Nummern laden
           </Button>
         </div>
@@ -831,7 +893,10 @@ const PhoneTab: React.FC<{
             >
               <div>
                 <p className="text-lg font-semibold">{num.number}</p>
-                <p className="text-xs text-gray-400">{num.country} · Voice {num.capabilities.voice ? '✓' : '✕'} · SMS {num.capabilities.sms ? '✓' : '✕'}</p>
+                <p className="text-xs text-gray-400">
+                  {num.country} · Voice {num.capabilities.voice ? '✓' : '✕'} · SMS{' '}
+                  {num.capabilities.sms ? '✓' : '✕'}
+                </p>
               </div>
               <Button
                 variant="primary"

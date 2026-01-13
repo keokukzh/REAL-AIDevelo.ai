@@ -13,8 +13,8 @@ const requiredEnvVars = ['NODE_ENV'] as const;
 // Additional required variables for production runtime
 // Note: TWILIO_AUTH_TOKEN or TWILIO_API_KEY_SECRET must be set (validated in validateEnv)
 const productionRequiredEnvVars = [
-  'ELEVENLABS_API_KEY',
-  'ELEVENLABS_WEBHOOK_SECRET',
+  'AZURE_SPEECH_KEY',
+  'DEEPSEEK_API_KEY',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'STRIPE_SECRET_KEY',
@@ -43,6 +43,11 @@ const getOptionalEnvVars = () => ({
   // Twilio API Key (optional, preferred over Auth Token for better security)
   TWILIO_API_KEY_SID: process.env.TWILIO_API_KEY_SID || '',
   TWILIO_API_KEY_SECRET: process.env.TWILIO_API_KEY_SECRET || '',
+  // Azure Speech Services
+  AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY || '',
+  AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION || 'westeurope',
+  // DeepSeek LLM
+  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || '',
   // LEGACY: REDIS_URL - Not currently used, kept for future use
   REDIS_URL: process.env.REDIS_URL || '',
   // OPTIONAL: OTEL_EXPORTER_OTLP_ENDPOINT - Observability endpoint
@@ -82,9 +87,6 @@ const getOptionalEnvVars = () => ({
   // Scheduled Reports
   ENABLE_SCHEDULED_REPORTS: process.env.ENABLE_SCHEDULED_REPORTS || 'false',
   CRON_SECRET: process.env.CRON_SECRET || '',
-  // ElevenLabs Affiliate
-  ELEVENLABS_AFFILIATE_LINK:
-    process.env.ELEVENLABS_AFFILIATE_LINK || process.env.ELEVENLABS_AFFILLIATE_LINK || '',
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
   RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '100',
@@ -135,14 +137,13 @@ const validateEnv = () => {
     }
   }
 
-  // Check for ELEVENLABS_API_KEY (warning in dev, required in production)
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  const isApiKeyPlaceholder =
-    !apiKey ||
-    apiKey === '' ||
-    apiKey.includes('your_') ||
-    apiKey.includes('placeholder') ||
-    apiKey === 'PLACEHOLDER_FOR_TESTING';
+  // Check for Azure/DeepSeek credentials
+  const azureKey = process.env.AZURE_SPEECH_KEY;
+  const isAzureKeyPlaceholder = !azureKey || azureKey === '' || azureKey.includes('placeholder');
+
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
+  const isDeepseekKeyPlaceholder =
+    !deepseekKey || deepseekKey === '' || deepseekKey.includes('placeholder');
 
   // Check for TOKEN_ENCRYPTION_KEY (now auto-generated if missing in production)
   const tokenEncryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
@@ -196,20 +197,19 @@ const validateEnv = () => {
       );
     }
 
-    // If API key exists and looks ok, log confirmation
-    if (!isApiKeyPlaceholder) {
-      StructuredLoggingService.info('ElevenLabs API key configured');
+    if (!isAzureKeyPlaceholder) {
+      StructuredLoggingService.info('Azure Speech Services configured');
+    }
+    if (!isDeepseekKeyPlaceholder) {
+      StructuredLoggingService.info('DeepSeek LLM configured');
     }
   } else {
     // Development: Warn but do not block startup
-    if (isApiKeyPlaceholder) {
-      StructuredLoggingService.warn(
-        'WARNING: ELEVENLABS_API_KEY not set or using placeholder. The server will start, but voice generation will not work. Please set a real ELEVENLABS_API_KEY in your .env file. Get your API key from: https://elevenlabs.io/app/settings/api-keys',
-      );
-      // Provide developer-friendly placeholder to avoid runtime crashes in dev
-      if (!apiKey || apiKey === '') process.env.ELEVENLABS_API_KEY = 'PLACEHOLDER_FOR_TESTING';
-    } else {
-      StructuredLoggingService.info('ElevenLabs API key configured');
+    if (isAzureKeyPlaceholder) {
+      StructuredLoggingService.warn('WARNING: AZURE_SPEECH_KEY not set.');
+    }
+    if (isDeepseekKeyPlaceholder) {
+      StructuredLoggingService.warn('WARNING: DEEPSEEK_API_KEY not set.');
     }
 
     // In development, warn about TOKEN_ENCRYPTION_KEY but don't fail
@@ -231,16 +231,7 @@ validateEnv();
 // Get optional env vars after validation
 const optionalEnvVars = getOptionalEnvVars();
 
-const apiKey = process.env.ELEVENLABS_API_KEY || '';
-const isApiKeyValid =
-  apiKey &&
-  !apiKey.includes('your_') &&
-  !apiKey.includes('placeholder') &&
-  apiKey !== 'PLACEHOLDER_FOR_TESTING';
-
 export const config = {
-  elevenLabsApiKey: apiKey,
-  isElevenLabsConfigured: isApiKeyValid,
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || [
@@ -274,6 +265,11 @@ export const config = {
   twilioStreamToken: optionalEnvVars.TWILIO_STREAM_TOKEN,
   twilioApiKeySid: optionalEnvVars.TWILIO_API_KEY_SID,
   twilioApiKeySecret: optionalEnvVars.TWILIO_API_KEY_SECRET,
+  // Azure Speech Services
+  azureSpeechKey: optionalEnvVars.AZURE_SPEECH_KEY,
+  azureSpeechRegion: optionalEnvVars.AZURE_SPEECH_REGION,
+  // DeepSeek LLM
+  deepseekApiKey: optionalEnvVars.DEEPSEEK_API_KEY,
   // SMTP Email
   smtpHost: optionalEnvVars.SMTP_HOST,
   smtpPort: optionalEnvVars.SMTP_PORT,
@@ -283,8 +279,6 @@ export const config = {
   // Scheduled Reports
   enableScheduledReports: optionalEnvVars.ENABLE_SCHEDULED_REPORTS === 'true',
   cronSecret: optionalEnvVars.CRON_SECRET,
-  // ElevenLabs Affiliate
-  elevenLabsAffiliateLink: optionalEnvVars.ELEVENLABS_AFFILIATE_LINK,
   // Dev bypass auth (only in development/test)
   devBypassAuth: process.env.DEV_BYPASS_AUTH === 'true',
   devSeedUserEmail: process.env.DEV_SEED_USER_EMAIL || 'dev@aidevelo.local',

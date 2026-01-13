@@ -44,7 +44,6 @@ type PhoneRow = {
 function mapAgent(row: AgentRow): VoiceAgent {
   return {
     id: row.id,
-    elevenLabsAgentId: row.eleven_labs_agent_id || undefined,
     userId: row.user_id || undefined,
     metadata: row.metadata || undefined,
     businessProfile: row.business_profile,
@@ -111,7 +110,7 @@ export class PostgresDatabase {
       `,
       [
         agent.id,
-        agent.elevenLabsAgentId || null,
+        null, // eleven_labs_agent_id
         agent.userId || null,
         agent.metadata || {},
         agent.businessProfile,
@@ -122,7 +121,7 @@ export class PostgresDatabase {
         agent.status,
         agent.createdAt || new Date(),
         agent.updatedAt || new Date(),
-      ]
+      ],
     );
     return mapAgent(result[0]);
   }
@@ -187,7 +186,7 @@ export class PostgresDatabase {
         purchase.agentId || null,
         purchase.createdAt || new Date(),
         purchase.completedAt || null,
-      ]
+      ],
     );
     return mapPurchase(rows[0]);
   }
@@ -198,7 +197,9 @@ export class PostgresDatabase {
   }
 
   async getPurchaseByPurchaseId(purchaseId: string): Promise<Purchase | undefined> {
-    const rows = await query<PurchaseRow>('SELECT * FROM purchases WHERE purchase_id = $1', [purchaseId]);
+    const rows = await query<PurchaseRow>('SELECT * FROM purchases WHERE purchase_id = $1', [
+      purchaseId,
+    ]);
     return rows[0] ? mapPurchase(rows[0]) : undefined;
   }
 
@@ -222,13 +223,15 @@ export class PostgresDatabase {
           name = EXCLUDED.name,
           email = EXCLUDED.email
       `,
-      [user.id, user.name || null, user.email || null, user.createdAt || new Date()]
+      [user.id, user.name || null, user.email || null, user.createdAt || new Date()],
     );
     return user;
   }
 
   async getUser(userId: string): Promise<User | undefined> {
-    const rows = await query<any>('SELECT id, name, email, created_at FROM users WHERE id = $1', [userId]);
+    const rows = await query<any>('SELECT id, name, email, created_at FROM users WHERE id = $1', [
+      userId,
+    ]);
     const row = rows[0];
     if (!row) return undefined;
     return {
@@ -241,7 +244,10 @@ export class PostgresDatabase {
 
   async getUserByEmail(email?: string): Promise<User | undefined> {
     if (!email) return undefined;
-    const rows = await query<any>('SELECT id, name, email, created_at FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    const rows = await query<any>(
+      'SELECT id, name, email, created_at FROM users WHERE LOWER(email) = LOWER($1)',
+      [email],
+    );
     const row = rows[0];
     if (!row) return undefined;
     return {
@@ -279,7 +285,7 @@ export class PostgresDatabase {
         phoneNumber.capabilities || { voice: true },
         phoneNumber.assignedAgentId || null,
         phoneNumber.metadata || null,
-      ]
+      ],
     );
     return mapPhone(rows[0]);
   }
@@ -296,4 +302,3 @@ export class PostgresDatabase {
     return rows.map(mapPhone);
   }
 }
-

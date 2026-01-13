@@ -15,8 +15,8 @@ export class DefaultAgentService {
 
     await query(
       `INSERT INTO agents (
-         id, eleven_labs_agent_id, business_profile, config, subscription, telephony, voice_cloning, status, metadata, created_at, updated_at
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         id, business_profile, config, subscription, telephony, voice_cloning, status, metadata, created_at, updated_at
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        ON CONFLICT (id) DO UPDATE SET
          business_profile = EXCLUDED.business_profile,
          config = EXCLUDED.config,
@@ -28,7 +28,6 @@ export class DefaultAgentService {
          updated_at = EXCLUDED.updated_at`,
       [
         agent.id,
-        agent.elevenLabsAgentId || null,
         agent.businessProfile,
         agent.config,
         agent.subscription || null,
@@ -38,7 +37,7 @@ export class DefaultAgentService {
         agent.metadata || null,
         agent.createdAt,
         agent.updatedAt,
-      ]
+      ],
     );
   }
 
@@ -50,7 +49,7 @@ export class DefaultAgentService {
    */
   async provisionDefaultAgent(userId: string, userEmail?: string): Promise<VoiceAgent> {
     const template = generateDefaultAgentForUser(userId, userEmail);
-    
+
     const agent: VoiceAgent = {
       id: uuidv4(),
       userId,
@@ -79,9 +78,9 @@ export class DefaultAgentService {
         fallbackLocales: ['de-DE', 'en-US'],
         systemPrompt: template.config.systemPrompt,
         recordingConsent: template.config.recordingConsent,
-        elevenLabs: {
-          voiceId: template.config.elevenLabs.voiceId,
-          modelId: template.config.elevenLabs.modelId,
+        voiceSettings: {
+          voiceId: template.config.voiceSettings.voiceId,
+          modelId: template.config.voiceSettings.modelId,
         },
       },
       status: 'draft',
@@ -120,7 +119,7 @@ export class DefaultAgentService {
              AND metadata ->> 'userId' = $1
            LIMIT 1
          ) as exists`,
-        [userId]
+        [userId],
       );
 
       if (rows?.[0]?.exists) {
@@ -129,9 +128,8 @@ export class DefaultAgentService {
     }
 
     const agents = db.getAllAgents();
-    return agents.some(agent => 
-      (agent as any).userId === userId || 
-      (agent as any).metadata?.isDefaultAgent
+    return agents.some(
+      (agent) => (agent as any).userId === userId || (agent as any).metadata?.isDefaultAgent,
     );
   }
 }

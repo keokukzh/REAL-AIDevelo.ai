@@ -15,7 +15,7 @@ export interface DefaultAgentTemplate {
     language: string;
     recordingConsent: boolean;
     goals: string;
-    elevenLabs: {
+    voiceSettings: {
       voiceId: string;
       modelId: string;
       voiceName: string;
@@ -39,12 +39,13 @@ export const DEFAULT_AGENT_TEMPLATE: DefaultAgentTemplate = {
   config: {
     language: 'de-CH',
     recordingConsent: false,
-    goals: 'Anrufe entgegennehmen, Leads qualifizieren, Termine vereinbaren und Kundenanfragen professionell bearbeiten.',
-    elevenLabs: {
-      // Default professional voice - German, neutral
-      voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - professional male voice
-      modelId: 'eleven_turbo_v2_5',
-      voiceName: 'Standard Stimme (Professionell)',
+    goals:
+      'Anrufe entgegennehmen, Leads qualifizieren, Termine vereinbaren und Kundenanfragen professionell bearbeiten.',
+    voiceSettings: {
+      // Default professional voice
+      voiceId: 'adam-professional',
+      modelId: 'azure-neural-v1',
+      voiceName: 'Adam (Azure Neural)',
     },
     systemPrompt: `Du bist ein hochprofessioneller KI Voice Agent von AIDevelo. Deine Mission:
 
@@ -77,12 +78,12 @@ export const DEFAULT_AGENT_TEMPLATE: DefaultAgentTemplate = {
  */
 export function generateDefaultAgentForUser(userId: string, userEmail?: string) {
   const template = DEFAULT_AGENT_TEMPLATE;
-  
+
   return {
     businessProfile: {
       ...template.businessProfile,
       // Optionally personalize with user email domain
-      companyName: userEmail 
+      companyName: userEmail
         ? `${userEmail.split('@')[0]} - Assistent`
         : template.businessProfile.companyName,
     },

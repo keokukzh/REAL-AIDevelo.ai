@@ -25,7 +25,7 @@ export interface AgentConfig {
   fallbackLocales: string[];
   systemPrompt?: string;
   recordingConsent?: boolean;
-  elevenLabs: {
+  voiceSettings: {
     voiceId: string;
     modelId: string;
   };
@@ -67,7 +67,6 @@ export interface AgentMetadata {
 
 export interface VoiceAgent {
   id: string;
-  elevenLabsAgentId?: string;
   userId?: string;
   metadata?: AgentMetadata;
   businessProfile: BusinessProfile;
@@ -233,4 +232,3 @@ export interface RAGChunk {
   metadata?: Record<string, any>;
   embedding?: number[];
 }
-

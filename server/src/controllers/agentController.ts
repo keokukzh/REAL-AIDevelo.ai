@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../services/db';
-import { elevenLabsService } from '../services/elevenLabsService';
 import { generateSystemPrompt } from '../services/promptService';
 import { defaultAgentService } from '../services/defaultAgentService';
 import { VoiceAgent } from '../models/types';
@@ -56,17 +55,17 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       systemPrompt: config.systemPrompt || systemPrompt,
     };
 
-    // 3. Handle Voice Cloning if provided
-    let voiceId = config.elevenLabs.voiceId;
+    // 3. Handle Voice Settings if provided
+    let voiceId = config.voiceSettings?.voiceId || '';
     if (voiceCloning?.voiceId) {
       voiceId = voiceCloning.voiceId;
-      finalConfig.elevenLabs.voiceId = voiceId;
+      if (!finalConfig.voiceSettings) finalConfig.voiceSettings = { voiceId: '', modelId: '' };
+      finalConfig.voiceSettings.voiceId = voiceId;
     }
 
-    // 4. Create initial agent record with status 'creating' (async job will complete it)
+    // 4. Create agent record
     const newAgent: VoiceAgent = {
       id: uuidv4(),
-      elevenLabsAgentId: '', // Will be populated async
       businessProfile,
       config: finalConfig,
       subscription: subscription
@@ -86,7 +85,7 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
             createdAt: voiceCloning.createdAt ? new Date(voiceCloning.createdAt) : new Date(),
           }
         : undefined,
-      status: 'creating', // Status indicating async job in progress
+      status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -117,79 +116,15 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       }
     }
 
-    // 6. Return immediately with status 'creating' - async job will complete creation
+    // 6. Return immediately
     safeLogAgent('Sending response to client', {
       agentId: newAgent.id,
       status: newAgent.status,
-      hasElevenLabsId: !!newAgent.elevenLabsAgentId,
     });
 
     res.status(201).json({
       success: true,
       data: newAgent,
-    });
-
-    // 7. Run ElevenLabs agent creation asynchronously (don't block request)
-    setImmediate(async () => {
-      try {
-        safeLogAgent('Before ElevenLabs API call', {
-          agentId: newAgent.id,
-          companyName: businessProfile.companyName,
-          voiceId: finalConfig.elevenLabs.voiceId,
-        });
-
-        const elevenLabsAgentId = await elevenLabsService.createAgent(
-          `${businessProfile.companyName} - Assistant`,
-          finalConfig,
-        );
-
-        safeLogAgent('After ElevenLabs API call', {
-          agentId: newAgent.id,
-          elevenLabsAgentId: elevenLabsAgentId,
-        });
-
-        // Update agent with elevenLabsAgentId and setup phone numbers
-        newAgent.elevenLabsAgentId = elevenLabsAgentId;
-
-        // 8. Assign phone number(s) based on plan
-        if (subscription?.planId) {
-          const phoneNumberLimit = PHONE_NUMBER_LIMITS[subscription.planId] || 1;
-          try {
-            const availableNumbers = await elevenLabsService.getAvailablePhoneNumbers('CH');
-            const numbersToAssign = availableNumbers
-              .filter((pn) => pn.status === 'available')
-              .slice(0, phoneNumberLimit);
-
-            if (numbersToAssign.length > 0) {
-              const assignedNumber = await elevenLabsService.assignPhoneNumber(
-                elevenLabsAgentId,
-                numbersToAssign[0].id,
-              );
-              newAgent.telephony = {
-                phoneNumber: assignedNumber.number,
-                phoneNumberId: assignedNumber.id,
-                status: 'assigned' as const,
-                assignedAt: new Date(),
-              };
-            }
-          } catch (error) {
-            console.warn('[AgentController] Failed to assign phone number:', error);
-          }
-        }
-
-        // Update status to pending_activation
-        newAgent.status = 'pending_activation';
-        newAgent.updatedAt = new Date();
-        db.saveAgent(newAgent);
-
-        console.log('[AgentController] Agent creation completed asynchronously:', newAgent.id);
-      } catch (error) {
-        // Mark agent as failed and log error
-        newAgent.status = 'creation_failed';
-        newAgent.updatedAt = new Date();
-        db.saveAgent(newAgent);
-        console.error('[AgentController] Async agent creation failed:', error);
-      }
     });
   } catch (error) {
     next(error);
@@ -234,52 +169,12 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    if (!agent.elevenLabsAgentId) {
-      return next(new InternalServerError('Agent has no ElevenLabs ID'));
-    }
-
-    // 1. Activate phone number if assigned
-    if (agent.telephony?.phoneNumberId) {
-      try {
-        const targetPhoneNumberId = phoneNumberId || agent.telephony.phoneNumberId;
-
-        // Update phone number settings to activate
-        await elevenLabsService.updatePhoneNumberSettings(targetPhoneNumberId, {
-          agentId: agent.elevenLabsAgentId,
-          callRecordingEnabled: agent.config.recordingConsent || false,
-        });
-
-        // Update telephony status
-        agent.telephony.status = 'active';
-        agent.telephony.assignedAt = new Date();
-      } catch (error) {
-        console.error('[AgentController] Failed to activate phone number:', error);
-        // Continue with activation even if phone number activation fails
-      }
-    }
-
-    // 2. Update ElevenLabs agent status (if API supports it)
-    // Note: ElevenLabs might not have explicit "live" status, but we can verify agent exists
-    try {
-      await elevenLabsService.getAgentStatus(agent.elevenLabsAgentId);
-    } catch (error) {
-      console.warn('[AgentController] Failed to verify ElevenLabs agent status:', error);
-    }
-
-    // 3. Update agent status
-    agent.status = 'active';
+    // 1. Mark status as live (since we don't have external activation anymore)
+    agent.status = 'live';
     agent.updatedAt = new Date();
     db.saveAgent(agent);
 
-    // 4. After a short delay, mark as "live" (fully operational)
-    setTimeout(() => {
-      const updatedAgent = db.getAgent(agentId);
-      if (updatedAgent && updatedAgent.status === 'active') {
-        updatedAgent.status = 'live';
-        updatedAgent.updatedAt = new Date();
-        db.saveAgent(updatedAgent);
-      }
-    }, 5000); // 5 second delay to ensure everything is ready
+    // Status is already live
 
     res.json({
       success: true,
@@ -303,38 +198,14 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
       return next(new NotFoundError('Agent'));
     }
 
-    if (!agent.elevenLabsAgentId) {
-      return next(new InternalServerError('Agent has no ElevenLabs ID'));
-    }
-
     try {
-      // Get latest status from ElevenLabs
-      const elevenLabsStatus = await elevenLabsService.getAgentStatus(agent.elevenLabsAgentId);
-
-      // Update phone number status if assigned
-      if (agent.telephony?.phoneNumberId) {
-        try {
-          const phoneStatus = await elevenLabsService.getPhoneNumberStatus(
-            agent.telephony.phoneNumberId,
-          );
-          if (agent.telephony) {
-            agent.telephony.status = phoneStatus.status as any;
-          }
-        } catch (error) {
-          console.warn('[AgentController] Failed to sync phone number status:', error);
-        }
-      }
-
-      // Update agent
+      // Syncing is now just a no-op or local update since we don't use ElevenLabs
       agent.updatedAt = new Date();
       db.saveAgent(agent);
 
       res.json({
         success: true,
-        data: {
-          agent,
-          elevenLabsStatus,
-        },
+        data: { agent },
         message: 'Agent synchronized successfully',
       });
     } catch (error) {

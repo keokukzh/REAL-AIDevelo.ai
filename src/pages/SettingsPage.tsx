@@ -41,8 +41,7 @@ export const SettingsPage = () => {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
   const updateAgentConfig = useUpdateAgentConfig();
-  const [elevenAgentId, setElevenAgentId] = useState<string>('');
-  const [isSavingAgentId, setIsSavingAgentId] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   // New fields for agent configuration
   const [companyName, setCompanyName] = useState<string>('');
@@ -50,7 +49,6 @@ export const SettingsPage = () => {
   const [adminTestNumber, setAdminTestNumber] = useState<string>('');
   const [bookingRequiredFields, setBookingRequiredFields] = useState<string[]>([]);
   const [bookingDurationMin, setBookingDurationMin] = useState<number>(30);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   // Available booking field options
   const availableBookingFields = [
@@ -76,16 +74,15 @@ export const SettingsPage = () => {
   // Initialize agent config fields from overview
   useEffect(() => {
     if (overview?.agent_config) {
-      setElevenAgentId(overview.agent_config.eleven_agent_id || '');
-      setCompanyName((overview.agent_config as any).company_name || '');
-      setGreetingTemplate((overview.agent_config as any).greeting_template || '');
-      setAdminTestNumber((overview.agent_config as any).admin_test_number || '');
+      setCompanyName(overview.agent_config.company_name || '');
+      setGreetingTemplate(overview.agent_config.greeting_template || '');
+      setAdminTestNumber(overview.agent_config.admin_test_number || '');
       setBookingRequiredFields(
-        Array.isArray((overview.agent_config as any).booking_required_fields_json)
-          ? (overview.agent_config as any).booking_required_fields_json
+        Array.isArray(overview.agent_config.booking_required_fields_json)
+          ? overview.agent_config.booking_required_fields_json
           : ['name', 'phone', 'service', 'preferredTime', 'timezone'],
       );
-      setBookingDurationMin((overview.agent_config as any).booking_default_duration_min || 30);
+      setBookingDurationMin(overview.agent_config.booking_default_duration_min || 30);
     }
   }, [overview?.agent_config]);
 
@@ -336,51 +333,6 @@ export const SettingsPage = () => {
     }
   };
 
-  // Test ElevenLabs Agent ID
-  const [isTestingAgent, setIsTestingAgent] = useState(false);
-  const [agentTestResult, setAgentTestResult] = useState<{
-    success: boolean;
-    message: string;
-  } | null>(null);
-
-  const handleTestAgentId = async () => {
-    if (!elevenAgentId.trim()) {
-      toast.warning('Bitte gib eine Agent ID ein');
-      return;
-    }
-
-    setIsTestingAgent(true);
-    setAgentTestResult(null);
-
-    try {
-      const { testElevenLabsAgent } = await import('../services/elevenLabsAgentService');
-      const result = await testElevenLabsAgent(elevenAgentId.trim(), overview?.location?.id);
-
-      if (result.success && result.agentExists) {
-        setAgentTestResult({
-          success: true,
-          message: `Agent gefunden: ${result.agentName || elevenAgentId.trim()}`,
-        });
-        toast.success(`Agent gefunden: ${result.agentName || elevenAgentId.trim()}`);
-      } else {
-        setAgentTestResult({
-          success: false,
-          message: result.error || 'Agent nicht gefunden',
-        });
-        toast.error(result.error || 'Agent nicht gefunden');
-      }
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Fehler beim Testen des Agents';
-      setAgentTestResult({
-        success: false,
-        message: errorMessage,
-      });
-      toast.error(errorMessage);
-    } finally {
-      setIsTestingAgent(false);
-    }
-  };
-
   // Handle saving all agent config fields
   const handleSaveAgentConfig = async () => {
     if (!overview?.agent_config) {
@@ -391,7 +343,6 @@ export const SettingsPage = () => {
     setIsSavingConfig(true);
     try {
       await updateAgentConfig.mutateAsync({
-        eleven_agent_id: elevenAgentId.trim() || null,
         company_name: companyName.trim() || null,
         greeting_template: greetingTemplate.trim() || null,
         admin_test_number: adminTestNumber.trim() || null,
@@ -408,11 +359,6 @@ export const SettingsPage = () => {
     } finally {
       setIsSavingConfig(false);
     }
-  };
-
-  // Handle ElevenLabs Agent ID save (legacy - kept for backward compatibility)
-  const handleSaveAgentId = async () => {
-    await handleSaveAgentConfig();
   };
 
   // Toggle booking required field
@@ -608,101 +554,19 @@ export const SettingsPage = () => {
             <Card title="Agent-Konfiguration" icon={Bot}>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Bot className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
-                      ElevenLabs Agent ID
-                    </label>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Die Agent ID von ElevenLabs, die für Voice Calls verwendet wird. Du findest
-                      diese in deinem ElevenLabs Dashboard.
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={elevenAgentId}
-                        onChange={(e) => {
-                          setElevenAgentId(e.target.value);
-                          setAgentTestResult(null); // Clear test result when ID changes
-                        }}
-                        placeholder="z.B. agent_1601kcmqt4efe41bzwykaytm2yrj"
-                        className="flex-1 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleTestAgentId}
-                        disabled={
-                          isTestingAgent || !elevenAgentId.trim() || !overview?.agent_config
-                        }
-                        title="Test Agent ID (nur in Development verfügbar)"
-                      >
-                        {isTestingAgent ? (
-                          <>
-                            <LoadingSpinner className="w-4 h-4 mr-2" />
-                            Testen...
-                          </>
-                        ) : (
-                          <>
-                            <Phone className="w-4 h-4 mr-2" />
-                            Testen
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleSaveAgentId}
-                        disabled={isSavingAgentId || !overview?.agent_config}
-                      >
-                        {isSavingAgentId ? (
-                          <>
-                            <LoadingSpinner className="w-4 h-4 mr-2" />
-                            Speichern...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Speichern
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {agentTestResult && (
-                      <div
-                        className={`mt-2 p-3 rounded-lg border ${
-                          agentTestResult.success
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                            : 'bg-red-500/10 border-red-500/30 text-red-400'
-                        }`}
-                      >
-                        <p className="text-sm">
-                          {agentTestResult.success ? '✓' : '✗'} {agentTestResult.message}
-                        </p>
-                      </div>
-                    )}
-                    {overview?.agent_config?.eleven_agent_id && (
-                      <p className="text-green-400 text-xs mt-2">✓ Agent ID ist konfiguriert</p>
-                    )}
-                    {!overview?.agent_config?.eleven_agent_id && (
-                      <p className="text-yellow-400 text-xs mt-2">
-                        ⚠ Agent ID fehlt - Agent kann nicht getestet werden
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Company Name */}
-                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
                   <Building className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                    <label
+                      htmlFor="company-name"
+                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
                       Firmenname
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
                       Der Name deines Unternehmens, der in Begrüßungen verwendet wird.
                     </p>
                     <input
+                      id="company-name"
                       type="text"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
@@ -716,7 +580,10 @@ export const SettingsPage = () => {
                 <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
                   <Bot className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                    <label
+                      htmlFor="greeting-template"
+                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
                       Begrüßungstext
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
@@ -725,6 +592,7 @@ export const SettingsPage = () => {
                       für den Firmennamen.
                     </p>
                     <textarea
+                      id="greeting-template"
                       value={greetingTemplate}
                       onChange={(e) => setGreetingTemplate(e.target.value)}
                       placeholder="z.B. Grüezi, hier ist {{company_name}}. Wie kann ich Ihnen helfen?"
@@ -738,7 +606,10 @@ export const SettingsPage = () => {
                 <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
                   <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                    <label
+                      htmlFor="admin-test-number"
+                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
                       Test-Telefonnummer
                     </label>
                     <p className="text-gray-400 text-sm mb-3">
@@ -746,6 +617,7 @@ export const SettingsPage = () => {
                       wird beim "Agent testen" verwendet.
                     </p>
                     <input
+                      id="admin-test-number"
                       type="tel"
                       value={adminTestNumber}
                       onChange={(e) => setAdminTestNumber(e.target.value)}

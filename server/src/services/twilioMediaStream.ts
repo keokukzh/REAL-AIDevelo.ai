@@ -142,11 +142,15 @@ export class TwilioVoiceService {
           break;
       }
     });
-
     ws.on('close', () => {
       pushStream.close();
       recognizer.stopContinuousRecognitionAsync();
     });
+  }
+
+  cleanup() {
+    console.log('Cleaning up TwilioVoiceService...');
+    // Add specific cleanup logic if needed
   }
 }
 

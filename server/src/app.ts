@@ -184,10 +184,9 @@ if (require.main === module) {
   const cleanup = () => {
     StructuredLoggingService.info('Cleaning up...');
     try {
-      require('./services/twilioMediaStreamService').twilioMediaStreamService.cleanup();
-      require('./services/elevenLabsBridgeService').elevenLabsBridgeService.cleanup();
+      require('./services/twilioMediaStream').twilioVoiceService.cleanup();
     } catch (e) {
-      console.error(e);
+      console.warn('Cleanup error:', e);
     }
     process.exit(0);
   };

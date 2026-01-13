@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS locations (
 CREATE TABLE IF NOT EXISTS agent_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   location_id UUID NOT NULL UNIQUE REFERENCES locations(id) ON DELETE CASCADE,
-  eleven_agent_id TEXT,
   setup_state TEXT NOT NULL DEFAULT 'needs_persona',
   persona_gender TEXT,
   persona_age_range TEXT,

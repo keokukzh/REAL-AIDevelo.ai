@@ -1,37 +1,59 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CrossSectionNav } from '../components/navigation/CrossSectionNav';
-import { ROUTES } from '../config/navigation';
-import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { useAuthContext } from '../contexts/AuthContext';
-import { SetupWizard } from '../components/dashboard/SetupWizard';
-import { PreviewBanner } from '../components/dashboard/PreviewBanner';
-import { CallDetailsModal } from '../components/dashboard/CallDetailsModal';
-import { AgentTestModal } from '../components/dashboard/AgentTestModal';
-import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
-import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal';
-import { AvailabilityModal } from '../components/dashboard/AvailabilityModal';
-import { CalendarEventModal } from '../components/dashboard/CalendarEventModal';
-import { SideNav } from '../components/dashboard/SideNav';
-import { apiClient } from '../services/apiClient';
-import { toast } from '../components/ui/Toast';
+import { CrossSectionNav } from '../components/navigation/CrossSectionNav.js';
+import { ROUTES } from '../config/navigation.js';
+import { useDashboardOverview } from '../hooks/useDashboardOverview.js';
+import { useAuthContext } from '../contexts/AuthContext.js';
+import { SetupWizard } from '../components/dashboard/SetupWizard.js';
+import { PreviewBanner } from '../components/dashboard/PreviewBanner.js';
+import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
+import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
+import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal.js';
+import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal.js';
+import { AvailabilityModal } from '../components/dashboard/AvailabilityModal.js';
+import { CalendarEventModal } from '../components/dashboard/CalendarEventModal.js';
+import { SideNav } from '../components/dashboard/SideNav.js';
+import { apiClient } from '../services/apiClient.js';
+import { toast } from '../components/ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card } from '../components/newDashboard/ui/Card';
-import { Button } from '../components/newDashboard/ui/Button';
-import { StatCard } from '../components/newDashboard/StatCard';
-import { StatusBadge } from '../components/newDashboard/StatusBadge';
-import { QuickActionButton } from '../components/newDashboard/QuickActionButton';
-import { HealthItem } from '../components/newDashboard/HealthItem';
-import { SkeletonStatCard } from '../components/newDashboard/Skeleton';
-import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer';
-import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Phone, Calendar, PhoneMissed, Clock, Mic, Settings, Globe, XCircle, MoreHorizontal, ArrowRight } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { mapCallsToChartData, mapOverviewToKPIs, mapCallToTableRow } from '../lib/dashboardAdapters';
-import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents';
-import { CallLog } from '../hooks/useCallLogs';
-import { extractErrorMessage } from '../lib/errorUtils';
+import { Card } from '../components/newDashboard/ui/Card.js';
+import { Button } from '../components/newDashboard/ui/Button.js';
+import { StatCard } from '../components/newDashboard/StatCard.js';
+import { StatusBadge } from '../components/newDashboard/StatusBadge.js';
+import { QuickActionButton } from '../components/newDashboard/QuickActionButton.js';
+import { HealthItem } from '../components/newDashboard/HealthItem.js';
+import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer.js';
+import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState.js';
+import { LoadingSpinner } from '../components/LoadingSpinner.js';
+import {
+  Phone,
+  Calendar,
+  PhoneMissed,
+  Clock,
+  Mic,
+  Settings,
+  Globe,
+  XCircle,
+  MoreHorizontal,
+  ArrowRight,
+} from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  mapCallsToChartData,
+  mapOverviewToKPIs,
+  mapCallToTableRow,
+} from '../lib/dashboardAdapters.js';
+import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents.js';
+import { CallLog } from '../hooks/useCallLogs.js';
+import { extractErrorMessage } from '../lib/errorUtils.js';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 
 interface TestAgent {
@@ -60,7 +82,9 @@ export const DashboardPage = () => {
       // Clean up URL
       window.history.replaceState({}, '', '/dashboard');
     } else if (urlParams.get('error') === 'calendar_connection_failed') {
-      const errorMsg = urlParams.get('msg') || 'Fehler beim Verbinden des Kalenders. Bitte versuchen Sie es erneut.';
+      const errorMsg =
+        urlParams.get('msg') ||
+        'Fehler beim Verbinden des Kalenders. Bitte versuchen Sie es erneut.';
       toast.error(decodeURIComponent(errorMsg));
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
@@ -76,7 +100,9 @@ export const DashboardPage = () => {
   const [isWebhookStatusOpen, setIsWebhookStatusOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(undefined);
+  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(
+    undefined,
+  );
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [testAgents, setTestAgents] = useState<TestAgent[]>([]);
 
@@ -84,7 +110,9 @@ export const DashboardPage = () => {
   React.useEffect(() => {
     const fetchTestAgents = async () => {
       try {
-        const response = await apiClient.get<{ success: boolean; data: { agents: TestAgent[] } }>('/test-agents');
+        const response = await apiClient.get<{ success: boolean; data: { agents: TestAgent[] } }>(
+          '/test-agents',
+        );
         if (response.data?.success) {
           setTestAgents(response.data.data.agents);
         }
@@ -104,7 +132,10 @@ export const DashboardPage = () => {
       // Log other errors but don't crash the dashboard
       const errorMessage = extractErrorMessage(error);
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        console.warn('[DashboardPage] Network error - dashboard may show limited data:', errorMessage);
+        console.warn(
+          '[DashboardPage] Network error - dashboard may show limited data:',
+          errorMessage,
+        );
         // Don't show toast for network errors on initial load - user might be offline
       } else {
         console.error('[DashboardPage] Dashboard error:', error);
@@ -131,13 +162,14 @@ export const DashboardPage = () => {
         'https://real-aidevelo-ai.onrender.com',
         globalThis.location.origin,
       ];
-      
+
       // Check if origin is allowed (more permissive for OAuth callback)
-      const isAllowedOrigin = allowedOrigins.some(allowed => 
-        event.origin === allowed || 
-        event.origin.includes(allowed.replace('https://', '').replace('http://', ''))
+      const isAllowedOrigin = allowedOrigins.some(
+        (allowed) =>
+          event.origin === allowed ||
+          event.origin.includes(allowed.replace('https://', '').replace('http://', '')),
       );
-      
+
       if (!isAllowedOrigin) {
         console.warn('[DashboardPage] Rejected postMessage from origin:', event.origin);
         return;
@@ -150,9 +182,10 @@ export const DashboardPage = () => {
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
         refetch();
       } else if (event.data?.type === 'calendar-oauth-error') {
-        const errorMsg = typeof event.data.message === 'string' 
-          ? event.data.message 
-          : 'Fehler beim Verbinden des Kalenders';
+        const errorMsg =
+          typeof event.data.message === 'string'
+            ? event.data.message
+            : 'Fehler beim Verbinden des Kalenders';
         toast.error(errorMsg);
       }
     };
@@ -165,15 +198,19 @@ export const DashboardPage = () => {
   const handleConnectCalendar = async () => {
     try {
       const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
-        '/calendar/google/auth'
+        '/calendar/google/auth',
       );
       if (response.data?.success && response.data.data?.authUrl) {
         // Check if this is a mock URL (for testing without OAuth configured)
-        const isMockUrl = response.data.data.authUrl.includes('/calendar/') && response.data.data.authUrl.includes('code=mock_code');
-        
+        const isMockUrl =
+          response.data.data.authUrl.includes('/calendar/') &&
+          response.data.data.authUrl.includes('code=mock_code');
+
         if (isMockUrl) {
           // For testing: show info message
-          toast.warning('OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.');
+          toast.warning(
+            'OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.',
+          );
           return;
         }
 
@@ -185,9 +222,9 @@ export const DashboardPage = () => {
         const authWindow = globalThis.open(
           response.data.data.authUrl,
           'Calendar OAuth',
-          `width=${width},height=${height},left=${left},top=${top}`
+          `width=${width},height=${height},left=${left},top=${top}`,
         );
-        
+
         if (!authWindow) {
           toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
           return;
@@ -205,12 +242,13 @@ export const DashboardPage = () => {
             'https://www.aidevelo.ai',
             globalThis.location.origin,
           ];
-          
-          const isAllowed = allowedOrigins.some(origin => 
-            event.origin === origin || 
-            event.origin.includes(origin.replace('https://', '').replace('http://', ''))
+
+          const isAllowed = allowedOrigins.some(
+            (origin) =>
+              event.origin === origin ||
+              event.origin.includes(origin.replace('https://', '').replace('http://', '')),
           );
-          
+
           if (!isAllowed) {
             return;
           }
@@ -228,9 +266,10 @@ export const DashboardPage = () => {
               pollInterval = null;
             }
           } else if (event.data?.type === 'calendar-oauth-error') {
-            const errorMsg = typeof event.data.message === 'string' 
-              ? event.data.message 
-              : 'Fehler beim Verbinden des Kalenders';
+            const errorMsg =
+              typeof event.data.message === 'string'
+                ? event.data.message
+                : 'Fehler beim Verbinden des Kalenders';
             toast.error(errorMsg);
             authWindow?.close();
             window.removeEventListener('message', messageListener);
@@ -250,7 +289,7 @@ export const DashboardPage = () => {
         const maxPolls = 30; // 30 seconds
         pollInterval = setInterval(() => {
           pollCount++;
-          
+
           // Check if window was closed
           if (authWindow?.closed) {
             if (pollInterval) {
@@ -258,7 +297,7 @@ export const DashboardPage = () => {
               pollInterval = null;
             }
             window.removeEventListener('message', messageListener);
-            
+
             // If window closed and we haven't received success, check if calendar is connected
             if (pollCount < maxPolls) {
               // Wait a bit for backend to process, then check
@@ -274,7 +313,7 @@ export const DashboardPage = () => {
             }
             return;
           }
-          
+
           // Stop polling after max attempts
           if (pollCount >= maxPolls) {
             if (pollInterval) {
@@ -312,16 +351,14 @@ export const DashboardPage = () => {
     }
   };
 
-
-
   // Determine effective overview early (before any hooks that depend on it)
   // This allows dashboard to work even with network errors
-  const isNetworkError = error && (
-    extractErrorMessage(error).includes('Failed to fetch') || 
-    extractErrorMessage(error).includes('NetworkError') ||
-    extractErrorMessage(error).includes('Network request failed')
-  );
-  
+  const isNetworkError =
+    error &&
+    (extractErrorMessage(error).includes('Failed to fetch') ||
+      extractErrorMessage(error).includes('NetworkError') ||
+      extractErrorMessage(error).includes('Network request failed'));
+
   // Create safe fallback overview
   const safeOverview = overview || {
     user: { id: '', email: user?.email || null },
@@ -329,7 +366,6 @@ export const DashboardPage = () => {
     location: { id: '', name: '', timezone: 'Europe/Zurich' },
     agent_config: {
       id: '',
-      eleven_agent_id: null,
       setup_state: 'needs_setup',
       persona_gender: null,
       persona_age_range: null,
@@ -343,8 +379,12 @@ export const DashboardPage = () => {
       calendar: 'not_connected' as const,
     },
     recent_calls: [],
+    phone_number: null,
+    calendar_provider: null,
+    calendar_connected_email: null,
+    gateway_health: 'ok' as const,
   };
-  
+
   // Use safe overview for rendering (allows dashboard to work even with network errors)
   const displayOverview = overview || safeOverview;
   const effectiveOverview = displayOverview;
@@ -355,7 +395,7 @@ export const DashboardPage = () => {
   // For weekEnd, we memoize based on today's date string to avoid unnecessary recalculations
   const today = new Date();
   const todayDateString = today.toDateString();
-  const weekEnd = React.useMemo(() => addDays(today, 7), [todayDateString]);
+  const weekEnd = React.useMemo(() => addDays(new Date(todayDateString), 7), [todayDateString]);
   const calendarConnected = effectiveOverview?.status?.calendar === 'connected';
   const { events: calendarEvents, isLoading: isLoadingEvents } = useCalendarEvents({
     locationId: effectiveOverview?.location?.id || '',
@@ -375,20 +415,40 @@ export const DashboardPage = () => {
       nowRef.current = now;
     }
     return calendarEvents
-      .filter(event => new Date(event.start) >= nowRef.current)
+      .filter((event) => new Date(event.start) >= nowRef.current)
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
       .slice(0, 5);
   }, [calendarEvents]);
 
   // Compute derived values - must be before early returns
-  const userName = React.useMemo(() => user?.email || effectiveOverview?.user?.email || 'Benutzer', [user?.email, effectiveOverview?.user?.email]);
-  const isAgentActive = React.useMemo(() => effectiveOverview?.agent_config?.setup_state === 'ready', [effectiveOverview?.agent_config?.setup_state]);
+  const userName = React.useMemo(
+    () => user?.email || effectiveOverview?.user?.email || 'Benutzer',
+    [user?.email, effectiveOverview?.user?.email],
+  );
+  const isAgentActive = React.useMemo(
+    () => effectiveOverview?.agent_config?.setup_state === 'ready',
+    [effectiveOverview?.agent_config?.setup_state],
+  );
   const showWizard = React.useMemo(() => !isAgentActive, [isAgentActive]);
 
   // Map data for new UI (memoized to prevent recalculation on every render)
-  const kpis = React.useMemo(() => effectiveOverview ? mapOverviewToKPIs(effectiveOverview) : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' }, [effectiveOverview]);
-  const chartData = React.useMemo(() => effectiveOverview?.recent_calls ? mapCallsToChartData(effectiveOverview.recent_calls) : [], [effectiveOverview?.recent_calls]);
-  const recentCallsTableData = React.useMemo(() => effectiveOverview?.recent_calls ? effectiveOverview.recent_calls.map(mapCallToTableRow) : [], [effectiveOverview?.recent_calls]);
+  const kpis = React.useMemo(
+    () =>
+      effectiveOverview
+        ? mapOverviewToKPIs(effectiveOverview)
+        : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' },
+    [effectiveOverview],
+  );
+  const chartData = React.useMemo(
+    () =>
+      effectiveOverview?.recent_calls ? mapCallsToChartData(effectiveOverview.recent_calls) : [],
+    [effectiveOverview?.recent_calls],
+  );
+  const recentCallsTableData = React.useMemo(
+    () =>
+      effectiveOverview?.recent_calls ? effectiveOverview.recent_calls.map(mapCallToTableRow) : [],
+    [effectiveOverview?.recent_calls],
+  );
 
   // Determine system health status (memoized)
   const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => {
@@ -397,45 +457,52 @@ export const DashboardPage = () => {
       return effectiveOverview.gateway_health;
     }
     // Fallback to phone status-based health
-    return effectiveOverview?.status?.phone === 'connected' ? 'ok' : effectiveOverview?.status?.phone === 'needs_compliance' ? 'warning' : 'error';
+    return effectiveOverview?.status?.phone === 'connected'
+      ? 'ok'
+      : effectiveOverview?.status?.phone === 'needs_compliance'
+        ? 'warning'
+        : 'error';
   }, [effectiveOverview?.gateway_health, effectiveOverview?.status?.phone]);
-  
-  const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => 
-    effectiveOverview?.status?.calendar === 'connected' ? 'ok' : 'error',
-    [effectiveOverview?.status?.calendar]
+
+  const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(
+    () => (effectiveOverview?.status?.calendar === 'connected' ? 'ok' : 'error'),
+    [effectiveOverview?.status?.calendar],
   );
-  
+
   // Memoize callbacks to prevent unnecessary re-renders
   const handleTestAgent = React.useCallback(() => {
     setIsAgentTestOpen(true);
   }, []);
-  
+
   const handleConnectPhone = React.useCallback(() => {
     setIsPhoneConnectionOpen(true);
   }, []);
-  
+
   const handleCheckWebhook = React.useCallback(() => {
     setIsWebhookStatusOpen(true);
   }, []);
-  
+
   const handleViewCalls = React.useCallback(() => {
     navigate('/calls');
   }, [navigate]);
-  
-  const handleCallClick = React.useCallback((call: {
-    id: string;
-    callSid?: string;
-    direction: string;
-    from_e164: string | null;
-    to_e164: string | null;
-    started_at: string;
-    ended_at: string | null;
-    duration_sec: number | null;
-    outcome: string | null;
-  }) => {
-    setSelectedCall(call as CallLog);
-    setIsCallDetailsOpen(true);
-  }, []);
+
+  const handleCallClick = React.useCallback(
+    (call: {
+      id: string;
+      callSid?: string;
+      direction: string;
+      from_e164: string | null;
+      to_e164: string | null;
+      started_at: string;
+      ended_at: string | null;
+      duration_sec: number | null;
+      outcome: string | null;
+    }) => {
+      setSelectedCall(call as CallLog);
+      setIsCallDetailsOpen(true);
+    },
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -469,9 +536,7 @@ export const DashboardPage = () => {
               <p className="text-gray-400 mb-4">
                 {error instanceof Error ? error.message : 'Unbekannter Fehler'}
               </p>
-              <Button onClick={() => refetch()}>
-                Erneut versuchen
-              </Button>
+              <Button onClick={() => refetch()}>Erneut versuchen</Button>
             </div>
           </div>
         </main>
@@ -482,22 +547,25 @@ export const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background flex font-sans text-white relative">
       {/* Skip to main content link */}
-      <a 
-        href="#main-content" 
+      <a
+        href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
       >
         Zum Hauptinhalt springen
       </a>
 
       {/* Background Effects - Grid Pattern */}
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none" aria-hidden="true" />
-      
+      <div
+        className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_90%)] -z-40 pointer-events-none"
+        aria-hidden="true"
+      />
+
       {/* Side Navigation */}
       <SideNav />
 
       {/* Skip to main content link for accessibility */}
-      <a 
-        href="#main-content" 
+      <a
+        href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
         aria-label="Zum Hauptinhalt springen"
       >
@@ -505,9 +573,17 @@ export const DashboardPage = () => {
       </a>
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 lg:ml-64 flex flex-col min-w-0" role="main" tabIndex={-1}>
+      <main
+        id="main-content"
+        className="flex-1 lg:ml-64 flex flex-col min-w-0"
+        role="main"
+        tabIndex={-1}
+      >
         {/* Top Header */}
-        <header className="h-16 bg-background/80 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg" role="banner">
+        <header
+          className="h-16 bg-background/80 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg"
+          role="banner"
+        >
           <nav aria-label="Breadcrumb" className="flex items-center gap-4">
             <ol className="flex items-center gap-3 text-gray-400" role="list">
               <li>
@@ -541,55 +617,67 @@ export const DashboardPage = () => {
             <section aria-labelledby="welcome-heading">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <h1 id="welcome-heading" className="text-3xl font-bold font-display text-white tracking-tight">
+                  <h1
+                    id="welcome-heading"
+                    className="text-3xl font-bold font-display text-white tracking-tight"
+                  >
                     Willkommen, {userName.split('@')[0]}
                   </h1>
                   <div className="flex items-center gap-2 mt-2">
-                    <p className="text-gray-400 text-sm">Hier ist der aktuelle Status Ihres Voice Agents für heute.</p>
+                    <p className="text-gray-400 text-sm">
+                      Hier ist der aktuelle Status Ihres Voice Agents für heute.
+                    </p>
                     <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/30">
                       Preview Mode
                     </span>
                   </div>
                 </div>
-              {lastRefresh && (
-                <output className="text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-md border border-slate-800" aria-live="polite">
-                  Letzte Aktualisierung: {lastRefresh.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
-                </output>
-              )}
+                {lastRefresh && (
+                  <output
+                    className="text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-md border border-slate-800"
+                    aria-live="polite"
+                  >
+                    Letzte Aktualisierung:{' '}
+                    {lastRefresh.toLocaleTimeString('de-CH', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </output>
+                )}
               </div>
             </section>
 
             {/* KPI Grid */}
             <section aria-label="Key Performance Indicators">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <StatCard 
-                label="Gesamtanrufe" 
-                value={kpis.totalCalls} 
-                icon={Phone}
-                iconColor="text-blue-400"
-                bgColor="bg-blue-500/10"
-              />
-              <StatCard 
-                label="Termine gebucht" 
-                value={kpis.appointmentsBooked} 
-                icon={Calendar}
-                iconColor="text-green-400"
-                bgColor="bg-green-500/10"
-              />
-              <StatCard 
-                label="Verpasste Anrufe" 
-                value={kpis.missedCalls} 
-                icon={PhoneMissed}
-                iconColor="text-swiss-red"
-                bgColor="bg-swiss-red/10"
-              />
-              <StatCard 
-                label="Durchschn. Dauer" 
-                value={kpis.avgDuration} 
-                icon={Clock}
-                iconColor="text-purple-400"
-                bgColor="bg-purple-500/10"
-              />
+                <StatCard
+                  label="Gesamtanrufe"
+                  value={kpis.totalCalls}
+                  icon={Phone}
+                  iconColor="text-blue-400"
+                  bgColor="bg-blue-500/10"
+                />
+                <StatCard
+                  label="Termine gebucht"
+                  value={kpis.appointmentsBooked}
+                  icon={Calendar}
+                  iconColor="text-green-400"
+                  bgColor="bg-green-500/10"
+                />
+                <StatCard
+                  label="Verpasste Anrufe"
+                  value={kpis.missedCalls}
+                  icon={PhoneMissed}
+                  iconColor="text-swiss-red"
+                  bgColor="bg-swiss-red/10"
+                />
+                <StatCard
+                  label="Durchschn. Dauer"
+                  value={kpis.avgDuration}
+                  icon={Clock}
+                  iconColor="text-purple-400"
+                  bgColor="bg-purple-500/10"
+                />
               </div>
             </section>
 
@@ -597,7 +685,7 @@ export const DashboardPage = () => {
               {/* Left Column (Calendar, Chart & Logs) */}
               <div className="xl:col-span-2 space-y-8">
                 {/* Calendar Card */}
-                <Card 
+                <Card
                   title="Kalender"
                   action={
                     <div className="flex items-center gap-4">
@@ -608,9 +696,14 @@ export const DashboardPage = () => {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            {effectiveOverview.calendar_provider ? `${effectiveOverview.calendar_provider.charAt(0).toUpperCase() + effectiveOverview.calendar_provider.slice(1)} Calendar` : 'Google Calendar'}
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDisconnectCalendar(); }} 
+                            {effectiveOverview.calendar_provider
+                              ? `${effectiveOverview.calendar_provider.charAt(0).toUpperCase() + effectiveOverview.calendar_provider.slice(1)} Calendar`
+                              : 'Google Calendar'}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDisconnectCalendar();
+                              }}
                               className="ml-1 p-0.5 hover:bg-emerald-500/20 rounded text-emerald-400 transition-colors"
                               title="Verbindung trennen"
                               aria-label="Kalenderverbindung trennen"
@@ -624,7 +717,12 @@ export const DashboardPage = () => {
                               <div className="w-2 h-2 rounded-full bg-gray-500"></div>
                               Offline
                             </div>
-                            <Button variant="ghost" size="sm" onClick={handleConnectCalendar} className="text-xs h-7 px-2 text-accent hover:text-accent hover:bg-accent/10">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleConnectCalendar}
+                              className="text-xs h-7 px-2 text-accent hover:text-accent hover:bg-accent/10"
+                            >
                               Verbinden
                             </Button>
                           </div>
@@ -637,15 +735,21 @@ export const DashboardPage = () => {
                     <div className="space-y-4">
                       {effectiveOverview.calendar_connected_email && (
                         <div className="text-sm text-gray-300 mb-3">
-                          Verbunden mit: <span className="font-medium">{effectiveOverview.calendar_connected_email}</span>
+                          Verbunden mit:{' '}
+                          <span className="font-medium">
+                            {effectiveOverview.calendar_connected_email}
+                          </span>
                         </div>
                       )}
-                      
+
                       {/* Upcoming Events List */}
                       {isLoadingEvents ? (
                         <div className="space-y-2">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className="h-16 bg-slate-800/50 rounded-lg animate-pulse" />
+                          {[1, 2, 3].map((i) => (
+                            <div
+                              key={i}
+                              className="h-16 bg-slate-800/50 rounded-lg animate-pulse"
+                            />
                           ))}
                         </div>
                       ) : upcomingEvents.length > 0 ? (
@@ -655,7 +759,8 @@ export const DashboardPage = () => {
                             const isToday = eventDate.toDateString() === todayDateString;
                             const summaryParts = event.summary.split(' - ');
                             const clientName = summaryParts.length > 1 ? summaryParts[0] : '';
-                            const service = summaryParts.length > 1 ? summaryParts[1] : event.summary;
+                            const service =
+                              summaryParts.length > 1 ? summaryParts[1] : event.summary;
 
                             return (
                               <div
@@ -684,7 +789,10 @@ export const DashboardPage = () => {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className="text-xs font-mono text-gray-400">
-                                        {eventDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                                        {eventDate.toLocaleTimeString('de-CH', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
                                       </span>
                                       {isToday && (
                                         <span className="text-xs px-1.5 py-0.5 rounded bg-accent/20 text-accent">
@@ -702,11 +810,16 @@ export const DashboardPage = () => {
                                         {clientName}
                                       </div>
                                     )}
-                                    <div className={`text-sm truncate ${clientName ? 'text-gray-300' : 'text-white font-medium'}`}>
+                                    <div
+                                      className={`text-sm truncate ${clientName ? 'text-gray-300' : 'text-white font-medium'}`}
+                                    >
                                       {service}
                                     </div>
                                   </div>
-                                  <MoreHorizontal className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 transition-all" aria-hidden="true" />
+                                  <MoreHorizontal
+                                    className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 transition-all"
+                                    aria-hidden="true"
+                                  />
                                 </div>
                               </div>
                             );
@@ -719,16 +832,16 @@ export const DashboardPage = () => {
                       )}
 
                       <div className="flex gap-2 pt-2 border-t border-slate-700/50">
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => setIsAvailabilityModalOpen(true)}
                           className="flex-1"
                           variant="outline"
                         >
                           Verfügbarkeit prüfen
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => {
                             setSelectedEvent(null);
@@ -758,46 +871,46 @@ export const DashboardPage = () => {
                 {/* Activity Chart */}
                 <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
                   <div className="h-[320px] w-full mt-4" aria-label="Anrufvolumen Chart">
-                    {chartData.some(d => d.calls > 0) ? (
+                    {chartData.some((d) => d.calls > 0) ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} aria-label="Anrufvolumen über Zeit">
                           <defs>
                             <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor="#DA291C" stopOpacity={0}/>
+                              <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1} />
+                              <stop offset="95%" stopColor="#DA291C" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                          <XAxis 
-                            dataKey="name" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{fill: '#94a3b8', fontSize: 12}} 
-                            dy={10} 
+                          <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94a3b8', fontSize: 12 }}
+                            dy={10}
                           />
-                          <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{fill: '#94a3b8', fontSize: 12}} 
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94a3b8', fontSize: 12 }}
                           />
-                          <Tooltip 
+                          <Tooltip
                             contentStyle={{
-                              borderRadius: '8px', 
-                              border: '1px solid rgba(255, 255, 255, 0.1)', 
+                              borderRadius: '8px',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
                               backgroundColor: '#1e293b',
-                              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)'
-                            }} 
-                            itemStyle={{color: '#f1f5f9', fontWeight: 600}}
-                            labelStyle={{color: '#cbd5e1'}}
-                            cursor={{stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4'}}
+                              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+                            }}
+                            itemStyle={{ color: '#f1f5f9', fontWeight: 600 }}
+                            labelStyle={{ color: '#cbd5e1' }}
+                            cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
                           />
-                          <Area 
-                            type="monotone" 
-                            dataKey="calls" 
-                            stroke="#DA291C" 
-                            strokeWidth={2} 
-                            fillOpacity={1} 
-                            fill="url(#colorCalls)" 
+                          <Area
+                            type="monotone"
+                            dataKey="calls"
+                            stroke="#DA291C"
+                            strokeWidth={2}
+                            fillOpacity={1}
+                            fill="url(#colorCalls)"
                           />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -813,7 +926,10 @@ export const DashboardPage = () => {
                 <section aria-labelledby="demo-agents-heading" className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 id="demo-agents-heading" className="text-2xl font-bold font-display text-white">
+                      <h2
+                        id="demo-agents-heading"
+                        className="text-2xl font-bold font-display text-white"
+                      >
                         Test-Agents Mediathek
                       </h2>
                       <p className="text-gray-400 text-sm mt-1">
@@ -842,41 +958,62 @@ export const DashboardPage = () => {
                       <p className="text-gray-500 italic">Demo-Agents werden geladen...</p>
                     </div>
                   )}
-                  
+
                   <div className="bg-swiss-red/10 border border-swiss-red/20 rounded-xl p-6">
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      💡 <strong>Hinweis unseres Teams:</strong> Wir arbeiten mit Hochleistung an der Live-Schaltung dieser Agents. 
-                      Sobald diese verfügbar sind, können Sie sie mit einem Klick in Ihrem Account aktivieren.
+                      💡 <strong>Hinweis unseres Teams:</strong> Wir arbeiten mit Hochleistung an
+                      der Live-Schaltung dieser Agents. Sobald diese verfügbar sind, können Sie sie
+                      mit einem Klick in Ihrem Account aktivieren.
                     </p>
                   </div>
                 </section>
 
                 {/* Recent Logs Table */}
-                <Card 
-                  title="Letzte Anrufe" 
+                <Card
+                  title="Letzte Anrufe"
                   action={
-                    <Button variant="ghost" size="sm" className="text-swiss-red hover:bg-swiss-red/10" onClick={handleViewCalls} aria-label="Alle Anrufe ansehen">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-swiss-red hover:bg-swiss-red/10"
+                      onClick={handleViewCalls}
+                      aria-label="Alle Anrufe ansehen"
+                    >
                       Alle ansehen
                     </Button>
                   }
                 >
                   {recentCallsTableData.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left" role="table" aria-label="Letzte Anrufe">
+                      <table
+                        className="w-full text-sm text-left"
+                        role="table"
+                        aria-label="Letzte Anrufe"
+                      >
                         <thead className="text-xs text-gray-400 uppercase bg-slate-800/50 border-b border-slate-700/50">
                           <tr role="row">
-                            <th scope="col" className="px-4 py-3 font-semibold">Status</th>
-                            <th scope="col" className="px-4 py-3 font-semibold">Anrufer</th>
-                            <th scope="col" className="px-4 py-3 font-semibold">Dauer</th>
-                            <th scope="col" className="px-4 py-3 font-semibold text-right">Zeit</th>
+                            <th scope="col" className="px-4 py-3 font-semibold">
+                              Status
+                            </th>
+                            <th scope="col" className="px-4 py-3 font-semibold">
+                              Anrufer
+                            </th>
+                            <th scope="col" className="px-4 py-3 font-semibold">
+                              Dauer
+                            </th>
+                            <th scope="col" className="px-4 py-3 font-semibold text-right">
+                              Zeit
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
                           {recentCallsTableData.slice(0, 10).map((row) => {
-                            const originalCall = effectiveOverview.recent_calls.find(c => c.id === row.id);
+                            const originalCall = effectiveOverview.recent_calls.find(
+                              (c) => c.id === row.id,
+                            );
                             return (
-                              <tr 
-                                key={row.id} 
+                              <tr
+                                key={row.id}
                                 role="row"
                                 className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
                                 onClick={() => originalCall && handleCallClick(originalCall)}
@@ -895,10 +1032,15 @@ export const DashboardPage = () => {
                                 <td className="px-4 py-4">
                                   <div className="font-medium text-white">{row.caller}</div>
                                 </td>
-                                <td className="px-4 py-4 text-gray-400 font-mono text-xs">{row.duration}</td>
+                                <td className="px-4 py-4 text-gray-400 font-mono text-xs">
+                                  {row.duration}
+                                </td>
                                 <td className="px-4 py-4 text-right">
                                   <span className="text-gray-400">{row.timestamp}</span>
-                                  <MoreHorizontal className="ml-2 w-4 h-4 text-gray-600 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all inline-block" aria-hidden="true" />
+                                  <MoreHorizontal
+                                    className="ml-2 w-4 h-4 text-gray-600 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all inline-block"
+                                    aria-hidden="true"
+                                  />
                                 </td>
                               </tr>
                             );
@@ -926,7 +1068,9 @@ export const DashboardPage = () => {
                         <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-lg">
                           <Mic className="w-6 h-6 text-swiss-red" />
                         </div>
-                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500' : 'bg-amber-500'} border-2 border-slate-900 rounded-full animate-pulse`}></div>
+                        <div
+                          className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500' : 'bg-amber-500'} border-2 border-slate-900 rounded-full animate-pulse`}
+                        ></div>
                       </div>
                       <div>
                         <h3 className="font-bold font-display text-lg">AIDevelo Receptionist</h3>
@@ -937,7 +1081,9 @@ export const DashboardPage = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${isAgentActive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <span
+                        className={`text-xs font-bold uppercase tracking-wider mb-1 ${isAgentActive ? 'text-emerald-400' : 'text-amber-400'}`}
+                      >
                         {isAgentActive ? 'Active' : 'Setup'}
                       </span>
                     </div>
@@ -945,39 +1091,37 @@ export const DashboardPage = () => {
 
                   <div className="relative z-10 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm mb-6">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider">Agent Status</span>
+                      <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider">
+                        Agent Status
+                      </span>
                     </div>
                     <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      {isAgentActive 
+                      {isAgentActive
                         ? 'Agent ist aktiv und bereit für Anrufe.'
                         : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
                     </p>
-                    {!effectiveOverview.agent_config.eleven_agent_id && (
-                      <div className="mt-3 pt-3 border-t border-slate-700/50">
-                        <div className="flex items-center gap-2 text-xs text-amber-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                          <span>ElevenLabs Agent ID fehlt</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                    <div className="grid grid-cols-2 gap-3 relative z-10">
+                  <div className="grid grid-cols-2 gap-3 relative z-10">
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
                       <div className="text-[10px] text-gray-500 uppercase mb-1">Branche</div>
-                      <div className="font-medium text-sm text-white">{effectiveOverview.agent_config.business_type || 'Nicht gesetzt'}</div>
+                      <div className="font-medium text-sm text-white">
+                        {effectiveOverview.agent_config.business_type || 'Nicht gesetzt'}
+                      </div>
                     </div>
                     <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
                       <div className="text-[10px] text-gray-500 uppercase mb-1">Nummer</div>
                       <div className="font-medium text-sm font-mono text-white">
-                        {effectiveOverview.phone_number ? `${effectiveOverview.phone_number.substring(0, 8)}...` : 'Nicht verbunden'}
+                        {effectiveOverview.phone_number
+                          ? `${effectiveOverview.phone_number.substring(0, 8)}...`
+                          : 'Nicht verbunden'}
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-slate-800 relative z-10">
-                    <Button 
-                      onClick={handleTestAgent} 
+                    <Button
+                      onClick={handleTestAgent}
                       className="w-full bg-swiss-red hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20"
                     >
                       Agent testen
@@ -988,26 +1132,26 @@ export const DashboardPage = () => {
                 {/* Quick Actions */}
                 <Card title="Quick Actions" className="border-slate-700/50">
                   <div className="space-y-1.5">
-                    <QuickActionButton 
-                      icon={Phone} 
-                      label="Telefon verbinden" 
+                    <QuickActionButton
+                      icon={Phone}
+                      label="Telefon verbinden"
                       onClick={handleConnectPhone}
                       disabled={effectiveOverview.status.phone === 'connected'}
                     />
-                    <QuickActionButton 
-                      icon={Calendar} 
-                      label="Kalender verbinden" 
+                    <QuickActionButton
+                      icon={Calendar}
+                      label="Kalender verbinden"
                       onClick={handleConnectCalendar}
                       disabled={calendarConnected}
                     />
-                    <QuickActionButton 
-                      icon={Settings} 
-                      label="Webhook Status prüfen" 
+                    <QuickActionButton
+                      icon={Settings}
+                      label="Webhook Status prüfen"
                       onClick={handleCheckWebhook}
                     />
-                    <QuickActionButton 
-                      icon={PhoneMissed} 
-                      label="Calls ansehen" 
+                    <QuickActionButton
+                      icon={PhoneMissed}
+                      label="Calls ansehen"
                       onClick={handleViewCalls}
                     />
                   </div>
@@ -1015,49 +1159,15 @@ export const DashboardPage = () => {
 
                 {/* System Health Compact */}
                 <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 font-display">System Health</h4>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 font-display">
+                    System Health
+                  </h4>
                   <div className="space-y-3.5">
                     <HealthItem label="Twilio Gateway" status={phoneHealth} />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
-                    <HealthItem label="ElevenLabs TTS" status={effectiveOverview.agent_config.eleven_agent_id ? 'ok' : 'warning'} />
+                    <HealthItem label="Azure TTS" status="ok" />
                     <HealthItem label="Supabase DB" status="ok" />
                   </div>
-                  
-                  {/* ElevenLabs Credits Display */}
-                  {effectiveOverview.elevenlabs_quota && (
-                    <div className="mt-4 pt-4 border-t border-slate-700/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-400 uppercase tracking-wider font-display">ElevenLabs Credits</span>
-                        <span className={`text-xs font-semibold ${
-                          effectiveOverview.elevenlabs_quota.status === 'critical' ? 'text-red-400' :
-                          effectiveOverview.elevenlabs_quota.status === 'warning' ? 'text-yellow-400' :
-                          'text-green-400'
-                        }`}>
-                          {effectiveOverview.elevenlabs_quota.remaining.toLocaleString()} / {effectiveOverview.elevenlabs_quota.character_limit.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-800/50 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-full transition-all ${
-                            effectiveOverview.elevenlabs_quota.status === 'critical' ? 'bg-red-500' :
-                            effectiveOverview.elevenlabs_quota.status === 'warning' ? 'bg-yellow-500' :
-                            'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min(effectiveOverview.elevenlabs_quota.percentageUsed, 100)}%` }}
-                        />
-                      </div>
-                      {effectiveOverview.elevenlabs_quota.warning && (
-                        <p className="text-xs text-yellow-400 mt-2">
-                          ⚠️ {effectiveOverview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht
-                        </p>
-                      )}
-                      {effectiveOverview.elevenlabs_quota.status === 'critical' && (
-                        <p className="text-xs text-red-400 mt-2">
-                          🚨 Kritisch: {effectiveOverview.elevenlabs_quota.percentageUsed.toFixed(1)}% verbraucht - Tests blockiert
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1080,8 +1190,7 @@ export const DashboardPage = () => {
         onClose={() => setIsAgentTestOpen(false)}
         agentConfigId={effectiveOverview.agent_config.id}
         locationId={effectiveOverview.location.id}
-        elevenAgentId={effectiveOverview.agent_config.eleven_agent_id}
-        adminTestNumber={(effectiveOverview.agent_config as any).admin_test_number || null}
+        adminTestNumber={effectiveOverview.agent_config.admin_test_number || null}
       />
 
       <PhoneConnectionModal

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../services/apiClient';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../services/apiClient.js';
+import { supabase } from '../lib/supabase.js';
 
 export interface DashboardOverview {
   user: {
@@ -20,13 +20,17 @@ export interface DashboardOverview {
   };
   agent_config: {
     id: string;
-    eleven_agent_id: string | null;
     setup_state: string;
     persona_gender: string | null;
     persona_age_range: string | null;
     goals_json: string[];
-    services_json: any[];
+    services_json: unknown[];
     business_type: string | null;
+    company_name?: string | null;
+    greeting_template?: string | null;
+    admin_test_number?: string | null;
+    booking_required_fields_json?: string[];
+    booking_default_duration_min?: number;
   };
   status: {
     agent: 'ready' | 'needs_setup';
@@ -49,16 +53,6 @@ export interface DashboardOverview {
   calendar_connected_email?: string | null;
   last_activity?: string | null;
   gateway_health?: 'ok' | 'warning' | 'error';
-  elevenlabs_quota?: {
-    character_count: number;
-    character_limit: number;
-    percentageUsed: number;
-    remaining: number;
-    canUse: boolean;
-    warning: boolean;
-    status: 'ok' | 'warning' | 'critical';
-  } | null;
-  elevenlabs_affiliate_link?: string | null;
   _backendSha?: string; // Internal field for UI display
 }
 
@@ -112,20 +106,25 @@ export const useDashboardOverview = () => {
           ...response.data.data,
           _backendSha: typeof backendSha === 'string' ? backendSha : 'unknown',
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Preserve status code for 401 handling
-        if (error.response?.status) {
+        if (error instanceof Error && (error as any).response?.status) {
           const enhancedError = new Error(error.message || 'Failed to load dashboard overview');
-          (enhancedError as any).status = error.response.status;
+          (enhancedError as any).status = (error as any).response.status;
           throw enhancedError;
         }
         throw error;
       }
     },
     enabled: !isChecking && hasSession, // Only enable when session is confirmed
-    retry: (failureCount, error: any) => {
+    retry: (failureCount: number, error: unknown) => {
       // Don't retry on 401 (unauthorized)
-      if (error?.status === 401) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as any).status === 401
+      ) {
         return false;
       }
       return failureCount < 1;
