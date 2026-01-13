@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
-import { AlertCircle, Phone, Info, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, MessageSquare, Loader, Send, Volume2 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { toast } from '../ui/Toast';
-import { useQueryClient } from '@tanstack/react-query';
 
 interface AgentTestModalProps {
   isOpen: boolean;
@@ -14,122 +12,130 @@ interface AgentTestModalProps {
   adminTestNumber?: string | null;
 }
 
-type CallStatus =
-  | 'idle'
-  | 'initiated'
-  | 'ringing'
-  | 'in-progress'
-  | 'completed'
-  | 'failed'
-  | 'busy'
-  | 'no-answer';
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  audioUrl?: string;
+}
 
 export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   isOpen,
   onClose,
   agentConfigId,
   locationId,
-  adminTestNumber,
 }) => {
-  const navigate = useNavigate();
-  const [testPhoneNumber, setTestPhoneNumber] = useState(adminTestNumber || '');
-  const [isMakingCall, setIsMakingCall] = useState(false);
-  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
-  const [callSid, setCallSid] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-
-  // Update test phone number when adminTestNumber prop changes
-  useEffect(() => {
-    if (adminTestNumber) {
-      setTestPhoneNumber(adminTestNumber);
-    }
-  }, [adminTestNumber]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [callSid] = useState(`test_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check if we have the required data for testing
   const canTest = !!locationId && !!agentConfigId;
 
-  const handleStartBrowserTest = () => {
-    if (canTest) {
-      onClose();
-      navigate('/dashboard/test-call');
-    }
-  };
+  // Auto-scroll to bottom when messages update
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setCallStatus('idle');
-      setCallSid(null);
-      setTestPhoneNumber('');
+      setChatMessages([]);
+      setChatInput('');
     }
   }, [isOpen]);
 
-  const handleMakeTestCall = async () => {
-    if (!testPhoneNumber.trim()) {
-      toast.warning('Bitte gib eine Telefonnummer ein');
-      return;
-    }
+  const sendMessage = async () => {
+    if (!chatInput.trim() || !locationId || isSending) return;
 
-    setIsMakingCall(true);
-    setCallStatus('initiated');
-    setCallSid(null);
+    setIsSending(true);
+    const messageText = chatInput.trim();
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      role: 'user',
+      text: messageText,
+      timestamp: new Date().toISOString(),
+    };
+    setChatMessages((prev) => [...prev, userMessage]);
+    setChatInput('');
 
     try {
       const response = await apiClient.post<{
         success: boolean;
-        data: { callSid: string; status: string };
-      }>('/agent/test-call', {
-        to: testPhoneNumber.trim(),
+        text: string;
+        audio_url?: string;
+      }>('/v1/test-call/chat-message', {
+        location_id: locationId,
+        text: messageText,
+        call_sid: callSid,
       });
 
-      if (response.data?.success) {
-        const { callSid, status } = response.data.data;
-        setCallSid(callSid);
+      if (response.data.success) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          text: response.data.text,
+          timestamp: new Date().toISOString(),
+          audioUrl: response.data.audio_url,
+        };
+        setChatMessages((prev) => [...prev, assistantMessage]);
 
-        // Map Twilio status to our CallStatus
-        const mappedStatus: CallStatus =
-          status === 'queued' || status === 'initiated'
-            ? 'initiated'
-            : status === 'ringing'
-              ? 'ringing'
-              : status === 'in-progress'
-                ? 'in-progress'
-                : status === 'completed'
-                  ? 'completed'
-                  : status === 'busy'
-                    ? 'busy'
-                    : status === 'no-answer'
-                      ? 'no-answer'
-                      : status === 'failed' || status === 'canceled'
-                        ? 'failed'
-                        : 'initiated';
-
-        setCallStatus(mappedStatus);
-        toast.success(`Testanruf gestartet! Call SID: ${callSid}`);
-
-        // Invalidate dashboard query to refresh call logs
-        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        // Play audio response if available
+        if (response.data.audio_url && audioRef.current) {
+          audioRef.current.src = response.data.audio_url;
+          audioRef.current.play().catch((err) => {
+            console.error('Failed to play audio:', err);
+          });
+        }
       } else {
-        throw new Error('Testanruf fehlgeschlagen');
+        throw new Error('Failed to get response');
       }
-    } catch (err: any) {
-      console.error('[AgentTestModal] Error making test call:', err);
-      const errorMsg =
-        err?.response?.data?.error || err?.message || 'Fehler beim Starten des Testanrufs';
-      setCallStatus('failed');
-      toast.error(errorMsg);
+    } catch (error: any) {
+      console.error('[AgentTestModal] Chat message error:', error);
+      const errorMessage =
+        error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
+      const errorMsg: ChatMessage = {
+        role: 'assistant',
+        text: `Fehler: ${errorMessage}`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages((prev) => [...prev, errorMsg]);
+      toast.error(errorMessage);
     } finally {
-      setIsMakingCall(false);
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
   };
 
   const handleClose = () => {
-    setTestPhoneNumber('');
+    setChatMessages([]);
+    setChatInput('');
     onClose();
   };
 
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch((err) => {
+        console.error('Failed to play audio:', err);
+        toast.error('Fehler beim Abspielen der Audio');
+      });
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Agent testen" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Agent testen - Chat Modus" size="lg">
+      <audio ref={audioRef} className="hidden" />
+
       <div className="space-y-4">
         {!canTest ? (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
@@ -144,102 +150,89 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-center gap-3 mb-3">
-                <Phone className="text-accent" size={20} />
-                <h3 className="text-sm font-semibold">Testanruf starten</h3>
-              </div>
-              <p className="text-xs text-gray-400 mb-4">
-                Starte einen Testanruf mit dem Voice Agent. Du kannst mit dem Agent sprechen und die
-                Antworten in Echtzeit hören.
-              </p>
-
-              {/* Test Call via Twilio */}
-              <div className="mb-4">
-                <label className="block text-xs text-gray-400 mb-2">
-                  Telefonnummer für Testanruf (E.164 Format, z.B. +41791234567)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    value={testPhoneNumber}
-                    onChange={(e) => setTestPhoneNumber(e.target.value)}
-                    placeholder="+41791234567"
-                    className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent"
-                    disabled={isMakingCall || callStatus !== 'idle'}
-                  />
-                  <button
-                    onClick={handleMakeTestCall}
-                    disabled={isMakingCall || !testPhoneNumber.trim() || callStatus !== 'idle'}
-                    className="px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isMakingCall ? (
-                      <>
-                        <Loader className="animate-spin" size={16} />
-                        Wird angerufen...
-                      </>
-                    ) : (
-                      <>
-                        <Phone size={16} />
-                        Anrufen
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Call Status Display */}
-                {callStatus !== 'idle' && (
-                  <div className="mt-3 space-y-2">
-                    <div
-                      className={`flex items-center gap-2 px-3 py-2 rounded text-sm ${
-                        callStatus === 'completed'
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : callStatus === 'failed' ||
-                              callStatus === 'busy' ||
-                              callStatus === 'no-answer'
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      }`}
-                    >
-                      {callStatus === 'completed' && <CheckCircle size={16} />}
-                      {callStatus === 'failed' && <XCircle size={16} />}
-                      {(callStatus === 'initiated' ||
-                        callStatus === 'ringing' ||
-                        callStatus === 'in-progress') && (
-                        <Loader className="animate-spin" size={16} />
-                      )}
-                      <span className="font-medium">
-                        {callStatus === 'initiated' && 'Anruf wird initiiert...'}
-                        {callStatus === 'ringing' && 'Telefon klingelt...'}
-                        {callStatus === 'in-progress' && 'Anruf läuft...'}
-                        {callStatus === 'completed' && 'Anruf erfolgreich abgeschlossen'}
-                        {callStatus === 'failed' && 'Anruf fehlgeschlagen'}
-                        {callStatus === 'busy' && 'Telefonnummer ist besetzt'}
-                        {callStatus === 'no-answer' && 'Keine Antwort'}
-                      </span>
-                    </div>
-                    {callSid && (
-                      <div className="text-xs text-gray-400 font-mono">Call SID: {callSid}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Browser Test (WebRTC) */}
-              <div className="pt-4 border-t border-gray-700">
-                <p className="text-xs text-gray-400 mb-3">
-                  Oder teste den Agent direkt im Browser mit WebRTC:
+          <>
+            {/* Info Box */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+              <MessageSquare className="text-blue-400 mt-0.5" size={16} />
+              <div>
+                <p className="text-xs text-blue-200">
+                  Teste deinen Voice Agent im Chat-Modus. Der Agent antwortet mit Text und Audio.
                 </p>
-                <button
-                  onClick={handleStartBrowserTest}
-                  className="w-full px-4 py-2 bg-accent text-black rounded font-medium hover:bg-accent/80 transition-colors"
-                >
-                  Browser-Test starten (Twilio Voice)
-                </button>
               </div>
             </div>
-          </div>
+
+            {/* Chat Messages */}
+            <div className="bg-gray-800 rounded-lg border border-gray-700 h-96 flex flex-col">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {chatMessages.length === 0 ? (
+                  <div className="text-center text-gray-400 text-sm py-8">
+                    <p>Schreibe eine Nachricht, um den Voice Agent zu testen.</p>
+                    <p className="text-xs mt-2 text-gray-500">
+                      Der Agent wird mit Text und Audio antworten.
+                    </p>
+                  </div>
+                ) : (
+                  chatMessages.map((msg, index) => (
+                    <div
+                      key={`${msg.timestamp}-${index}`}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          msg.role === 'user' ? 'bg-accent text-black' : 'bg-gray-700 text-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs font-semibold uppercase opacity-70">
+                            {msg.role === 'user' ? 'Du' : 'Agent'}
+                          </span>
+                          {msg.audioUrl && msg.role === 'assistant' && (
+                            <button
+                              onClick={() => playAudio(msg.audioUrl!)}
+                              className="text-xs flex items-center gap-1 hover:opacity-80"
+                              title="Audio abspielen"
+                            >
+                              <Volume2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                        <span className="text-xs opacity-50 mt-1 block">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="border-t border-gray-700 p-4">
+                <div className="flex gap-2">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Nachricht schreiben... (Enter zum Senden)"
+                    className="flex-1 bg-gray-900 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-accent focus:outline-none resize-none"
+                    rows={2}
+                    disabled={isSending}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!chatInput.trim() || isSending}
+                    className="px-4 py-2 bg-accent text-black rounded-lg font-medium hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSending ? <Loader className="animate-spin" size={16} /> : <Send size={16} />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Tipp: Drücke Enter zum Senden, Shift+Enter für eine neue Zeile
+                </p>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </Modal>
