@@ -38,17 +38,22 @@ export class MicrosoftCalendarService {
     const response = await this.msalClient.acquireTokenByCode({
       code,
       redirectUri: config.microsoftRedirectUri,
-      scopes: ['Calendars.ReadWrite', 'offline_access'],
+      scopes: ['Calendars.ReadWrite', 'offline_access', 'User.Read'],
     });
 
     if (!response) {
       throw new Error('Failed to acquire token from Microsoft');
     }
 
+    // Get user email from Graph API
+    const client = this.getGraphClient(response.accessToken);
+    const user = await client.api('/me').select('mail,userPrincipalName').get();
+
     return {
       accessToken: response.accessToken,
       refreshToken: (response as any).refreshToken,
       expiresAt: response.expiresOn,
+      email: user.mail || user.userPrincipalName,
     };
   }
 

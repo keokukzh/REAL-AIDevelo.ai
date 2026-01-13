@@ -6,6 +6,8 @@ import { logger, serializeError, redact } from '../utils/logger';
 import { StructuredLoggingService } from './loggingService';
 import { Request } from 'express';
 
+import { google } from 'googleapis';
+
 export interface CalendarAuthResponse {
   authUrl: string;
   state: string;
@@ -16,6 +18,7 @@ export interface CalendarToken {
   refreshToken?: string;
   expiresAt: number;
   provider: 'google' | 'outlook';
+  email?: string;
 }
 
 interface TokenRow {
@@ -38,7 +41,6 @@ export const calendarService = {
    */
   getGoogleAuthUrl(redirectUri: string, locationId: string): CalendarAuthResponse {
     // Note: State will be created in routes using createSignedState()
-    // This method is kept for backward compatibility but locationId is required
     const { createSignedState } = require('../utils/oauthState');
     const state = createSignedState({ locationId, provider: 'google' });
 
@@ -47,9 +49,14 @@ export const calendarService = {
       process.env.GOOGLE_CLIENT_ID ||
       process.env.GOOGLE_CALENDAR_CLIENT_ID ||
       '';
+    const clientSecret =
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
+      process.env.GOOGLE_CLIENT_SECRET ||
+      process.env.GOOGLE_CALENDAR_CLIENT_SECRET ||
+      '';
 
     // If OAuth is not configured, return a mock URL for testing
-    if (!clientId) {
+    if (!clientId || !clientSecret) {
       console.warn(
         '[CalendarService] GOOGLE_OAUTH_CLIENT_ID not configured, returning mock auth URL',
       );
@@ -59,20 +66,20 @@ export const calendarService = {
       };
     }
 
-    const scopes = [
-      'https://www.googleapis.com/auth/calendar.readonly',
-      'https://www.googleapis.com/auth/calendar.events',
-    ].join(' ');
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: scopes,
+    const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
+      scope: [
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ],
       prompt: 'consent',
       state,
-    }).toString()}`;
+    });
+
+    console.log('✅ Generated Google OAuth URL:', authUrl);
 
     return { authUrl, state };
   },
@@ -98,28 +105,15 @@ export const calendarService = {
     }
 
     const { microsoftCalendarService } = require('./microsoftCalendarService');
-    const authUrl = microsoftCalendarService.getAuthUrl(state);
+    const authUrl = await microsoftCalendarService.getAuthUrl(state); // FIXED: Add await
+
+    console.log('✅ Generated Microsoft OAuth URL:', authUrl);
 
     return { authUrl, state };
   },
 
   /**
    * Exchange authorization code for tokens (Google)
-   *
-   * Exchanges the OAuth authorization code for access and refresh tokens.
-   * Uses retry logic and circuit breaker for resilience.
-   * Validates that refresh_token is present (required for offline access).
-   *
-   * @param code - OAuth authorization code from Google
-   * @param redirectUri - OAuth redirect URI (must match request)
-   * @returns Promise resolving to CalendarToken with accessToken, refreshToken, expiresAt, and provider
-   * @throws {Error} If token exchange fails or refresh_token missing
-   *
-   * @example
-   * ```typescript
-   * const token = await calendarService.exchangeGoogleCode('auth_code', 'https://...');
-   * // Returns: { accessToken: '...', refreshToken: '...', expiresAt: 1234567890, provider: 'google' }
-   * ```
    */
   async exchangeGoogleCode(code: string, redirectUri: string): Promise<CalendarToken> {
     const clientId =
@@ -137,71 +131,41 @@ export const calendarService = {
       throw new Error('GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be set');
     }
 
-    // Make actual API call to Google to exchange code for tokens
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+
     try {
-      const response = await axios.post(
-        'https://oauth2.googleapis.com/token',
-        {
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        },
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        },
-      );
+      const { tokens } = await oauth2Client.getToken(code);
+      oauth2Client.setCredentials(tokens);
 
       // Check if refresh_token is present (required for offline access)
-      if (!response.data.refresh_token) {
-        StructuredLoggingService.error(
-          'Google OAuth response missing refresh_token',
-          new Error('Missing refresh_token in OAuth response'),
-          {
-            hasAccessToken: !!response.data.access_token,
-            hasRefreshToken: !!response.data.refresh_token,
-            expiresIn: response.data.expires_in,
-            scope: response.data.scope,
-          },
-        );
-        throw new Error(
-          'Google OAuth hat keinen Refresh Token zurückgegeben. Stelle sicher, dass access_type=offline und prompt=consent in der OAuth-URL gesetzt sind.',
-        );
+      if (!tokens.refresh_token) {
+        console.warn('[CalendarService] Google OAuth response missing refresh_token');
+        // In some cases (if user already consented), Google might not return refresh_token again
+        // unless prompt=consent is used. We already add it in getGoogleAuthUrl.
       }
 
-      const token: CalendarToken = {
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
+      // Get user email
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+      const userInfo = await oauth2.userinfo.get();
+      const email = userInfo.data.email;
+
+      const token: CalendarToken & { email?: string } = {
+        accessToken: tokens.access_token!,
+        refreshToken: tokens.refresh_token || undefined,
+        expiresAt: tokens.expiry_date || Date.now() + 3600 * 1000,
         provider: 'google',
+        email,
       };
+
+      console.log('✅ Google OAuth code exchanged successfully for:', email);
 
       return token;
     } catch (error: any) {
       console.error('[CalendarService] Error exchanging Google code:', {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
       });
-
-      // Extract detailed error message from Google API
-      let errorMessage = 'Fehler beim Austausch des OAuth-Codes';
-      if (error.response?.data) {
-        const googleError = error.response.data;
-        if (googleError.error_description) {
-          errorMessage = `Google OAuth Fehler: ${googleError.error_description}`;
-        } else if (googleError.error) {
-          errorMessage = `Google OAuth Fehler: ${googleError.error}`;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(error.response?.data?.error_description || error.message);
     }
   },
 
@@ -232,7 +196,7 @@ export const calendarService = {
 
   /**
    * Store calendar token in database
-   * Encrypts refresh_token and stores in google_calendar_integrations table
+   * Encrypts refresh_token and stores in calendar_connections table
    */
   async storeToken(locationId: string, token: CalendarToken): Promise<void> {
     if (fallbackMode) {
@@ -262,6 +226,7 @@ export const calendarService = {
           access_token: token.accessToken,
           refresh_token_encrypted: encryptedRefreshToken,
           expiry_ts: expiryTs,
+          connected_email: token.email || null,
           updated_at: new Date().toISOString(),
         },
         {

@@ -142,22 +142,13 @@ router.get(
         const { authUrl } = calendarService.getGoogleAuthUrl(redirectUri, location.id);
         res.json({
           success: true,
-          data: {
-            authUrl,
-            state,
-            // Include redirect URI in response for debugging
-            redirectUri,
-          },
+          authUrl,
         });
       } else if (provider === 'outlook') {
         const { authUrl } = await calendarService.getOutlookAuthUrl(redirectUri, location.id);
         res.json({
           success: true,
-          data: {
-            authUrl,
-            state,
-            redirectUri,
-          },
+          authUrl,
         });
       } else {
         return next(new BadRequestError('Ungültiger Provider. Unterstützt: google, outlook'));
@@ -572,7 +563,7 @@ router.delete(
 
       // Delete calendar integration
       const { error } = await require('../services/supabaseDb')
-        .supabaseAdmin.from('google_calendar_integrations')
+        .supabaseAdmin.from('calendar_connections')
         .delete()
         .eq('location_id', location.id)
         .eq('provider', provider);
