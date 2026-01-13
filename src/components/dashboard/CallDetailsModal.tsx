@@ -22,7 +22,7 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
     try {
       await navigator.clipboard.writeText(displayCall.callSid);
       toast.success('Call SID kopiert');
-    } catch (err) {
+    } catch {
       // Fallback: select text
       const textArea = document.createElement('textarea');
       textArea.value = displayCall.callSid;
@@ -33,6 +33,28 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({ isOpen, onCl
       try {
         document.execCommand('copy');
         toast.success('Call SID kopiert');
+      } catch {
+        toast.error('Kopieren fehlgeschlagen');
+      }
+      textArea.remove();
+    }
+  };
+
+  const handleCopyConversationId = async (conversationId: string) => {
+    if (!conversationId) return;
+    try {
+      await navigator.clipboard.writeText(conversationId);
+      toast.success('Conversation ID kopiert');
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = conversationId;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast.success('Conversation ID kopiert');
       } catch {
         toast.error('Kopieren fehlgeschlagen');
       }

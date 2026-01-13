@@ -163,11 +163,9 @@ export const DashboardPage = () => {
         globalThis.location.origin,
       ];
 
-      // Check if origin is allowed (more permissive for OAuth callback)
+      // Check if origin is allowed (strict check for security)
       const isAllowedOrigin = allowedOrigins.some(
-        (allowed) =>
-          event.origin === allowed ||
-          event.origin.includes(allowed.replace('https://', '').replace('http://', '')),
+        (allowed) => event.origin === allowed,
       );
 
       if (!isAllowedOrigin) {
