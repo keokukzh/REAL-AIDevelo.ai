@@ -54,11 +54,17 @@ export class CacheService {
 
         // Try to connect (non-blocking)
         this.redis.connect().catch((err: Error) => {
-          console.warn('[CacheService] ⚠️  Redis connection failed, using in-memory cache:', err.message);
+          console.warn(
+            '[CacheService] ⚠️  Redis connection failed, using in-memory cache:',
+            err.message,
+          );
           this.isRedisAvailable = false;
         });
       } catch (err) {
-        console.warn('[CacheService] ⚠️  Redis initialization failed, using in-memory cache:', (err as Error).message);
+        console.warn(
+          '[CacheService] ⚠️  Redis initialization failed, using in-memory cache:',
+          (err as Error).message,
+        );
         this.isRedisAvailable = false;
       }
     } else {
@@ -233,31 +239,33 @@ export const CacheKeys = {
   user: (userId: string) => `user:${userId}`,
   org: (orgId: string) => `org:${orgId}`,
   location: (locationId: string) => `location:${locationId}`,
-  calendarAvailability: (locationId: string, date: string) => 
+  calendarAvailability: (locationId: string, date: string) =>
     `calendar:availability:${locationId}:${date}`,
-  elevenLabsVoices: (locale?: string) => 
+  elevenLabsVoices: (locale?: string) =>
     locale ? `elevenlabs:voices:${locale}` : 'elevenlabs:voices:all',
-  
+
   // Tag-based invalidation patterns
   agentConfigByOrg: (orgId: string) => `agent:config:org:${orgId}:*`,
   locationByOrg: (orgId: string) => `location:org:${orgId}:*`,
-  
+
   // Dashboard overview (user-specific)
   dashboardOverview: (userId: string) => `dashboard:overview:${userId}`,
-  
+
   // Pattern for invalidating all dashboard overviews (use with invalidate)
   dashboardOverviewAll: () => 'dashboard:overview:*',
 };
 
 // Cache TTL constants (in seconds)
 export const CacheTTL = {
-  agentConfig: 5 * 60,        // 5 minutes
-  user: 10 * 60,              // 10 minutes
-  org: 10 * 60,               // 10 minutes
-  location: 10 * 60,          // 10 minutes
-  calendarAvailability: 60,  // 1 minute
-  elevenLabsVoices: 60 * 60,  // 1 hour
-  dashboardOverview: 30,      // 30 seconds (short TTL for near-real-time data)
-  agentVerification: 5 * 60,   // 5 minutes - ElevenLabs agent verification
-  signedUrl: 60,               // 1 minute - ElevenLabs signed URLs are temporary
+  agentConfig: 5 * 60, // 5 minutes
+  user: 10 * 60, // 10 minutes
+  org: 10 * 60, // 10 minutes
+  location: 10 * 60, // 10 minutes
+  calendarAvailability: 60, // 1 minute
+  voices: 60 * 60, // 1 hour
+  dashboardOverview: 30, // 30 seconds (short TTL for near-real-time data)
+  // agentVerification and signedUrl were ElevenLabs-specific; keep if needed for other services or remove.
+  // For now, keep generic placeholders.
+  // agentVerification: 5 * 60,   // 5 minutes - placeholder
+  // signedUrl: 60,               // 1 minute - placeholder
 };

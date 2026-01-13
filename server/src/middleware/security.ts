@@ -27,17 +27,17 @@ export const isOriginAllowed = (origin: string | undefined): boolean => {
       // Add specific Cloudflare Pages domains if needed
       // 'https://your-project.pages.dev',
     ];
-    
+
     // Check exact matches first
     if (allowedProductionOrigins.includes(origin)) {
       return true;
     }
-    
+
     // Allow subdomains of aidevelo.ai
     if (origin.endsWith('.aidevelo.ai')) {
       return true;
     }
-    
+
     // In production, be more restrictive - only allow known patterns
     // Remove wildcard .pages.dev for better security
     return false;
@@ -83,7 +83,7 @@ export const corsMiddleware = cors({
  */
 export const optionsHandler = (req: Request, res: Response) => {
   const origin = req.headers.origin;
-  
+
   // Use same origin check as CORS middleware
   const isAllowed = isOriginAllowed(origin);
 
@@ -109,7 +109,7 @@ export const helmetMiddleware = config.isProduction
           scriptSrc: [
             "'self'",
             "'unsafe-inline'", // Required for React
-            "'unsafe-eval'",   // Required for some WebRTC/SIP libraries
+            "'unsafe-eval'", // Required for some WebRTC/SIP libraries
             'https://*.supabase.co',
             'https://fonts.googleapis.com',
             'https://fonts.gstatic.com',
@@ -122,10 +122,7 @@ export const helmetMiddleware = config.isProduction
             "'unsafe-inline'", // Required for React
             'https://fonts.googleapis.com',
           ],
-          fontSrc: [
-            "'self'",
-            'https://fonts.gstatic.com',
-          ],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
           imgSrc: [
             "'self'",
             'data:',
@@ -137,8 +134,8 @@ export const helmetMiddleware = config.isProduction
             'https://*.supabase.co',
             'https://*.supabase.io',
             'wss://*.supabase.co',
-            'https://*.elevenlabs.io', // Allow all ElevenLabs regional endpoints (api.elevenlabs.io, api.us.elevenlabs.io, etc.)
-            'wss://*.elevenlabs.io', // WebSocket connections to ElevenLabs
+            'https://*.microsoft.com', // Azure Speech
+            'wss://*.microsoft.com', // Azure Speech WS
             'wss://freeswitch.aidevelo.ai', // FreeSWITCH WebSocket via Cloudflare Tunnel (production, standard HTTPS port)
             'wss://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket
             'ws://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket (non-SSL)
@@ -151,15 +148,9 @@ export const helmetMiddleware = config.isProduction
             'https://plausible.io', // Plausible Analytics
             'https://*.plausible.io', // Plausible Analytics subdomains
           ],
-          frameSrc: [
-            "'self'",
-            'https://*.supabase.co',
-          ],
-          mediaSrc: [
-            "'self'",
-            'blob:',
-          ],
-        }
+          frameSrc: ["'self'", 'https://*.supabase.co'],
+          mediaSrc: ["'self'", 'blob:'],
+        },
       },
       crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts: {
@@ -183,19 +174,19 @@ const rateLimitConfig: Record<string, { windowMs: number; max: number }> = {
   '/api/auth/register': RATE_LIMITS.AUTH_REGISTER,
   '/api/auth/refresh': RATE_LIMITS.AUTH_REFRESH,
   '/api/auth/*': RATE_LIMITS.AUTH_DEFAULT,
-  
+
   // Agent endpoints - moderate limits
   '/api/agents': RATE_LIMITS.AGENTS,
   '/api/dashboard': RATE_LIMITS.DASHBOARD,
-  
+
   // ElevenLabs endpoints - strict limits to prevent cost overruns
   '/api/voice-agent/elevenlabs-stream-token': { windowMs: 3600000, max: 5 }, // 5 per hour
   '/api/agent/test-call': { windowMs: 86400000, max: 3 }, // 3 per day
-  
+
   // Health and public endpoints - lenient limits
   '/api/health': RATE_LIMITS.HEALTH,
   '/health': RATE_LIMITS.HEALTH,
-  
+
   // Default for all other API routes
   '/api/*': RATE_LIMITS.DEFAULT,
 };
@@ -208,7 +199,7 @@ function getRateLimitConfig(path: string): { windowMs: number; max: number } {
   if (rateLimitConfig[path]) {
     return rateLimitConfig[path];
   }
-  
+
   // Check pattern matches (order matters - most specific first)
   const patterns = Object.keys(rateLimitConfig).sort((a, b) => {
     // Sort by specificity (more wildcards = less specific)
@@ -216,7 +207,7 @@ function getRateLimitConfig(path: string): { windowMs: number; max: number } {
     const bWildcards = (b.match(/\*/g) || []).length;
     return aWildcards - bWildcards;
   });
-  
+
   for (const pattern of patterns) {
     if (pattern.includes('*')) {
       const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
@@ -225,7 +216,7 @@ function getRateLimitConfig(path: string): { windowMs: number; max: number } {
       }
     }
   }
-  
+
   // Default rate limit
   return RATE_LIMITS.DEFAULT;
 }
@@ -278,18 +269,18 @@ const rateLimitersCache = new Map<string, ReturnType<typeof createRateLimiter>>(
 function initializeRateLimiters() {
   // Get unique configs from rateLimitConfig
   const configs = new Set<string>();
-  Object.values(rateLimitConfig).forEach(config => {
+  Object.values(rateLimitConfig).forEach((config) => {
     const key = `${config.windowMs}-${config.max}`;
     configs.add(key);
   });
-  
+
   // Also add default config
   const defaultConfig = RATE_LIMITS.DEFAULT;
   const defaultKey = `${defaultConfig.windowMs}-${defaultConfig.max}`;
   configs.add(defaultKey);
-  
+
   // Create rate limiters for all configs
-  configs.forEach(key => {
+  configs.forEach((key) => {
     const [windowMs, max] = key.split('-').map(Number);
     if (!rateLimitersCache.has(key)) {
       rateLimitersCache.set(key, createRateLimiter(windowMs, max));
@@ -303,12 +294,12 @@ function initializeRateLimiters() {
 function getRateLimiter(path: string) {
   const config = getRateLimitConfig(path);
   const key = `${config.windowMs}-${config.max}`;
-  
+
   // Ensure limiter exists (should already be initialized, but double-check)
   if (!rateLimitersCache.has(key)) {
     rateLimitersCache.set(key, createRateLimiter(config.windowMs, config.max));
   }
-  
+
   return rateLimitersCache.get(key)!;
 }
 
@@ -323,18 +314,18 @@ export const rateLimitMiddleware = (req: Request, res: Response, next: NextFunct
   if (req.method === 'OPTIONS') {
     return next();
   }
-  
+
   // Skip rate limiting for health checks
   if (req.path === '/health' || req.path === '/api/health') {
     return next();
   }
-  
+
   // Apply rate limiting to API routes
   if (req.path.startsWith('/api/') || req.path.startsWith('/api/v1/')) {
     const limiter = getRateLimiter(req.path);
     return limiter(req, res, next);
   }
-  
+
   next();
 };
 

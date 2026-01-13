@@ -46,7 +46,7 @@ export class CircuitBreaker {
 
     try {
       const result = await fn();
-      
+
       // Success - reset circuit breaker
       if (this.state === CircuitState.HALF_OPEN) {
         this.state = CircuitState.CLOSED;
@@ -56,7 +56,7 @@ export class CircuitBreaker {
         // Reset failure count on success
         this.failureCount = 0;
       }
-      
+
       return result;
     } catch (error) {
       this.recordFailure();
@@ -86,7 +86,7 @@ export class CircuitBreaker {
         this.state = CircuitState.HALF_OPEN;
       }
     }
-    
+
     return this.state;
   }
 
@@ -111,7 +111,7 @@ export class CircuitBreaker {
  * Circuit breaker instances for external services
  */
 export const circuitBreakers = {
-  elevenLabs: new CircuitBreaker(),
+  azureSpeech: new CircuitBreaker(),
   twilio: new CircuitBreaker(),
   googleCalendar: new CircuitBreaker(),
 };

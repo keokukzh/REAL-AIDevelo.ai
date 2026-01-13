@@ -1,6 +1,6 @@
 /**
  * Standardized Logger Utility
- * 
+ *
  * Provides consistent logging interface with:
  * - Structured logging via StructuredLoggingService
  * - Error serialization
@@ -18,26 +18,26 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  */
 export function serializeError(err: unknown): Record<string, unknown> | null {
   if (!err) return null;
-  
+
   if (err instanceof Error) {
     const serialized: Record<string, unknown> = {
       name: err.name,
       message: err.message,
     };
-    
+
     if (err.stack) {
       serialized.stack = err.stack.split('\n').slice(0, 10).join('\n'); // First 10 lines
     }
-    
+
     // Extract additional error properties
     if ((err as any).code) serialized.code = (err as any).code;
     if ((err as any).statusCode) serialized.statusCode = (err as any).statusCode;
     if ((err as any).supabase) serialized.supabase = (err as any).supabase;
     if ((err as any).cause) serialized.cause = (err as any).cause;
-    
+
     return serialized;
   }
-  
+
   return { message: String(err) };
 }
 
@@ -53,8 +53,7 @@ const SECRET_KEYS = new Set([
   'SMTP_PASS',
   'GOOGLE_OAUTH_CLIENT_SECRET',
   'QDRANT_API_KEY',
-  'ELEVENLABS_API_KEY',
-  'ELEVENLABS_WEBHOOK_SECRET',
+  'AZURE_SPEECH_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
   'password',
   'secret',
@@ -67,12 +66,12 @@ const SECRET_KEYS = new Set([
  */
 export function redact(obj: Record<string, unknown> | null | undefined): Record<string, unknown> {
   if (!obj) return {};
-  
+
   const out: Record<string, unknown> = {};
-  
+
   for (const [k, v] of Object.entries(obj)) {
     const keyLower = k.toLowerCase();
-    
+
     // Redact if key matches secret patterns
     if (SECRET_KEYS.has(keyLower) || keyLower.includes('secret') || keyLower.includes('password')) {
       out[k] = '[REDACTED]';
@@ -83,7 +82,7 @@ export function redact(obj: Record<string, unknown> | null | undefined): Record<
       out[k] = v;
     }
   }
-  
+
   return out;
 }
 
@@ -115,12 +114,7 @@ export const logger = {
   /**
    * Log error message
    */
-  error(
-    message: string,
-    error?: Error | unknown,
-    context: LogContext = {},
-    req?: Request
-  ): void {
+  error(message: string, error?: Error | unknown, context: LogContext = {}, req?: Request): void {
     const errorObj = error instanceof Error ? error : undefined;
     StructuredLoggingService.error(message, errorObj, context, req);
   },
