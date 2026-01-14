@@ -138,7 +138,8 @@ export const AnalyticsPage = () => {
     return `${secs}s`;
   };
 
-  const formatPercentage = (value: number): string => {
+  const formatPercentage = (value: number | undefined | null): string => {
+    if (value === undefined || value === null) return '0.0%';
     return `${value.toFixed(1)}%`;
   };
 
