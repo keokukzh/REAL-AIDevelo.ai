@@ -53,7 +53,7 @@ export class FasterWhisperProvider implements ASRProvider {
             'Content-Type': 'application/json',
           },
           timeout: 30000, // 30s timeout for transcription
-        }
+        },
       );
 
       return {
@@ -78,7 +78,7 @@ export class OpenAIWhisperProvider implements ASRProvider {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
-    if (this.apiKey) {
+    if (this.apiKey && this.apiKey !== '' && !this.apiKey.includes('placeholder')) {
       const OpenAI = require('openai');
       this.client = new OpenAI({ apiKey: this.apiKey });
     }
@@ -93,7 +93,7 @@ export class OpenAIWhisperProvider implements ASRProvider {
       // Use openai.toFile for better Node.js compatibility
       const { toFile } = require('openai');
       const file = await toFile(audio, 'audio.wav', { type: 'audio/wav' });
-      
+
       const response = await this.client.audio.transcriptions.create({
         file: file,
         model: 'whisper-1',
@@ -120,7 +120,9 @@ export class OpenAIWhisperProvider implements ASRProvider {
  * Get ASR provider based on configuration
  */
 export function getASRProvider(): ASRProvider {
-  const provider = (process.env.ASR_PROVIDER || 'faster_whisper') as 'faster_whisper' | 'openai_whisper';
+  const provider = (process.env.ASR_PROVIDER || 'faster_whisper') as
+    | 'faster_whisper'
+    | 'openai_whisper';
 
   switch (provider) {
     case 'faster_whisper':
@@ -133,4 +135,3 @@ export function getASRProvider(): ASRProvider {
 }
 
 export const asrProvider = getASRProvider();
-

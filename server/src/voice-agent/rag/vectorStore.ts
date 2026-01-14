@@ -18,10 +18,16 @@ export class VectorStore {
       checkCompatibility: false,
     });
 
-    this.openaiClient = new OpenAI({
-      apiKey: voiceAgentConfig.vectorDb.embeddingApiKey,
-      dangerouslyAllowBrowser: false,
-    });
+    const apiKey = voiceAgentConfig.vectorDb.embeddingApiKey;
+    if (!apiKey || apiKey === '' || apiKey.includes('placeholder')) {
+      this.openaiClient = null as any;
+      console.warn('[VectorStore] Missing or placeholder OpenAI API key for embeddings.');
+    } else {
+      this.openaiClient = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: false,
+      });
+    }
 
     this.embeddingModel = voiceAgentConfig.vectorDb.embeddingModel;
   }
@@ -36,9 +42,7 @@ export class VectorStore {
     try {
       // Check if collection exists
       const collections = await this.qdrantClient.getCollections();
-      const exists = collections.collections.some(
-        (c) => c.name === collectionName
-      );
+      const exists = collections.collections.some((c) => c.name === collectionName);
 
       if (!exists) {
         // Create collection with 1536 dimensions (OpenAI text-embedding-3-small)
@@ -53,9 +57,7 @@ export class VectorStore {
         console.log(`[VectorStore] Collection already exists: ${collectionName}`);
       }
     } catch (error) {
-      throw new Error(
-        `Failed to ensure collection for location ${locationId}: ${error}`
-      );
+      throw new Error(`Failed to ensure collection for location ${locationId}: ${error}`);
     }
   }
 
@@ -110,7 +112,7 @@ export class VectorStore {
       id: string;
       text: string;
       metadata?: Record<string, any>;
-    }>
+    }>,
   ): Promise<void> {
     await this.ensureCollection(locationId);
     const collectionName = `location_${locationId}`;
@@ -127,7 +129,7 @@ export class VectorStore {
             ...chunk.metadata,
           },
         };
-      })
+      }),
     );
 
     // Upsert points in batches
@@ -147,7 +149,7 @@ export class VectorStore {
   async search(
     locationId: string,
     query: string,
-    limit: number = 5
+    limit: number = 5,
   ): Promise<Array<{ text: string; score: number; metadata?: Record<string, any> }>> {
     await this.ensureCollection(locationId);
     const collectionName = `location_${locationId}`;
@@ -185,7 +187,7 @@ export class VectorStore {
    */
   async deleteDocument(locationId: string, documentId: string): Promise<number> {
     const collectionName = `location_${locationId}`;
-    
+
     try {
       // Use scroll to find all points with matching documentId
       const scrollResult = await this.qdrantClient.scroll(collectionName, {
@@ -203,7 +205,9 @@ export class VectorStore {
       const pointIds = scrollResult.points.map((p) => p.id);
 
       if (pointIds.length === 0) {
-        console.log(`[VectorStore] No chunks found for documentId=${documentId} in collection=${collectionName}`);
+        console.log(
+          `[VectorStore] No chunks found for documentId=${documentId} in collection=${collectionName}`,
+        );
         return 0;
       }
 
@@ -213,15 +217,20 @@ export class VectorStore {
         points: pointIds,
       });
 
-      console.log(`[VectorStore] Deleted ${pointIds.length} chunks for documentId=${documentId} in collection=${collectionName}`);
+      console.log(
+        `[VectorStore] Deleted ${pointIds.length} chunks for documentId=${documentId} in collection=${collectionName}`,
+      );
       return pointIds.length;
     } catch (error) {
-      console.error(`[VectorStore] Failed to delete document ${documentId} from collection ${collectionName}:`, error);
-      throw new Error(`Failed to delete document chunks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(
+        `[VectorStore] Failed to delete document ${documentId} from collection ${collectionName}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to delete document chunks: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 }
 
 export const vectorStore = new VectorStore();
-
-

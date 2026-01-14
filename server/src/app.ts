@@ -42,16 +42,19 @@ import stripeRoutes from './routes/stripeRoutes';
 import stripeWebhookRouter from './routes/stripeWebhook';
 import subscriptionRoutes from './routes/subscriptionRoutes';
 import adminRoutes from './routes/adminRoutes';
+import { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } from './jobs/syncJobs';
 
 // --- Initialization ---
 initSentry();
-setupObservability(config.otlpExporterEndpoint);
+setupObservability();
+console.log('[Startup] Sentry and Observability initialized');
 
 // Initialize DB stack (async, but we don't block app creation)
+console.log('[Startup] Initializing database stack...');
 initDatabaseStack().catch((err) => {
   StructuredLoggingService.error('Critical DB init failure', err);
 });
-
+console.log('[Startup] app creation started');
 const app = express();
 
 // --- Security & Config ---
@@ -196,13 +199,17 @@ if (require.main === module) {
   process.on('SIGINT', cleanup);
 
   // Background Jobs
-  const { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } = require('./jobs/syncJobs');
+  console.log('[Startup] Registering sync jobs...');
   registerSyncJobs();
+  console.log('[Startup] Scheduling daily sync...');
   scheduleDailySync();
+  console.log('[Startup] Scheduling status checks...');
   scheduleStatusChecks();
 
+  console.log(`[Startup] Attempting to listen on port ${config.port}...`);
   httpServer.listen(config.port, '0.0.0.0', () => {
     StructuredLoggingService.info(`Server ready on port ${config.port}`);
+    console.log(`🚀 Server ready on port ${config.port}`);
   });
 }
 

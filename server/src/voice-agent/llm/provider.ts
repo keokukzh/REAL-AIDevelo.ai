@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { voiceAgentConfig } from '../config';
-import { LLMProvider, LLMMessage, LLMResponse, ToolCall } from '../types';
+import { LLMMessage, LLMResponse, ToolCall } from '../types';
 
 /**
  * LLM Provider Abstraction
@@ -12,7 +12,7 @@ export interface LLMProviderInterface {
   chat(
     messages: LLMMessage[],
     tools?: Array<{ name: string; description: string; parameters: any }>,
-    stream?: boolean
+    stream?: boolean,
   ): Promise<LLMResponse | AsyncIterable<LLMResponse>>;
 }
 
@@ -20,8 +20,14 @@ class OpenAIProvider implements LLMProviderInterface {
   private client: OpenAI;
 
   constructor() {
+    const apiKey = voiceAgentConfig.llm.openaiApiKey;
+    if (!apiKey || apiKey === '' || apiKey.includes('placeholder')) {
+      this.client = null as any;
+      console.warn('[OpenAIProvider] Missing or placeholder OpenAI API key.');
+      return;
+    }
     this.client = new OpenAI({
-      apiKey: voiceAgentConfig.llm.openaiApiKey,
+      apiKey: apiKey,
       dangerouslyAllowBrowser: false,
     });
   }
@@ -29,10 +35,14 @@ class OpenAIProvider implements LLMProviderInterface {
   async chat(
     messages: LLMMessage[],
     tools?: Array<{ name: string; description: string; parameters: any }>,
-    stream: boolean = false
+    stream: boolean = false,
   ): Promise<LLMResponse | AsyncIterable<LLMResponse>> {
+    if (!this.client) {
+      throw new Error('OpenAI client is not initialized. Check API key.');
+    }
+
     const formattedMessages = messages.map((msg) => ({
-      role: msg.role,
+      role: msg.role as any,
       content: msg.content,
     }));
 
@@ -46,20 +56,20 @@ class OpenAIProvider implements LLMProviderInterface {
     }));
 
     if (stream) {
-      const stream = await this.client.chat.completions.create({
+      const streamRes = await this.client.chat.completions.create({
         model: voiceAgentConfig.llm.model,
-        messages: formattedMessages as any,
-        tools: toolDefinitions,
+        messages: formattedMessages,
+        tools: toolDefinitions as any,
         stream: true,
       });
 
-      return this.handleStream(stream);
+      return this.handleStream(streamRes);
     }
 
     const response = await this.client.chat.completions.create({
       model: voiceAgentConfig.llm.model,
-      messages: formattedMessages as any,
-      tools: toolDefinitions,
+      messages: formattedMessages,
+      tools: toolDefinitions as any,
     });
 
     const choice = response.choices[0];
@@ -85,11 +95,9 @@ class OpenAIProvider implements LLMProviderInterface {
     };
   }
 
-  private async *handleStream(
-    stream: any
-  ): AsyncIterable<LLMResponse> {
+  private async *handleStream(stream: any): AsyncIterable<LLMResponse> {
     let fullContent = '';
-    let toolCalls: ToolCall[] = [];
+    const toolCalls: ToolCall[] = [];
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
@@ -111,12 +119,12 @@ class OpenAIProvider implements LLMProviderInterface {
           }
           if (toolCall.function?.arguments) {
             try {
-              toolCalls[index].arguments = JSON.parse(
-                toolCalls[index].arguments
-                  ? JSON.stringify(toolCalls[index].arguments) +
-                      toolCall.function.arguments
-                  : toolCall.function.arguments
-              );
+              const currentArgs =
+                typeof toolCalls[index].arguments === 'string'
+                  ? toolCalls[index].arguments
+                  : JSON.stringify(toolCalls[index].arguments);
+              const newArgs = currentArgs + toolCall.function.arguments;
+              toolCalls[index].arguments = JSON.parse(newArgs);
             } catch {
               // Partial JSON, continue accumulating
             }
@@ -131,16 +139,26 @@ class AnthropicProvider implements LLMProviderInterface {
   private client: Anthropic;
 
   constructor() {
+    const apiKey = voiceAgentConfig.llm.anthropicApiKey;
+    if (!apiKey || apiKey === '' || apiKey.includes('placeholder')) {
+      this.client = null as any;
+      console.warn('[AnthropicProvider] Missing or placeholder Anthropic API key.');
+      return;
+    }
     this.client = new Anthropic({
-      apiKey: voiceAgentConfig.llm.anthropicApiKey,
+      apiKey: apiKey,
     });
   }
 
   async chat(
     messages: LLMMessage[],
     tools?: Array<{ name: string; description: string; parameters: any }>,
-    stream: boolean = false
+    stream: boolean = false,
   ): Promise<LLMResponse | AsyncIterable<LLMResponse>> {
+    if (!this.client) {
+      throw new Error('Anthropic client is not initialized. Check API key.');
+    }
+
     // Convert messages format for Anthropic
     const systemMessage = messages.find((m) => m.role === 'system');
     const conversationMessages = messages.filter((m) => m.role !== 'system');
@@ -157,15 +175,15 @@ class AnthropicProvider implements LLMProviderInterface {
     }));
 
     if (stream) {
-      const stream = await this.client.messages.stream({
+      const streamRes = await this.client.messages.stream({
         model: voiceAgentConfig.llm.model,
         max_tokens: 4096,
         system: systemMessage?.content,
         messages: formattedMessages,
-        tools: toolDefinitions,
+        tools: toolDefinitions as any,
       });
 
-      return this.handleAnthropicStream(stream);
+      return this.handleAnthropicStream(streamRes);
     }
 
     const response = await this.client.messages.create({
@@ -173,7 +191,7 @@ class AnthropicProvider implements LLMProviderInterface {
       max_tokens: 4096,
       system: systemMessage?.content,
       messages: formattedMessages,
-      tools: toolDefinitions,
+      tools: toolDefinitions as any,
     });
 
     const content = response.content.find((c) => c.type === 'text');
@@ -190,9 +208,7 @@ class AnthropicProvider implements LLMProviderInterface {
     };
   }
 
-  private async *handleAnthropicStream(
-    stream: any
-  ): AsyncIterable<LLMResponse> {
+  private async *handleAnthropicStream(stream: any): AsyncIterable<LLMResponse> {
     let fullContent = '';
 
     for await (const chunk of stream) {
@@ -212,9 +228,15 @@ class DeepSeekProvider implements LLMProviderInterface {
   private client: OpenAI;
 
   constructor() {
+    const apiKey = voiceAgentConfig.llm.deepseekApiKey;
+    if (!apiKey || apiKey === '' || apiKey.includes('placeholder')) {
+      this.client = null as any;
+      console.warn('[DeepSeekProvider] Missing or placeholder DeepSeek API key.');
+      return;
+    }
     // DeepSeek uses OpenAI-compatible API
     this.client = new OpenAI({
-      apiKey: voiceAgentConfig.llm.deepseekApiKey,
+      apiKey: apiKey,
       baseURL: 'https://api.deepseek.com',
       dangerouslyAllowBrowser: false,
     });
@@ -223,10 +245,14 @@ class DeepSeekProvider implements LLMProviderInterface {
   async chat(
     messages: LLMMessage[],
     tools?: Array<{ name: string; description: string; parameters: any }>,
-    stream: boolean = false
+    stream: boolean = false,
   ): Promise<LLMResponse | AsyncIterable<LLMResponse>> {
+    if (!this.client) {
+      throw new Error('DeepSeek client is not initialized. Check API key.');
+    }
+
     const formattedMessages = messages.map((msg) => ({
-      role: msg.role,
+      role: msg.role as any,
       content: msg.content,
     }));
 
@@ -240,20 +266,20 @@ class DeepSeekProvider implements LLMProviderInterface {
     }));
 
     if (stream) {
-      const stream = await this.client.chat.completions.create({
+      const streamRes = await this.client.chat.completions.create({
         model: voiceAgentConfig.llm.model,
-        messages: formattedMessages as any,
-        tools: toolDefinitions,
+        messages: formattedMessages,
+        tools: toolDefinitions as any,
         stream: true,
       });
 
-      return this.handleStream(stream);
+      return this.handleStream(streamRes);
     }
 
     const response = await this.client.chat.completions.create({
       model: voiceAgentConfig.llm.model,
-      messages: formattedMessages as any,
-      tools: toolDefinitions,
+      messages: formattedMessages,
+      tools: toolDefinitions as any,
     });
 
     const choice = response.choices[0];
@@ -279,11 +305,9 @@ class DeepSeekProvider implements LLMProviderInterface {
     };
   }
 
-  private async *handleStream(
-    stream: any
-  ): AsyncIterable<LLMResponse> {
+  private async *handleStream(stream: any): AsyncIterable<LLMResponse> {
     let fullContent = '';
-    let toolCalls: ToolCall[] = [];
+    const toolCalls: ToolCall[] = [];
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
@@ -305,12 +329,12 @@ class DeepSeekProvider implements LLMProviderInterface {
           }
           if (toolCall.function?.arguments) {
             try {
-              toolCalls[index].arguments = JSON.parse(
-                toolCalls[index].arguments
-                  ? JSON.stringify(toolCalls[index].arguments) +
-                      toolCall.function.arguments
-                  : toolCall.function.arguments
-              );
+              const currentArgs =
+                typeof toolCalls[index].arguments === 'string'
+                  ? toolCalls[index].arguments
+                  : JSON.stringify(toolCalls[index].arguments);
+              const newArgs = currentArgs + toolCall.function.arguments;
+              toolCalls[index].arguments = JSON.parse(newArgs);
             } catch {
               // Partial JSON, continue accumulating
             }
@@ -328,7 +352,7 @@ class VLLMProvider implements LLMProviderInterface {
     // vLLM is OpenAI-compatible
     const baseURL = process.env.VLLM_BASE_URL || 'http://vllm:8000/v1';
     const apiKey = process.env.VLLM_API_KEY || 'dummy';
-    
+
     this.client = new OpenAI({
       apiKey,
       baseURL,
@@ -339,10 +363,10 @@ class VLLMProvider implements LLMProviderInterface {
   async chat(
     messages: LLMMessage[],
     tools?: Array<{ name: string; description: string; parameters: any }>,
-    stream: boolean = false
+    stream: boolean = false,
   ): Promise<LLMResponse | AsyncIterable<LLMResponse>> {
     const formattedMessages = messages.map((msg) => ({
-      role: msg.role,
+      role: msg.role as any,
       content: msg.content,
     }));
 
@@ -359,20 +383,20 @@ class VLLMProvider implements LLMProviderInterface {
     const model = process.env.VLLM_MODEL || voiceAgentConfig.llm.model;
 
     if (stream) {
-      const stream = await this.client.chat.completions.create({
+      const streamRes = await this.client.chat.completions.create({
         model,
-        messages: formattedMessages as any,
-        tools: toolDefinitions,
+        messages: formattedMessages,
+        tools: toolDefinitions as any,
         stream: true,
       });
 
-      return this.handleStream(stream);
+      return this.handleStream(streamRes);
     }
 
     const response = await this.client.chat.completions.create({
       model,
-      messages: formattedMessages as any,
-      tools: toolDefinitions,
+      messages: formattedMessages,
+      tools: toolDefinitions as any,
     });
 
     const choice = response.choices[0];
@@ -398,11 +422,9 @@ class VLLMProvider implements LLMProviderInterface {
     };
   }
 
-  private async *handleStream(
-    stream: any
-  ): AsyncIterable<LLMResponse> {
+  private async *handleStream(stream: any): AsyncIterable<LLMResponse> {
     let fullContent = '';
-    let toolCalls: ToolCall[] = [];
+    const toolCalls: ToolCall[] = [];
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
@@ -424,12 +446,12 @@ class VLLMProvider implements LLMProviderInterface {
           }
           if (toolCall.function?.arguments) {
             try {
-              toolCalls[index].arguments = JSON.parse(
-                toolCalls[index].arguments
-                  ? JSON.stringify(toolCalls[index].arguments) +
-                      toolCall.function.arguments
-                  : toolCall.function.arguments
-              );
+              const currentArgs =
+                typeof toolCalls[index].arguments === 'string'
+                  ? toolCalls[index].arguments
+                  : JSON.stringify(toolCalls[index].arguments);
+              const newArgs = currentArgs + toolCall.function.arguments;
+              toolCalls[index].arguments = JSON.parse(newArgs);
             } catch {
               // Partial JSON, continue accumulating
             }
@@ -444,7 +466,11 @@ class VLLMProvider implements LLMProviderInterface {
  * Get LLM provider based on configuration
  */
 export function getLLMProvider(): LLMProviderInterface {
-  const provider = (process.env.LLM_PROVIDER || voiceAgentConfig.llm.provider) as 'openai' | 'anthropic' | 'deepseek' | 'vllm';
+  const provider = (process.env.LLM_PROVIDER || voiceAgentConfig.llm.provider) as
+    | 'openai'
+    | 'anthropic'
+    | 'deepseek'
+    | 'vllm';
 
   switch (provider) {
     case 'openai':
@@ -466,4 +492,3 @@ export function getLLMProvider(): LLMProviderInterface {
 }
 
 export const llmProvider = getLLMProvider();
-

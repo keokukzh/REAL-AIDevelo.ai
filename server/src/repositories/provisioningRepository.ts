@@ -27,8 +27,8 @@ export async function ensureUserRow(
 }> {
   if (isDevBypass()) {
     return {
-      id: 'dev-user-id',
-      org_id: 'dev-org-id',
+      id: '00000000-0000-0000-0000-000000000001',
+      org_id: '00000000-0000-0000-0000-000000000002',
       supabase_user_id: authUserId,
       email: email || 'dev@example.com',
       role: 'admin', // Dev bypass defaults to admin for testing
@@ -116,7 +116,8 @@ export async function ensureOrgForUser(
   authUserId: string,
   email?: string,
 ): Promise<{ id: string; name: string }> {
-  if (isDevBypass()) return { id: 'dev-org-id', name: 'Dev Organization' };
+  if (isDevBypass())
+    return { id: '00000000-0000-0000-0000-000000000002', name: 'Dev Organization' };
 
   const client = getSupabaseAdmin();
 
@@ -157,7 +158,7 @@ export async function ensureDefaultLocation(
 ): Promise<{ id: string; name: string; timezone: string; business_type: string | null }> {
   if (isDevBypass()) {
     return {
-      id: 'dev-location-id',
+      id: '00000000-0000-0000-0000-000000000003',
       name: locationName || 'Hauptstandort',
       timezone: 'Europe/Zurich',
       business_type: null,
@@ -215,7 +216,7 @@ export async function ensureDefaultLocation(
 export async function ensureAgentConfig(locationId: string): Promise<any> {
   if (isDevBypass()) {
     return {
-      id: 'dev-config-id',
+      id: '00000000-0000-0000-0000-000000000004',
       location_id: locationId,
       setup_state: 'ready',
       persona_gender: 'female',

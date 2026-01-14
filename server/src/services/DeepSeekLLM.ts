@@ -4,8 +4,14 @@ export class DeepSeekLLM {
   private client: OpenAI;
 
   constructor() {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey || apiKey === '' || apiKey.includes('placeholder')) {
+      this.client = null as any;
+      console.warn('[DeepSeekLLM] Missing or placeholder DeepSeek API key.');
+      return;
+    }
     this.client = new OpenAI({
-      apiKey: process.env.DEEPSEEK_API_KEY!,
+      apiKey: apiKey,
       baseURL: 'https://api.deepseek.com',
     });
   }

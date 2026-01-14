@@ -180,7 +180,7 @@ export class OpenAITTSProvider implements TTSProvider {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
-    if (this.apiKey) {
+    if (this.apiKey && this.apiKey !== '' && !this.apiKey.includes('placeholder')) {
       const OpenAI = require('openai');
       this.client = new OpenAI({ apiKey: this.apiKey });
     }
@@ -235,7 +235,7 @@ export function getTTSProvider(): TTSProvider {
   }
 
   // If Azure Speech Key is available, use Azure
-  if (azureSpeechKey && azureSpeechKey !== '') {
+  if (azureSpeechKey && azureSpeechKey !== '' && !azureSpeechKey.includes('placeholder')) {
     return new AzureTTSProvider();
   }
 
