@@ -112,6 +112,7 @@ export const getCallsSummary = async (
           avgDurationSec: 0,
           transcriptCoverageRate: 0,
           ragUsageRate: 0,
+          elevenCoverageRate: 0,
           ragAverages: {
             avgQueries: 0,
             avgResults: 0,
@@ -192,6 +193,7 @@ export const getCallsSummary = async (
         avgDurationSec: Math.round(avgDurationSec * 100) / 100, // Round to 2 decimals
         transcriptCoverageRate: Math.round(transcriptCoverageRate * 10000) / 100, // Percentage with 2 decimals
         ragUsageRate: Math.round(ragUsageRate * 10000) / 100,
+        elevenCoverageRate: 0, // Placeholder for now
         ragAverages: {
           avgQueries: Math.round(ragAverages.avgQueries * 100) / 100,
           avgResults: Math.round(ragAverages.avgResults * 100) / 100,
