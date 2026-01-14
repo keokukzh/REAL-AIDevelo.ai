@@ -4,14 +4,26 @@ export class AzureTTS {
   private config: sdk.SpeechConfig;
 
   constructor() {
-    this.config = sdk.SpeechConfig.fromSubscription(
-      process.env.AZURE_SPEECH_KEY!,
-      process.env.AZURE_SPEECH_REGION || 'westeurope',
-    );
-    this.config.speechSynthesisVoiceName = 'de-CH-LeniNeural';
+    const key = process.env.AZURE_SPEECH_KEY;
+    const region = process.env.AZURE_SPEECH_REGION || 'westeurope';
+
+    if (!key || key === '' || key.includes('placeholder')) {
+      // Don't crash here, but synthesize will fail
+      this.config = null as any;
+      console.warn('AzureTTS: Missing or placeholder AZURE_SPEECH_KEY. Synthesis will fail.');
+      return;
+    }
+
+    this.config = sdk.SpeechConfig.fromSubscription(key, region);
+    if (this.config) {
+      this.config.speechSynthesisVoiceName = 'de-CH-LeniNeural';
+    }
   }
 
   async synthesize(text: string): Promise<Buffer> {
+    if (!this.config) {
+      throw new Error('Azure TTS is not configured. Please set a valid AZURE_SPEECH_KEY.');
+    }
     const synthesizer = new sdk.SpeechSynthesizer(this.config, null as any); // using null for audio config to just get bytes
     return new Promise((resolve, reject) => {
       synthesizer.speakTextAsync(
