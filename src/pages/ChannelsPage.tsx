@@ -7,13 +7,27 @@ import { PageHeader } from '../components/layout/PageHeader.js';
 import { useNavigation } from '../hooks/useNavigation.js';
 import { apiClient } from '../services/apiClient.js';
 import { toast } from '../components/ui/Toast.js';
-import { Smartphone, Globe, Plus, Trash2, Copy, Check, Save, Info } from 'lucide-react';
+import {
+  Smartphone,
+  Globe,
+  Plus,
+  Trash2,
+  Copy,
+  Check,
+  Save,
+  Info,
+  Phone,
+  AlertCircle,
+} from 'lucide-react';
+import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
 
 interface ChannelsConfig {
   location_id: string;
   whatsapp_to: string | null;
   whatsapp_enabled: boolean;
   webchat_enabled: boolean;
+  phone_enabled: boolean;
+  phone_number: string | null;
 }
 
 interface WidgetKey {
@@ -33,6 +47,7 @@ export const ChannelsPage = () => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [newDomain, setNewDomain] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
 
   useEffect(() => {
     loadChannelsConfig();
@@ -64,6 +79,8 @@ export const ChannelsPage = () => {
         whatsapp_to: config.whatsapp_to,
         whatsapp_enabled: config.whatsapp_enabled,
         webchat_enabled: config.webchat_enabled,
+        phone_enabled: config.phone_enabled,
+        phone_number: config.phone_number,
       });
 
       if (response.data.success) {
@@ -269,6 +286,90 @@ export const ChannelsPage = () => {
             </div>
           )}
         </Card>
+
+        {/* Telefon / Voice Agent Configuration */}
+        <Card>
+          <div className="flex items-center gap-3 mb-4">
+            <Phone size={20} className="text-primary" />
+            <h2 className="text-xl font-semibold">Telefon / Voice Agent</h2>
+          </div>
+
+          {config && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.phone_enabled}
+                    onChange={(e) => setConfig({ ...config, phone_enabled: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600"
+                  />
+                  <span>Telefon aktiviert</span>
+                </label>
+              </div>
+
+              {config.phone_number ? (
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Verbundene Nummer</p>
+                      <p className="font-mono text-lg">{config.phone_number}</p>
+                    </div>
+                    <Button onClick={() => setIsPhoneModalOpen(true)} variant="outline">
+                      Nummer ändern
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="text-yellow-400" size={20} />
+                    <div className="flex-1">
+                      <p className="text-sm text-yellow-200 mb-2">Keine Telefonnummer verbunden</p>
+                      <Button onClick={() => setIsPhoneModalOpen(true)} variant="primary" size="sm">
+                        <Plus size={16} className="mr-2" />
+                        Telefonnummer verbinden
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Agent Testen Bereich */}
+              <div className="border-t border-slate-700 pt-4">
+                <h3 className="text-lg font-medium mb-3">Agent testen</h3>
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
+                  <p className="text-sm text-gray-400 mb-3">
+                    Teste deinen Voice Agent direkt im Browser mit Mikrofon und Lautsprecher
+                  </p>
+                  <Button
+                    onClick={() => {
+                      // Navigiere zur Voice Agents Seite wo der Test läuft
+                      window.location.href = '/voice-agents';
+                    }}
+                    variant="primary"
+                    disabled={!config.phone_enabled}
+                  >
+                    <Phone size={16} className="mr-2" />
+                    Agent jetzt testen
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* PhoneConnectionModal */}
+        <PhoneConnectionModal
+          isOpen={isPhoneModalOpen}
+          onClose={() => setIsPhoneModalOpen(false)}
+          agentConfigId={config?.location_id || ''}
+          locationId={config?.location_id || ''}
+          onSuccess={() => {
+            loadChannelsConfig();
+            setIsPhoneModalOpen(false);
+          }}
+        />
 
         {/* Save Button */}
         <div className="flex justify-end">

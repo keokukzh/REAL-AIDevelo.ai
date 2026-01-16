@@ -25,9 +25,14 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
       .maybeSingle();
 
     if (error) {
-      logger.error('channels.get_config_failed', error, redact({
-        locationId: resolution.locationId,
-      }), req);
+      logger.error(
+        'channels.get_config_failed',
+        error,
+        redact({
+          locationId: resolution.locationId,
+        }),
+        req,
+      );
       return res.status(500).json({
         success: false,
         error: 'Failed to get channels config',
@@ -42,9 +47,14 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
       .order('created_at', { ascending: false });
 
     if (keysError) {
-      logger.error('channels.get_widget_keys_failed', keysError, redact({
-        locationId: resolution.locationId,
-      }), req);
+      logger.error(
+        'channels.get_widget_keys_failed',
+        keysError,
+        redact({
+          locationId: resolution.locationId,
+        }),
+        req,
+      );
     }
 
     // Get webhook URL
@@ -59,6 +69,8 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
           whatsapp_to: null,
           whatsapp_enabled: true,
           webchat_enabled: true,
+          phone_enabled: false,
+          phone_number: null,
         },
         widgetKeys: widgetKeys || [],
         webhookUrl,
@@ -84,7 +96,8 @@ router.patch('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, re
       email: req.supabaseUser?.email,
     });
 
-    const { whatsapp_to, whatsapp_enabled, webchat_enabled } = req.body;
+    const { whatsapp_to, whatsapp_enabled, webchat_enabled, phone_enabled, phone_number } =
+      req.body;
 
     // Check if config exists
     const { data: existing } = await supabaseAdmin
@@ -108,6 +121,19 @@ router.patch('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, re
       configData.webchat_enabled = webchat_enabled;
     } else {
       configData.webchat_enabled = true;
+    }
+
+    if (typeof phone_enabled === 'boolean') {
+      configData.phone_enabled = phone_enabled;
+    } else {
+      configData.phone_enabled = false;
+    }
+
+    // Set phone_number if provided
+    if (typeof phone_number === 'string') {
+      configData.phone_number = phone_number || null;
+    } else if (phone_number === null) {
+      configData.phone_number = null;
     }
 
     // Set whatsapp_to if provided
@@ -141,11 +167,16 @@ router.patch('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, re
       result = data;
     }
 
-    logger.info('channels.config_updated', redact({
-      locationId: resolution.locationId,
-      whatsapp_enabled: result.whatsapp_enabled,
-      webchat_enabled: result.webchat_enabled,
-    }), req);
+    logger.info(
+      'channels.config_updated',
+      redact({
+        locationId: resolution.locationId,
+        whatsapp_enabled: result.whatsapp_enabled,
+        webchat_enabled: result.webchat_enabled,
+        phone_enabled: result.phone_enabled,
+      }),
+      req,
+    );
 
     res.json({
       success: true,
@@ -164,178 +195,206 @@ router.patch('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, re
  * POST /api/channels/widget-keys
  * Create a new webchat widget key
  */
-router.post('/widget-keys', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const resolution = await resolveLocationId(req, {
-      supabaseUserId: req.supabaseUser?.supabaseUserId,
-      email: req.supabaseUser?.email,
-    });
+router.post(
+  '/widget-keys',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId: req.supabaseUser?.supabaseUserId,
+        email: req.supabaseUser?.email,
+      });
 
-    const { allowed_domains } = req.body;
+      const { allowed_domains } = req.body;
 
-    // Generate random public key
-    const publicKey = `wkey_${crypto.randomBytes(16).toString('hex')}`;
+      // Generate random public key
+      const publicKey = `wkey_${crypto.randomBytes(16).toString('hex')}`;
 
-    const { data: widgetKey, error } = await supabaseAdmin
-      .from('webchat_widget_keys')
-      .insert({
-        location_id: resolution.locationId,
-        public_key: publicKey,
-        allowed_domains: Array.isArray(allowed_domains) ? allowed_domains : [],
-        enabled: true,
-      })
-      .select()
-      .single();
+      const { data: widgetKey, error } = await supabaseAdmin
+        .from('webchat_widget_keys')
+        .insert({
+          location_id: resolution.locationId,
+          public_key: publicKey,
+          allowed_domains: Array.isArray(allowed_domains) ? allowed_domains : [],
+          enabled: true,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      logger.error('channels.create_widget_key_failed', error, redact({
-        locationId: resolution.locationId,
-      }), req);
-      return res.status(500).json({
+      if (error) {
+        logger.error(
+          'channels.create_widget_key_failed',
+          error,
+          redact({
+            locationId: resolution.locationId,
+          }),
+          req,
+        );
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create widget key',
+        });
+      }
+
+      logger.info(
+        'channels.widget_key_created',
+        redact({
+          locationId: resolution.locationId,
+          widgetKeyId: widgetKey.id,
+        }),
+        req,
+      );
+
+      res.json({
+        success: true,
+        data: widgetKey,
+      });
+    } catch (error: any) {
+      logger.error('channels.create_widget_key_error', error, redact({}), req);
+      res.status(500).json({
         success: false,
-        error: 'Failed to create widget key',
+        error: error.message || 'Failed to create widget key',
       });
     }
-
-    logger.info('channels.widget_key_created', redact({
-      locationId: resolution.locationId,
-      widgetKeyId: widgetKey.id,
-    }), req);
-
-    res.json({
-      success: true,
-      data: widgetKey,
-    });
-  } catch (error: any) {
-    logger.error('channels.create_widget_key_error', error, redact({}), req);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to create widget key',
-    });
-  }
-});
+  },
+);
 
 /**
  * PATCH /api/channels/widget-keys/:id
  * Update a widget key
  */
-router.patch('/widget-keys/:id', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const resolution = await resolveLocationId(req, {
-      supabaseUserId: req.supabaseUser?.supabaseUserId,
-      email: req.supabaseUser?.email,
-    });
+router.patch(
+  '/widget-keys/:id',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId: req.supabaseUser?.supabaseUserId,
+        email: req.supabaseUser?.email,
+      });
 
-    const { id } = req.params;
-    const { allowed_domains, enabled } = req.body;
+      const { id } = req.params;
+      const { allowed_domains, enabled } = req.body;
 
-    // Verify ownership
-    const { data: existing } = await supabaseAdmin
-      .from('webchat_widget_keys')
-      .select('location_id')
-      .eq('id', id)
-      .eq('location_id', resolution.locationId)
-      .maybeSingle();
+      // Verify ownership
+      const { data: existing } = await supabaseAdmin
+        .from('webchat_widget_keys')
+        .select('location_id')
+        .eq('id', id)
+        .eq('location_id', resolution.locationId)
+        .maybeSingle();
 
-    if (!existing) {
-      return res.status(404).json({
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          error: 'Widget key not found',
+        });
+      }
+
+      const updateData: any = {};
+      if (allowed_domains !== undefined) {
+        updateData.allowed_domains = Array.isArray(allowed_domains) ? allowed_domains : [];
+      }
+      if (enabled !== undefined) {
+        updateData.enabled = enabled;
+      }
+
+      const { data: updated, error } = await supabaseAdmin
+        .from('webchat_widget_keys')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error(
+          'channels.update_widget_key_failed',
+          error,
+          redact({
+            widgetKeyId: id,
+          }),
+          req,
+        );
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update widget key',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: updated,
+      });
+    } catch (error: any) {
+      logger.error('channels.update_widget_key_error', error, redact({}), req);
+      res.status(500).json({
         success: false,
-        error: 'Widget key not found',
+        error: error.message || 'Failed to update widget key',
       });
     }
-
-    const updateData: any = {};
-    if (allowed_domains !== undefined) {
-      updateData.allowed_domains = Array.isArray(allowed_domains) ? allowed_domains : [];
-    }
-    if (enabled !== undefined) {
-      updateData.enabled = enabled;
-    }
-
-    const { data: updated, error } = await supabaseAdmin
-      .from('webchat_widget_keys')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('channels.update_widget_key_failed', error, redact({
-        widgetKeyId: id,
-      }), req);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update widget key',
-      });
-    }
-
-    res.json({
-      success: true,
-      data: updated,
-    });
-  } catch (error: any) {
-    logger.error('channels.update_widget_key_error', error, redact({}), req);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to update widget key',
-    });
-  }
-});
+  },
+);
 
 /**
  * DELETE /api/channels/widget-keys/:id
  * Delete a widget key
  */
-router.delete('/widget-keys/:id', verifySupabaseAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const resolution = await resolveLocationId(req, {
-      supabaseUserId: req.supabaseUser?.supabaseUserId,
-      email: req.supabaseUser?.email,
-    });
+router.delete(
+  '/widget-keys/:id',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId: req.supabaseUser?.supabaseUserId,
+        email: req.supabaseUser?.email,
+      });
 
-    const { id } = req.params;
+      const { id } = req.params;
 
-    // Verify ownership
-    const { data: existing } = await supabaseAdmin
-      .from('webchat_widget_keys')
-      .select('location_id')
-      .eq('id', id)
-      .eq('location_id', resolution.locationId)
-      .maybeSingle();
+      // Verify ownership
+      const { data: existing } = await supabaseAdmin
+        .from('webchat_widget_keys')
+        .select('location_id')
+        .eq('id', id)
+        .eq('location_id', resolution.locationId)
+        .maybeSingle();
 
-    if (!existing) {
-      return res.status(404).json({
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          error: 'Widget key not found',
+        });
+      }
+
+      const { error } = await supabaseAdmin.from('webchat_widget_keys').delete().eq('id', id);
+
+      if (error) {
+        logger.error(
+          'channels.delete_widget_key_failed',
+          error,
+          redact({
+            widgetKeyId: id,
+          }),
+          req,
+        );
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to delete widget key',
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Widget key deleted',
+      });
+    } catch (error: any) {
+      logger.error('channels.delete_widget_key_error', error, redact({}), req);
+      res.status(500).json({
         success: false,
-        error: 'Widget key not found',
+        error: error.message || 'Failed to delete widget key',
       });
     }
-
-    const { error } = await supabaseAdmin
-      .from('webchat_widget_keys')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      logger.error('channels.delete_widget_key_failed', error, redact({
-        widgetKeyId: id,
-      }), req);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to delete widget key',
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Widget key deleted',
-    });
-  } catch (error: any) {
-    logger.error('channels.delete_widget_key_error', error, redact({}), req);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to delete widget key',
-    });
-  }
-});
+  },
+);
 
 export default router;
