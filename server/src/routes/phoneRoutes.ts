@@ -226,4 +226,65 @@ router.post('/voice', verifyTwilioSignature, (req, res) => {
   res.type('text/xml').send(response.toString());
 });
 
+/**
+ * GET /api/phone/forwarding-number
+ * Return systems forwarding number
+ */
+router.get('/forwarding-number', verifySupabaseAuth, async (req, res, next) => {
+  const { getForwardingNumber } = await import('../controllers/phoneController');
+  return getForwardingNumber(req as any, res);
+});
+
+/**
+ * POST /api/phone/register-personal
+ * Register user's personal phone number
+ */
+router.post(
+  '/register-personal',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { registerPersonalPhone } = await import('../controllers/phoneController');
+    return registerPersonalPhone(req, res, next);
+  },
+);
+
+/**
+ * GET /api/phone/available-to-buy
+ * List numbers available for purchase
+ */
+router.get(
+  '/available-to-buy',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { listAvailableToBuy } = await import('../controllers/phoneController');
+    return listAvailableToBuy(req, res, next);
+  },
+);
+
+/**
+ * POST /api/phone/purchase
+ * Purchase a new virtual number
+ */
+router.post(
+  '/purchase',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { purchaseNumber } = await import('../controllers/phoneController');
+    return purchaseNumber(req, res, next);
+  },
+);
+
+/**
+ * POST /api/phone/test-personal
+ * Test personal phone forwarding
+ */
+router.post(
+  '/test-personal',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { testPersonalPhone } = await import('../controllers/phoneController');
+    return testPersonalPhone(req, res, next);
+  },
+);
+
 export default router;

@@ -8,7 +8,7 @@ import { SetupWizard } from '../components/dashboard/SetupWizard.js';
 import { PreviewBanner } from '../components/dashboard/PreviewBanner.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
-import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal.js';
+import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard.js';
 import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal.js';
 import { AvailabilityModal } from '../components/dashboard/AvailabilityModal.js';
 import { CalendarEventModal } from '../components/dashboard/CalendarEventModal.js';
@@ -98,7 +98,7 @@ export const DashboardPage = () => {
   const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
   const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
-  const [isPhoneConnectionOpen, setIsPhoneConnectionOpen] = useState(false);
+  const [isPhoneWizardOpen, setIsPhoneWizardOpen] = useState(false);
   const [isWebhookStatusOpen, setIsWebhookStatusOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
@@ -520,7 +520,7 @@ export const DashboardPage = () => {
   }, []);
 
   const handleConnectPhone = React.useCallback(() => {
-    setIsPhoneConnectionOpen(true);
+    setIsPhoneWizardOpen(true);
   }, []);
 
   const handleCheckWebhook = React.useCallback(() => {
@@ -1264,13 +1264,12 @@ export const DashboardPage = () => {
         adminTestNumber={effectiveOverview.agent_config.admin_test_number || null}
       />
 
-      <PhoneConnectionModal
-        isOpen={isPhoneConnectionOpen}
-        onClose={() => setIsPhoneConnectionOpen(false)}
-        agentConfigId={effectiveOverview.agent_config.id}
-        locationId={effectiveOverview.location.id}
+      <PhoneSetupWizard
+        isOpen={isPhoneWizardOpen}
+        onClose={() => setIsPhoneWizardOpen(false)}
         onSuccess={() => {
-          // Dashboard will automatically refresh via query invalidation
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
         }}
       />
 

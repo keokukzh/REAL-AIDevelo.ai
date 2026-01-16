@@ -1,7 +1,12 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { twilioService } from '../services/twilioService';
-import { supabaseAdmin, ensureDefaultLocation, ensureUserRow, ensureOrgForUser } from '../services/supabaseDb';
+import {
+  supabaseAdmin,
+  ensureDefaultLocation,
+  ensureUserRow,
+  ensureOrgForUser,
+} from '../services/supabaseDb';
 import { BadRequestError, InternalServerError } from '../utils/errors';
 import { config } from '../config/env';
 
@@ -12,7 +17,7 @@ import { config } from '../config/env';
 export const listPhoneNumbers = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -20,7 +25,7 @@ export const listPhoneNumbers = async (
     }
 
     const { country = 'CH' } = req.query;
-    
+
     // Check if Twilio is configured
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID || '';
     const twilioAuthToken = config.twilioAuthToken || '';
@@ -28,27 +33,28 @@ export const listPhoneNumbers = async (
 
     let numbers;
     let isMockData = false;
-    
+
     try {
       numbers = await twilioService.listPhoneNumbers(country as string);
-      
+
       // Check if we got mock data (indicates Twilio not configured)
       if (!isTwilioConfigured && numbers.length > 0) {
-        isMockData = numbers.some(num => num.sid.startsWith('mock_'));
+        isMockData = numbers.some((num) => num.sid.startsWith('mock_'));
       }
     } catch (error: any) {
       // If Twilio API call fails, return helpful error
       console.error('[PhoneController] Error fetching phone numbers:', error);
-      
+
       if (!isTwilioConfigured) {
         return res.json({
           success: true,
           data: [],
-          warning: 'Twilio API keys not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
+          warning:
+            'Twilio API keys not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
           isMockData: false,
         });
       }
-      
+
       // If configured but API call failed, return error
       return res.status(500).json({
         success: false,
@@ -75,7 +81,8 @@ export const listPhoneNumbers = async (
       success: true,
       data: mappedNumbers,
       ...(isMockData && {
-        warning: 'Twilio API keys not configured. Showing mock data for testing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
+        warning:
+          'Twilio API keys not configured. Showing mock data for testing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables.',
         isMockData: true,
       }),
     });
@@ -91,7 +98,7 @@ export const listPhoneNumbers = async (
 export const connectPhoneNumber = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -185,19 +192,19 @@ export const connectPhoneNumber = async (
  */
 function normalizeUrl(url: string | null): string | null {
   if (!url) return null;
-  
+
   try {
     // Trim whitespace
     let normalized = url.trim();
-    
+
     // Remove trailing slashes (but keep protocol://host)
     normalized = normalized.replace(/\/+$/, '');
-    
+
     // Parse URL to normalize scheme (http vs https)
     const urlObj = new URL(normalized);
     // Keep original scheme but lowercase host
     urlObj.hostname = urlObj.hostname.toLowerCase();
-    
+
     return urlObj.toString();
   } catch (error) {
     // If URL parsing fails, return trimmed version
@@ -210,20 +217,20 @@ function normalizeUrl(url: string | null): string | null {
  */
 function urlsMatch(url1: string | null, url2: string | null): boolean {
   if (!url1 || !url2) return false;
-  
+
   const normalized1 = normalizeUrl(url1);
   const normalized2 = normalizeUrl(url2);
-  
+
   if (!normalized1 || !normalized2) return false;
-  
+
   // Exact match after normalization
   if (normalized1 === normalized2) return true;
-  
+
   // Also check if only scheme differs (http vs https)
   try {
     const url1Obj = new URL(normalized1);
     const url2Obj = new URL(normalized2);
-    
+
     // Compare everything except scheme
     return (
       url1Obj.hostname === url2Obj.hostname &&
@@ -245,7 +252,7 @@ function urlsMatch(url1: string | null, url2: string | null): boolean {
 export const getWebhookStatus = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -269,7 +276,9 @@ export const getWebhookStatus = async (
 
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     const expectedVoiceUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/inbound` : '';
-    const expectedStatusCallbackUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/status` : '';
+    const expectedStatusCallbackUrl = publicBaseUrl
+      ? `${publicBaseUrl}/api/twilio/voice/status`
+      : '';
 
     // If no phone number connected
     if (!phoneData?.twilio_number_sid) {
@@ -305,7 +314,10 @@ export const getWebhookStatus = async (
 
     // Compare URLs (normalized comparison)
     const voiceUrlMatches = urlsMatch(webhookStatus.voiceUrl, expectedVoiceUrl);
-    const statusCallbackMatches = urlsMatch(webhookStatus.statusCallback, expectedStatusCallbackUrl);
+    const statusCallbackMatches = urlsMatch(
+      webhookStatus.statusCallback,
+      expectedStatusCallbackUrl,
+    );
 
     console.log('[PhoneController] Webhook status check', {
       org_id: org.id,
@@ -348,11 +360,7 @@ export const getWebhookStatus = async (
  * Test webhook endpoint (dev/test only)
  * Validates webhook configuration without making actual Twilio call
  */
-export const testWebhook = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const testWebhook = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     // Security: Only allow in dev/test environments
     if (process.env.NODE_ENV === 'production') {
@@ -403,10 +411,15 @@ export const testWebhook = async (
     const webhookStatus = await twilioService.getWebhookStatus(phoneData.twilio_number_sid);
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     const expectedVoiceUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/inbound` : '';
-    const expectedStatusCallbackUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/status` : '';
+    const expectedStatusCallbackUrl = publicBaseUrl
+      ? `${publicBaseUrl}/api/twilio/voice/status`
+      : '';
 
     const voiceUrlMatches = urlsMatch(webhookStatus.voiceUrl, expectedVoiceUrl);
-    const statusCallbackMatches = urlsMatch(webhookStatus.statusCallback, expectedStatusCallbackUrl);
+    const statusCallbackMatches = urlsMatch(
+      webhookStatus.statusCallback,
+      expectedStatusCallbackUrl,
+    );
 
     const allMatch = voiceUrlMatches && statusCallbackMatches;
 
@@ -440,7 +453,7 @@ export const testWebhook = async (
 export const checkTwilioGatewayHealth = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -462,9 +475,10 @@ export const checkTwilioGatewayHealth = async (
     const healthChecks: Record<string, { ok: boolean; message: string; details?: any }> = {
       apiKeys: {
         ok: !!(twilioAccountSid && twilioAuthToken),
-        message: twilioAccountSid && twilioAuthToken
-          ? 'Twilio API keys are configured'
-          : 'Twilio API keys are missing (TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN)',
+        message:
+          twilioAccountSid && twilioAuthToken
+            ? 'Twilio API keys are configured'
+            : 'Twilio API keys are missing (TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN)',
         details: {
           hasAccountSid: !!twilioAccountSid,
           hasAuthToken: !!twilioAuthToken,
@@ -512,9 +526,10 @@ export const checkTwilioGatewayHealth = async (
     if (phoneData?.twilio_number_sid) {
       healthChecks.phoneConnection = {
         ok: phoneData.status === 'connected',
-        message: phoneData.status === 'connected'
-          ? `Phone number connected: ${phoneData.e164 || phoneData.customer_public_number}`
-          : `Phone number exists but status is '${phoneData.status}' (expected 'connected')`,
+        message:
+          phoneData.status === 'connected'
+            ? `Phone number connected: ${phoneData.e164 || phoneData.customer_public_number}`
+            : `Phone number exists but status is '${phoneData.status}' (expected 'connected')`,
         details: {
           phoneNumber: phoneData.e164 || phoneData.customer_public_number || null,
           status: phoneData.status,
@@ -530,13 +545,17 @@ export const checkTwilioGatewayHealth = async (
           const expectedStatusCallbackUrl = `${publicBaseUrl}/api/twilio/voice/status`;
 
           const voiceUrlMatches = urlsMatch(webhookStatus.voiceUrl, expectedVoiceUrl);
-          const statusCallbackMatches = urlsMatch(webhookStatus.statusCallback, expectedStatusCallbackUrl);
+          const statusCallbackMatches = urlsMatch(
+            webhookStatus.statusCallback,
+            expectedStatusCallbackUrl,
+          );
 
           healthChecks.webhooks = {
             ok: voiceUrlMatches && statusCallbackMatches,
-            message: voiceUrlMatches && statusCallbackMatches
-              ? 'Webhooks are correctly configured'
-              : 'Webhook URLs do not match expected values',
+            message:
+              voiceUrlMatches && statusCallbackMatches
+                ? 'Webhooks are correctly configured'
+                : 'Webhook URLs do not match expected values',
             details: {
               configured: {
                 voiceUrl: webhookStatus.voiceUrl,
@@ -565,7 +584,7 @@ export const checkTwilioGatewayHealth = async (
     }
 
     // Determine overall health status
-    const allChecksOk = Object.values(healthChecks).every(check => check.ok);
+    const allChecksOk = Object.values(healthChecks).every((check) => check.ok);
     const criticalChecksOk = healthChecks.apiKeys.ok && healthChecks.publicUrl.ok;
 
     // Overall status
@@ -584,14 +603,185 @@ export const checkTwilioGatewayHealth = async (
         status: overallStatus,
         allChecksOk,
         checks: healthChecks,
-        recommendations: !allChecksOk ? [
-          !healthChecks.apiKeys.ok && 'Configure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables',
-          !healthChecks.publicUrl.ok && 'Set PUBLIC_BASE_URL in Render environment variables (e.g., https://aidevelo.ai)',
-          !healthChecks.phoneConnection.ok && 'Connect a phone number via the "Telefon verbinden" button in the dashboard',
-          healthChecks.phoneConnection.ok && !healthChecks.webhooks.ok && 'Webhook URLs need to be updated. Try reconnecting the phone number or use the "Webhook Status prüfen" button.',
-        ].filter(Boolean) : [],
+        recommendations: !allChecksOk
+          ? [
+              !healthChecks.apiKeys.ok &&
+                'Configure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render environment variables',
+              !healthChecks.publicUrl.ok &&
+                'Set PUBLIC_BASE_URL in Render environment variables (e.g., https://aidevelo.ai)',
+              !healthChecks.phoneConnection.ok &&
+                'Connect a phone number via the "Telefon verbinden" button in the dashboard',
+              healthChecks.phoneConnection.ok &&
+                !healthChecks.webhooks.ok &&
+                'Webhook URLs need to be updated. Try reconnecting the phone number or use the "Webhook Status prüfen" button.',
+            ].filter(Boolean)
+          : [],
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/phone/forwarding-number
+ * Return the current system forwarding number
+ */
+export const getForwardingNumber = async (req: AuthenticatedRequest, res: Response) => {
+  const forwardingNumber = process.env.TWILIO_PHONE_NUMBER || '+19522951346';
+  res.json({
+    success: true,
+    data: {
+      forwardingNumber,
+      instructions: [
+        { provider: 'Swisscom', code: `*21*${forwardingNumber}#` },
+        { provider: 'Sunrise', code: `*21*${forwardingNumber}#` },
+        { provider: 'Salt', code: `*21*${forwardingNumber}#` },
+        { provider: 'International', code: 'Provider-spezifische Codes nutzen' },
+      ],
+    },
+  });
+};
+
+/**
+ * POST /api/phone/register-personal
+ * Save user's personal phone number for forwarding
+ */
+export const registerPersonalPhone = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+    const { userPhoneNumber } = req.body;
+    if (!userPhoneNumber) return next(new BadRequestError('userPhoneNumber is required'));
+
+    const { supabaseUserId } = req.supabaseUser;
+
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({
+        personal_phone_number: userPhoneNumber,
+        call_forwarding_enabled: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('supabase_user_id', supabaseUserId);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Personal phone number registered' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/phone/available-numbers
+ * List available phone numbers for purchase
+ */
+export const listAvailableToBuy = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { country = 'CH', areaCode } = req.query;
+    const numbers = await twilioService.listAvailableNumbers(country as string, areaCode as string);
+    res.json({ success: true, data: numbers });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/phone/purchase
+ * Purchase a new virtual phone number
+ */
+export const purchaseNumber = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+    const { phoneNumber, country } = req.body;
+    if (!phoneNumber) return next(new BadRequestError('phoneNumber is required'));
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // 1. Purchase from Twilio
+    const purchased = await twilioService.purchaseNumber(phoneNumber);
+
+    // 2. Resolve or create user/location
+    const user = await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // 3. Register in DB
+    const { error: insertError } = await supabaseAdmin.from('phone_numbers').insert({
+      location_id: location.id,
+      twilio_number_sid: purchased.sid,
+      e164: purchased.phoneNumber,
+      status: 'active',
+      is_purchased: true,
+      owner_user_id: user.id,
+      country: country || 'CH',
+      provider_sid: purchased.sid,
+      number: purchased.phoneNumber,
+    });
+
+    if (insertError) throw insertError;
+
+    // 4. Configure Webhooks
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL;
+    if (publicBaseUrl) {
+      const voiceUrl = `${publicBaseUrl}/api/twilio/voice/inbound`;
+      const statusCallback = `${publicBaseUrl}/api/twilio/voice/status`;
+      await twilioService.updateWebhooks(purchased.sid, voiceUrl, statusCallback);
+    }
+
+    res.json({ success: true, data: purchased });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/phone/test-personal
+ * Initiate test call to verify forwarding
+ */
+export const testPersonalPhone = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+    const { supabaseUserId } = req.supabaseUser;
+
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('personal_phone_number')
+      .eq('supabase_user_id', supabaseUserId)
+      .single();
+
+    if (error || !user?.personal_phone_number) {
+      return next(new BadRequestError('No personal phone number registered'));
+    }
+
+    const from = process.env.TWILIO_PHONE_NUMBER || '+19522951346';
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL;
+    const url = `${publicBaseUrl}/api/twilio/voice/inbound`;
+
+    const call = await twilioService.makeCall(from, user.personal_phone_number, url);
+
+    await supabaseAdmin
+      .from('users')
+      .update({ last_call_test: new Date().toISOString() })
+      .eq('supabase_user_id', supabaseUserId);
+
+    res.json({ success: true, callSid: call.sid });
   } catch (error) {
     next(error);
   }

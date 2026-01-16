@@ -144,6 +144,43 @@ class TwilioService {
   }
 
   /**
+   * List available phone numbers for purchase
+   */
+  async listAvailableNumbers(country: string = 'CH', areaCode?: string): Promise<any[]> {
+    if (!this.client) this.initClient();
+    if (!this.client) throw new InternalServerError('Twilio client not initialized');
+
+    try {
+      const numbers = await this.client.availablePhoneNumbers(country).local.list({
+        areaCode: areaCode ? parseInt(areaCode, 10) : undefined,
+        limit: 10,
+      });
+      return numbers;
+    } catch (error: any) {
+      StructuredLoggingService.error('Failed to list available numbers', error);
+      throw new InternalServerError(`Twilio Error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Purchase a phone number
+   */
+  async purchaseNumber(phoneNumber: string): Promise<any> {
+    if (!this.client) this.initClient();
+    if (!this.client) throw new InternalServerError('Twilio client not initialized');
+
+    try {
+      const purchasedNumber = await this.client.incomingPhoneNumbers.create({
+        phoneNumber: phoneNumber,
+      });
+      return purchasedNumber;
+    } catch (error: any) {
+      StructuredLoggingService.error('Failed to purchase number', error);
+      throw new InternalServerError(`Twilio Error: ${error.message}`);
+    }
+  }
+
+  /**
    * Add phone number to database and status active
    */
   async addPhoneNumber(
