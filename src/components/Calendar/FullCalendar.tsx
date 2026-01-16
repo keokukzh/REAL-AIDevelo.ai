@@ -175,14 +175,14 @@ export const FullCalendarComponent: React.FC<FullCalendarComponentProps> = ({ lo
 
   const handleCreateEvent = useCallback(
     async (eventData: Partial<CalendarEvent>) => {
-      try {
-        await apiClient.post('/calendar/events', eventData);
+      const resp = await apiClient.post('/calendar/events', eventData);
+      if (resp.data.success) {
         toast.success('Termin erstellt');
         setIsCreateModalOpen(false);
         setNewEventData({});
         fetchEvents();
-      } catch (error) {
-        toast.error('Termin konnte nicht erstellt werden');
+      } else {
+        throw new Error(resp.data.error || 'Fehler beim Erstellen');
       }
     },
     [fetchEvents],
@@ -348,33 +348,80 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [end, setEnd] = useState('');
   const [allDay, setAllDay] = useState(false);
   const [recurrence, setRecurrence] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Initialize with current time + 1 hour as default
   useEffect(() => {
-    if (initialData.start) setStart(initialData.start.substring(0, 16));
-    if (initialData.end) setEnd(initialData.end?.substring(0, 16) || '');
-    if (initialData.allDay) setAllDay(initialData.allDay);
-  }, [initialData]);
+    if (isOpen) {
+      if (initialData.start) {
+        // From calendar date selection
+        const startStr = initialData.start.includes('T')
+          ? initialData.start.substring(0, 16)
+          : `${initialData.start}T09:00`;
+        setStart(startStr);
+      } else {
+        // Default to now rounded to next hour
+        const now = new Date();
+        now.setMinutes(0, 0, 0);
+        now.setHours(now.getHours() + 1);
+        setStart(now.toISOString().substring(0, 16));
+      }
 
-  const handleSubmit = () => {
+      if (initialData.end) {
+        const endStr = initialData.end.includes('T')
+          ? initialData.end.substring(0, 16)
+          : `${initialData.end}T10:00`;
+        setEnd(endStr);
+      } else {
+        // Default to start + 1 hour
+        const endTime = new Date();
+        endTime.setMinutes(0, 0, 0);
+        endTime.setHours(endTime.getHours() + 2);
+        setEnd(endTime.toISOString().substring(0, 16));
+      }
+
+      if (initialData.allDay) setAllDay(initialData.allDay);
+    }
+  }, [initialData, isOpen]);
+
+  const handleSubmit = async () => {
     if (!title.trim()) {
       toast.error('Bitte Titel eingeben');
       return;
     }
-    onSave({
-      title,
-      description,
-      start,
-      end,
-      allDay,
-      recurrenceRule: recurrence || undefined,
-    });
-    // Reset
-    setTitle('');
-    setDescription('');
-    setStart('');
-    setEnd('');
-    setAllDay(false);
-    setRecurrence('');
+    if (!start || !end) {
+      toast.error('Bitte Start- und Endzeit angeben');
+      return;
+    }
+
+    // Validate end is after start
+    if (new Date(end) <= new Date(start)) {
+      toast.error('Endzeit muss nach Startzeit liegen');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave({
+        title,
+        description: description || undefined,
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        allDay,
+        recurrenceRule: recurrence || undefined,
+      });
+      // Reset form on success
+      setTitle('');
+      setDescription('');
+      setStart('');
+      setEnd('');
+      setAllDay(false);
+      setRecurrence('');
+    } catch (error) {
+      console.error('Failed to create event:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
