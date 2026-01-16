@@ -26,7 +26,7 @@ import { QuickActionButton } from '../components/newDashboard/QuickActionButton.
 import { HealthItem } from '../components/newDashboard/HealthItem.js';
 import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer.js';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState.js';
-import { LoadingSpinner } from '../components/LoadingSpinner.js';
+import { PageLoader, LoadingSpinner } from '../components/ui/LoadingSpinner.js';
 import {
   Phone,
   Calendar,
@@ -562,7 +562,7 @@ export const DashboardPage = () => {
             </div>
           </header>
           <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full flex items-center justify-center min-h-[60vh]">
-            <LoadingSpinner fullScreen={false} size="lg" message="Dashboard wird geladen..." />
+            <LoadingSpinner size="lg" message="Dashboard wird geladen..." />
           </div>
         </main>
       </div>

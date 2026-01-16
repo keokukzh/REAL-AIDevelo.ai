@@ -4,6 +4,7 @@ import { RefreshCw, LayoutGrid } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout.js';
 import { FullCalendarComponent } from '../components/Calendar/FullCalendar.js';
 import { Button } from '../components/ui/Button.js';
+import { ButtonLoader } from '../components/ui/LoadingSpinner.js';
 import { toast } from '../components/ui/Toast.js';
 import { apiClient } from '../services/apiClient.js';
 
@@ -57,8 +58,8 @@ export const CalendarPage = () => {
               disabled={isSyncing}
               className="flex-1 md:flex-none bg-gray-900/50 border-gray-800 hover:bg-gray-800 text-gray-300 gap-2"
             >
-              <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
-              Synchronisieren
+              {isSyncing ? <ButtonLoader /> : <RefreshCw size={18} />}
+              {isSyncing ? 'Synchronisieren...' : 'Synchronisieren'}
             </Button>
           </div>
         </div>

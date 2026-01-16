@@ -1,6 +1,6 @@
 import React from 'react';
 import { SideNav } from '../dashboard/SideNav.js';
-import { LoadingSpinner } from '../LoadingSpinner.js';
+import { LoadingSpinner } from '../ui/LoadingSpinner.js';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,7 +40,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, isLo
         </div>
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
-            <LoadingSpinner fullScreen={false} size="lg" message="Wird geladen..." />
+            <LoadingSpinner size="lg" message="Dashboard wird geladen..." />
           </div>
         ) : (
           children

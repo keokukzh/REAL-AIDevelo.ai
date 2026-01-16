@@ -100,7 +100,7 @@ import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/react-query.js';
 import { ToastContainer, useToast } from './components/ui/Toast.js';
-import { LoadingSpinner } from './components/LoadingSpinner.js';
+import { PageLoader } from './components/ui/LoadingSpinner.js';
 import { DevQuickLogin } from './components/auth/DevQuickLogin.js';
 import { useRoutePrefetch } from './hooks/useRoutePrefetch.js';
 import { useCoreWebVitals } from './hooks/useCoreWebVitals.js';
@@ -166,7 +166,7 @@ function AppContent() {
             <Route
               path="/"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <LandingPage />
                 </Suspense>
               }
@@ -174,7 +174,7 @@ function AppContent() {
             <Route
               path="/voice-agents"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <VoiceAgentPage />
                 </Suspense>
               }
@@ -182,7 +182,7 @@ function AppContent() {
             <Route
               path="/checkout"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <CheckoutPage />
                 </Suspense>
               }
@@ -190,7 +190,7 @@ function AppContent() {
             <Route
               path="/payment-success"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <PaymentSuccessPage />
                 </Suspense>
               }
@@ -198,7 +198,7 @@ function AppContent() {
             <Route
               path="/enterprise"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <EnterpriseContactPage />
                 </Suspense>
               }
@@ -206,7 +206,7 @@ function AppContent() {
             <Route
               path="/webdesign"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <WebdesignPage />
                 </Suspense>
               }
@@ -214,7 +214,7 @@ function AppContent() {
             <Route
               path="/pricing"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <PricingPage />
                 </Suspense>
               }
@@ -222,7 +222,7 @@ function AppContent() {
             <Route
               path="/calendar/:provider/callback"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <CalendarCallbackPage />
                 </Suspense>
               }
@@ -230,7 +230,7 @@ function AppContent() {
             <Route
               path="/auth/callback"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <AuthCallbackPage />
                 </Suspense>
               }
@@ -238,7 +238,7 @@ function AppContent() {
             <Route
               path="/login"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <LoginPage />
                 </Suspense>
               }
@@ -246,7 +246,7 @@ function AppContent() {
             <Route
               path="/onboarding"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <OnboardingPage />
                 </Suspense>
               }
@@ -254,7 +254,7 @@ function AppContent() {
             <Route
               path="/voice-edit"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <VoiceEditPage />
                 </Suspense>
               }
@@ -263,7 +263,7 @@ function AppContent() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <DashboardPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -273,7 +273,7 @@ function AppContent() {
               path="/dashboard/agents/:id"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <AgentDetailsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -283,7 +283,7 @@ function AppContent() {
               path="/dashboard/agents/:id/edit"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <AgentEditPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -293,7 +293,7 @@ function AppContent() {
               path="/calls"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <CallsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -303,7 +303,7 @@ function AppContent() {
               path="/dashboard/calendar"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <CalendarPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -313,7 +313,7 @@ function AppContent() {
               path="/dashboard/calendar/integrations"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <CalendarIntegrationsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -323,7 +323,7 @@ function AppContent() {
               path="/dashboard/settings"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <SettingsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -333,7 +333,7 @@ function AppContent() {
               path="/dashboard/subscription"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <SubscriptionDashboard />
                   </Suspense>
                 </ProtectedRoute>
@@ -343,7 +343,7 @@ function AppContent() {
               path="/dashboard/channels"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <ChannelsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -353,7 +353,7 @@ function AppContent() {
               path="/dashboard/test-call"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <TestCallPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -363,7 +363,7 @@ function AppContent() {
               path="/knowledge-base"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <KnowledgeBasePage />
                   </Suspense>
                 </ProtectedRoute>
@@ -373,7 +373,7 @@ function AppContent() {
               path="/analytics"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <AnalyticsPage />
                   </Suspense>
                 </ProtectedRoute>
@@ -382,7 +382,7 @@ function AppContent() {
             <Route
               path="/impressum"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <ImpressumPage />
                 </Suspense>
               }
@@ -390,7 +390,7 @@ function AppContent() {
             <Route
               path="/datenschutz"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <DatenschutzPage />
                 </Suspense>
               }
@@ -398,7 +398,7 @@ function AppContent() {
             <Route
               path="/agb"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <AGBPage />
                 </Suspense>
               }
@@ -406,7 +406,7 @@ function AppContent() {
             <Route
               path="/demo-chat"
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                <Suspense fallback={<PageLoader />}>
                   <DemoChatPage />
                 </Suspense>
               }
@@ -415,7 +415,7 @@ function AppContent() {
               path="/admin/dashboard"
               element={
                 <ProtectedRoute>
-                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                  <Suspense fallback={<PageLoader />}>
                     <AdminDashboard />
                   </Suspense>
                 </ProtectedRoute>

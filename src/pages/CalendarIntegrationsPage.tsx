@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaMicrosoft, FaGoogle, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaMicrosoft, FaGoogle, FaCheck, FaTimes } from 'react-icons/fa';
 import { toast } from '../components/ui/Toast.js';
 import { apiClient } from '../services/apiClient.js';
 import { DashboardLayout } from '../components/layout/DashboardLayout.js';
 import { Button } from '../components/ui/Button.js';
+import { ButtonLoader } from '../components/ui/LoadingSpinner.js';
 
 interface CalendarConnection {
   id: string;
@@ -149,9 +150,7 @@ export const CalendarIntegrationsPage = () => {
                 disabled={connecting}
               >
                 {connecting ? (
-                  <div className="animate-spin mr-2">
-                    <FaSpinner />
-                  </div>
+                  <ButtonLoader />
                 ) : (
                   <div className="mr-2">
                     <FaMicrosoft />
@@ -212,9 +211,7 @@ export const CalendarIntegrationsPage = () => {
                 disabled={connecting}
               >
                 {connecting ? (
-                  <div className="animate-spin mr-2">
-                    <FaSpinner />
-                  </div>
+                  <ButtonLoader />
                 ) : (
                   <div className="mr-2">
                     <FaGoogle />

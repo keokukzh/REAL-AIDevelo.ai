@@ -13,6 +13,7 @@ import { apiClient } from '../../services/apiClient.js';
 import { toast } from '../ui/Toast.js';
 import { Button } from '../ui/Button.js';
 import { Modal } from '../ui/Modal.js';
+import { LoadingSpinner } from '../ui/LoadingSpinner.js';
 
 import '../../styles/fullcalendar-custom.css';
 
@@ -46,8 +47,8 @@ export const FullCalendarComponent: React.FC = () => {
       if (resp.data.success) {
         setEvents(resp.data.data || []);
       }
-    } catch (_error) {
-      console.error('Failed to fetch events:', _error);
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
       toast.error('Kalendereinträge konnten nicht geladen werden');
     } finally {
       setIsLoading(false);
@@ -114,7 +115,8 @@ export const FullCalendarComponent: React.FC = () => {
         });
         toast.success('Termin verschoben');
         fetchEvents();
-      } catch (_error) {
+      } catch (err) {
+        console.error('Move failed:', err);
         toast.error('Termin konnte nicht verschoben werden');
         dropInfo.revert();
       }
@@ -132,7 +134,8 @@ export const FullCalendarComponent: React.FC = () => {
         });
         toast.success('Termin aktualisiert');
         fetchEvents();
-      } catch (_error) {
+      } catch (err) {
+        console.error('Resize failed:', err);
         toast.error('Termin konnte nicht aktualisiert werden');
         resizeInfo.revert();
       }
@@ -158,8 +161,8 @@ export const FullCalendarComponent: React.FC = () => {
   return (
     <div className="h-full relative">
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-          <RefreshCw className="animate-spin text-blue-500" size={32} />
+        <div className="absolute inset-0 bg-gray-950/40 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl overflow-hidden">
+          <LoadingSpinner message="Termine werden geladen..." />
         </div>
       )}
       <FullCalendar
@@ -254,7 +257,8 @@ const CreateEventModal: React.FC<{
         end: new Date(end).toISOString(),
         createdBy: 'user',
       });
-    } catch (_err) {
+    } catch (err) {
+      console.error('Save failed:', err);
       toast.error('Fehler beim Speichern');
     }
   };
@@ -263,8 +267,11 @@ const CreateEventModal: React.FC<{
     <Modal isOpen={isOpen} onClose={onClose} title="Neuen Termin erstellen">
       <form onSubmit={handleSubmit} className="space-y-6 p-4">
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">Titel</label>
+          <label htmlFor="event-title" className="block text-sm font-medium text-gray-400 mb-2">
+            Titel
+          </label>
           <input
+            id="event-title"
             autoFocus
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             placeholder="Worum geht es?"
@@ -275,8 +282,11 @@ const CreateEventModal: React.FC<{
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Start</label>
+            <label htmlFor="event-start" className="block text-sm font-medium text-gray-400 mb-2">
+              Start
+            </label>
             <input
+              id="event-start"
               type="datetime-local"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
               value={start}
@@ -285,8 +295,11 @@ const CreateEventModal: React.FC<{
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Ende</label>
+            <label htmlFor="event-end" className="block text-sm font-medium text-gray-400 mb-2">
+              Ende
+            </label>
             <input
+              id="event-end"
               type="datetime-local"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
               value={end}
