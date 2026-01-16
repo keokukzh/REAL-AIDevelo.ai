@@ -287,4 +287,111 @@ router.post(
   },
 );
 
+/**
+ * POST /api/phone/test-register
+ * Register a test phone number
+ */
+router.post(
+  '/test-register',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { phone } = req.body;
+      if (!phone) {
+        return res.status(400).json({ success: false, error: 'phone is required' });
+      }
+
+      const { supabaseUserId } = req.supabaseUser;
+
+      // Get user ID
+      const { data: user } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('supabase_user_id', supabaseUserId)
+        .single();
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      // Upsert test phone number
+      const { error } = await supabaseAdmin.from('test_phone_numbers').upsert(
+        {
+          phone_number: phone,
+          user_id: user.id,
+          status: 'active',
+          call_forwarding_enabled: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone_number' },
+      );
+
+      if (error) throw error;
+
+      // Update user as test user
+      await supabaseAdmin
+        .from('users')
+        .update({ is_test_user: true, phone_status: 'test_user' })
+        .eq('id', user.id);
+
+      res.json({
+        success: true,
+        message: 'Test phone registered successfully',
+        data: { phone, status: 'active' },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * GET /api/phone/test-status
+ * Get current test phone status
+ */
+router.get(
+  '/test-status',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId } = req.supabaseUser;
+
+      const { data: user } = await supabaseAdmin
+        .from('users')
+        .select('id, is_test_user, personal_phone_number')
+        .eq('supabase_user_id', supabaseUserId)
+        .single();
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      const { data: testPhone } = await supabaseAdmin
+        .from('test_phone_numbers')
+        .select('phone_number, status, call_forwarding_enabled, created_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      res.json({
+        success: true,
+        data: {
+          isTestUser: user.is_test_user || false,
+          testPhone: testPhone
+            ? {
+                number: testPhone.phone_number,
+                status: testPhone.status,
+                forwardingEnabled: testPhone.call_forwarding_enabled,
+                registeredAt: testPhone.created_at,
+              }
+            : null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 export default router;

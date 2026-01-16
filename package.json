@@ -40,6 +40,13 @@
     "postbuild": "node scripts/copy-assets.mjs"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.20",
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/interaction": "^6.1.20",
+    "@fullcalendar/list": "^6.1.20",
+    "@fullcalendar/multimonth": "^6.1.20",
+    "@fullcalendar/react": "^6.1.20",
+    "@fullcalendar/timegrid": "^6.1.20",
     "@google/genai": "^1.30.0",
     "@lottiefiles/dotlottie-web": "^0.57.0",
     "@react-three/drei": "^10.7.7",

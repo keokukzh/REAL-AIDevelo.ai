@@ -32,6 +32,34 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
   const from = req.body.From || '';
   const to = req.body.To || '';
 
+  // Check if this is a test call from our registered test number
+  let isTestCall = false;
+  try {
+    const { data: testPhone } = await supabaseAdmin
+      .from('test_phone_numbers')
+      .select('id, status')
+      .eq('phone_number', from)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (testPhone) {
+      isTestCall = true;
+      logger.info('twilio.inbound.test_call_detected', { callSid, from, to }, req);
+
+      // Log to test_call_logs
+      await supabaseAdmin.from('test_call_logs').insert({
+        call_sid: callSid,
+        from_number: from,
+        to_number: to,
+        direction: 'inbound',
+        status: 'ringing',
+        metadata: { testPhoneId: testPhone.id },
+      });
+    }
+  } catch (err) {
+    logger.warn('twilio.inbound.test_check_failed', { error: err }, req);
+  }
+
   // Step 1: Upsert call_logs early to ensure locationId is available
   let locationId: string | null = null;
   try {
@@ -44,6 +72,17 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
         .maybeSingle();
 
       locationId = phoneData?.location_id || null;
+
+      // For test calls without a configured number, use default location
+      if (!locationId && isTestCall) {
+        const { data: defaultLoc } = await supabaseAdmin
+          .from('locations')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        locationId = defaultLoc?.id || null;
+        logger.info('twilio.inbound.test_call_default_location', { callSid, locationId }, req);
+      }
 
       if (locationId) {
         // Upsert call_logs entry
@@ -61,6 +100,7 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
           notes_json: {
             status: 'ringing',
             timestamp,
+            isTestCall,
           },
         };
 
