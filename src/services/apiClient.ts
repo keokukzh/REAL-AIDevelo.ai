@@ -4,8 +4,8 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosError,
 } from 'axios';
-import { API_BASE_URL } from './apiBase';
-import { supabase } from '../lib/supabase';
+import { API_BASE_URL } from './apiBase.js';
+import { supabase } from '../lib/supabase.js';
 
 // Default timeout raised to handle slower agent provisioning calls.
 const apiClient: AxiosInstance = axios.create({
@@ -15,6 +15,19 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+/**
+ * Safely extracts a string message from various error formats
+ */
+const extractMessage = (val: unknown): string => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && val !== null) {
+    const obj = val as Record<string, unknown>;
+    return String(obj.message || obj.error || JSON.stringify(obj));
+  }
+  return String(val);
+};
 
 // Get Supabase access token
 const getAccessToken = async (): Promise<string | null> => {
@@ -30,28 +43,22 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
     const devBypassEnabled = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
 
     if (devBypassEnabled) {
-      // In dev bypass mode, backend will use dev bypass auth middleware
-      // We can send a dummy token or no token at all
       config.headers.Authorization = 'Bearer dev-bypass-token';
       return config;
     }
 
     const token = await getAccessToken();
-    // Only set Authorization header if token exists (prevents 401 race conditions)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      // Remove Authorization header if no token (prevents sending stale/invalid tokens)
       delete config.headers.Authorization;
-      // Log warning in dev mode only
       if (import.meta.env.DEV) {
-        const { logger } = await import('../lib/logger');
+        const { logger } = await import('../lib/logger.js');
         logger.warn('No access token available for request', { url: config.url });
       }
     }
   } catch (error) {
-    // If getAccessToken fails, log but don't crash
-    const { logger } = await import('../lib/logger');
+    const { logger } = await import('../lib/logger.js');
     logger.error('Error getting access token', error);
     delete config.headers.Authorization;
   }
@@ -64,11 +71,8 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
-    // Handle 401: Try to refresh Supabase session
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
-      // Supabase automatically refreshes tokens, but we need to get the new session
       const {
         data: { session },
       } = await supabase.auth.refreshSession();
@@ -80,19 +84,15 @@ apiClient.interceptors.response.use(
         };
         return apiClient(originalRequest);
       } else {
-        // Session expired or invalid - redirect to login
         await supabase.auth.signOut();
       }
     }
 
-    // Centralized Network & API Error Handling
     let errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
     if (!error.response) {
-      // Network error (no response received)
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        errorMessage =
-          'Die Verbindung zum Server wurde unterbrochen (Zeitüberschreitung). Bitte versuche es erneut.';
+        errorMessage = 'Die Verbindung zum Server wurde unterbrochen (Zeitüberschreitung).';
       } else if (
         error.message.includes('Network Error') ||
         error.message.includes('ERR_CONNECTION_REFUSED')
@@ -102,44 +102,44 @@ apiClient.interceptors.response.use(
         errorMessage = 'Netzwerkfehler. Bitte versuche es später erneut.';
       }
     } else {
-      // Server responded with an error status
-      const data = error.response.data as any;
+      const data = error.response.data as Record<string, unknown>;
+      const serverMsg = extractMessage(data?.message) || extractMessage(data?.error);
 
       switch (status) {
         case 400:
-          errorMessage = data.message || data.error || 'Ungültige Anfrage.';
+          errorMessage = serverMsg || 'Ungültige Anfrage.';
           break;
         case 403:
-          errorMessage = 'Zugriff verweigert. Du hast nicht die erforderlichen Berechtigungen.';
+          errorMessage = 'Zugriff verweigert.';
           break;
         case 404:
-          errorMessage = 'Die angeforderte Ressource wurde nicht gefunden.';
+          errorMessage = 'Ressource nicht gefunden.';
           break;
         case 429:
-          errorMessage =
-            'Zu viele Anfragen. Bitte warte einen Moment, bevor du es erneut versuchst.';
+          errorMessage = 'Zu viele Anfragen. Bitte warte einen Moment.';
           break;
         case 500:
-          errorMessage =
-            data.message || data.error || 'Interner Serverfehler. Unser Team wurde benachrichtigt.';
+          errorMessage = serverMsg || 'Interner Serverfehler.';
           break;
         default:
-          errorMessage = data.message || data.error || errorMessage;
+          errorMessage = serverMsg || errorMessage;
       }
     }
 
-    // Attach user-friendly message to error object
-    (error as any).userFriendlyMessage = errorMessage;
+    (error as Record<string, any>).userFriendlyMessage = errorMessage;
 
-    // Enhance error message with API response data if available
     if (error.response?.data && typeof error.response.data === 'object') {
-      const apiError = error.response.data as any;
-      if (apiError.error || apiError.message) {
-        const enhancedError = new Error(apiError.message || apiError.error);
-        (enhancedError as any).response = error.response;
-        (enhancedError as any).config = error.config;
-        (enhancedError as any).isAxiosError = true;
-        (enhancedError as any).userFriendlyMessage = errorMessage;
+      const apiError = error.response.data as Record<string, unknown>;
+      const finalMsg = extractMessage(apiError.message) || extractMessage(apiError.error);
+
+      if (finalMsg) {
+        const enhancedError = new Error(finalMsg);
+        Object.assign(enhancedError, {
+          response: error.response,
+          config: error.config,
+          isAxiosError: true,
+          userFriendlyMessage: errorMessage,
+        });
         return Promise.reject(enhancedError);
       }
     }
