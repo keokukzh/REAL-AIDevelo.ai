@@ -23,9 +23,10 @@ export const CalendarPage = () => {
         // For now, we'll just reload the page or trigger a component update.
         window.location.reload();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sync failed:', error);
-      toast.error('Synchronisierung fehlgeschlagen');
+      const errorMsg = error.userFriendlyMessage || 'Synchronisierung fehlgeschlagen';
+      toast.error(errorMsg);
     } finally {
       setIsSyncing(false);
     }

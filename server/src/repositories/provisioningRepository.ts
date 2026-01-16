@@ -37,14 +37,19 @@ export async function ensureUserRow(
 
   const client = getSupabaseAdmin();
 
-  // Check if user exists
-  const { data: existingUser, error: findError } = await client
+  // Step 2: Ensure User exists
+  // We use .limit(1) to handle potential duplicates from race conditions
+  const { data: user, error: userError } = await client
     .from('users')
     .select('id, org_id, supabase_user_id, email')
     .eq('supabase_user_id', authUserId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (existingUser && !findError) return { ...existingUser, role: 'user' };
+  if (userError) throw new Error(`ensureUserRow: Error checking user: ${userError.message}`);
+
+  if (user) return { ...user, role: 'user' };
 
   // Create Org if needed
   let orgId = '';
@@ -64,7 +69,7 @@ export async function ensureUserRow(
           .select('*')
           .eq('supabase_user_id', authUserId)
           .maybeSingle();
-        if (retryUser) return retryUser;
+        if (retryUser) return { ...retryUser, role: 'user' };
       }
       throw new Error(`Failed to create organization: ${orgError.message}`);
     }
@@ -77,12 +82,12 @@ export async function ensureUserRow(
       .select('*')
       .eq('supabase_user_id', authUserId)
       .maybeSingle();
-    if (retryUser) return retryUser;
+    if (retryUser) return { ...retryUser, role: 'user' };
     throw error;
   }
 
   // Create User
-  const { data: newUser, error: userError } = await client
+  const { data: newUser, error: createUserError } = await client
     .from('users')
     .insert({
       org_id: orgId,
@@ -92,16 +97,16 @@ export async function ensureUserRow(
     .select('id, org_id, supabase_user_id, email')
     .single();
 
-  if (userError) {
-    if (userError.code === '23505' || userError.message?.includes('duplicate')) {
+  if (createUserError) {
+    if (createUserError.code === '23505' || createUserError.message?.includes('duplicate')) {
       const { data: existingUser } = await client
         .from('users')
         .select('*')
         .eq('supabase_user_id', authUserId)
         .maybeSingle();
-      if (existingUser) return existingUser;
+      if (existingUser) return { ...existingUser, role: 'user' };
     }
-    throw new Error(`Failed to create user: ${userError.message}`);
+    throw new Error(`Failed to create user: ${createUserError.message}`);
   }
 
   if (!newUser) throw new Error('Failed to create user: No data');
@@ -126,6 +131,8 @@ export async function ensureOrgForUser(
     .from('users')
     .select('org_id')
     .eq('supabase_user_id', authUserId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // If user missing, run full flow
@@ -140,11 +147,18 @@ export async function ensureOrgForUser(
     return org;
   }
 
-  const { data: org } = await client
+  // Step 2: Check for existing organization
+  const { data: org, error: orgError } = await client
     .from('organizations')
     .select('id, name')
     .eq('id', user.org_id)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (orgError) {
+    throw new Error(`ensureOrgForUser: Error checking organization: ${orgError.message}`);
+  }
   if (!org) throw new Error('Organization not found for existing user');
   return org;
 }
@@ -168,23 +182,29 @@ export async function ensureDefaultLocation(
   const client = getSupabaseAdmin();
   const name = locationName || 'Hauptstandort';
 
-  const { data: existingLocation } = await client
+  // Step 1: Check for existing default location
+  const { data: location, error: locationError } = await client
     .from('locations')
     .select('id, name, timezone, business_type')
     .eq('org_id', orgId)
     .eq('name', name)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existingLocation) {
+  if (locationError) {
+    throw new Error(`ensureDefaultLocation: Error checking location: ${locationError.message}`);
+  }
+
+  if (location) {
     // Ensure Qdrant collection exists (best effort)
     try {
       const { vectorStore } = await import('../voice-agent/rag/vectorStore'); // Dynamic import to avoid cycles
-      await vectorStore.ensureCollection(existingLocation.id);
+      await vectorStore.ensureCollection(location.id);
     } catch (e) {
       console.warn('Qdrant ensure failed', e);
     }
-    return existingLocation;
+    return location;
   }
 
   const { data: newLocation, error } = await client

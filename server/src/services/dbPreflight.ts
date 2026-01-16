@@ -8,6 +8,11 @@ const REQUIRED_TABLES = [
   'agent_configs',
   'phone_numbers',
   'calendar_connections',
+  'calendar_events',
+  'calendar_sync_log',
+  'user_calendar_preferences',
+  'voice_profiles',
+  'call_sessions',
   'call_logs',
   'porting_requests',
 ] as const;

@@ -47,9 +47,10 @@ export const FullCalendarComponent: React.FC = () => {
       if (resp.data.success) {
         setEvents(resp.data.data || []);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch events:', err);
-      toast.error('Kalendereinträge konnten nicht geladen werden');
+      const errorMsg = err.userFriendlyMessage || 'Kalendereinträge konnten nicht geladen werden';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }

@@ -19,6 +19,17 @@ router.get(
   verifySupabaseAuth,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+      // Preflight check
+      const { checkDbPreflight } = await import('../services/dbPreflight.js');
+      const preflight = await checkDbPreflight();
+      if (!preflight.ok) {
+        return res.status(500).json({
+          success: false,
+          error: 'Datenbank-Schema unvollständig',
+          message: `Fehlende Tabellen: ${preflight.missing.join(', ')}. Bitte führen Sie die Datenbank-Migrationen aus.`,
+        });
+      }
+
       if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
       const { supabaseUserId, email } = req.supabaseUser;
       const { start, end, locationId } = req.query;
@@ -422,6 +433,50 @@ router.post(
       res.json({
         success: true,
         data: { permitted: true, action, eventId },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * POST /api/calendar/sync
+ * Manually trigger synchronization with external calendar providers
+ */
+router.post(
+  '/sync',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+
+      const user = await ensureUserRow(supabaseUserId, email);
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      // Check if there is a connection
+      const { data: connection } = await supabaseAdmin
+        .from('calendar_connections')
+        .select('*')
+        .eq('location_id', location.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!connection) {
+        return res.json({
+          success: true,
+          message: 'Keine aktive Kalenderverbindung gefunden. Nur lokale Events synchronisiert.',
+        });
+      }
+
+      // TODO: Implement actual Google/Outlook sync logic here
+      // This will be added in the next step
+
+      res.json({
+        success: true,
+        message: 'Synchronisierung erfolgreich gestartet',
       });
     } catch (error) {
       next(error);

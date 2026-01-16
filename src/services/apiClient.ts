@@ -120,7 +120,8 @@ apiClient.interceptors.response.use(
             'Zu viele Anfragen. Bitte warte einen Moment, bevor du es erneut versuchst.';
           break;
         case 500:
-          errorMessage = 'Interner Serverfehler. Unser Team wurde benachrichtigt.';
+          errorMessage =
+            data.message || data.error || 'Interner Serverfehler. Unser Team wurde benachrichtigt.';
           break;
         default:
           errorMessage = data.message || data.error || errorMessage;
