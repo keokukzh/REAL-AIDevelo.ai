@@ -17,6 +17,9 @@ export class AzureTTS {
     this.config = sdk.SpeechConfig.fromSubscription(key, region);
     if (this.config) {
       this.config.speechSynthesisVoiceName = 'de-CH-LeniNeural';
+      // Set output format to 8kHz 16-bit mono PCM (RIFF) to match Twilio's sample rate requirement
+      this.config.speechSynthesisOutputFormat =
+        sdk.SpeechSynthesisOutputFormat.Riff8Khz16BitMonoPcm;
     }
   }
 

@@ -23,6 +23,36 @@ const muLawToLinear = (function () {
   return (byte: number) => muLawToPcmMap[byte];
 })();
 
+// Linear PCM to mu-law encoder
+const linearToMuLaw = (function () {
+  const pcmToMuLawMap = new Int8Array(65536);
+  const BIAS = 132;
+  const CLIP = 32635;
+
+  for (let i = -32768; i <= 32767; i++) {
+    let sample = i;
+    let sign = (sample >> 8) & 0x80;
+    if (sample < 0) sample = -sample;
+    if (sample > CLIP) sample = CLIP;
+    sample += BIAS;
+    let exponent = 7;
+    // Determine exponent
+    // simple bit search
+    const mask = 0x4000;
+    for (let exp = 7; exp >= 0; exp--) {
+      if ((sample & (mask >> (7 - exp))) !== 0) {
+        exponent = exp;
+        break;
+      }
+    }
+    let mantissa = (sample >> (exponent + 3)) & 0x0f;
+    let mu = ~(sign | (exponent << 4) | mantissa);
+    pcmToMuLawMap[i + 32768] = mu;
+  }
+
+  return (sample: number) => pcmToMuLawMap[sample + 32768];
+})();
+
 export class TwilioVoiceService {
   private azureTTS: AzureTTS;
   private deepSeek: DeepSeekLLM;
@@ -52,6 +82,14 @@ export class TwilioVoiceService {
     let streamSid: string | null = null;
     let callSid: string | null = null;
 
+    const history: Array<{ role: string; content: string }> = [
+      {
+        role: 'system',
+        content:
+          'You are a helpful voice assistant for a Swiss company. You speak German (Standard German or Swiss German context). Keep answers concise (max 2-3 sentences) suitable for phone conversation.',
+      },
+    ];
+
     recognizer.recognizing = (s, e) => {
       // Intermediate results - maybe useful for interruption handling
       // console.log(`RECOGNIZING: Text=${e.result.text}`);
@@ -64,27 +102,58 @@ export class TwilioVoiceService {
 
         console.log(`RECOGNIZED: Text=${text}`);
 
+        // Add user input to history
+        history.push({ role: 'user', content: text });
+
         // Send to DeepSeek
         try {
-          // TODO: Maintain conversation history
-          const responseText = await this.deepSeek.chat([{ role: 'user', content: text }]);
+          const responseText = await this.deepSeek.chat(history);
 
           console.log(`AI RESPONSE: ${responseText}`);
+          history.push({ role: 'assistant', content: responseText });
 
           // Synthesize response
-          // TODO: We need mulaw output or Twilio compatible format.
-          // Azure TTS returns WAV (Riff). We need to extract PCM and encode to mulaw or send as is?
-          // Twilio Media Stream accepts 8k mulaw.
-          // Azure TTS can be configured to output Riff8Khz8BitMonoMULaw!
+          const wavBuffer = await this.azureTTS.synthesize(responseText);
 
-          // We need to update AzureTTS to allow setting output format for this specific call,
-          // or we re-instantiate/configure it here.
+          // Strip RIFF header (44 bytes standard)
+          const pcmData = wavBuffer.subarray(44);
 
-          // For now, let's assume we can get MuLaw from Azure if we configure it.
-          // Since AzureTTS.ts hardcodes 'de-CH-LeniNeural', let's stick to that but we need format control.
+          // Convert PCM16 to Mulaw
+          const mulawBuffer = Buffer.alloc(pcmData.length / 2);
+          for (let i = 0; i < pcmData.length; i += 2) {
+            const sample = pcmData.readInt16LE(i);
+            mulawBuffer[i / 2] = linearToMuLaw(sample);
+          }
 
-          // TEMPORARY: Just logging response for this step.
-          // To implement full bi-directional, we need to handle format conversion or config.
+          // Send to Twilio in chunks (optimally) or whole
+          // Twilio recommends small chunks, but larger ones work too.
+          // Let's send 1600 bytes (100ms) chunks to avoid flooding
+          const chunkSize = 3200; // 200ms
+          for (let i = 0; i < mulawBuffer.length; i += chunkSize) {
+            const chunk = mulawBuffer.subarray(i, i + chunkSize);
+            const payload = chunk.toString('base64');
+
+            if (streamSid && ws.readyState === WebSocket.OPEN) {
+              const msg = {
+                event: 'media',
+                streamSid: streamSid,
+                media: {
+                  payload: payload,
+                },
+              };
+              ws.send(JSON.stringify(msg));
+            }
+          }
+
+          // Mark response complete (optional, just to keep track)
+          if (streamSid && ws.readyState === WebSocket.OPEN) {
+            const markMsg = {
+              event: 'mark',
+              streamSid: streamSid,
+              mark: { name: 'response_end' },
+            };
+            ws.send(JSON.stringify(markMsg));
+          }
         } catch (error) {
           console.error('AI/TTS Error:', error);
         }
