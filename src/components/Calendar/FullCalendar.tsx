@@ -206,10 +206,16 @@ export const FullCalendarComponent: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         initialData={newEventData}
         onSave={async (data) => {
-          await apiClient.post('/calendar/events', data);
-          toast.success('Termin erstellt');
-          setIsCreateModalOpen(false);
-          fetchEvents();
+          try {
+            await apiClient.post('/calendar/events', data);
+            toast.success('Termin erstellt');
+            setIsCreateModalOpen(false);
+            fetchEvents();
+          } catch (err) {
+            console.error('Save failed in onSave:', err);
+            // Re-throw so the modal catch block can handle it (optional if we handle it here)
+            throw err;
+          }
         }}
       />
 
@@ -236,6 +242,7 @@ const CreateEventModal: React.FC<{
   initialData: Partial<CalendarEvent>;
   onSave: (data: Partial<CalendarEvent>) => Promise<void>;
 }> = ({ isOpen, onClose, initialData, onSave }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -250,19 +257,39 @@ const CreateEventModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (!title.trim()) {
+      toast.error('Bitte geben Sie einen Titel ein');
+      return;
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (endDate <= startDate) {
+      toast.error('Das Ende muss nach dem Start liegen');
+      return;
+    }
+
+    setIsLoading(true);
     try {
       await onSave({
-        title,
-        start: new Date(start).toISOString(),
-        end: new Date(end).toISOString(),
+        title: title.trim(),
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
         createdBy: 'user',
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Save failed:', err);
-      toast.error('Fehler beim Speichern');
+      const errorObject = err as any;
+      const errorMessage =
+        errorObject.userFriendlyMessage || errorObject.message || 'Fehler beim Speichern';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Neuen Termin erstellen">
       <form onSubmit={handleSubmit} className="space-y-6 p-4">
@@ -312,7 +339,13 @@ const CreateEventModal: React.FC<{
           <Button variant="outline" type="button" onClick={onClose} className="flex-1">
             Abbrechen
           </Button>
-          <Button variant="primary" type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+          <Button
+            variant="primary"
+            type="submit"
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            isLoading={isLoading}
+            loadingLabel="Erstelle..."
+          >
             Erstellen
           </Button>
         </div>
