@@ -81,7 +81,11 @@ export async function handleInboundVoice(req: Request, res: Response): Promise<v
           .limit(1)
           .maybeSingle();
         locationId = defaultLoc?.id || null;
-        logger.info('twilio.inbound.test_call_default_location', { callSid, locationId }, req);
+        logger.info(
+          'twilio.inbound.test_call_default_location',
+          { callSid, locationId: locationId ?? undefined },
+          req,
+        );
       }
 
       if (locationId) {
