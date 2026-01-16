@@ -14,6 +14,8 @@ import { AvailabilityModal } from '../components/dashboard/AvailabilityModal.js'
 import { CalendarEventModal } from '../components/dashboard/CalendarEventModal.js';
 import { SideNav } from '../components/dashboard/SideNav.js';
 import { apiClient } from '../services/apiClient.js';
+import { checkPhoneStatus } from '../services/api.js';
+import { TestCallButton } from '../components/dashboard/TestCallButton.js';
 import { toast } from '../components/ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/newDashboard/ui/Card.js';
@@ -105,6 +107,46 @@ export const DashboardPage = () => {
   );
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [testAgents, setTestAgents] = useState<TestAgent[]>([]);
+  const [phoneStatus, setPhoneStatus] = useState<{
+    twilioGateway: 'OK' | 'WARN' | 'ERROR';
+    twilioConfigured: boolean;
+    hasConnectedNumber: boolean;
+    webhookConfigured: boolean;
+    phoneNumber: string | null;
+    details: {
+      accountSid: string | null;
+      publicBaseUrl: string | null;
+      expectedWebhookUrl: string | null;
+    };
+  } | null>(null);
+
+  // Fetch phone status periodically
+  React.useEffect(() => {
+    async function fetchStatus() {
+      try {
+        const status = await checkPhoneStatus();
+        setPhoneStatus(status);
+      } catch (error) {
+        console.error('[DashboardPage] Failed to fetch phone status:', error);
+        setPhoneStatus({
+          twilioGateway: 'ERROR',
+          twilioConfigured: false,
+          hasConnectedNumber: false,
+          webhookConfigured: false,
+          phoneNumber: null,
+          details: {
+            accountSid: null,
+            publicBaseUrl: null,
+            expectedWebhookUrl: null,
+          },
+        });
+      }
+    }
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch test agents
   React.useEffect(() => {
@@ -164,9 +206,7 @@ export const DashboardPage = () => {
       ];
 
       // Check if origin is allowed (strict check for security)
-      const isAllowedOrigin = allowedOrigins.some(
-        (allowed) => event.origin === allowed,
-      );
+      const isAllowedOrigin = allowedOrigins.some((allowed) => event.origin === allowed);
 
       if (!isAllowedOrigin) {
         console.warn('[DashboardPage] Rejected postMessage from origin:', event.origin);
@@ -450,7 +490,14 @@ export const DashboardPage = () => {
 
   // Determine system health status (memoized)
   const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => {
-    // Use gateway_health from backend if available (more accurate)
+    // Priority 1: Real-time phone status from /api/phone/status
+    if (phoneStatus) {
+      if (phoneStatus.twilioGateway === 'OK') return 'ok';
+      if (phoneStatus.twilioGateway === 'WARN') return 'warning';
+      return 'error';
+    }
+
+    // Priority 2: Use gateway_health from backend if available (more accurate)
     if (effectiveOverview?.gateway_health) {
       return effectiveOverview.gateway_health;
     }
@@ -460,7 +507,7 @@ export const DashboardPage = () => {
       : effectiveOverview?.status?.phone === 'needs_compliance'
         ? 'warning'
         : 'error';
-  }, [effectiveOverview?.gateway_health, effectiveOverview?.status?.phone]);
+  }, [phoneStatus, effectiveOverview?.gateway_health, effectiveOverview?.status?.phone]);
 
   const calendarHealth: 'ok' | 'error' | 'warning' = React.useMemo(
     () => (effectiveOverview?.status?.calendar === 'connected' ? 'ok' : 'error'),
@@ -1124,6 +1171,11 @@ export const DashboardPage = () => {
                     >
                       Agent testen
                     </Button>
+
+                    <TestCallButton
+                      phoneNumber={phoneStatus?.phoneNumber || effectiveOverview.phone_number}
+                      disabled={phoneStatus?.twilioGateway !== 'OK'}
+                    />
                   </div>
                 </div>
 
@@ -1162,6 +1214,27 @@ export const DashboardPage = () => {
                   </h4>
                   <div className="space-y-3.5">
                     <HealthItem label="Twilio Gateway" status={phoneHealth} />
+                    {phoneStatus?.twilioGateway === 'WARN' && (
+                      <div className="mt-1 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-[10px] text-amber-500 leading-tight">
+                          <strong>Hinweis:</strong> Webhook nicht konfiguriert.
+                        </p>
+                        {phoneStatus.details?.expectedWebhookUrl && (
+                          <p className="text-[9px] text-amber-500/80 break-all mt-1 font-mono">
+                            Erwartet: {phoneStatus.details.expectedWebhookUrl}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {phoneStatus?.twilioGateway === 'ERROR' && (
+                      <div className="mt-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <p className="text-[10px] text-red-500 leading-tight">
+                          <strong>Fehler:</strong> Twilio nicht konfiguriert.
+                          {!phoneStatus.twilioConfigured && ' API-Keys fehlen.'}
+                          {!phoneStatus.hasConnectedNumber && ' Keine Nummer verbunden.'}
+                        </p>
+                      </div>
+                    )}
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
                     <HealthItem label="Azure TTS" status="ok" />
                     <HealthItem label="Supabase DB" status="ok" />
