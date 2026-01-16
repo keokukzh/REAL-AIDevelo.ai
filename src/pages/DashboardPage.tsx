@@ -5,7 +5,6 @@ import { ROUTES } from '../config/navigation.js';
 import { useDashboardOverview } from '../hooks/useDashboardOverview.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
-import { PreviewBanner } from '../components/dashboard/PreviewBanner.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
 import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard.js';
@@ -26,7 +25,7 @@ import { QuickActionButton } from '../components/newDashboard/QuickActionButton.
 import { HealthItem } from '../components/newDashboard/HealthItem.js';
 import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer.js';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState.js';
-import { PageLoader, LoadingSpinner } from '../components/ui/LoadingSpinner.js';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner.js';
 import {
   Phone,
   Calendar,
@@ -647,9 +646,6 @@ export const DashboardPage = () => {
 
         {/* Dashboard Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
-          {/* Preview Banner - Voice Agents Coming Soon */}
-          <PreviewBanner onExploreAgents={handleTestAgent} />
-
           {/* Setup Wizard (shown when setup_state != 'ready') */}
           {showWizard && (
             <div className="mb-8">
@@ -672,9 +668,6 @@ export const DashboardPage = () => {
                     <p className="text-gray-400 text-sm">
                       Hier ist der aktuelle Status Ihres Voice Agents für heute.
                     </p>
-                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/30">
-                      Preview Mode
-                    </span>
                   </div>
                 </div>
                 {lastRefresh && (
@@ -1003,14 +996,6 @@ export const DashboardPage = () => {
                       <p className="text-gray-500 italic">Demo-Agents werden geladen...</p>
                     </div>
                   )}
-
-                  <div className="bg-swiss-red/10 border border-swiss-red/20 rounded-xl p-6">
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      💡 <strong>Hinweis unseres Teams:</strong> Wir arbeiten mit Hochleistung an
-                      der Live-Schaltung dieser Agents. Sobald diese verfügbar sind, können Sie sie
-                      mit einem Klick in Ihrem Account aktivieren.
-                    </p>
-                  </div>
                 </section>
 
                 {/* Recent Logs Table */}
