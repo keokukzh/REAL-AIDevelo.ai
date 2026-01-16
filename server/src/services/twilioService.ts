@@ -1,10 +1,12 @@
 import axios from 'axios';
+import twilio from 'twilio';
 import { config } from '../config/env';
 import { InternalServerError } from '../utils/errors';
 import { StructuredLoggingService } from './loggingService';
 import { circuitBreakers } from '../utils/circuitBreaker';
 import { retryApiCall } from '../utils/retry';
 import { API_TIMEOUTS } from '../config/constants';
+import { supabaseAdmin } from './supabaseDb';
 
 interface TwilioPhoneNumber {
   sid: string;
@@ -27,108 +29,88 @@ interface TwilioCallResponse {
 /**
  * Twilio Service
  * Handles all Twilio API interactions including phone numbers, webhooks, and calls
- * Uses circuit breakers and retry logic for resilience
  */
 class TwilioService {
-  /**
-   * Get Twilio Account SID from environment
-   * This is the base Account SID (AC...), required for API calls even when using API Keys
-   * @returns Account SID or empty string if not configured
-   */
+  private client: twilio.Twilio | null = null;
+
+  constructor() {
+    this.initClient();
+  }
+
+  private initClient() {
+    const accountSid = this.getAccountSid();
+    const authToken = this.getAuthToken();
+    const apiKeySid = config.twilioApiKeySid;
+    const apiKeySecret = config.twilioApiKeySecret;
+
+    if (accountSid && apiKeySid && apiKeySecret) {
+      this.client = twilio(apiKeySid, apiKeySecret, { accountSid });
+      StructuredLoggingService.info('Twilio Client initialized with API Key');
+    } else if (accountSid && authToken) {
+      this.client = twilio(accountSid, authToken);
+      StructuredLoggingService.info('Twilio Client initialized with Auth Token');
+    }
+  }
+
   private getAccountSid(): string {
     return process.env.TWILIO_ACCOUNT_SID || '';
   }
 
-  /**
-   * Get Twilio Auth Token from config
-   * Prefers API Key Secret if available, otherwise falls back to Auth Token
-   * @returns Auth token or API Key Secret
-   */
   private getAuthToken(): string {
-    // Prefer API Key Secret for better security (if configured)
-    if (config.twilioApiKeySecret) {
-      return config.twilioApiKeySecret;
-    }
-    return config.twilioAuthToken;
+    return config.twilioAuthToken || '';
   }
 
-  /**
-   * Get Twilio Account SID or API Key SID
-   * Prefers API Key SID if available, otherwise falls back to Account SID
-   * @returns Account SID or API Key SID
-   */
-  private getAccountSidOrApiKey(): string {
-    // Prefer API Key SID for better security (if configured)
-    if (config.twilioApiKeySid) {
-      return config.twilioApiKeySid;
-    }
-    return this.getAccountSid();
-  }
-
-  /**
-   * Get Twilio API base URL
-   * Always uses Account SID (AC...) for the URL, even when authenticating with API Key
-   * @returns Base URL for Twilio API
-   * @throws {InternalServerError} If Account SID not configured
-   */
   private getBaseUrl(): string {
     const accountSid = this.getAccountSid();
     if (!accountSid) {
-      throw new InternalServerError('TWILIO_ACCOUNT_SID not configured (required even when using API Keys)');
+      throw new InternalServerError('TWILIO_ACCOUNT_SID not configured');
     }
     return `https://api.twilio.com/2010-04-01/Accounts/${accountSid}`;
   }
 
-  /**
-   * Get HTTP Basic Auth credentials for Twilio API
-   * Uses API Key (SID + Secret) if available, otherwise falls back to Account SID + Auth Token
-   * @returns Object with username (Account SID or API Key SID) and password (Auth Token or API Key Secret)
-   */
   private getAuth(): { username: string; password: string } {
+    if (config.twilioApiKeySid && config.twilioApiKeySecret) {
+      return {
+        username: config.twilioApiKeySid,
+        password: config.twilioApiKeySecret,
+      };
+    }
     return {
-      username: this.getAccountSidOrApiKey(),
+      username: this.getAccountSid(),
       password: this.getAuthToken(),
     };
   }
 
   /**
+   * Test Twilio connection
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      if (!this.client) this.initClient();
+      if (!this.client) return false;
+
+      const account = await this.client.api.accounts(this.getAccountSid()).fetch();
+      return account.status === 'active';
+    } catch (error: any) {
+      StructuredLoggingService.error('Twilio connection test failed', error);
+      return false;
+    }
+  }
+
+  /**
    * List available phone numbers from Twilio
-   * 
-   * Retrieves phone numbers available in the Twilio account, optionally filtered by country.
-   * Uses circuit breaker and retry logic for resilience.
-   * 
-   * @param country - Country code to filter by (default: 'CH' for Switzerland)
-   * @returns Promise resolving to array of Twilio phone numbers
-   * @throws {InternalServerError} If API call fails or credentials invalid
-   * 
-   * @example
-   * ```typescript
-   * const numbers = await twilioService.listPhoneNumbers('CH');
-   * // Returns: [{ sid: '...', phoneNumber: '+41...', ... }, ...]
-   * ```
    */
   async listPhoneNumbers(country: string = 'CH'): Promise<TwilioPhoneNumber[]> {
     const accountSid = this.getAccountSid();
     const authToken = this.getAuthToken();
 
     if (!accountSid || !authToken) {
-      // Return mock data for testing
-      StructuredLoggingService.warn(
-        'TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not configured, returning mock data',
-        { country }
-      );
+      StructuredLoggingService.warn('Twilio not configured, returning mock data');
       return [
         {
           sid: 'mock_1',
-          phoneNumber: '+41441234567',
-          friendlyName: 'Mock Number 1',
-          capabilities: { voice: true, sms: false },
-          status: 'in-use',
-        },
-        {
-          sid: 'mock_2',
-          phoneNumber: '+41441234568',
-          friendlyName: 'Mock Number 2',
+          phoneNumber: '+19522951346',
+          friendlyName: 'Default Test Number (+19522951346)',
           capabilities: { voice: true, sms: true },
           status: 'in-use',
         },
@@ -137,16 +119,13 @@ class TwilioService {
 
     try {
       const baseUrl = this.getBaseUrl();
-      const response = await circuitBreakers.twilio.execute(
-        () => retryApiCall(
-          () => axios.get(`${baseUrl}/IncomingPhoneNumbers.json`, {
+      const response = await circuitBreakers.twilio.execute(() =>
+        retryApiCall(() =>
+          axios.get(`${baseUrl}/IncomingPhoneNumbers.json`, {
             auth: this.getAuth(),
-            params: {
-              PhoneNumber: country === 'CH' ? '+41' : undefined,
-            },
             timeout: API_TIMEOUTS.TWILIO,
-          })
-        )
+          }),
+        ),
       );
 
       return (response.data.incoming_phone_numbers || []).map((num: any) => ({
@@ -160,14 +139,39 @@ class TwilioService {
         status: num.status || 'in-use',
       }));
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data
-          ? JSON.stringify(error.response.data)
-          : error.message;
-        throw new InternalServerError(`Failed to fetch Twilio phone numbers: ${errorMessage}`);
-      }
       throw new InternalServerError('Failed to fetch phone numbers from Twilio');
     }
+  }
+
+  /**
+   * Add phone number to database and status active
+   */
+  async addPhoneNumber(
+    locationId: string,
+    phoneNumber: string,
+    userId: string,
+    twilioSid?: string,
+  ): Promise<void> {
+    const { error } = await supabaseAdmin.from('phone_numbers').upsert(
+      {
+        location_id: locationId,
+        e164: phoneNumber,
+        status: 'active',
+        twilio_number_sid: twilioSid || `manual_${Date.now()}`,
+        customer_public_number: phoneNumber,
+      },
+      { onConflict: 'e164' },
+    );
+
+    if (error) {
+      StructuredLoggingService.error('Failed to add phone number to Supabase', error);
+      throw new InternalServerError('Failed to register phone number');
+    }
+
+    StructuredLoggingService.info('Phone number registered successfully', {
+      phoneNumber,
+      locationId,
+    });
   }
 
   /**
@@ -177,35 +181,16 @@ class TwilioService {
     voiceUrl: string | null;
     statusCallback: string | null;
   }> {
-    const accountSid = this.getAccountSid();
-    const authToken = this.getAuthToken();
-
-    if (!accountSid || !authToken) {
-      return {
-        voiceUrl: null,
-        statusCallback: null,
-      };
-    }
+    if (!this.client) this.initClient();
+    if (!this.client) return { voiceUrl: null, statusCallback: null };
 
     try {
-      const baseUrl = this.getBaseUrl();
-      const response = await axios.get(`${baseUrl}/IncomingPhoneNumbers/${phoneNumberSid}.json`, {
-        auth: this.getAuth(),
-        timeout: 10000,
-      });
-
-      const number = response.data;
+      const number = await this.client.incomingPhoneNumbers(phoneNumberSid).fetch();
       return {
-        voiceUrl: number.voice_url || null,
-        statusCallback: number.status_callback || null,
+        voiceUrl: number.voiceUrl || null,
+        statusCallback: number.statusCallback || null,
       };
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data
-          ? JSON.stringify(error.response.data)
-          : error.message;
-        throw new InternalServerError(`Failed to fetch webhook status: ${errorMessage}`);
-      }
       throw new InternalServerError('Failed to fetch webhook status from Twilio');
     }
   }
@@ -213,87 +198,43 @@ class TwilioService {
   /**
    * Update webhook URLs for a phone number
    */
-  async updateWebhooks(phoneNumberSid: string, voiceUrl: string, statusCallback: string): Promise<void> {
-    const accountSid = this.getAccountSid();
-    const authToken = this.getAuthToken();
-
-    if (!accountSid || !authToken) {
-      throw new InternalServerError('TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not configured');
-    }
+  async updateWebhooks(
+    phoneNumberSid: string,
+    voiceUrl: string,
+    statusCallback: string,
+  ): Promise<void> {
+    if (!this.client) this.initClient();
+    if (!this.client) throw new InternalServerError('Twilio client not initialized');
 
     try {
-      const baseUrl = this.getBaseUrl();
-      await circuitBreakers.twilio.execute(
-        () => retryApiCall(
-          () => axios.post(
-            `${baseUrl}/IncomingPhoneNumbers/${phoneNumberSid}.json`,
-            new URLSearchParams({
-              VoiceUrl: voiceUrl,
-              StatusCallback: statusCallback,
-            }),
-            {
-              auth: this.getAuth(),
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              timeout: API_TIMEOUTS.TWILIO,
-            }
-          )
-        )
-      );
+      await this.client.incomingPhoneNumbers(phoneNumberSid).update({
+        voiceUrl,
+        statusCallback,
+        voiceMethod: 'POST',
+        statusCallbackMethod: 'POST',
+      });
+      StructuredLoggingService.info('Twilio webhooks updated', { phoneNumberSid, voiceUrl });
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data
-          ? JSON.stringify(error.response.data)
-          : error.message;
-        throw new InternalServerError(`Failed to update webhooks: ${errorMessage}`);
-      }
       throw new InternalServerError('Failed to update webhooks in Twilio');
     }
   }
 
   /**
-   * Make a test call using Twilio API
+   * Make a call using Twilio API
    */
   async makeCall(from: string, to: string, url: string): Promise<TwilioCallResponse> {
-    const accountSid = this.getAccountSid();
-    const authToken = this.getAuthToken();
-
-    if (!accountSid || !authToken) {
-      throw new InternalServerError('TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not configured');
-    }
+    if (!this.client) this.initClient();
+    if (!this.client) throw new InternalServerError('Twilio client not initialized');
 
     try {
-      const baseUrl = this.getBaseUrl();
-      const response = await axios.post(
-        `${baseUrl}/Calls.json`,
-        new URLSearchParams({
-          From: from,
-          To: to,
-          Url: url,
-        }),
-        {
-          auth: this.getAuth(),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          timeout: 10000,
-        }
-      );
-
+      const call = await this.client.calls.create({ from, to, url });
       return {
-        sid: response.data.sid,
-        status: response.data.status,
-        from: response.data.from,
-        to: response.data.to,
+        sid: call.sid,
+        status: call.status,
+        from: call.from,
+        to: call.to,
       };
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data
-          ? JSON.stringify(error.response.data)
-          : error.message;
-        throw new InternalServerError(`Failed to make call: ${errorMessage}`);
-      }
       throw new InternalServerError('Failed to make call via Twilio');
     }
   }

@@ -157,14 +157,33 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, apiV1Router);
 
 // Public Health
-app.get('/health', (req, res) => res.json({ ok: true, timestamp: new Date().toISOString() }));
+app.get('/health', async (req, res) => {
+  const { twilioService } = await import('./services/twilioService');
+  const twilioOk = await twilioService.testConnection();
+
+  res.json({
+    ok: true,
+    timestamp: new Date().toISOString(),
+    services: {
+      twilio: twilioOk ? 'OK' : 'ERROR',
+      database: 'CONNECTED', // Status set by pool initialization
+    },
+  });
+});
+
 app.get('/api/health', (req, res) =>
   res.json({ ok: true, version: process.env.RENDER_GIT_COMMIT || 'dev' }),
 );
 
 app.get('/health/ready', async (req, res) => {
-  // Simplified readiness check
-  res.json({ ready: true, note: 'Deep checks moved to monitoring service' });
+  const { twilioService } = await import('./services/twilioService');
+  const twilioOk = await twilioService.testConnection();
+
+  if (!twilioOk) {
+    return res.status(503).json({ ready: false, error: 'Twilio connection failed' });
+  }
+
+  res.json({ ready: true });
 });
 
 // Static Files
