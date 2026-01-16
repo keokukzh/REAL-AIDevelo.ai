@@ -1,115 +1,117 @@
-import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { ScrollToTop } from './components/layout/ScrollToTop';
-import { ErrorBoundary } from './components/ErrorBoundary';
-// Import WebdesignPage directly (not lazy) to ensure framer-motion is available
-const WebdesignPage = React.lazy(() =>
-  import('./pages/WebdesignPage').then((m) => ({ default: m.WebdesignPage })),
-);
+import { ScrollToTop } from './components/layout/ScrollToTop.js';
+import { ErrorBoundary } from './components/ErrorBoundary.js';
+
 // Lazy load pages for code splitting
+const WebdesignPage = React.lazy(() =>
+  import('./pages/WebdesignPage.js').then((m) => ({ default: m.WebdesignPage })),
+);
 const LandingPage = React.lazy(() =>
-  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+  import('./pages/LandingPage.js').then((m) => ({ default: m.LandingPage })),
 );
 const VoiceAgentPage = React.lazy(() =>
-  import('./pages/VoiceAgentPage').then((m) => ({ default: m.VoiceAgentPage })),
+  import('./pages/VoiceAgentPage.js').then((m) => ({ default: m.VoiceAgentPage })),
 );
 const OnboardingPage = React.lazy(() =>
-  import('./pages/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
+  import('./pages/OnboardingPage.js').then((m) => ({ default: m.OnboardingPage })),
 );
 const LoginPage = React.lazy(() =>
-  import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })),
+  import('./pages/LoginPage.js').then((m) => ({ default: m.LoginPage })),
 );
 const DashboardPage = React.lazy(() =>
-  import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+  import('./pages/DashboardPage.js').then((m) => ({ default: m.DashboardPage })),
 );
 const CheckoutPage = React.lazy(() =>
-  import('./pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })),
+  import('./pages/CheckoutPage.js').then((m) => ({ default: m.CheckoutPage })),
 );
 const PricingPage = React.lazy(() =>
-  import('./pages/PricingPage').then((m) => ({ default: m.PricingPage })),
+  import('./pages/PricingPage.js').then((m) => ({ default: m.PricingPage })),
 );
 const PaymentSuccessPage = React.lazy(() =>
-  import('./pages/PaymentSuccessPage').then((m) => ({ default: m.PaymentSuccessPage })),
+  import('./pages/PaymentSuccessPage.js').then((m) => ({ default: m.PaymentSuccessPage })),
 );
 const EnterpriseContactPage = React.lazy(() =>
-  import('./pages/EnterpriseContactPage').then((m) => ({ default: m.EnterpriseContactPage })),
+  import('./pages/EnterpriseContactPage.js').then((m) => ({ default: m.EnterpriseContactPage })),
 );
 const CalendarCallbackPage = React.lazy(() =>
-  import('./pages/CalendarCallbackPage').then((m) => ({ default: m.CalendarCallbackPage })),
+  import('./pages/CalendarCallbackPage.js').then((m) => ({ default: m.CalendarCallbackPage })),
 );
 const AuthCallbackPage = React.lazy(() =>
-  import('./pages/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage })),
+  import('./pages/AuthCallbackPage.js').then((m) => ({ default: m.AuthCallbackPage })),
 );
 const ImpressumPage = React.lazy(() =>
-  import('./pages/ImpressumPage').then((m) => ({ default: m.ImpressumPage })),
+  import('./pages/ImpressumPage.js').then((m) => ({ default: m.ImpressumPage })),
 );
 const DatenschutzPage = React.lazy(() =>
-  import('./pages/DatenschutzPage').then((m) => ({ default: m.DatenschutzPage })),
+  import('./pages/DatenschutzPage.js').then((m) => ({ default: m.DatenschutzPage })),
 );
-const AGBPage = React.lazy(() => import('./pages/AGBPage').then((m) => ({ default: m.AGBPage })));
+const AGBPage = React.lazy(() =>
+  import('./pages/AGBPage.js').then((m) => ({ default: m.AGBPage })),
+);
 const DemoChatPage = React.lazy(() =>
-  import('./pages/DemoChatPage').then((m) => ({ default: m.DemoChatPage })),
+  import('./pages/DemoChatPage.js').then((m) => ({ default: m.DemoChatPage })),
 );
 const VoiceEditPage = React.lazy(() =>
-  import('./pages/VoiceEditPage').then((m) => ({ default: m.VoiceEditPage })),
+  import('./pages/VoiceEditPage.js').then((m) => ({ default: m.VoiceEditPage })),
 );
 const AgentDetailsPage = React.lazy(() =>
-  import('./pages/AgentDetailsPage').then((m) => ({ default: m.AgentDetailsPage })),
+  import('./pages/AgentDetailsPage.js').then((m) => ({ default: m.AgentDetailsPage })),
 );
 const AgentEditPage = React.lazy(() =>
-  import('./pages/AgentEditPage').then((m) => ({ default: m.AgentEditPage })),
+  import('./pages/AgentEditPage.js').then((m) => ({ default: m.AgentEditPage })),
 );
 const CallsPage = React.lazy(() =>
-  import('./pages/CallsPage').then((m) => ({ default: m.CallsPage })),
+  import('./pages/CallsPage.js').then((m) => ({ default: m.CallsPage })),
 );
 const CalendarPage = React.lazy(() =>
-  import('./pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+  import('./pages/CalendarPage.js').then((m) => ({ default: m.CalendarPage })),
+);
+const CalendarIntegrationsPage = React.lazy(() =>
+  import('./pages/CalendarIntegrationsPage.js').then((m) => ({
+    default: m.CalendarIntegrationsPage,
+  })),
 );
 const SettingsPage = React.lazy(() =>
-  import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+  import('./pages/SettingsPage.js').then((m) => ({ default: m.SettingsPage })),
 );
 const KnowledgeBasePage = React.lazy(() =>
-  import('./pages/KnowledgeBasePage').then((m) => ({ default: m.KnowledgeBasePage })),
+  import('./pages/KnowledgeBasePage.js').then((m) => ({ default: m.KnowledgeBasePage })),
 );
 const AnalyticsPage = React.lazy(() =>
-  import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
+  import('./pages/AnalyticsPage.js').then((m) => ({ default: m.AnalyticsPage })),
 );
 const ChannelsPage = React.lazy(() =>
-  import('./pages/ChannelsPage').then((m) => ({ default: m.ChannelsPage })),
+  import('./pages/ChannelsPage.js').then((m) => ({ default: m.ChannelsPage })),
 );
 const TestCallPage = React.lazy(() =>
-  import('./pages/TestCallPage').then((m) => ({ default: m.TestCallPage })),
+  import('./pages/TestCallPage.js').then((m) => ({ default: m.TestCallPage })),
 );
 const SubscriptionDashboard = React.lazy(() =>
-  import('./pages/SubscriptionDashboard').then((m) => ({ default: m.SubscriptionDashboard })),
+  import('./pages/SubscriptionDashboard.js').then((m) => ({ default: m.SubscriptionDashboard })),
 );
 const AdminDashboard = React.lazy(() =>
-  import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })),
+  import('./pages/AdminDashboard.js').then((m) => ({ default: m.AdminDashboard })),
 );
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from './lib/react-query';
-import { ToastContainer, useToast } from './components/ui/Toast';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { DevQuickLogin } from './components/auth/DevQuickLogin';
-import { useRoutePrefetch } from './hooks/useRoutePrefetch';
-import { useCoreWebVitals } from './hooks/useCoreWebVitals';
-import { initScrollTracking, trackPageView } from './lib/analytics';
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 
-// Conditionally import ReactQueryDevtools only in development (it uses eval internally)
-// In production, this will be null and tree-shaken out of the bundle
-// Use import.meta.env.PROD to ensure it's completely excluded from production builds
+import { AuthProvider } from './contexts/AuthContext.js';
+import { ProtectedRoute } from './components/ProtectedRoute.js';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/react-query.js';
+import { ToastContainer, useToast } from './components/ui/Toast.js';
+import { LoadingSpinner } from './components/LoadingSpinner.js';
+import { DevQuickLogin } from './components/auth/DevQuickLogin.js';
+import { useRoutePrefetch } from './hooks/useRoutePrefetch.js';
+import { useCoreWebVitals } from './hooks/useCoreWebVitals.js';
+import { initScrollTracking, trackPageView } from './lib/analytics.js';
+
 const ReactQueryDevtools = import.meta.env.PROD
   ? null
   : React.lazy(() =>
       import('@tanstack/react-query-devtools').then((mod) => ({ default: mod.ReactQueryDevtools })),
     );
 
-// Toast Provider Component
 const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toasts, removeToast } = useToast();
   return (
@@ -140,49 +142,17 @@ function AppContent() {
   useRoutePrefetch();
   const location = useLocation();
 
-  // Initialize scroll tracking
   useEffect(() => {
     initScrollTracking();
   }, []);
 
-  // Track page views
   useEffect(() => {
     trackPageView(location.pathname);
-
-    // #region agent log
-    const __canDebugLog =
-      globalThis.window.location.hostname === 'localhost' ||
-      globalThis.window.location.hostname === '127.0.0.1';
-    if (__canDebugLog) {
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H1_H2_H3_H4',
-          location: 'src/App.tsx:routeChange',
-          message: 'Route change / env snapshot',
-          data: {
-            pathname: location.pathname,
-            mode: import.meta.env.MODE,
-            dev: import.meta.env.DEV,
-            prod: import.meta.env.PROD,
-            reactQueryDevtoolsEnabled: ReactQueryDevtools !== null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
-    // #endregion
   }, [location.pathname]);
 
-  // Track Core Web Vitals
-  useCoreWebVitals((metrics) => {
-    // In production, send to analytics service
+  useCoreWebVitals(() => {
     if (import.meta.env.PROD) {
-      // Example: Send to analytics
-      // analytics.track('core_web_vitals', metrics);
+      // analytics.track('core_web_vitals');
     }
   });
 
@@ -335,6 +305,16 @@ function AppContent() {
                 <ProtectedRoute>
                   <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
                     <CalendarPage />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/calendar/integrations"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingSpinner fullScreen={true} size="lg" />}>
+                    <CalendarIntegrationsPage />
                   </Suspense>
                 </ProtectedRoute>
               }

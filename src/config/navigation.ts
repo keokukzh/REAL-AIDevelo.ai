@@ -18,6 +18,7 @@ export const ROUTES = {
   ANALYTICS: '/analytics',
   KNOWLEDGE_BASE: '/knowledge-base',
   CALENDAR: '/dashboard/calendar',
+  CALENDAR_INTEGRATIONS: '/dashboard/calendar/integrations',
   SETTINGS: '/dashboard/settings',
   CHANNELS: '/dashboard/channels',
   AGENT_DETAILS: (id: string) => `/dashboard/agents/${id}`,
@@ -192,6 +193,13 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     breadcrumb: 'Kalender',
     group: 'dashboard',
     parent: ROUTES.DASHBOARD,
+    requiresAuth: true,
+  },
+  [ROUTES.CALENDAR_INTEGRATIONS]: {
+    title: 'Kalender Integrationen',
+    breadcrumb: 'Integrationen',
+    group: 'dashboard',
+    parent: ROUTES.CALENDAR,
     requiresAuth: true,
   },
   [ROUTES.SETTINGS]: {

@@ -1,0 +1,146 @@
+/* FullCalendar Dark Theme Custom Styles */
+
+:root {
+  --fc-border-color: #1f2937; /* gray-800 */
+  --fc-daygrid-event-dot-width: 8px;
+  --fc-page-bg-color: #111827; /* gray-900 */
+  --fc-neutral-bg-color: #111827;
+  --fc-list-event-hover-bg-color: #1f2937;
+  --fc-button-bg-color: #374151; /* gray-700 */
+  --fc-button-border-color: #374151;
+  --fc-button-hover-bg-color: #4b5563; /* gray-600 */
+  --fc-button-hover-border-color: #4b5563;
+  --fc-button-active-bg-color: #2563eb; /* blue-600 */
+  --fc-button-active-border-color: #2563eb;
+  --fc-today-bg-color: rgba(37, 99, 235, 0.1);
+}
+
+.fc {
+  background-color: #111827;
+  color: #ffffff;
+  font-family: inherit;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.fc .fc-toolbar {
+  padding: 1rem;
+  margin-bottom: 0 !important;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.fc .fc-button {
+  font-weight: 500;
+  text-transform: capitalize;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+}
+
+.fc .fc-button-primary:focus {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* DayGrid Styles */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #1f2937;
+}
+
+.fc .fc-day-other {
+  background-color: #0f172a;
+}
+
+.fc .fc-col-header-cell {
+  padding: 0.75rem 0;
+  background-color: #111827;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+/* Event Styles */
+.fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.85rem;
+  border: none !important;
+  transition: transform 0.1s;
+}
+
+.fc-event:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.event-agent {
+  background-color: #2563eb !important;
+  color: white !important;
+}
+
+.event-user {
+  background-color: #6b7280 !important;
+  color: white !important;
+}
+
+.event-important {
+  background-color: #dc2626 !important;
+  color: white !important;
+}
+
+/* TimeGrid Styles */
+.fc .fc-timegrid-slot {
+  height: 3rem;
+  border-bottom: 1px solid #1f2937;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-top-color: #ef4444;
+  border-bottom-color: #ef4444;
+}
+
+/* List View Styles */
+.fc-list-event {
+  background-color: transparent !important;
+}
+
+.fc-list-day-cushion {
+  background-color: #1f2937 !important;
+}
+
+/* Scrollbar */
+.fc-scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
