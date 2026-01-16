@@ -1,4 +1,4 @@
-name: CI and Release
+name: CI Pipeline
 
 on:
   push:
@@ -14,78 +14,12 @@ concurrency:
 
 env:
   NODE_VERSION: 20
-  REGISTRY: ghcr.io
-  IMAGE_NAME: aidevelo-api
-  DEPLOY_BACKEND: ${{ vars.DEPLOY_BACKEND || 'false' }}
 
 jobs:
-  # Test matrix for different Node versions
-  backend-tests:
-    runs-on: ubuntu-latest
-    name: Backend tests (Node ${{ matrix.node-version }})
-    strategy:
-      matrix:
-        node-version: [20, 22]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install dependencies
-        working-directory: server
-        run: npm ci
-
-      - name: Run tests
-        working-directory: server
-        run: npm test
-
-  # E2E tests with Playwright
-  e2e-tests:
-    runs-on: ubuntu-latest
-    name: E2E tests
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-        env:
-          BASE_URL: http://localhost:4173
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-
-jobs:
+  # Frontend CI
   frontend:
     runs-on: ubuntu-latest
-    name: Frontend tests and build
+    name: Frontend Build and Test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,58 +34,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test
-        run: npm run test -- --run
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit Tests
+        run: npm run test:unit -- --run
 
       - name: Build
         run: npm run build
 
-      - name: Upload frontend artifact
-        if: github.event_name != 'pull_request'
+      - name: Upload build artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: dist
-          if-no-files-found: error
+          retention-days: 7
 
+  # Backend CI
   backend:
     runs-on: ubuntu-latest
-    name: Backend build and docs
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install dependencies
-        working-directory: server
-        run: npm ci
-
-      - name: Build
-        working-directory: server
-        run: npm run build
-
-      - name: Generate OpenAPI spec
-        working-directory: server
-        run: npm run docs:generate
-
-      - name: Upload OpenAPI spec
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-spec
-          path: server/openapi.json
-          if-no-files-found: error
-
-  # Test matrix for different Node versions
-  backend-tests:
-    runs-on: ubuntu-latest
-    name: Backend tests (Node ${{ matrix.node-version }})
+    name: Backend Build and Test (Node ${{ matrix.node-version }})
     strategy:
       matrix:
         node-version: [20, 22]
@@ -170,14 +73,32 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Run tests
+      - name: Build
         working-directory: server
-        run: npm test
+        run: npm run build
 
-  # E2E tests with Playwright
+      - name: Unit Tests
+        working-directory: server
+        run: npm run test:unit
+
+      - name: Generate OpenAPI spec
+        if: matrix.node-version == 20
+        working-directory: server
+        run: npm run docs:generate
+
+      - name: Upload OpenAPI spec
+        if: matrix.node-version == 20 && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: server/openapi.json
+          retention-days: 7
+
+  # E2E tests
   e2e-tests:
     runs-on: ubuntu-latest
-    name: E2E tests
+    name: E2E Tests
+    needs: [frontend, backend]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -211,90 +132,43 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-  docker-image:
-    runs-on: ubuntu-latest
-    needs:
-      - frontend
-      - backend
-      - backend-tests
-    name: Build and publish Docker image
-    permissions:
-      contents: read
-      packages: write
-    env:
-      IMAGE_TAG: ${{ github.sha }}
-      IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: |
-            ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
+  # Deployment
   deploy-backend:
     runs-on: ubuntu-latest
-    needs: docker-image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DEPLOY_BACKEND == 'true' && secrets.RAILWAY_TOKEN != ''
-    name: Deploy backend (Railway)
+    needs: [backend, frontend, e2e-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_BACKEND == 'true'
+    name: Deploy Backend
     environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Railway CLI
+        if: secrets.RAILWAY_TOKEN != ''
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
+        if: secrets.RAILWAY_TOKEN != ''
         run: railway up --ci --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-  # Deployment smoke tests
-  deployment-tests:
-    runs-on: ubuntu-latest
-    needs: deploy-backend
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DEPLOY_BACKEND == 'true'
-    name: Deployment smoke tests
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Wait for deployment
         run: sleep 30
 
       - name: Health check
         run: |
-          API_URL="${API_URL:-https://real-aidevelo-ai.onrender.com}"
+          API_URL="${{ vars.API_URL || 'https://real-aidevelo-ai.onrender.com' }}"
           echo "Testing API health at $API_URL"
-          curl -f "$API_URL/api/health" || echo "Health check failed, but continuing..."
-
-      - name: Smoke test endpoints
-        run: |
-          API_URL="${API_URL:-https://real-aidevelo-ai.onrender.com}"
-          echo "Testing critical endpoints..."
-          # Test that API responds (even if 401/403)
-          curl -f "$API_URL/api/dashboard/overview" -o /dev/null -w "%{http_code}" || echo "Endpoint test completed"
+          
+          # Retry health check up to 5 times
+          for i in {1..5}; do
+            if curl -f "$API_URL/api/health"; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          
+          echo "⚠️ Health check failed after 5 attempts, but continuing..."

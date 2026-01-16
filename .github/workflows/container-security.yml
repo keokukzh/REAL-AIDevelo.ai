@@ -1,0 +1,233 @@
+name: Container Security Audit
+
+on:
+  schedule:
+    # Run security scans daily at 1 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - '**/Dockerfile'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  scan-dockerfile:
+    name: Scan Dockerfile Best Practices
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+          format: sarif
+          output-file: hadolint-results.sarif
+
+      - name: Upload Hadolint results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: hadolint-results.sarif
+          category: hadolint
+
+  scan-vulnerabilities:
+    name: Scan for Vulnerabilities
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    strategy:
+      matrix:
+        scanner:
+          - name: Trivy
+            type: trivy
+          - name: Grype
+            type: grype
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:scan
+          cache-from: type=gha
+
+      - name: Run Trivy Scanner
+        if: matrix.scanner.type == 'trivy'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          vuln-type: 'os,library'
+          scanners: 'vuln,secret,config'
+
+      - name: Run Grype Scanner
+        if: matrix.scanner.type == 'grype'
+        uses: anchore/scan-action@v3
+        with:
+          image: ${{ env.IMAGE_NAME }}:scan
+          fail-build: false
+          severity-cutoff: medium
+          output-format: sarif
+
+      - name: Upload scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ matrix.scanner.type }}-results.sarif
+          category: ${{ matrix.scanner.name }}
+
+  scan-secrets:
+    name: Scan for Exposed Secrets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  compliance-check:
+    name: Check Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:compliance
+          cache-from: type=gha
+
+      - name: Run Dockle (Container Image Linter)
+        run: |
+          VERSION=$(curl --silent "https://api.github.com/repos/goodwithtech/dockle/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+          curl -L -o dockle.tar.gz https://github.com/goodwithtech/dockle/releases/download/v${VERSION}/dockle_${VERSION}_Linux-64bit.tar.gz
+          tar zxf dockle.tar.gz
+          
+          ./dockle --exit-code 1 --exit-level warn ${{ env.IMAGE_NAME }}:compliance
+
+      - name: Run Docker Bench Security
+        run: |
+          docker run --rm --net host --pid host --userns host --cap-add audit_control \
+            -v /var/lib:/var/lib \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /etc:/etc:ro \
+            -v /usr/lib/systemd:/usr/lib/systemd:ro \
+            docker/docker-bench-security || true
+
+  sbom-generation:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:sbom
+          cache-from: type=gha
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}:sbom
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 90
+
+      - name: Publish SBOM to dependency graph
+        uses: advanced-security/sbom-generator-action@v0.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [scan-dockerfile, scan-vulnerabilities, scan-secrets, compliance-check, sbom-generation]
+    if: always()
+    
+    steps:
+      - name: Create security summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = core.summary;
+            
+            summary
+              .addHeading('🔒 Container Security Audit Report', 1)
+              .addHeading('Scan Results', 2)
+              .addList([
+                'Dockerfile Best Practices: Check workflow logs',
+                'Vulnerability Scanning: Check Security tab',
+                'Secret Detection: Check workflow logs',
+                'Compliance Check: Check workflow logs',
+                'SBOM: Available in artifacts'
+              ])
+              .addHeading('Next Steps', 2)
+              .addList([
+                'Review Security tab for detailed vulnerability reports',
+                'Address any HIGH or CRITICAL vulnerabilities',
+                'Check compliance issues in workflow logs',
+                'Update base images if needed'
+              ])
+              .write();
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## 🔒 Security Scan Complete\n\nContainer security audit has been completed. Check the Security tab for detailed results.'
+            });

@@ -1,0 +1,14 @@
+# Dive CI Configuration for Image Analysis
+# https://github.com/wagoodman/dive
+
+rules:
+  # If the efficiency is measured below X%, mark as failed.
+  # Efficiency is calculated as:
+  # Efficiency = (Space Saved) / (Total Space Used)
+  lowestEfficiency: 0.95
+
+  # If the amount of wasted space is at least X MB, mark as failed.
+  highestWastedBytes: 100MB
+
+  # If the amount of wasted space makes up for X% or more of the image, mark as failed.
+  highestUserWastedPercent: 0.20

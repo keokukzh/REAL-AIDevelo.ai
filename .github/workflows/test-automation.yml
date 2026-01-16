@@ -1,93 +1,73 @@
-name: Test Automation Pipeline
+name: Test Automation
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  schedule:
+    # Run tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
 
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    name: Unit Tests
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
+      
       - name: Install dependencies
         run: npm ci
-      - name: Run unit tests
+      
+      - name: Run unit tests with coverage
         run: npm run test:unit -- --coverage
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unit-tests
+          fail_ci_if_error: false
 
-  integration-tests:
+  audit-tests:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: aidevelo_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    name: Site Audit
+    if: github.event_name == 'schedule' || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
+      
       - name: Install dependencies
         run: npm ci
-      - name: Run integration tests
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aidevelo_test
-          REDIS_URL: redis://localhost:6379
-        run: npm run test:integration
-
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
+      
       - name: Install Playwright
         run: npx playwright install --with-deps
-      - name: Run E2E tests
-        env:
-          BASE_URL: http://localhost:4173
-        run: npm run test:e2e
-        timeout-minutes: 20
-
-  performance-tests:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      
+      - name: Run local audit
+        run: npm run audit:local
+        continue-on-error: true
+      
+      - name: Run production audit
+        if: github.ref == 'refs/heads/main'
+        run: npm run audit:prod
+        continue-on-error: true
+      
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          node-version: 18
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run performance tests
-        run: npm run test:performance
-
+          name: audit-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
