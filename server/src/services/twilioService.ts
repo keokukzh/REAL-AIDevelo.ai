@@ -271,8 +271,9 @@ class TwilioService {
         from: call.from,
         to: call.to,
       };
-    } catch (error) {
-      throw new InternalServerError('Failed to make call via Twilio');
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      throw new InternalServerError(`Failed to make call via Twilio: ${errorMsg}`);
     }
   }
 }

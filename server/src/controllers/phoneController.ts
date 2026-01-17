@@ -668,7 +668,12 @@ export const registerPersonalPhone = async (
       })
       .eq('supabase_user_id', supabaseUserId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('[PhoneController] Error updating user phone:', error);
+      return next(
+        new InternalServerError(`Fehler beim Speichern der Telefonnummer: ${error.message}`),
+      );
+    }
 
     res.json({ success: true, message: 'Personal phone number registered' });
   } catch (error) {
