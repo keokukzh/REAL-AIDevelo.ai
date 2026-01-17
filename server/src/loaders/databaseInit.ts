@@ -63,14 +63,32 @@ async function runMigrations() {
   StructuredLoggingService.info('[Startup] Starting migrations...');
 
   // Locate migrations
-  const migrationsDir = fs.existsSync('/app/db/migrations')
-    ? '/app/db/migrations'
-    : path.join(__dirname, '../../../db/migrations'); // Adjusted path from loaders/ dir
+  const possiblePaths = [
+    '/app/db/migrations',
+    path.join(process.cwd(), 'db/migrations'),
+    path.join(process.cwd(), 'server/db/migrations'),
+    path.join(__dirname, '../../../db/migrations'),
+    path.join(__dirname, '../../db/migrations'),
+    path.join(__dirname, '../db/migrations'),
+  ];
 
-  if (!fs.existsSync(migrationsDir)) {
-    console.warn('[Database] [Startup] Migrations directory not found:', migrationsDir);
+  let migrationsDir = '';
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      migrationsDir = p;
+      break;
+    }
+  }
+
+  if (!migrationsDir) {
+    console.warn(
+      '[Database] [Startup] Migrations directory not found. Searched in:',
+      possiblePaths.join(', '),
+    );
     return;
   }
+
+  StructuredLoggingService.info(`[Database] [Startup] Using migrations from: ${migrationsDir}`);
 
   const client = await pool.connect();
   try {

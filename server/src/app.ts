@@ -9,6 +9,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
+import fs from 'fs';
 
 // Middlewares
 import { errorHandler } from './middleware/errorHandler.js';
@@ -189,11 +190,34 @@ app.get('/health/ready', async (req, res) => {
 
 // Static Files
 if (config.isProduction) {
-  app.use(express.static(path.join(process.cwd(), 'public')));
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not Found' });
-    res.sendFile(path.join(process.cwd(), 'public/index.html'));
-  });
+  const publicPath = path.join(process.cwd(), 'public');
+  const distPath = path.join(process.cwd(), '../dist');
+
+  if (fs.existsSync(publicPath)) {
+    app.use(express.static(publicPath));
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not Found' });
+      const indexFile = path.join(publicPath, 'index.html');
+      if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+      } else {
+        res.status(404).send('Not Found');
+      }
+    });
+  } else if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not Found' });
+      const indexFile = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+      } else {
+        res.status(404).send('Not Found');
+      }
+    });
+  } else {
+    StructuredLoggingService.warn('No static file directory found (public/ or ../dist/)');
+  }
 }
 
 // Error Handling
