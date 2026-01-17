@@ -44,13 +44,13 @@ export class AgentCore {
       const conversation = await conversationRepository.getOrCreateConversation(
         locationId,
         channel,
-        externalUserId
+        externalUserId,
       );
 
       // Step 2: Load conversation history (last 20 messages for context)
       const historyMessages = await conversationRepository.getConversationMessages(
         conversation.id,
-        20
+        20,
       );
 
       // Convert to conversation history format
@@ -94,18 +94,25 @@ export class AgentCore {
           ragContextText = ragContext.contextText;
           ragResultCount = ragContext.resultCount;
 
-          logger.info('agent_core.rag_context_built', redact({
-            locationId,
-            channel,
-            queryLength: text.length,
-            resultCount: ragResultCount,
-            injectedChars: ragContext.injectedChars,
-          }));
+          logger.info(
+            'agent_core.rag_context_built',
+            redact({
+              locationId,
+              channel,
+              queryLength: text.length,
+              resultCount: ragResultCount,
+              injectedChars: ragContext.injectedChars,
+            }),
+          );
         } catch (error: any) {
-          logger.error('agent_core.rag_failed', error, redact({
-            locationId,
-            channel,
-          }));
+          logger.error(
+            'agent_core.rag_failed',
+            error,
+            redact({
+              locationId,
+              channel,
+            }),
+          );
           // Graceful fallback: continue without RAG context
         }
       }
@@ -126,7 +133,8 @@ export class AgentCore {
             name: def.name,
             description: def.description,
           })),
-        }
+          currentTime: new Date().toLocaleString('de-CH', { timeZone: 'Europe/Zurich' }),
+        },
       );
 
       // Inject RAG context text if available
@@ -137,10 +145,12 @@ export class AgentCore {
       // Step 7: Channel-aware prompt adjustments
       let channelPrompt = '';
       if (channel === 'whatsapp' || channel === 'webchat') {
-        channelPrompt = 'Antworte kurz und präzise. Verwende klare CTAs (z.B. "Termin buchen", "Rückruf anfordern").';
+        channelPrompt =
+          'Antworte kurz und präzise. Verwende klare CTAs (z.B. "Termin buchen", "Rückruf anfordern").';
       } else if (channel === 'voice') {
         // Voice-specific: Natural, conversational, shorter sentences
-        channelPrompt = 'Antworte natürlich und gesprächsweise. Verwende kurze Sätze. Sei freundlich und professionell. Wiederhole wichtige Informationen (z.B. Termindatum) zur Bestätigung.';
+        channelPrompt =
+          'Antworte natürlich und gesprächsweise. Verwende kurze Sätze. Sei freundlich und professionell. Wiederhole wichtige Informationen (z.B. Termindatum) zur Bestätigung.';
       }
 
       // Inject channel-specific prompt into context
@@ -177,11 +187,15 @@ export class AgentCore {
             result,
           });
         } catch (error: any) {
-          logger.error('agent_core.tool_execution_failed', error, redact({
-            locationId,
-            channel,
-            toolName: toolCall.name,
-          }));
+          logger.error(
+            'agent_core.tool_execution_failed',
+            error,
+            redact({
+              locationId,
+              channel,
+              toolName: toolCall.name,
+            }),
+          );
           executedToolCalls.push({
             name: toolCall.name,
             arguments: toolCall.arguments,
@@ -198,7 +212,7 @@ export class AgentCore {
         'user',
         text,
         externalMessageId,
-        metadata
+        metadata,
       );
 
       // Step 11: Save assistant response
@@ -212,7 +226,7 @@ export class AgentCore {
         {
           toolCalls: executedToolCalls,
           ragResultCount,
-        }
+        },
       );
 
       // Step 12: Channel-aware response formatting
@@ -228,14 +242,18 @@ export class AgentCore {
         toolCalls: executedToolCalls.length > 0 ? executedToolCalls : undefined,
       };
     } catch (error: any) {
-      logger.error('agent_core.handle_message_failed', error, redact({
-        locationId,
-        channel,
-        externalUserId,
-        textLength: text.length,
-        errorMessage: error.message,
-        errorStack: error.stack,
-      }));
+      logger.error(
+        'agent_core.handle_message_failed',
+        error,
+        redact({
+          locationId,
+          channel,
+          externalUserId,
+          textLength: text.length,
+          errorMessage: error.message,
+          errorStack: error.stack,
+        }),
+      );
 
       // In test mode, return a more detailed error message to help debugging
       if (metadata?.test_call) {

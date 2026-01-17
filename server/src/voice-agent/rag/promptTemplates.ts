@@ -14,6 +14,7 @@ export interface PromptContext {
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   tools?: Array<{ name: string; description: string }>;
   channelInstructions?: string; // Channel-specific prompt instructions
+  currentTime?: string; // New: current time for relative dates
 }
 
 /**
@@ -23,11 +24,15 @@ export function buildSystemPrompt(context: PromptContext): string {
   const { companyName, industry, ragContextText, tools } = context;
 
   let prompt = `Du bist ein professioneller, höflicher Assistent für ${companyName || 'ein Schweizer Unternehmen'}`;
-  
+
   if (industry) {
     prompt += ` in der Branche ${industry}`;
   }
-  
+
+  if (context.currentTime) {
+    prompt += `.\nAktuelles Datum und Uhrzeit: ${context.currentTime}`;
+  }
+
   prompt += `.\n\n`;
 
   // Add RAG context if available (new format from contextBuilder)
@@ -59,6 +64,15 @@ export function buildSystemPrompt(context: PromptContext): string {
       prompt += `- ${tool.name}: ${tool.description}\n`;
     });
     prompt += `\nNutze diese Tools, wenn der Benutzer entsprechende Anfragen stellt.\n`;
+
+    if (tools.some((t) => t.name === 'calendar')) {
+      prompt += `WICHTIG für Termine:\n`;
+      prompt += `1. Frage den Benutzer nach seinem Wunschtermin und der Dauer.\n`;
+      prompt += `2. Nutze "check_availability", um zu sehen, ob der Slot frei ist.\n`;
+      prompt += `3. Wenn frei, bestätige den Termin und nutze "create_appointment".\n`;
+      prompt += `4. Wenn nicht frei, schlage Alternativen basierend auf den freien Slots vor.\n`;
+      prompt += `5. Frage nach Name und Telefonnummer/Email, falls nicht bekannt.\n`;
+    }
   }
 
   prompt += `\nAm Ende des Gesprächs: Fasse zusammen, was vereinbart wurde, und wünsche einen schönen Tag.`;
@@ -71,7 +85,7 @@ export function buildSystemPrompt(context: PromptContext): string {
  */
 export function buildUserMessage(
   userInput: string,
-  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
 ): string {
   // For now, just return the current input
   // In a more sophisticated implementation, we could include recent history
@@ -108,5 +122,3 @@ export function buildMessages(context: PromptContext): Array<{
 
   return messages;
 }
-
-

@@ -30,5 +30,5 @@
     "sourceMap": false
   },
   "exclude": ["vendor", "node_modules", "src/components/ThreeAvatar.tsx"],
-  "include": ["src", "shared/types"]
+  "include": ["src", "shared/types", "server/src/**/*"]
 }

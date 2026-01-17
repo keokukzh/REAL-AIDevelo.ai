@@ -11,11 +11,7 @@ export class RAGQueryService {
   /**
    * Query RAG system for a location
    */
-  async query(
-    locationId: string,
-    query: string,
-    limit: number = 5
-  ): Promise<RAGQueryResult> {
+  async query(locationId: string, query: string, limit: number = 5): Promise<RAGQueryResult> {
     // Retrieve similar chunks
     const chunks = await vectorStore.search(locationId, query, limit);
 
@@ -38,15 +34,13 @@ export class RAGQueryService {
     locationId: string,
     query: string,
     initialLimit: number = 10,
-    finalLimit: number = 5
+    finalLimit: number = 5,
   ): Promise<RAGQueryResult> {
     // Get more results initially
     const initialResults = await this.query(locationId, query, initialLimit);
 
     // Simple reranking: sort by score (already sorted, but we could add more logic)
-    const reranked = initialResults.chunks
-      .sort((a, b) => b.score - a.score)
-      .slice(0, finalLimit);
+    const reranked = initialResults.chunks.sort((a, b) => b.score - a.score).slice(0, finalLimit);
 
     return {
       chunks: reranked,
@@ -62,7 +56,7 @@ export class RAGQueryService {
     customerId: string, // Keep parameter name for backward compatibility
     userInput: string,
     ragResult: RAGQueryResult,
-    additionalContext?: Partial<PromptContext>
+    additionalContext?: Partial<PromptContext>,
   ): PromptContext {
     return {
       customerId,
@@ -71,10 +65,9 @@ export class RAGQueryService {
       companyName: additionalContext?.companyName,
       industry: additionalContext?.industry,
       tools: additionalContext?.tools,
+      currentTime: additionalContext?.currentTime,
     };
   }
 }
 
 export const ragQueryService = new RAGQueryService();
-
-
