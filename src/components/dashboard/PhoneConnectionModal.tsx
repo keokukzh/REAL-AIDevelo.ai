@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../ui/Modal';
-import { apiClient } from '../../services/apiClient';
-import { toast } from '../ui/Toast';
+import { Modal } from '../ui/Modal.js';
+import { apiClient } from '../../services/apiClient.js';
+import { toast } from '../ui/Toast.js';
 import { Phone, Loader, AlertCircle, CheckCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { extractErrorMessage } from '../../lib/errorUtils.js';
 
 interface PhoneNumber {
   id: string;
@@ -78,20 +79,9 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
       } else {
         throw new Error('Ungültige Antwort vom Server');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[PhoneConnectionModal] Error loading numbers:', err);
-
-      let errorMsg = 'Fehler beim Laden der verfügbaren Nummern';
-      const responseError = err?.response?.data?.error || err?.response?.data?.message;
-
-      if (typeof responseError === 'string') {
-        errorMsg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        errorMsg = err.message;
-      }
-
+      const errorMsg = extractErrorMessage(err, 'Fehler beim Laden der verfügbaren Nummern');
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -140,20 +130,9 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
       } else {
         throw new Error('Verbindung fehlgeschlagen');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[PhoneConnectionModal] Error connecting number:', err);
-
-      let errorMsg = 'Fehler beim Verbinden der Telefonnummer';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        errorMsg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        errorMsg = err.message;
-      }
-
+      const errorMsg = extractErrorMessage(err, 'Fehler beim Verbinden der Telefonnummer');
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {

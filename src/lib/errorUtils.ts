@@ -2,14 +2,31 @@
  * Utility functions for error handling
  */
 
+/**
+ * Represents a complex error object (e.g., from gRPC or structured APIs)
+ */
+interface StructuredError {
+  code?: string | number;
+  message?: string;
+  details?: unknown;
+  error?: string | StructuredError;
+}
+
+/**
+ * Represents an Axios or fetch API error response
+ */
 interface ApiError {
   response?: {
     data?: {
-      error?: string;
+      error?: string | StructuredError;
       message?: string;
+      code?: string | number;
+      details?: unknown;
     };
+    status?: number;
   };
   message?: string;
+  code?: string;
 }
 
 /**
@@ -27,7 +44,7 @@ export function extractErrorMessage(error: unknown, defaultMessage = 'Unbekannte
   if (error && typeof error === 'object' && 'response' in error) {
     const apiError = error as ApiError;
     const errorData = apiError.response?.data;
-    
+
     if (errorData) {
       if (typeof errorData.error === 'string') {
         return errorData.error;
@@ -44,7 +61,7 @@ export function extractErrorMessage(error: unknown, defaultMessage = 'Unbekannte
         return nestedError.message || nestedError.error || JSON.stringify(errorData.error);
       }
     }
-    
+
     if (apiError.message) {
       return apiError.message;
     }

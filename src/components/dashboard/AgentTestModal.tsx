@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '../ui/Modal';
+import { Modal } from '../ui/Modal.js';
 import { AlertCircle, MessageSquare, Loader, Send, Volume2, Phone, Mic } from 'lucide-react';
-import { apiClient } from '../../services/apiClient';
-import { toast } from '../ui/Toast';
+import { apiClient } from '../../services/apiClient.js';
+import { toast } from '../ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
+import { extractErrorMessage } from '../../lib/errorUtils.js';
 
 interface AgentTestModalProps {
   isOpen: boolean;
@@ -132,19 +133,9 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       } else {
         throw new Error('Failed to get response');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AgentTestModal] Chat message error:', error);
-
-      let errorMessage = 'Fehler beim Senden der Nachricht';
-      const responseError = error?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        errorMessage = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        errorMessage = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = extractErrorMessage(error, 'Fehler beim Senden der Nachricht');
       const errorMsg: ChatMessage = {
         role: 'assistant',
         text: `Fehler: ${errorMessage}`,
@@ -203,19 +194,9 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       } else {
         throw new Error('Testanruf fehlgeschlagen');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[AgentTestModal] Error making test call:', err);
-
-      let errorMsg = 'Fehler beim Starten des Testanrufs';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        errorMsg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        errorMsg = err.message;
-      }
+      const errorMsg = extractErrorMessage(err, 'Fehler beim Starten des Testanrufs');
       setCallStatus('failed');
       toast.error(errorMsg);
     } finally {

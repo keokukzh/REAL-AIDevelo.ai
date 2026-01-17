@@ -15,6 +15,7 @@ import { Modal } from '../ui/Modal.js';
 import { Button } from '../ui/Button.js';
 import { apiClient } from '../../services/apiClient.js';
 import { toast } from '../ui/Toast.js';
+import { extractErrorMessage } from '../../lib/errorUtils.js';
 
 interface PhoneSetupWizardProps {
   isOpen: boolean;
@@ -69,18 +70,8 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setForwardingInstructions(resp.data.data.instructions);
         setStep('forwarding-setup');
       }
-    } catch (err: any) {
-      let msg = 'Forwarding-Info konnte nicht geladen werden';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        msg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        msg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        msg = err.message;
-      }
-
+    } catch (err: unknown) {
+      const msg = extractErrorMessage(err, 'Forwarding-Info konnte nicht geladen werden');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -97,18 +88,8 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setAvailableNumbers(resp.data.data);
         setStep('purchase-setup');
       }
-    } catch (err: any) {
-      let msg = 'Verfügbare Nummern konnten nicht geladen werden';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        msg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        msg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        msg = err.message;
-      }
-
+    } catch (err: unknown) {
+      const msg = extractErrorMessage(err, 'Verfügbare Nummern konnten nicht geladen werden');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -130,18 +111,8 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
       if (resp.data.success) {
         setStep('verification');
       }
-    } catch (err: any) {
-      let msg = 'Registrierung fehlgeschlagen';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        msg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        msg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        msg = err.message;
-      }
-
+    } catch (err: unknown) {
+      const msg = extractErrorMessage(err, 'Registrierung fehlgeschlagen');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -162,18 +133,8 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setStep('success');
         onSuccess?.();
       }
-    } catch (err: any) {
-      let msg = 'Kauf fehlgeschlagen';
-      const responseError = err?.response?.data?.error;
-
-      if (typeof responseError === 'string') {
-        msg = responseError;
-      } else if (responseError && typeof responseError === 'object') {
-        msg = responseError.message || responseError.code || JSON.stringify(responseError);
-      } else if (err?.message) {
-        msg = err.message;
-      }
-
+    } catch (err: unknown) {
+      const msg = extractErrorMessage(err, 'Kauf fehlgeschlagen');
       setError(msg);
       toast.error('Kauf fehlgeschlagen: ' + msg);
     } finally {
