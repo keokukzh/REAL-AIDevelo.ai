@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase.js';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextValue {
@@ -44,20 +44,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!password) {
       throw new Error('Password is required for login');
     }
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         // Handle network errors
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.');
+          throw new Error(
+            'Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.',
+          );
         }
         // Provide user-friendly error messages
-        if (error.message.includes('Invalid API key') || error.message.includes('Invalid login credentials')) {
+        if (
+          error.message.includes('Invalid API key') ||
+          error.message.includes('Invalid login credentials')
+        ) {
           throw new Error('Ungültige Anmeldedaten. Bitte überprüfe E-Mail und Passwort.');
         } else if (error.message.includes('Email not confirmed')) {
           throw new Error('Bitte bestätige zuerst deine E-Mail-Adresse.');
@@ -66,13 +71,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         throw new Error(error.message || 'Anmeldung fehlgeschlagen');
       }
-      
+
       setSession(data.session);
       setUser(data.user);
     } catch (err: any) {
       // Handle network/fetch errors
-      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError') || err?.name === 'TypeError') {
-        throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.');
+      if (
+        err?.message?.includes('Failed to fetch') ||
+        err?.message?.includes('NetworkError') ||
+        err?.name === 'TypeError'
+      ) {
+        throw new Error(
+          'Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.',
+        );
       }
       throw err;
     }
@@ -84,23 +95,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email,
         password,
       });
-      
+
       if (error) {
         // Handle network errors
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.');
+          throw new Error(
+            'Verbindungsfehler. Bitte überprüfe deine Internetverbindung und versuche es erneut.',
+          );
         }
         throw error;
       }
-      
+
       // Note: Supabase requires email confirmation by default
       // If email confirmation is disabled, session will be available immediately
       setSession(data.session);
       setUser(data.user);
     } catch (err: any) {
       // Handle network/fetch errors
-      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError') || err?.name === 'TypeError') {
-        throw new Error('Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.');
+      if (
+        err?.message?.includes('Failed to fetch') ||
+        err?.message?.includes('NetworkError') ||
+        err?.name === 'TypeError'
+      ) {
+        throw new Error(
+          'Verbindungsfehler. Bitte überprüfe deine Internetverbindung und die Supabase-Konfiguration.',
+        );
       }
       throw err;
     }
@@ -135,7 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       loginWithMagicLink,
       logout,
     }),
-    [user, session, isLoading]
+    [user, session, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
