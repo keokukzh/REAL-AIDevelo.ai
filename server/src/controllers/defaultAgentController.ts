@@ -1,18 +1,18 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../middleware/supabaseAuth';
+import { AuthenticatedRequest } from '../middleware/supabaseAuth.js';
 import {
   ensureUserRow,
   ensureOrgForUser,
   ensureDefaultLocation,
   ensureAgentConfig,
   supabaseAdmin,
-} from '../services/supabaseDb';
-import { checkDbPreflight } from '../services/dbPreflight';
-import { InternalServerError, BadRequestError } from '../utils/errors';
-import { twilioService } from '../services/twilioService';
+} from '../services/supabaseDb.js';
+import { checkDbPreflight } from '../services/dbPreflight.js';
+import { InternalServerError, BadRequestError } from '../utils/errors.js';
+import { twilioService } from '../services/twilioService.js';
 import { z } from 'zod';
-import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService';
-import { StructuredLoggingService } from '../services/loggingService';
+import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService.js';
+import { StructuredLoggingService } from '../services/loggingService.js';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
 const getBackendVersion = (): string => {
@@ -192,21 +192,18 @@ export const createDefaultAgent = async (
       },
       agent_config: {
         id: agentConfig.id,
-
         setup_state: agentConfig.setup_state,
         persona_gender: agentConfig.persona_gender,
         persona_age_range: agentConfig.persona_age_range,
         goals_json: agentConfig.goals_json,
         services_json: agentConfig.services_json,
         business_type: agentConfig.business_type,
-        greeting_template: (agentConfig as any).greeting_template ?? null,
-        company_name: (agentConfig as any).company_name ?? null,
-        booking_required_fields_json: Array.isArray(
-          (agentConfig as any).booking_required_fields_json,
-        )
-          ? (agentConfig as any).booking_required_fields_json
+        greeting_template: agentConfig.greeting_template ?? null,
+        company_name: agentConfig.company_name ?? null,
+        booking_required_fields_json: Array.isArray(agentConfig.booking_required_fields_json)
+          ? agentConfig.booking_required_fields_json
           : [],
-        booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
+        booking_default_duration_min: agentConfig.booking_default_duration_min ?? 30,
       },
       status: {
         agent: agentStatus,
@@ -276,7 +273,9 @@ export const createDefaultAgent = async (
         : new InternalServerError('Failed to create default agent');
 
     // Add step and requestId to error for debugging
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).step = failedStep;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).requestId = requestId;
 
     next(appError);
@@ -423,7 +422,6 @@ export const getDashboardOverview = async (
       (process.env.TWILIO_API_KEY_SID && process.env.TWILIO_API_KEY_SECRET)
     );
     const hasWebhookUrl = !!publicBaseUrl;
-    const expectedWebhookUrl = publicBaseUrl ? `${publicBaseUrl}/api/twilio/voice/inbound` : null;
 
     let gatewayHealth: 'ok' | 'warning' | 'error' = 'error';
     if (phoneStatusEnum === 'connected' && hasTwilioCreds && hasWebhookUrl) {
@@ -458,21 +456,18 @@ export const getDashboardOverview = async (
       },
       agent_config: {
         id: agentConfig.id,
-
         setup_state: agentConfig.setup_state,
         persona_gender: agentConfig.persona_gender,
         persona_age_range: agentConfig.persona_age_range,
         goals_json: agentConfig.goals_json,
         services_json: agentConfig.services_json,
         business_type: agentConfig.business_type,
-        greeting_template: (agentConfig as any).greeting_template ?? null,
-        company_name: (agentConfig as any).company_name ?? null,
-        booking_required_fields_json: Array.isArray(
-          (agentConfig as any).booking_required_fields_json,
-        )
-          ? (agentConfig as any).booking_required_fields_json
+        greeting_template: agentConfig.greeting_template ?? null,
+        company_name: agentConfig.company_name ?? null,
+        booking_required_fields_json: Array.isArray(agentConfig.booking_required_fields_json)
+          ? agentConfig.booking_required_fields_json
           : [],
-        booking_default_duration_min: (agentConfig as any).booking_default_duration_min ?? 30,
+        booking_default_duration_min: agentConfig.booking_default_duration_min ?? 30,
       },
       status: {
         agent: agentStatus,
@@ -564,7 +559,9 @@ export const getDashboardOverview = async (
         : new InternalServerError('Failed to get dashboard overview');
 
     // Add step and requestId to error for debugging
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).step = failedStep;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).requestId = requestId;
 
     next(appError);

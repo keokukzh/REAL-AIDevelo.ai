@@ -1,5 +1,21 @@
 import { getSupabaseAdmin } from '../db/supabase.js';
 
+export interface AgentConfigDBRow {
+  id: string;
+  location_id: string;
+  setup_state: string;
+  persona_gender: string | null;
+  persona_age_range: string | null;
+  goals_json: string[];
+  services_json: unknown;
+  business_type: string | null;
+  greeting_template: string | null;
+  company_name: string | null;
+  booking_required_fields_json: string[];
+  booking_default_duration_min: number;
+  admin_test_number?: string | null;
+}
+
 // Helper: Check if we are in Dev Bypass mode
 // (Ideally this should be handled by a mock repository implementation, but simpler to keep inline for now)
 const isDevBypass = () => process.env.DEV_BYPASS_AUTH === 'true';
@@ -233,7 +249,7 @@ export async function ensureDefaultLocation(
 /**
  * Ensure agent config exists for location
  */
-export async function ensureAgentConfig(locationId: string): Promise<Record<string, unknown>> {
+export async function ensureAgentConfig(locationId: string): Promise<AgentConfigDBRow> {
   if (isDevBypass()) {
     return {
       id: '00000000-0000-0000-0000-000000000004',
