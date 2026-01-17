@@ -5,8 +5,6 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Building,
-  CheckCircle,
-  Circle,
   FileText,
   Globe,
   Mic,
@@ -16,6 +14,8 @@ import {
   Wand2,
 } from 'lucide-react';
 import { apiRequest, ApiRequestError } from '../services/api.js';
+import { ActivationChecklist } from '../components/dashboard/ActivationChecklist.js';
+import { VoiceSelector } from '../components/agent/VoiceSelector.js';
 import { Button } from '../components/ui/Button.js';
 import { industries } from '../data/industries.js';
 import { RAGManagementTab } from '../components/agent/RAGManagementTab.js';
@@ -81,6 +81,37 @@ const localeOptions = [
   { value: 'fr-CH', label: 'Français (CH)' },
 ];
 
+const TabNav: React.FC<{
+  activeTab: TabId;
+  onChange: (tab: TabId) => void;
+}> = ({ activeTab, onChange }) => {
+  const tabs: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
+    { id: 'business', label: 'Business Info', icon: <Building size={16} /> },
+    { id: 'voice', label: 'Voice Config', icon: <Mic size={16} /> },
+    { id: 'knowledge', label: 'Knowledge Base', icon: <FileText size={16} /> },
+    { id: 'phone', label: 'Phone Number', icon: <Phone size={16} /> },
+  ];
+
+  return (
+    <div className="border-b border-white/10 flex gap-2 overflow-x-auto">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 text-sm whitespace-nowrap transition-colors ${
+            activeTab === tab.id
+              ? 'border-accent text-accent'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 export const AgentEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -116,10 +147,59 @@ export const AgentEditPage: React.FC = () => {
   const [numberCountry, setNumberCountry] = useState('CH');
   const [planId, setPlanId] = useState<string | undefined>(undefined);
 
+  const fetchAgent = React.useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiRequest<{ data: Agent }>(`/agents/${id}`);
+      setAgent(res.data);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiRequestError ? err.message : 'Agent konnte nicht geladen werden.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  const fetchRagCount = React.useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiRequest<{ data: Array<{ id: string }> }>(`/agents/${id}/rag/documents`);
+      setRagCount(res.data.length);
+    } catch (err: unknown) {
+      setRagCount(0);
+    }
+  }, [id]);
+
+  const fetchNumbers = React.useCallback(async () => {
+    setNumbersLoading(true);
+    setNumberError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('country', numberCountry);
+      if (planId) params.set('planId', planId);
+      const res = await apiRequest<{ data: PhoneNumber[] }>(
+        `/telephony/numbers?${params.toString()}`,
+      );
+      setAvailableNumbers(res.data);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiRequestError
+          ? err.message
+          : 'Telefonnummern konnten nicht geladen werden.';
+      setNumberError(msg);
+      setAvailableNumbers([]);
+    } finally {
+      setNumbersLoading(false);
+    }
+  }, [numberCountry, planId]);
+
   useEffect(() => {
     if (!id) return;
     fetchAgent();
-  }, [id]);
+  }, [id, fetchAgent]);
 
   useEffect(() => {
     if (!id) return;
@@ -129,7 +209,7 @@ export const AgentEditPage: React.FC = () => {
     if (activeTab === 'phone') {
       fetchNumbers();
     }
-  }, [activeTab, id, numberCountry, planId]);
+  }, [activeTab, id, numberCountry, planId, fetchNumbers, fetchRagCount]);
 
   useEffect(() => {
     if (!agent) return;
@@ -150,55 +230,6 @@ export const AgentEditPage: React.FC = () => {
     });
   }, [agent]);
 
-  const fetchAgent = async () => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await apiRequest<{ data: Agent }>(`/agents/${id}`);
-      setAgent(res.data);
-    } catch (err: any) {
-      const msg =
-        err instanceof ApiRequestError ? err.message : 'Agent konnte nicht geladen werden.';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRagCount = async () => {
-    if (!id) return;
-    try {
-      const res = await apiRequest<{ data: Array<{ id: string }> }>(`/agents/${id}/rag/documents`);
-      setRagCount(res.data.length);
-    } catch (err: any) {
-      setRagCount(0);
-    }
-  };
-
-  const fetchNumbers = async () => {
-    setNumbersLoading(true);
-    setNumberError(null);
-    try {
-      const params = new URLSearchParams();
-      params.set('country', numberCountry);
-      if (planId) params.set('planId', planId);
-      const res = await apiRequest<{ data: PhoneNumber[] }>(
-        `/telephony/numbers?${params.toString()}`,
-      );
-      setAvailableNumbers(res.data);
-    } catch (err: any) {
-      const msg =
-        err instanceof ApiRequestError
-          ? err.message
-          : 'Telefonnummern konnten nicht geladen werden.';
-      setNumberError(msg);
-      setAvailableNumbers([]);
-    } finally {
-      setNumbersLoading(false);
-    }
-  };
-
   const saveAgent = async (updates: Partial<Agent>) => {
     if (!id) return;
     setSaving(true);
@@ -209,7 +240,7 @@ export const AgentEditPage: React.FC = () => {
         data: updates,
       });
       await fetchAgent();
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg =
         err instanceof ApiRequestError
           ? err.message
@@ -266,7 +297,7 @@ export const AgentEditPage: React.FC = () => {
         data: { agentId: id, phoneNumberId },
       });
       await Promise.all([fetchAgent(), fetchNumbers()]);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg =
         err instanceof ApiRequestError
           ? err.message
@@ -415,76 +446,6 @@ export const AgentEditPage: React.FC = () => {
           </div>
         </div>
       </main>
-    </div>
-  );
-};
-
-const TabNav: React.FC<{
-  activeTab: TabId;
-  onChange: (tab: TabId) => void;
-}> = ({ activeTab, onChange }) => {
-  const tabs: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
-    { id: 'business', label: 'Business Info', icon: <Building size={16} /> },
-    { id: 'voice', label: 'Voice Config', icon: <Mic size={16} /> },
-    { id: 'knowledge', label: 'Knowledge Base', icon: <FileText size={16} /> },
-    { id: 'phone', label: 'Phone Number', icon: <Phone size={16} /> },
-  ];
-
-  return (
-    <div className="border-b border-white/10 flex gap-2 overflow-x-auto">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          className={`flex items-center gap-2 px-4 py-3 border-b-2 text-sm whitespace-nowrap transition-colors ${
-            activeTab === tab.id
-              ? 'border-accent text-accent'
-              : 'border-transparent text-gray-400 hover:text-white'
-          }`}
-        >
-          {tab.icon}
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-const ActivationChecklist: React.FC<{
-  items: Array<{ id: string; label: string; done: boolean }>;
-}> = ({ items }) => {
-  const completed = items.filter((i) => i.done).length;
-  const percent = Math.round((completed / items.length) * 100);
-
-  return (
-    <div className="bg-surface rounded-2xl border border-white/10 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-sm text-gray-400">Aktivierungs-Checkliste</p>
-          <h3 className="text-xl font-bold">
-            {completed} / {items.length} abgeschlossen
-          </h3>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-400">Fortschritt</p>
-          <p className="text-2xl font-bold text-accent">{percent}%</p>
-        </div>
-      </div>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5"
-          >
-            {item.done ? (
-              <CheckCircle size={18} className="text-green-400" />
-            ) : (
-              <Circle size={18} className="text-gray-500" />
-            )}
-            <span className="text-sm">{item.label}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
@@ -687,9 +648,9 @@ const VoiceTab: React.FC<{
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-6">
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="primaryLocale">
+          <label className="block text-sm text-gray-400 mb-2" htmlFor="primaryLocale">
             Sprache
           </label>
           <select
@@ -705,30 +666,16 @@ const VoiceTab: React.FC<{
             ))}
           </select>
         </div>
+
         <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="voiceId">
-            Voice ID
-          </label>
-          <input
-            id="voiceId"
-            value={form.voiceId}
-            onChange={(e) => onChange((prev) => ({ ...prev, voiceId: e.target.value }))}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none font-mono"
-            placeholder="z.B. adam-professional"
+          <label className="block text-sm text-gray-400 mb-3">Stimme auswählen & testen</label>
+          <VoiceSelector
+            selectedVoiceId={form.voiceId}
+            onVoiceSelect={(id) => onChange((prev) => ({ ...prev, voiceId: id }))}
           />
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1" htmlFor="modelId">
-            Modell
-          </label>
-          <input
-            id="modelId"
-            value={form.modelId}
-            onChange={(e) => onChange((prev) => ({ ...prev, modelId: e.target.value }))}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-accent focus:outline-none"
-          />
-        </div>
-        <div className="flex items-start gap-3">
+
+        <div className="flex items-start gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
           <input
             id="recordingConsent"
             type="checkbox"
@@ -738,7 +685,9 @@ const VoiceTab: React.FC<{
           />
           <label htmlFor="recordingConsent" className="cursor-pointer select-none">
             <p className="font-semibold">Aufzeichnung aktivieren</p>
-            <p className="text-sm text-gray-400">Optional für Qualitätssicherung und Training.</p>
+            <p className="text-sm text-gray-400">
+              Anrufe werden aufgezeichnet und stehen in den Logs zur Verfügung.
+            </p>
           </label>
         </div>
       </div>

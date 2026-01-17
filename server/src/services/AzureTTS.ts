@@ -9,7 +9,7 @@ export class AzureTTS {
 
     if (!key || key === '' || key.includes('placeholder')) {
       // Don't crash here, but synthesize will fail
-      this.config = null as any;
+      this.config = null as unknown as sdk.SpeechConfig;
       console.warn('AzureTTS: Missing or placeholder AZURE_SPEECH_KEY. Synthesis will fail.');
       return;
     }
@@ -23,27 +23,55 @@ export class AzureTTS {
     }
   }
 
-  async synthesize(text: string): Promise<Buffer> {
+  async synthesize(text: string, voiceName?: string): Promise<Buffer> {
     if (!this.config) {
       throw new Error('Azure TTS is not configured. Please set a valid AZURE_SPEECH_KEY.');
     }
-    const synthesizer = new sdk.SpeechSynthesizer(this.config, null as any); // using null for audio config to just get bytes
+
+    // Create a local synthesizer to avoid side-effects on shared config
+    const synthesizer = new sdk.SpeechSynthesizer(this.config, null as unknown as sdk.AudioConfig);
+
     return new Promise((resolve, reject) => {
-      synthesizer.speakTextAsync(
-        text,
-        (result) => {
-          synthesizer.close();
-          if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-            resolve(Buffer.from(result.audioData));
-          } else {
-            reject(new Error(`Azure TTS Error: ${result.errorDetails}`));
-          }
-        },
-        (err) => {
-          synthesizer.close();
-          reject(err);
-        },
-      );
+      // Use SSML if voiceName is provided to ensure it's used
+      if (voiceName) {
+        const ssml = `
+          <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-CH">
+            <voice name="${voiceName}">
+              ${text}
+            </voice>
+          </speak>`;
+        synthesizer.speakSsmlAsync(
+          ssml,
+          (result) => {
+            synthesizer.close();
+            if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+              resolve(Buffer.from(result.audioData));
+            } else {
+              reject(new Error(`Azure TTS Error: ${result.errorDetails}`));
+            }
+          },
+          (err) => {
+            synthesizer.close();
+            reject(err);
+          },
+        );
+      } else {
+        synthesizer.speakTextAsync(
+          text,
+          (result) => {
+            synthesizer.close();
+            if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+              resolve(Buffer.from(result.audioData));
+            } else {
+              reject(new Error(`Azure TTS Error: ${result.errorDetails}`));
+            }
+          },
+          (err) => {
+            synthesizer.close();
+            reject(err);
+          },
+        );
+      }
     });
   }
 

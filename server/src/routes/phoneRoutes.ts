@@ -1,25 +1,23 @@
-import { Router } from 'express';
-// @ts-ignore
+import { Router, Response, NextFunction } from 'express';
 import { jwt, twiml } from 'twilio';
-import { verifySupabaseAuth } from '../middleware/supabaseAuth';
-import { verifyTwilioSignature } from '../middleware/verifyTwilioSignature';
+import { verifySupabaseAuth } from '../middleware/supabaseAuth.js';
+import { verifyTwilioSignature } from '../middleware/verifyTwilioSignature.js';
 import {
   listPhoneNumbers,
   connectPhoneNumber,
   getWebhookStatus,
   testWebhook,
-} from '../controllers/phoneController';
+} from '../controllers/phoneController.js';
 import {
   supabaseAdmin,
   ensureDefaultLocation,
   ensureUserRow,
   ensureOrgForUser,
-} from '../services/supabaseDb';
-import { twilioService } from '../services/twilioService';
-import { config } from '../config/env';
-import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../middleware/supabaseAuth';
-import { InternalServerError } from '../utils/errors';
+} from '../services/supabaseDb.js';
+import { twilioService } from '../services/twilioService.js';
+import { config } from '../config/env.js';
+import { AuthenticatedRequest } from '../middleware/supabaseAuth.js';
+import { InternalServerError } from '../utils/errors.js';
 
 const router = Router();
 const AccessToken = jwt.AccessToken;
@@ -58,8 +56,8 @@ if (process.env.NODE_ENV !== 'production') {
  */
 router.get('/health', verifySupabaseAuth, async (req, res, next) => {
   try {
-    const { checkTwilioGatewayHealth } = await import('../controllers/phoneController');
-    return checkTwilioGatewayHealth(req as any, res, next);
+    const { checkTwilioGatewayHealth } = await import('../controllers/phoneController.js');
+    return checkTwilioGatewayHealth(req as AuthenticatedRequest, res, next);
   } catch (error) {
     next(error);
   }
@@ -181,7 +179,7 @@ router.post(
 router.post('/token', verifySupabaseAuth, (req, res) => {
   try {
     // Use authenticated user ID as identity
-    const identity = (req as any).user?.id || 'unknown_user';
+    const identity = (req as unknown as { user?: { id: string } }).user?.id || 'unknown_user';
 
     const token = new AccessToken(
       process.env.TWILIO_ACCOUNT_SID!,
@@ -198,9 +196,10 @@ router.post('/token', verifySupabaseAuth, (req, res) => {
     );
 
     res.json({ token: token.toJwt() });
-  } catch (error: any) {
-    console.error('Error generating token:', error);
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    const err = error as Error;
+    console.error('Error generating token:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -230,9 +229,9 @@ router.post('/voice', verifyTwilioSignature, (req, res) => {
  * GET /api/phone/forwarding-number
  * Return systems forwarding number
  */
-router.get('/forwarding-number', verifySupabaseAuth, async (req, res, next) => {
-  const { getForwardingNumber } = await import('../controllers/phoneController');
-  return getForwardingNumber(req as any, res);
+router.get('/forwarding-number', verifySupabaseAuth, async (req, res) => {
+  const { getForwardingNumber } = await import('../controllers/phoneController.js');
+  return getForwardingNumber(req as AuthenticatedRequest, res);
 });
 
 /**
@@ -243,7 +242,7 @@ router.post(
   '/register-personal',
   verifySupabaseAuth,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const { registerPersonalPhone } = await import('../controllers/phoneController');
+    const { registerPersonalPhone } = await import('../controllers/phoneController.js');
     return registerPersonalPhone(req, res, next);
   },
 );
@@ -256,7 +255,7 @@ router.get(
   '/available-to-buy',
   verifySupabaseAuth,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const { listAvailableToBuy } = await import('../controllers/phoneController');
+    const { listAvailableToBuy } = await import('../controllers/phoneController.js');
     return listAvailableToBuy(req, res, next);
   },
 );
@@ -269,7 +268,7 @@ router.post(
   '/purchase',
   verifySupabaseAuth,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const { purchaseNumber } = await import('../controllers/phoneController');
+    const { purchaseNumber } = await import('../controllers/phoneController.js');
     return purchaseNumber(req, res, next);
   },
 );
@@ -282,7 +281,7 @@ router.post(
   '/test-personal',
   verifySupabaseAuth,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const { testPersonalPhone } = await import('../controllers/phoneController');
+    const { testPersonalPhone } = await import('../controllers/phoneController.js');
     return testPersonalPhone(req, res, next);
   },
 );

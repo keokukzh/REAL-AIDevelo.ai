@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import { verifySupabaseAuth } from '../middleware/supabaseAuth';
-import { getRecentCalls, getCalls, getCallBySid, testCall } from '../controllers/callsController';
+import {
+  getRecentCalls,
+  getCalls,
+  getCallBySid,
+  testCall,
+  saveCallFeedback,
+} from '../controllers/callsController';
 
 const router = Router();
 
@@ -27,5 +33,11 @@ router.get('/by-sid/:callSid', verifySupabaseAuth, getCallBySid);
  * Place a test call (Twilio Calls API)
  */
 router.post('/test', verifySupabaseAuth, testCall);
+
+/**
+ * POST /api/calls/:callId/feedback
+ * Save user feedback for a call
+ */
+router.post('/:callId/feedback', verifySupabaseAuth, saveCallFeedback);
 
 export default router;

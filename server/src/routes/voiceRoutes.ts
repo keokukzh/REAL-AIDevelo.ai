@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { uploadVoiceClone, getVoiceClone } from '../controllers/voiceController';
+import { uploadVoiceClone, getVoiceClone, previewVoice } from '../controllers/voiceController';
 
 const router = Router();
 
@@ -46,5 +46,16 @@ router.post('/upload', uploadVoiceClone);
  */
 router.get('/:voiceId', getVoiceClone);
 
-export default router;
+/**
+ * @swagger
+ * /voice/preview:
+ *   post:
+ *     summary: Preview a voice with text
+ *     tags: [Voice]
+ *     responses:
+ *       200:
+ *         description: Audio URL for preview
+ */
+router.post('/preview', previewVoice);
 
+export default router;

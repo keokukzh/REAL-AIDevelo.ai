@@ -1,4 +1,4 @@
-import { supabaseAdmin, getSupabaseAdmin } from '../db/supabase';
+import { getSupabaseAdmin } from '../db/supabase.js';
 
 // Helper: Check if we are in Dev Bypass mode
 // (Ideally this should be handled by a mock repository implementation, but simpler to keep inline for now)
@@ -199,7 +199,7 @@ export async function ensureDefaultLocation(
   if (location) {
     // Ensure Qdrant collection exists (best effort)
     try {
-      const { vectorStore } = await import('../voice-agent/rag/vectorStore'); // Dynamic import to avoid cycles
+      const { vectorStore } = await import('../voice-agent/rag/vectorStore.js'); // Dynamic import to avoid cycles
       await vectorStore.ensureCollection(location.id);
     } catch (e) {
       console.warn('Qdrant ensure failed', e);
@@ -221,7 +221,7 @@ export async function ensureDefaultLocation(
   if (error || !newLocation) throw new Error(`Failed to create location: ${error?.message}`);
 
   try {
-    const { vectorStore } = await import('../voice-agent/rag/vectorStore');
+    const { vectorStore } = await import('../voice-agent/rag/vectorStore.js');
     await vectorStore.ensureCollection(newLocation.id);
   } catch (e) {
     console.warn('Qdrant ensure failed', e);
@@ -233,7 +233,7 @@ export async function ensureDefaultLocation(
 /**
  * Ensure agent config exists for location
  */
-export async function ensureAgentConfig(locationId: string): Promise<any> {
+export async function ensureAgentConfig(locationId: string): Promise<Record<string, unknown>> {
   if (isDevBypass()) {
     return {
       id: '00000000-0000-0000-0000-000000000004',

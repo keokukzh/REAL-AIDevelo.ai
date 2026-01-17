@@ -36,15 +36,23 @@ if (process.env.NODE_ENV !== 'production') {
       }
 
       // Check if agent config exists
-      let agentConfig = null;
+      let agentConfig: {
+        id: string;
+        eleven_agent_id: string | null;
+        setup_state: string | null;
+      } | null = null;
       if (resolvedLocationId) {
-        const { data: config } = await supabaseAdmin
+        const { data: configData } = await supabaseAdmin
           .from('agent_configs')
           .select('id, eleven_agent_id, setup_state')
           .eq('location_id', resolvedLocationId)
           .maybeSingle();
 
-        agentConfig = config;
+        agentConfig = configData as {
+          id: string;
+          eleven_agent_id: string | null;
+          setup_state: string | null;
+        } | null;
       }
 
       // Check environment variables
@@ -63,21 +71,27 @@ if (process.env.NODE_ENV !== 'production') {
           from,
           to,
           locationId: resolvedLocationId,
-          agentConfig: agentConfig ? {
-            id: agentConfig.id,
-            elevenAgentId: agentConfig.eleven_agent_id,
-            setupState: agentConfig.setup_state,
-          } : null,
-          environment: envCheck,
-          webhookUrl: config.publicBaseUrl ? `${config.publicBaseUrl}/api/twilio/voice/inbound` : null,
-          mediaStreamUrl: config.publicBaseUrl && config.twilioStreamToken
-            ? `${config.publicBaseUrl.replace(/^https?:/, 'wss:')}/api/twilio/media-stream?callSid=${callSid}&token=${config.twilioStreamToken}`
+          agentConfig: agentConfig
+            ? {
+                id: agentConfig.id,
+                elevenAgentId: agentConfig.eleven_agent_id,
+                setupState: agentConfig.setup_state,
+              }
             : null,
+          environment: envCheck,
+          webhookUrl: config.publicBaseUrl
+            ? `${config.publicBaseUrl}/api/twilio/voice/inbound`
+            : null,
+          mediaStreamUrl:
+            config.publicBaseUrl && config.twilioStreamToken
+              ? `${config.publicBaseUrl.replace(/^https?:/, 'wss:')}/api/twilio/media-stream?callSid=${callSid}&token=${config.twilioStreamToken}`
+              : null,
         },
       });
-    } catch (error: any) {
-      console.error('[DevTwilioRoutes] Error in test-webhook:', error);
-      next(new InternalServerError(error.message || 'Unknown error'));
+    } catch (error) {
+      const err = error as Error;
+      console.error('[DevTwilioRoutes] Error in test-webhook:', err);
+      next(new InternalServerError(err.message || 'Unknown error'));
     }
   });
 
@@ -108,7 +122,8 @@ if (process.env.NODE_ENV !== 'production') {
 
       // Check if Media Streams can be enabled
       const enableMediaStreams = process.env.ENABLE_MEDIA_STREAMS === 'true';
-      const canEnableMediaStreams = enableMediaStreams &&
+      const canEnableMediaStreams =
+        enableMediaStreams &&
         !!config.publicBaseUrl &&
         !!config.twilioStreamToken &&
         !!resolvedLocationId;
@@ -128,9 +143,11 @@ if (process.env.NODE_ENV !== 'production') {
       // Generate TwiML
       let twiml: string;
       if (canEnableMediaStreams && hasAgentId) {
-        const wsBaseUrl = (config.publicBaseUrl || '').replace(/^https?:/, 'wss:').replace(/\/$/, '');
+        const wsBaseUrl = (config.publicBaseUrl || '')
+          .replace(/^https?:/, 'wss:')
+          .replace(/\/$/, '');
         const streamUrl = `${wsBaseUrl}/api/twilio/media-stream?callSid=${encodeURIComponent(String(callSid))}&token=${encodeURIComponent(config.twilioStreamToken!)}`;
-        
+
         function escapeXml(value: string): string {
           return value
             .replace(/&/g, '&amp;')
@@ -164,9 +181,10 @@ if (process.env.NODE_ENV !== 'production') {
       }
 
       res.type('text/xml').send(twiml);
-    } catch (error: any) {
-      console.error('[DevTwilioRoutes] Error in test-twiml:', error);
-      next(new InternalServerError(error.message || 'Unknown error'));
+    } catch (error) {
+      const err = error as Error;
+      console.error('[DevTwilioRoutes] Error in test-twiml:', err);
+      next(new InternalServerError(err.message || 'Unknown error'));
     }
   });
 }

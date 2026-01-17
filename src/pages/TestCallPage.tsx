@@ -82,7 +82,8 @@ export const TestCallPage: React.FC = () => {
       // Twilio Device initialisieren
       const device = new Device(response.data.token, {
         logLevel: 'debug',
-        codecPreferences: ['opus', 'pcmu'],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        codecPreferences: ['opus', 'pcmu'] as any,
         enableImprovedSignalingErrorPrecision: true,
       });
 
@@ -111,12 +112,13 @@ export const TestCallPage: React.FC = () => {
       setTwilioDevice(device);
 
       toast.success('Erfolgreich mit Twilio verbunden!');
-    } catch (error: any) {
-      console.error('[TestCall] Connection error:', error);
-      setConnectionError(error.message || 'Verbindung fehlgeschlagen');
+    } catch (error) {
+      const err = error as { message?: string };
+      console.error('[TestCall] Connection error:', err);
+      setConnectionError(err.message || 'Verbindung fehlgeschlagen');
       setConnectionStatus('disconnected');
       setIsInitializing(false);
-      toast.error('Verbindung fehlgeschlagen: ' + error.message);
+      toast.error('Verbindung fehlgeschlagen: ' + err.message);
     }
   };
 
@@ -149,10 +151,11 @@ export const TestCallPage: React.FC = () => {
         setCallStatus('idle');
         toast.info('Anruf beendet');
       });
-    } catch (error: any) {
-      console.error('[TestCall] Call error:', error);
+    } catch (error) {
+      const err = error as { message?: string };
+      console.error('[TestCall] Call error:', err);
       setCallStatus('error');
-      toast.error('Anruf fehlgeschlagen: ' + error.message);
+      toast.error('Anruf fehlgeschlagen: ' + err.message);
     }
   };
 
@@ -235,10 +238,11 @@ export const TestCallPage: React.FC = () => {
       } else {
         throw new Error('Failed to get response');
       }
-    } catch (error: any) {
-      console.error('[TestCallPage] Chat message error:', error);
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      console.error('[TestCallPage] Chat message error:', err);
       const errorMessage =
-        error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
+        err?.response?.data?.error || err?.message || 'Fehler beim Senden der Nachricht';
       const errorMsg: ChatMessage = {
         role: 'assistant',
         text: `Fehler: ${errorMessage}`,

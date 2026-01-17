@@ -19,7 +19,8 @@ import {
   Phone,
   AlertCircle,
 } from 'lucide-react';
-import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
+import { ROUTES } from '../config/navigation.js';
+import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal.js';
 
 interface ChannelsConfig {
   location_id: string;
@@ -62,7 +63,7 @@ export const ChannelsPage = () => {
         setWidgetKeys(response.data.data.widgetKeys || []);
         setWebhookUrl(response.data.data.webhookUrl || '');
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Fehler beim Laden der Kanäle-Konfiguration');
       console.error('Failed to load channels config:', error);
     } finally {
@@ -87,7 +88,7 @@ export const ChannelsPage = () => {
         toast.success('Kanäle-Konfiguration gespeichert');
         setConfig(response.data.data);
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Fehler beim Speichern der Konfiguration');
       console.error('Failed to save config:', error);
     } finally {
@@ -107,7 +108,7 @@ export const ChannelsPage = () => {
         setNewDomain('');
         await loadChannelsConfig();
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Fehler beim Erstellen des Widget-Keys');
       console.error('Failed to create widget key:', error);
     }
@@ -120,7 +121,7 @@ export const ChannelsPage = () => {
       await apiClient.delete(`/channels/widget-keys/${id}`);
       toast.success('Widget-Key gelöscht');
       await loadChannelsConfig();
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Fehler beim Löschen des Widget-Keys');
       console.error('Failed to delete widget key:', error);
     }
@@ -344,8 +345,8 @@ export const ChannelsPage = () => {
                   </p>
                   <Button
                     onClick={() => {
-                      // Navigiere zur Voice Agents Seite wo der Test läuft
-                      window.location.href = '/voice-agents';
+                      // Navigiere zur Test-Call Seite
+                      nav.goTo(ROUTES.TEST_CALL);
                     }}
                     variant="primary"
                     disabled={!config.phone_enabled}

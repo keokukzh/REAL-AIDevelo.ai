@@ -1,7 +1,12 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { twilioService } from '../services/twilioService';
-import { supabaseAdmin, ensureDefaultLocation, ensureUserRow, ensureOrgForUser } from '../services/supabaseDb';
+import {
+  supabaseAdmin,
+  ensureDefaultLocation,
+  ensureUserRow,
+  ensureOrgForUser,
+} from '../services/supabaseDb';
 import { BadRequestError, InternalServerError } from '../utils/errors';
 
 /**
@@ -11,7 +16,7 @@ import { BadRequestError, InternalServerError } from '../utils/errors';
 export const getRecentCalls = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -31,7 +36,9 @@ export const getRecentCalls = async (
     // Load recent calls
     const { data: recentCalls, error: callsError } = await supabaseAdmin
       .from('call_logs')
-      .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json')
+      .select(
+        'id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json',
+      )
       .eq('location_id', location.id)
       .order('started_at', { ascending: false })
       .limit(limitNum);
@@ -65,11 +72,7 @@ export const getRecentCalls = async (
  * GET /api/calls
  * Fetch calls with pagination and filters
  */
-export const getCalls = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const getCalls = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -94,7 +97,10 @@ export const getCalls = async (
     // Build query
     let query = supabaseAdmin
       .from('call_logs')
-      .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json', { count: 'exact' })
+      .select(
+        'id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json',
+        { count: 'exact' },
+      )
       .eq('location_id', location.id);
 
     // Apply filters
@@ -116,7 +122,9 @@ export const getCalls = async (
 
     if (search) {
       // Search in call_sid or phone numbers
-      query = query.or(`call_sid.ilike.%${search}%,from_e164.ilike.%${search}%,to_e164.ilike.%${search}%`);
+      query = query.or(
+        `call_sid.ilike.%${search}%,from_e164.ilike.%${search}%,to_e164.ilike.%${search}%`,
+      );
     }
 
     // Apply pagination and ordering
@@ -170,7 +178,7 @@ export const getCalls = async (
 export const getCallBySid = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.supabaseUser) {
@@ -193,7 +201,9 @@ export const getCallBySid = async (
     // Load call by SID (must belong to user's location)
     const { data: call, error: callError } = await supabaseAdmin
       .from('call_logs')
-      .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json')
+      .select(
+        'id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, notes_json',
+      )
       .eq('location_id', location.id)
       .eq('call_sid', callSid)
       .maybeSingle();
@@ -240,11 +250,7 @@ export const getCallBySid = async (
  * POST /api/calls/test
  * Place a test call (Twilio Calls API)
  */
-export const testCall = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const testCall = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -291,7 +297,11 @@ export const testCall = async (
       .maybeSingle();
 
     if (!phoneData?.e164) {
-      return next(new BadRequestError('No connected phone number found. Please connect a phone number first.'));
+      return next(
+        new BadRequestError(
+          'No connected phone number found. Please connect a phone number first.',
+        ),
+      );
     }
 
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
@@ -327,6 +337,78 @@ export const testCall = async (
         from: callResult.from,
         to: callResult.to,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/calls/:callId/feedback
+ * Save user feedback for a call
+ */
+export const saveCallFeedback = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { callId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!callId) {
+      return next(new BadRequestError('callId parameter is required'));
+    }
+
+    if (!rating) {
+      return next(new BadRequestError('rating is required'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Get user's location
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // Get current call log
+    const { data: call, error: fetchError } = await supabaseAdmin
+      .from('call_logs')
+      .select('notes_json')
+      .eq('id', callId)
+      .eq('location_id', location.id)
+      .single();
+
+    if (fetchError || !call) {
+      return next(new BadRequestError('Call not found or access denied'));
+    }
+
+    // Update notes_json with feedback
+    const notes = (call.notes_json as Record<string, unknown>) || {};
+    notes.ai_feedback = {
+      rating,
+      comment: comment || '',
+      timestamp: new Date().toISOString(),
+      user: email,
+    };
+
+    const { error: updateError } = await supabaseAdmin
+      .from('call_logs')
+      .update({ notes_json: notes })
+      .eq('id', callId);
+
+    if (updateError) {
+      console.error('[CallsController] Error saving feedback:', updateError);
+      return next(new InternalServerError('Failed to save feedback'));
+    }
+
+    res.json({
+      success: true,
+      message: 'Feedback saved successfully',
     });
   } catch (error) {
     next(error);

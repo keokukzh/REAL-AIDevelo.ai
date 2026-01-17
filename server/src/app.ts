@@ -1,48 +1,46 @@
-import { setupObservability } from './config/observability';
-import { config } from './config/env';
-import { initSentry } from './config/sentry';
-import { StructuredLoggingService } from './services/loggingService';
-import { initDatabaseStack } from './loaders/databaseInit';
-import express, { Request, Response, NextFunction } from 'express';
+import { setupObservability } from './config/observability.js';
+import { config } from './config/env.js';
+import { initSentry } from './config/sentry.js';
+import { StructuredLoggingService } from './services/loggingService.js';
+import { initDatabaseStack } from './loaders/databaseInit.js';
+import express from 'express';
 import { createServer } from 'http';
 import compression from 'compression';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
-import axios from 'axios';
+import path from 'path';
 
 // Middlewares
-import { errorHandler } from './middleware/errorHandler';
-import { swaggerSpec } from './config/swagger';
+import { errorHandler } from './middleware/errorHandler.js';
+import { swaggerSpec } from './config/swagger.js';
 import {
   corsMiddleware,
   optionsHandler,
   helmetMiddleware,
   varyOriginMiddleware,
-} from './middleware/security';
-import { timeoutMiddleware } from './middleware/timeout';
-import { cacheMiddleware } from './middleware/cache';
-import { queryMonitorMiddleware } from './middleware/queryMonitor';
-import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion';
-import { devBypassAuth } from './middleware/devBypassAuth';
-import { attachBackendSha } from './middleware/backendSha';
+} from './middleware/security.js';
+import { timeoutMiddleware } from './middleware/timeout.js';
+import { queryMonitorMiddleware } from './middleware/queryMonitor.js';
+import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion.js';
+import { devBypassAuth } from './middleware/devBypassAuth.js';
+import { attachBackendSha } from './middleware/backendSha.js';
 import {
   generalLimiter,
   authLimiter,
   voiceAgentLimiter,
   webhookLimiter,
   publicLimiter,
-} from './middleware/rateLimiter';
+} from './middleware/rateLimiter.js';
 
 // Consolidated Routes
-import apiV1Router from './routes/index';
+import apiV1Router from './routes/index.js';
 // Setup services
-import { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes';
-import { PERFORMANCE } from './config/constants';
-import stripeRoutes from './routes/stripeRoutes';
-import stripeWebhookRouter from './routes/stripeWebhook';
-import subscriptionRoutes from './routes/subscriptionRoutes';
-import adminRoutes from './routes/adminRoutes';
-import { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } from './jobs/syncJobs';
+import { setupWebSocketServer } from './voice-agent/routes/voiceAgentRoutes.js';
+import { PERFORMANCE } from './config/constants.js';
+import stripeWebhookRouter from './routes/stripeWebhook.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import { registerSyncJobs, scheduleDailySync, scheduleStatusChecks } from './jobs/syncJobs.js';
 
 // --- Initialization ---
 initSentry();
@@ -119,9 +117,11 @@ app.use((req, res, next) => {
 // Performance Logging
 app.use((req, res, next) => {
   const startTime = Date.now();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (req as any).startTime = startTime;
   const originalEnd = res.end.bind(res);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (res as any).end = function (...args: any[]) {
     const duration = Date.now() - startTime;
     StructuredLoggingService.logRequestComplete(req, res.statusCode, duration);
@@ -130,7 +130,8 @@ app.use((req, res, next) => {
     if (duration > PERFORMANCE.SLOW_REQUEST_THRESHOLD_MS) {
       StructuredLoggingService.warn('Slow request detected', { duration, path: req.path }, req);
     }
-    return originalEnd.apply(res, args as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (originalEnd as any).apply(res, args);
   };
   next();
 });
@@ -158,7 +159,7 @@ app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, apiV1Route
 
 // Public Health
 app.get('/health', async (req, res) => {
-  const { twilioService } = await import('./services/twilioService');
+  const { twilioService } = await import('./services/twilioService.js');
   const twilioOk = await twilioService.testConnection();
 
   res.json({
@@ -176,7 +177,7 @@ app.get('/api/health', (req, res) =>
 );
 
 app.get('/health/ready', async (req, res) => {
-  const { twilioService } = await import('./services/twilioService');
+  const { twilioService } = await import('./services/twilioService.js');
   const twilioOk = await twilioService.testConnection();
 
   if (!twilioOk) {
@@ -188,11 +189,10 @@ app.get('/health/ready', async (req, res) => {
 
 // Static Files
 if (config.isProduction) {
-  const path = require('path');
-  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(process.cwd(), 'public')));
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not Found' });
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    res.sendFile(path.join(process.cwd(), 'public/index.html'));
   });
 }
 
@@ -205,10 +205,11 @@ if (require.main === module) {
   setupWebSocketServer(httpServer);
 
   // Graceful Shutdown
-  const cleanup = () => {
+  const cleanup = async () => {
     StructuredLoggingService.info('Cleaning up...');
     try {
-      require('./services/twilioMediaStream').twilioVoiceService.cleanup();
+      const { twilioVoiceService } = await import('./services/twilioMediaStream.js');
+      twilioVoiceService.cleanup();
     } catch (e) {
       console.warn('Cleanup error:', e);
     }

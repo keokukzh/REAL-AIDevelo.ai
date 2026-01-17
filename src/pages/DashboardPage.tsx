@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CrossSectionNav } from '../components/navigation/CrossSectionNav.js';
 import { ROUTES } from '../config/navigation.js';
 import { useDashboardOverview } from '../hooks/useDashboardOverview.js';
+import { useNavigation } from '../hooks/useNavigation.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
@@ -12,6 +13,10 @@ import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal.j
 import { AvailabilityModal } from '../components/dashboard/AvailabilityModal.js';
 import { CalendarEventModal } from '../components/dashboard/CalendarEventModal.js';
 import { SideNav } from '../components/dashboard/SideNav.js';
+import {
+  ActivationChecklist,
+  type SelectionItem,
+} from '../components/dashboard/ActivationChecklist.js';
 import { apiClient } from '../services/apiClient.js';
 import { checkPhoneStatus } from '../services/api.js';
 import { TestCallButton } from '../components/dashboard/TestCallButton.js';
@@ -69,6 +74,7 @@ interface TestAgent {
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
+  const nav = useNavigation();
   const { user, logout } = useAuthContext();
   const queryClient = useQueryClient();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
@@ -232,7 +238,7 @@ export const DashboardPage = () => {
   }, [queryClient, refetch]);
 
   // Handle calendar OAuth connection
-  const handleConnectCalendar = async () => {
+  const handleConnectCalendar = React.useCallback(async () => {
     try {
       const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
         '/calendar/google/auth',
@@ -368,10 +374,10 @@ export const DashboardPage = () => {
       const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Kalenders');
       toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
     }
-  };
+  }, [queryClient, refetch]);
 
   // Handle calendar disconnect
-  const handleDisconnectCalendar = async () => {
+  const handleDisconnectCalendar = React.useCallback(async () => {
     try {
       const response = await apiClient.delete('/calendar/google/disconnect');
       if (response.data?.success) {
@@ -386,7 +392,7 @@ export const DashboardPage = () => {
       const errorMsg = extractErrorMessage(error, 'Fehler beim Trennen des Kalenders');
       toast.error(errorMsg);
     }
-  };
+  }, [queryClient, refetch]);
 
   // Determine effective overview early (before any hooks that depend on it)
   // This allows dashboard to work even with network errors
@@ -546,6 +552,38 @@ export const DashboardPage = () => {
       setIsCallDetailsOpen(true);
     },
     [],
+  );
+
+  // Checklist items based on dashboard status
+  const checklistItems: SelectionItem[] = React.useMemo(
+    () => [
+      {
+        id: 'agent',
+        label: 'Agent-Profil vollständig',
+        done: effectiveOverview?.status?.agent === 'ready',
+        action: () => nav.goTo(ROUTES.AGENT_EDIT(effectiveOverview?.agent_config.id || '')),
+      },
+      {
+        id: 'phone',
+        label: 'Telefonnummer verknüpft',
+        done: effectiveOverview?.status?.phone === 'connected',
+        action: handleConnectPhone,
+      },
+      {
+        id: 'calendar',
+        label: 'Kalender synchronisiert',
+        done: effectiveOverview?.status?.calendar === 'connected',
+        action: handleConnectCalendar,
+      },
+      {
+        id: 'test',
+        label: 'Erster Testanruf durchgeführt',
+        done: (effectiveOverview?.recent_calls?.length || 0) > 0,
+        action: handleTestAgent,
+        actionLabel: 'Jetzt testen',
+      },
+    ],
+    [effectiveOverview, handleConnectPhone, handleConnectCalendar, handleTestAgent, nav],
   );
 
   if (isLoading) {
@@ -1169,28 +1207,36 @@ export const DashboardPage = () => {
                   <div className="space-y-1.5">
                     <QuickActionButton
                       icon={Phone}
-                      label="Telefon verbinden"
+                      label={
+                        effectiveOverview.status.phone === 'connected'
+                          ? 'Nummer verwalten'
+                          : 'Telefon verbinden'
+                      }
                       onClick={handleConnectPhone}
-                      disabled={effectiveOverview.status.phone === 'connected'}
+                      color={effectiveOverview.status.phone === 'connected' ? 'emerald' : 'blue'}
                     />
                     <QuickActionButton
                       icon={Calendar}
-                      label="Kalender verbinden"
+                      label={calendarConnected ? 'Kalender verwalten' : 'Kalender verbinden'}
                       onClick={handleConnectCalendar}
-                      disabled={calendarConnected}
+                      color={calendarConnected ? 'emerald' : 'purple'}
                     />
                     <QuickActionButton
                       icon={Settings}
-                      label="Webhook Status prüfen"
+                      label="Webhook Status"
                       onClick={handleCheckWebhook}
                     />
                     <QuickActionButton
                       icon={PhoneMissed}
-                      label="Calls ansehen"
+                      label="Anrufprotokoll"
                       onClick={handleViewCalls}
                     />
                   </div>
                 </Card>
+
+                {checklistItems.some((i) => !i.done) && (
+                  <ActivationChecklist items={checklistItems} title="Start-Checkliste" />
+                )}
 
                 {/* System Health Compact */}
                 <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
