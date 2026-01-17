@@ -134,8 +134,17 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       }
     } catch (error: any) {
       console.error('[AgentTestModal] Chat message error:', error);
-      const errorMessage =
-        error?.response?.data?.error || error?.message || 'Fehler beim Senden der Nachricht';
+
+      let errorMessage = 'Fehler beim Senden der Nachricht';
+      const responseError = error?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        errorMessage = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        errorMessage = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
       const errorMsg: ChatMessage = {
         role: 'assistant',
         text: `Fehler: ${errorMessage}`,
@@ -196,8 +205,17 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       }
     } catch (err: any) {
       console.error('[AgentTestModal] Error making test call:', err);
-      const errorMsg =
-        err?.response?.data?.error || err?.message || 'Fehler beim Starten des Testanrufs';
+
+      let errorMsg = 'Fehler beim Starten des Testanrufs';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        errorMsg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
       setCallStatus('failed');
       toast.error(errorMsg);
     } finally {
