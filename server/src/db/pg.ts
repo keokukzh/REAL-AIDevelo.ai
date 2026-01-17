@@ -48,6 +48,7 @@ export function initializePgPool(): Pool {
       max: DATABASE_POOL.MAX_CONNECTIONS,
       idleTimeoutMillis: DATABASE_POOL.IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: DATABASE_POOL.CONNECTION_TIMEOUT_MS,
+      keepAlive: true,
       // Force IPv4
       lookup: (
         hostname: string,
