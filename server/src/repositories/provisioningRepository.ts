@@ -14,6 +14,8 @@ export interface AgentConfigDBRow {
   booking_required_fields_json: string[];
   booking_default_duration_min: number;
   admin_test_number?: string | null;
+  eleven_agent_id: string | null;
+  updated_at?: string;
 }
 
 // Helper: Check if we are in Dev Bypass mode
@@ -264,6 +266,7 @@ export async function ensureAgentConfig(locationId: string): Promise<AgentConfig
       company_name: 'Dev Company',
       booking_required_fields_json: ['name', 'phone'],
       booking_default_duration_min: 30,
+      eleven_agent_id: null,
     };
   }
 

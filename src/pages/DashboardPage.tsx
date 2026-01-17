@@ -1116,6 +1116,29 @@ export const DashboardPage = () => {
                         </tbody>
                       </table>
                     </div>
+                  ) : effectiveOverview?.status?.phone === 'connected' ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                      <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center animate-pulse">
+                        <Phone className="w-8 h-8 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-white">
+                          Ihr Anrufbeantworter ist bereit!
+                        </h3>
+                        <p className="text-sm text-gray-400 max-w-xs mx-auto mt-2">
+                          Rufen Sie Ihre Nummer{' '}
+                          <span className="text-white font-mono">
+                            {effectiveOverview.phone_number}
+                          </span>{' '}
+                          an oder starten Sie einen Testanruf.
+                        </p>
+                      </div>
+                      <TestCallButton
+                        phoneNumber={effectiveOverview.phone_number || ''}
+                        onTestCall={handleTestAgent}
+                        disabled={false}
+                      />
+                    </div>
                   ) : (
                     <EmptyCalls onAction={handleTestAgent} />
                   )}
@@ -1244,28 +1267,18 @@ export const DashboardPage = () => {
                     System Health
                   </h4>
                   <div className="space-y-3.5">
-                    <HealthItem label="Twilio Gateway" status={phoneHealth} />
-                    {phoneStatus?.twilioGateway === 'WARN' && (
-                      <div className="mt-1 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <p className="text-[10px] text-amber-500 leading-tight">
-                          <strong>Hinweis:</strong> Webhook nicht konfiguriert.
-                        </p>
-                        {phoneStatus.details?.expectedWebhookUrl && (
-                          <p className="text-[9px] text-amber-500/80 break-all mt-1 font-mono">
-                            Erwartet: {phoneStatus.details.expectedWebhookUrl}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {phoneStatus?.twilioGateway === 'ERROR' && (
-                      <div className="mt-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <p className="text-[10px] text-red-500 leading-tight">
-                          <strong>Fehler:</strong> Twilio nicht konfiguriert.
-                          {!phoneStatus.twilioConfigured && ' API-Keys fehlen.'}
-                          {!phoneStatus.hasConnectedNumber && ' Keine Nummer verbunden.'}
-                        </p>
-                      </div>
-                    )}
+                    <HealthItem
+                      label="Twilio Gateway"
+                      status={phoneHealth}
+                      detail={
+                        phoneStatus?.twilioGateway === 'WARN'
+                          ? `Webhook nicht konfiguriert. Erwartet: ${phoneStatus.details?.expectedWebhookUrl || '...'}`
+                          : phoneStatus?.twilioGateway === 'ERROR'
+                            ? `Twilio Fehler: ${!phoneStatus.twilioConfigured ? 'Keys fehlen' : 'Nummer fehlt'}`
+                            : undefined
+                      }
+                      onFix={phoneHealth !== 'ok' ? () => setIsWebhookStatusOpen(true) : undefined}
+                    />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
                     <HealthItem label="Azure TTS" status="ok" />
                     <HealthItem label="Supabase DB" status="ok" />

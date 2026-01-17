@@ -1,8 +1,13 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../middleware/supabaseAuth';
-import { supabaseAdmin, ensureOrgForUser, ensureDefaultLocation, ensureAgentConfig } from '../services/supabaseDb';
+import { AuthenticatedRequest } from '../middleware/supabaseAuth.js';
+import {
+  supabaseAdmin,
+  ensureOrgForUser,
+  ensureDefaultLocation,
+  ensureAgentConfig,
+} from '../services/supabaseDb.js';
 import { z } from 'zod';
-import { InternalServerError } from '../utils/errors';
+import { InternalServerError, BadRequestError } from '../utils/errors.js';
 
 // Get backend version from environment
 const getBackendVersion = (): string => {
@@ -10,20 +15,24 @@ const getBackendVersion = (): string => {
 };
 
 // Request schema for updating agent config (strict mode retained; we'll whitelist keys before validating)
-const UpdateAgentConfigSchema = z.object({
-  persona_gender: z.enum(['male', 'female']).optional(),
-  persona_age_range: z.string().optional(),
-  business_type: z.string().optional(),
-  goals_json: z.array(z.string()).optional(),
-  services_json: z.any().optional(),
-  setup_state: z.enum(['needs_persona', 'needs_business', 'needs_phone', 'needs_calendar', 'ready']).optional(),
-  eleven_agent_id: z.string().optional().nullable(),
-  admin_test_number: z.string().optional().nullable(),
-  greeting_template: z.string().optional().nullable(),
-  company_name: z.string().optional().nullable(),
-  booking_required_fields_json: z.array(z.string()).optional(),
-  booking_default_duration_min: z.number().int().min(5).max(480).optional(),
-}).strict();
+const UpdateAgentConfigSchema = z
+  .object({
+    persona_gender: z.enum(['male', 'female']).optional(),
+    persona_age_range: z.string().optional(),
+    business_type: z.string().optional(),
+    goals_json: z.array(z.string()).optional(),
+    services_json: z.any().optional(),
+    setup_state: z
+      .enum(['needs_persona', 'needs_business', 'needs_phone', 'needs_calendar', 'ready'])
+      .optional(),
+    eleven_agent_id: z.string().optional().nullable(),
+    admin_test_number: z.string().optional().nullable(),
+    greeting_template: z.string().optional().nullable(),
+    company_name: z.string().optional().nullable(),
+    booking_required_fields_json: z.array(z.string()).optional(),
+    booking_default_duration_min: z.number().int().min(5).max(480).optional(),
+  })
+  .strict();
 
 type UpdateAgentConfigRequest = z.infer<typeof UpdateAgentConfigSchema>;
 
@@ -53,9 +62,10 @@ const AgentConfigResponseSchema = z.object({
 export const updateAgentConfig = async (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const requestId =
+    req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   try {
     if (!req.supabaseUser) {
@@ -126,7 +136,7 @@ export const updateAgentConfig = async (
 
     // Build update payload by filtering out undefined values, normalize arrays
     const updatePayload = Object.fromEntries(
-      Object.entries(updates).filter(([, v]) => v !== undefined)
+      Object.entries(updates).filter(([, v]) => v !== undefined),
     ) as any;
     if ('goals_json' in updatePayload) {
       const gj = updatePayload.goals_json;
@@ -163,7 +173,9 @@ export const updateAgentConfig = async (
       .from('agent_configs')
       .update(updatePayload)
       .eq('id', agentConfig.id)
-      .select('id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, updated_at')
+      .select(
+        'id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, updated_at',
+      )
       .single();
 
     if (updateError) {
@@ -186,7 +198,7 @@ export const updateAgentConfig = async (
         hint: updateError.hint,
       };
       (errorWithSupabase as any).step = 'updateAgentConfig';
-      
+
       // Throw to be caught by outer catch, which will use error handler
       throw errorWithSupabase;
     }
@@ -213,8 +225,12 @@ export const updateAgentConfig = async (
       admin_test_number: (updatedConfig as any).admin_test_number ?? null,
       greeting_template: (updatedConfig as any).greeting_template ?? null,
       company_name: (updatedConfig as any).company_name ?? null,
-      booking_required_fields_json: Array.isArray((updatedConfig as any).booking_required_fields_json)
-        ? (updatedConfig as any).booking_required_fields_json.filter((x: any) => typeof x === 'string')
+      booking_required_fields_json: Array.isArray(
+        (updatedConfig as any).booking_required_fields_json,
+      )
+        ? (updatedConfig as any).booking_required_fields_json.filter(
+            (x: any) => typeof x === 'string',
+          )
         : [],
       booking_default_duration_min: (updatedConfig as any).booking_default_duration_min ?? 30,
       updated_at: (updatedConfig as any).updated_at,
@@ -246,7 +262,7 @@ export const updateAgentConfig = async (
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
     const stackLines = errorStack ? errorStack.split('\n').slice(0, 15).join('\n') : 'No stack';
-    
+
     console.error('[AgentConfigController] Error updating agent config:', {
       requestId,
       method: 'PATCH',
@@ -272,4 +288,3 @@ export const updateAgentConfig = async (
     throw error;
   }
 };
-

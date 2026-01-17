@@ -1,8 +1,11 @@
-import { v4 as uuidv4 } from 'uuid';
-import { PhoneNumber } from '../models/types';
-import { db } from './db';
-import { BadRequestError, NotFoundError } from '../utils/errors';
-import { telephonyRepository } from '../repositories/telephonyRepository';
+import { v4 } from 'uuid';
+import { PhoneNumber } from '../models/types.js';
+import { db } from './db.js';
+import { BadRequestError, NotFoundError } from '../utils/errors.js';
+import { telephonyRepository } from '../repositories/telephonyRepository.js';
+
+// Workaround for uuid import in mixed CJS/ESM environment
+const uuidv4 = v4;
 
 interface NumberSettings {
   [key: string]: unknown;
@@ -49,7 +52,7 @@ class TelephonyService {
       },
     ];
 
-    seeds.forEach(seed => {
+    seeds.forEach((seed) => {
       db.savePhoneNumber({
         ...seed,
         id: uuidv4(),
@@ -72,7 +75,7 @@ class TelephonyService {
 
     this.seedNumbers();
     const all = db.getPhoneNumbers('available');
-    const filtered = all.filter(n => n.country.toUpperCase() === country.toUpperCase());
+    const filtered = all.filter((n) => n.country.toUpperCase() === country.toUpperCase());
     return this.limitByPlan(filtered, planId);
   }
 
@@ -82,7 +85,10 @@ class TelephonyService {
     }
 
     if (this.useDatabase()) {
-      const { phoneNumber, telephony } = await telephonyRepository.assignNumber(agentId, phoneNumberId);
+      const { phoneNumber, telephony } = await telephonyRepository.assignNumber(
+        agentId,
+        phoneNumberId,
+      );
 
       // Keep in-memory store aligned for mixed-mode dev
       const agent = db.getAgent(agentId);

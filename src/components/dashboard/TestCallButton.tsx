@@ -8,9 +8,10 @@ import { toast } from '../ui/Toast.js';
 interface TestCallButtonProps {
   phoneNumber: string | null;
   disabled?: boolean;
+  onTestCall?: () => void;
 }
 
-export function TestCallButton({ phoneNumber, disabled }: TestCallButtonProps) {
+export function TestCallButton({ phoneNumber, disabled, onTestCall }: TestCallButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetNumber, setTargetNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,11 +55,19 @@ export function TestCallButton({ phoneNumber, disabled }: TestCallButtonProps) {
     }
   }
 
+  const handleClick = () => {
+    if (onTestCall) {
+      onTestCall();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
   return (
     <>
       <div className="mt-4">
         <Button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleClick}
           disabled={disabled || !phoneNumber}
           className={`w-full flex items-center justify-center gap-2 py-2.5 shadow-lg shadow-indigo-900/20 
             ${disabled || !phoneNumber ? 'bg-slate-800 text-gray-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
