@@ -70,7 +70,17 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setStep('forwarding-setup');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Forwarding-Info konnte nicht geladen werden';
+      let msg = 'Forwarding-Info konnte nicht geladen werden';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        msg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        msg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setError(msg);
       toast.error(msg);
     } finally {
@@ -88,7 +98,17 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setStep('purchase-setup');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Verfügbare Nummern konnten nicht geladen werden';
+      let msg = 'Verfügbare Nummern konnten nicht geladen werden';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        msg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        msg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setError(msg);
       toast.error(msg);
     } finally {
@@ -111,7 +131,17 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         setStep('verification');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Registrierung fehlgeschlagen';
+      let msg = 'Registrierung fehlgeschlagen';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        msg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        msg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setError(msg);
       toast.error(msg);
     } finally {
@@ -133,7 +163,17 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         onSuccess?.();
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || 'Kauf fehlgeschlagen';
+      let msg = 'Kauf fehlgeschlagen';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        msg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        msg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setError(msg);
       toast.error('Kauf fehlgeschlagen: ' + msg);
     } finally {

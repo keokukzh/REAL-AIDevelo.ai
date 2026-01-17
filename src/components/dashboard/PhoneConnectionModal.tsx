@@ -57,17 +57,15 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get<{ 
-        success: boolean; 
+      const response = await apiClient.get<{
+        success: boolean;
         data: PhoneNumber[];
         warning?: string;
         isMockData?: boolean;
-      }>(
-        '/phone/numbers?country=CH'
-      );
+      }>('/phone/numbers?country=CH');
       if (response.data?.success && Array.isArray(response.data.data)) {
         setAvailableNumbers(response.data.data);
-        
+
         // Show warning if Twilio not configured
         if (response.data.warning) {
           setError(response.data.warning);
@@ -82,7 +80,18 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
       }
     } catch (err: any) {
       console.error('[PhoneConnectionModal] Error loading numbers:', err);
-      const errorMsg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Fehler beim Laden der verfügbaren Nummern';
+
+      let errorMsg = 'Fehler beim Laden der verfügbaren Nummern';
+      const responseError = err?.response?.data?.error || err?.response?.data?.message;
+
+      if (typeof responseError === 'string') {
+        errorMsg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -101,7 +110,7 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
 
     try {
       // Find the selected number to get the phone number string
-      const selectedNumber = availableNumbers.find(n => n.id === selectedNumberId);
+      const selectedNumber = availableNumbers.find((n) => n.id === selectedNumberId);
       if (!selectedNumber) {
         throw new Error('Ausgewählte Nummer nicht gefunden');
       }
@@ -112,18 +121,18 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         {
           phoneNumberSid: selectedNumber.providerSid || selectedNumberId,
           phoneNumber: selectedNumber.number,
-        }
+        },
       );
 
       if (response.data?.success) {
         toast.success('Telefonnummer erfolgreich verbunden');
-        
+
         // Invalidate dashboard query to refresh data
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-        
+
         // Call success callback
         onSuccess?.();
-        
+
         // Close modal after short delay
         setTimeout(() => {
           onClose();
@@ -133,7 +142,18 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
       }
     } catch (err: any) {
       console.error('[PhoneConnectionModal] Error connecting number:', err);
-      const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Verbinden der Telefonnummer';
+
+      let errorMsg = 'Fehler beim Verbinden der Telefonnummer';
+      const responseError = err?.response?.data?.error;
+
+      if (typeof responseError === 'string') {
+        errorMsg = responseError;
+      } else if (responseError && typeof responseError === 'object') {
+        errorMsg = responseError.message || responseError.code || JSON.stringify(responseError);
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -163,7 +183,9 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-yellow-300 mb-1">Keine Nummern verfügbar</h3>
+              <h3 className="text-sm font-semibold text-yellow-300 mb-1">
+                Keine Nummern verfügbar
+              </h3>
               <p className="text-xs text-yellow-200/80 mb-2">
                 {error || 'Es sind derzeit keine Telefonnummern verfügbar.'}
               </p>
@@ -172,8 +194,14 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
                   <p className="text-xs text-gray-300 mb-2 font-medium">Lösung:</p>
                   <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
                     <li>Gehe zu Render Dashboard → Environment Variables</li>
-                    <li>Setze <code className="text-yellow-300">TWILIO_ACCOUNT_SID</code> (deine Twilio Account SID)</li>
-                    <li>Setze <code className="text-yellow-300">TWILIO_AUTH_TOKEN</code> (dein Twilio Auth Token)</li>
+                    <li>
+                      Setze <code className="text-yellow-300">TWILIO_ACCOUNT_SID</code> (deine
+                      Twilio Account SID)
+                    </li>
+                    <li>
+                      Setze <code className="text-yellow-300">TWILIO_AUTH_TOKEN</code> (dein Twilio
+                      Auth Token)
+                    </li>
                     <li>Starte den Service neu</li>
                   </ol>
                 </div>
@@ -188,9 +216,7 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         ) : (
           <>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">
-                Verfügbare Telefonnummern
-              </label>
+              <label className="text-sm font-medium text-gray-300">Verfügbare Telefonnummern</label>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {availableNumbers.map((number) => (
                   <label
