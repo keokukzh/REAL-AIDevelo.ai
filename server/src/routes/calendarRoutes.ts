@@ -37,7 +37,7 @@ router.get(
       // Get user and location
       const user = await ensureUserRow(supabaseUserId, email);
       const org = await ensureOrgForUser(supabaseUserId, email);
-      const location = locationId
+      const _location = locationId
         ? { id: locationId as string }
         : await ensureDefaultLocation(org.id);
 
@@ -196,7 +196,7 @@ router.put(
       const user = await ensureUserRow(supabaseUserId, email);
 
       // Build update object
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
       if (start !== undefined) updateData.start_time = start;
@@ -452,7 +452,7 @@ router.post(
       if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
       const { supabaseUserId, email } = req.supabaseUser;
 
-      const user = await ensureUserRow(supabaseUserId, email);
+      const _user = await ensureUserRow(supabaseUserId, email);
       const org = await ensureOrgForUser(supabaseUserId, email);
       const location = await ensureDefaultLocation(org.id);
 
@@ -477,6 +477,286 @@ router.post(
       res.json({
         success: true,
         message: 'Synchronisierung erfolgreich gestartet',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// =============================================================================
+// Google Calendar Route Aliases
+// These routes match the frontend API calls to /calendar/google/*
+// They delegate to the existing calendar functionality
+// =============================================================================
+
+/**
+ * GET /api/calendar/google/events
+ * Fetch Google Calendar events (alias for /events)
+ */
+router.get(
+  '/google/events',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      // Preflight check
+      const { checkDbPreflight } = await import('../services/dbPreflight.js');
+      const preflight = await checkDbPreflight();
+      if (!preflight.ok) {
+        return res.status(500).json({
+          success: false,
+          error: 'Datenbank-Schema unvollständig',
+          message: `Fehlende Tabellen: ${preflight.missing.join(', ')}. Bitte führen Sie die Datenbank-Migrationen aus.`,
+        });
+      }
+
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+      const { start, end, calendarId } = req.query;
+
+      // Get user and location
+      const user = await ensureUserRow(supabaseUserId, email);
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      await ensureDefaultLocation(org.id); // Ensure location exists
+
+      let query = supabaseAdmin.from('calendar_events').select('*').eq('user_id', user.id);
+
+      if (start) {
+        query = query.gte('start_time', start as string);
+      }
+      if (end) {
+        query = query.lte('end_time', end as string);
+      }
+
+      query = query.order('start_time', { ascending: true });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Map to Google Calendar-like format expected by frontend
+      const events = (data || []).map((e) => ({
+        id: e.id,
+        summary: e.title, // Google uses 'summary' instead of 'title'
+        description: e.description,
+        start: e.start_time,
+        end: e.end_time,
+        location: null,
+        attendees: e.attendees || [],
+        htmlLink: null,
+        aiBooked: e.created_by === 'agent',
+        calendarId: calendarId || 'primary',
+      }));
+
+      res.json({ success: true, data: events });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * POST /api/calendar/google/create-appointment
+ * Create a new calendar event (alias for POST /events)
+ */
+router.post(
+  '/google/create-appointment',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+      const { summary, description, start, end, attendees, location, timezone, aiBooked } =
+        req.body;
+
+      if (!summary?.trim() || !start || !end) {
+        return next(new BadRequestError('Summary, Start und Ende sind erforderlich'));
+      }
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return next(new BadRequestError('Ungültiges Datumsformat'));
+      }
+
+      if (endDate <= startDate) {
+        return next(new BadRequestError('Das Ende des Termins muss nach dem Start liegen'));
+      }
+
+      const user = await ensureUserRow(supabaseUserId, email);
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const locationObj = await ensureDefaultLocation(org.id);
+
+      const insertData = {
+        user_id: user.id,
+        location_id: locationObj.id,
+        title: summary.trim(),
+        description: description || null,
+        start_time: startDate.toISOString(),
+        end_time: endDate.toISOString(),
+        all_day: false,
+        attendees: attendees || [],
+        created_by: aiBooked ? 'agent' : 'user',
+        color: aiBooked ? '#3b82f6' : '#6b7280',
+      };
+
+      const { data, error } = await supabaseAdmin
+        .from('calendar_events')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Calendar/Google] Insert error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        return res.status(201).json({
+          success: true,
+          data: {
+            eventId: 'mock-id-' + Date.now(),
+            htmlLink: null,
+            start: insertData.start_time,
+            end: insertData.end_time,
+            calendarId: 'primary',
+          },
+        });
+      }
+
+      res.status(201).json({
+        success: true,
+        data: {
+          eventId: data.id,
+          htmlLink: null,
+          start: data.start_time,
+          end: data.end_time,
+          calendarId: 'primary',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * PUT /api/calendar/google/events/:id
+ * Update a calendar event (alias for PUT /events/:id)
+ */
+router.put(
+  '/google/events/:id',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+      const { id } = req.params;
+      const { summary, description, start, end, attendees } = req.body;
+
+      const user = await ensureUserRow(supabaseUserId, email);
+
+      // Build update object
+      const updateData: Record<string, unknown> = {};
+      if (summary !== undefined) updateData.title = summary;
+      if (description !== undefined) updateData.description = description;
+      if (start !== undefined) updateData.start_time = start;
+      if (end !== undefined) updateData.end_time = end;
+      if (attendees !== undefined) updateData.attendees = attendees;
+
+      const { data, error } = await supabaseAdmin
+        .from('calendar_events')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        data: {
+          eventId: data.id,
+          htmlLink: null,
+          start: data.start_time,
+          end: data.end_time,
+          calendarId: 'primary',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * DELETE /api/calendar/google/events/:id
+ * Delete a calendar event (alias for DELETE /events/:id)
+ */
+router.delete(
+  '/google/events/:id',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+      const { id } = req.params;
+
+      const user = await ensureUserRow(supabaseUserId, email);
+
+      const { error } = await supabaseAdmin
+        .from('calendar_events')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * POST /api/calendar/google/check-availability
+ * Check availability for a given time slot
+ */
+router.post(
+  '/google/check-availability',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+      const { start, end } = req.body;
+
+      if (!start || !end) {
+        return next(new BadRequestError('Start und Ende sind erforderlich'));
+      }
+
+      const user = await ensureUserRow(supabaseUserId, email);
+
+      // Check for overlapping events
+      const { data: conflicts, error } = await supabaseAdmin
+        .from('calendar_events')
+        .select('id, title, start_time, end_time')
+        .eq('user_id', user.id)
+        .or(`start_time.lt.${end},end_time.gt.${start}`);
+
+      if (error) throw error;
+
+      const isAvailable = !conflicts || conflicts.length === 0;
+
+      res.json({
+        success: true,
+        data: {
+          available: isAvailable,
+          conflicts: conflicts || [],
+        },
       });
     } catch (error) {
       next(error);
