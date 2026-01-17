@@ -1,4 +1,4 @@
-import { Router, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { verifySupabaseAuth, AuthenticatedRequest } from '../middleware/supabaseAuth';
 import { supabaseAdmin } from '../services/supabaseDb';
 import {
@@ -723,7 +723,7 @@ router.delete(
 
 /**
  * POST /api/calendar/google/check-availability
- * Check availability for a given time slot
+ * Check availability for a given date and return available time slots
  */
 router.post(
   '/google/check-availability',
@@ -732,32 +732,294 @@ router.post(
     try {
       if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
       const { supabaseUserId, email } = req.supabaseUser;
-      const { start, end } = req.body;
+      const {
+        date,
+        businessHours = { from: '09:00', to: '17:00' },
+        slotMinutes = 30,
+        minNoticeMinutes = 60,
+        timezone = 'Europe/Zurich',
+        maxResults = 20,
+      } = req.body;
 
-      if (!start || !end) {
-        return next(new BadRequestError('Start und Ende sind erforderlich'));
+      if (!date) {
+        return next(new BadRequestError('Datum ist erforderlich'));
       }
 
       const user = await ensureUserRow(supabaseUserId, email);
 
-      // Check for overlapping events
-      const { data: conflicts, error } = await supabaseAdmin
+      // Parse the date and business hours to create time range
+      const [year, month, day] = date.split('-').map(Number);
+      const [fromHour, fromMinute] = businessHours.from.split(':').map(Number);
+      const [toHour, toMinute] = businessHours.to.split(':').map(Number);
+
+      const rangeStart = new Date(year, month - 1, day, fromHour, fromMinute);
+      const rangeEnd = new Date(year, month - 1, day, toHour, toMinute);
+
+      // Get existing events for that day
+      const startOfDay = new Date(year, month - 1, day, 0, 0, 0).toISOString();
+      const endOfDay = new Date(year, month - 1, day, 23, 59, 59).toISOString();
+
+      const { data: existingEvents, error } = await supabaseAdmin
         .from('calendar_events')
         .select('id, title, start_time, end_time')
         .eq('user_id', user.id)
-        .or(`start_time.lt.${end},end_time.gt.${start}`);
+        .gte('start_time', startOfDay)
+        .lte('end_time', endOfDay);
 
       if (error) throw error;
 
-      const isAvailable = !conflicts || conflicts.length === 0;
+      // Generate available slots
+      const slots: { start: string; end: string; label: string }[] = [];
+      const now = new Date();
+      const minNoticeTime = new Date(now.getTime() + minNoticeMinutes * 60 * 1000);
+      let currentSlotStart = new Date(rangeStart);
+
+      while (currentSlotStart < rangeEnd && slots.length < maxResults) {
+        const currentSlotEnd = new Date(currentSlotStart.getTime() + slotMinutes * 60 * 1000);
+
+        // Skip if slot ends after business hours
+        if (currentSlotEnd > rangeEnd) break;
+
+        // Skip if slot starts before minimum notice time
+        if (currentSlotStart < minNoticeTime) {
+          currentSlotStart = new Date(currentSlotStart.getTime() + slotMinutes * 60 * 1000);
+          continue;
+        }
+
+        // Check for conflicts with existing events
+        const hasConflict = (existingEvents || []).some((event) => {
+          const eventStart = new Date(event.start_time);
+          const eventEnd = new Date(event.end_time);
+          return currentSlotStart < eventEnd && currentSlotEnd > eventStart;
+        });
+
+        if (!hasConflict) {
+          const formatTime = (d: Date) =>
+            d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+          slots.push({
+            start: currentSlotStart.toISOString(),
+            end: currentSlotEnd.toISOString(),
+            label: `${formatTime(currentSlotStart)} - ${formatTime(currentSlotEnd)}`,
+          });
+        }
+
+        currentSlotStart = new Date(currentSlotStart.getTime() + slotMinutes * 60 * 1000);
+      }
 
       res.json({
         success: true,
         data: {
-          available: isAvailable,
-          conflicts: conflicts || [],
+          timezone,
+          range: {
+            start: rangeStart.toISOString(),
+            end: rangeEnd.toISOString(),
+          },
+          slots,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * GET /api/calendar/google/auth
+ * Initiate Google Calendar OAuth flow
+ */
+router.get(
+  '/google/auth',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+
+      // Get user's location
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      // Get the redirect URI
+      const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://real-aidevelo-ai.onrender.com';
+      const redirectUri = `${publicBaseUrl}/api/calendar/google/callback`;
+
+      // Generate OAuth URL
+      const { calendarService } = await import('../services/calendarService.js');
+      const { authUrl, state } = calendarService.getGoogleAuthUrl(redirectUri, location.id);
+
+      res.json({
+        success: true,
+        data: {
+          authUrl,
+          state,
+        },
+      });
+    } catch (error) {
+      console.error('[CalendarRoutes] Error generating auth URL:', error);
+      next(error);
+    }
+  },
+);
+
+/**
+ * GET /api/calendar/google/callback
+ * Handle Google Calendar OAuth callback
+ */
+router.get('/google/callback', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code, state, error: oauthError } = req.query;
+
+    if (oauthError) {
+      console.error('[CalendarRoutes] OAuth error:', oauthError);
+      return res.send(`
+          <html>
+            <body>
+              <script>
+                window.opener?.postMessage({ type: 'calendar-oauth-error', message: 'OAuth wurde abgelehnt: ${oauthError}' }, '*');
+                window.close();
+              </script>
+              <p>OAuth fehlgeschlagen: ${oauthError}. Dieses Fenster kann geschlossen werden.</p>
+            </body>
+          </html>
+        `);
+    }
+
+    if (!code || !state) {
+      return res.status(400).send('Missing code or state parameter');
+    }
+
+    // Verify and decode state
+    const { verifySignedState } = await import('../utils/oauthState.js');
+    let stateData;
+    try {
+      stateData = verifySignedState(state as string);
+    } catch (err) {
+      console.error('[CalendarRoutes] Invalid state:', err);
+      return res.send(`
+          <html>
+            <body>
+              <script>
+                window.opener?.postMessage({ type: 'calendar-oauth-error', message: 'Ungültiger State-Parameter' }, '*');
+                window.close();
+              </script>
+              <p>Ungültiger State. Dieses Fenster kann geschlossen werden.</p>
+            </body>
+          </html>
+        `);
+    }
+
+    const { locationId } = stateData;
+
+    // Exchange code for tokens
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://real-aidevelo-ai.onrender.com';
+    const redirectUri = `${publicBaseUrl}/api/calendar/google/callback`;
+
+    const { calendarService } = await import('../services/calendarService.js');
+
+    // Handle mock code (for testing without OAuth configured)
+    if (code === 'mock_code') {
+      console.log('[CalendarRoutes] Mock code detected, skipping token exchange');
+      return res.send(`
+          <html>
+            <body>
+              <script>
+                window.opener?.postMessage({ type: 'calendar-oauth-error', message: 'OAuth nicht konfiguriert. Bitte GOOGLE_OAUTH_CLIENT_ID in Render setzen.' }, '*');
+                window.close();
+              </script>
+              <p>OAuth nicht konfiguriert. Dieses Fenster kann geschlossen werden.</p>
+            </body>
+          </html>
+        `);
+    }
+
+    const token = await calendarService.exchangeGoogleCode(code as string, redirectUri);
+
+    // Store token
+    await calendarService.storeToken(locationId, token);
+
+    // Update location calendar status
+    await supabaseAdmin
+      .from('locations')
+      .update({
+        calendar_status: 'connected',
+        calendar_provider: 'google',
+        calendar_connected_email: token.email || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', locationId);
+
+    console.log('[CalendarRoutes] Google Calendar connected for location:', locationId);
+
+    // Send success message to opener
+    res.send(`
+        <html>
+          <body>
+            <script>
+              window.opener?.postMessage({ type: 'calendar-oauth-success' }, '*');
+              window.close();
+            </script>
+            <p>Kalender erfolgreich verbunden! Dieses Fenster kann geschlossen werden.</p>
+          </body>
+        </html>
+      `);
+  } catch (error: any) {
+    console.error('[CalendarRoutes] OAuth callback error:', error);
+    res.send(`
+        <html>
+          <body>
+            <script>
+              window.opener?.postMessage({ type: 'calendar-oauth-error', message: 'Fehler beim Verbinden: ${error.message?.replace(/'/g, "\\'")}' }, '*');
+              window.close();
+            </script>
+            <p>Fehler: ${error.message}. Dieses Fenster kann geschlossen werden.</p>
+          </body>
+        </html>
+      `);
+  }
+});
+
+/**
+ * DELETE /api/calendar/google/disconnect
+ * Disconnect Google Calendar
+ */
+router.delete(
+  '/google/disconnect',
+  verifySupabaseAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.supabaseUser) return next(new InternalServerError('User not authenticated'));
+      const { supabaseUserId, email } = req.supabaseUser;
+
+      // Get user's location
+      const org = await ensureOrgForUser(supabaseUserId, email);
+      const location = await ensureDefaultLocation(org.id);
+
+      // Delete calendar connection
+      const { error: deleteError } = await supabaseAdmin
+        .from('calendar_connections')
+        .delete()
+        .eq('location_id', location.id)
+        .eq('provider', 'google');
+
+      if (deleteError) {
+        console.error('[CalendarRoutes] Error deleting calendar connection:', deleteError);
+        throw deleteError;
+      }
+
+      // Update location calendar status
+      await supabaseAdmin
+        .from('locations')
+        .update({
+          calendar_status: 'not_connected',
+          calendar_provider: null,
+          calendar_connected_email: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', location.id);
+
+      console.log('[CalendarRoutes] Google Calendar disconnected for location:', location.id);
+
+      res.json({ success: true, message: 'Kalender erfolgreich getrennt' });
     } catch (error) {
       next(error);
     }
