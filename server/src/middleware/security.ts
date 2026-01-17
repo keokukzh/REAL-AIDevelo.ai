@@ -128,6 +128,7 @@ export const helmetMiddleware = config.isProduction
             'data:',
             'https:', // Allow all HTTPS images (Unsplash, etc.)
             'blob:',
+            'https://*.twilio.com', // Twilio SDK images
           ],
           connectSrc: [
             "'self'",
@@ -147,9 +148,13 @@ export const helmetMiddleware = config.isProduction
             'https://www.googletagmanager.com', // GA4
             'https://plausible.io', // Plausible Analytics
             'https://*.plausible.io', // Plausible Analytics subdomains
+            'https://sdk.twilio.com', // Twilio SDK
+            'wss://voice-js.roaming.twilio.com', // Twilio Voice JS Signaling
+            'wss://*.twilio.com', // Twilio subdomains
+            'https://*.twilio.com', // Twilio subdomains
           ],
           frameSrc: ["'self'", 'https://*.supabase.co'],
-          mediaSrc: ["'self'", 'blob:'],
+          mediaSrc: ["'self'", 'blob:', 'https://*.twilio.com'],
         },
       },
       crossOriginResourcePolicy: { policy: 'cross-origin' },

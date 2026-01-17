@@ -134,6 +134,7 @@ export const TestCallPage: React.FC = () => {
       const call = await twilioDevice.connect({
         params: {
           To: 'agent', // Verbindet zu unserem Agent
+          locationId: locationId || '', // Pass locationId to identify the agent config
         },
       });
 

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { config } from '../config/env';
 import twilio from 'twilio';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { logger, redact } from '../utils/logger';
@@ -19,32 +20,58 @@ router.get('/voice-token', authenticateToken, async (req: AuthenticatedRequest, 
   try {
     const identity = `user_${req.supabaseUser?.id || 'guest'}_${Date.now()}`;
 
+    // Account SID must be set
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    if (!accountSid) {
+      throw new Error('TWILIO_ACCOUNT_SID is not configured on server');
+    }
+
+    // Preferred: API Key & Secret
+    const apiKey = config.twilioApiKeySid || process.env.TWILIO_API_KEY_SID;
+    const apiSecret = config.twilioApiKeySecret || process.env.TWILIO_API_KEY_SECRET;
+
+    // Fallback: Auth Token (less secure but works if same as Account SID)
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    // Determine final credentials
+    const finalApiKey = apiKey || accountSid;
+    const finalApiSecret = apiSecret || authToken;
+
+    if (!finalApiKey || !finalApiSecret) {
+      throw new Error('Twilio credentials (API Key or Auth Token) are missing');
+    }
+
+    // TwiML App SID for outgoing calls
+    const appSid = process.env.TWILIO_TWIML_APP_SID;
+    if (!appSid) {
+      console.warn('[TestCall] TWILIO_TWIML_APP_SID is not set. Outgoing calls will fail.');
+    }
+
     // Voice Grant erstellen
     const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: process.env.TWILIO_TWIML_APP_SID,
+      outgoingApplicationSid: appSid,
       incomingAllow: true,
     });
 
     // Access Token erstellen
-    const token = new AccessToken(
-      process.env.TWILIO_ACCOUNT_SID!,
-      process.env.TWILIO_ACCOUNT_SID!, // Als API Key
-      process.env.TWILIO_AUTH_TOKEN!, // Als API Secret
-      {
-        identity,
-        ttl: 3600, // 1 Stunde gültig
-      },
-    );
+    const token = new AccessToken(accountSid, finalApiKey, finalApiSecret, {
+      identity,
+      ttl: 3600, // 1 Stunde gültig
+    });
 
     token.addGrant(voiceGrant);
 
-    console.log('[TestCall] Voice token generated for:', identity);
+    console.log('[TestCall] Voice token generated successfully:', {
+      identity,
+      hasAppSid: !!appSid,
+      credentialUsed: apiKey ? 'API_KEY' : 'AUTH_TOKEN',
+    });
 
     res.json({
       success: true,
       token: token.toJwt(),
       identity,
-      appSid: process.env.TWILIO_TWIML_APP_SID,
+      appSid: appSid || null,
     });
   } catch (error: any) {
     console.error('[TestCall] Error generating voice token:', error);
@@ -58,20 +85,62 @@ router.get('/voice-token', authenticateToken, async (req: AuthenticatedRequest, 
 
 // TwiML für eingehende Test-Anrufe
 router.post('/incoming-call', async (req: Request, res: Response) => {
+  const callSid = req.body.CallSid || 'unknown';
+  const locationIdFromParams = req.body.locationId;
+
+  console.log('[TestCall] Incoming call request:', {
+    callSid,
+    locationId: locationIdFromParams,
+    from: req.body.From,
+  });
+
   try {
+    let locationId = locationIdFromParams;
+
+    // Wenn keine locationId im Body, lade die erste verfügbare (für Testzwecke)
+    if (!locationId) {
+      const { data: firstLoc } = await supabaseAdmin
+        .from('locations')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      locationId = firstLoc?.id;
+    }
+
+    if (!locationId) {
+      const twiml = new twilio.twiml.VoiceResponse();
+      twiml.say(
+        { voice: 'alice' },
+        'Keine Location-ID gefunden. Der Testruf kann nicht verarbeitet werden.',
+      );
+      res.type('text/xml').send(twiml.toString());
+      return;
+    }
+
+    // WebSocket URL zusammenbauen
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`;
+    const wsBaseUrl = publicBaseUrl.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    const streamUrl = `${wsBaseUrl}/api/phone/media-stream`;
+
+    console.log('[TestCall] Connecting to Media Stream:', {
+      callSid,
+      locationId,
+      streamUrl,
+    });
+
     const twiml = new twilio.twiml.VoiceResponse();
+    const connect = twiml.connect();
+    const stream = connect.stream({
+      url: streamUrl,
+    });
+    stream.parameter({ name: 'locationId', value: locationId });
 
-    // Weiterleitung an Voice Agent
-    twiml.dial().client('agent');
-
-    res.type('text/xml');
-    res.send(twiml.toString());
-  } catch (error) {
+    res.type('text/xml').send(twiml.toString());
+  } catch (error: any) {
     console.error('[TestCall] Error handling incoming call:', error);
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-    res.type('text/xml');
-    res.send(twiml.toString());
+    twiml.say({ voice: 'alice' }, 'Ein interner Fehler ist aufgetreten.');
+    res.type('text/xml').send(twiml.toString());
   }
 });
 
