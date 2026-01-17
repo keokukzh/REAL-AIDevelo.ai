@@ -14,7 +14,7 @@ import knowledgeRoutes from './knowledgeRoutes';
 import privacyRoutes from './privacyRoutes';
 import twilioRoutes from './twilioRoutes';
 import freeswitchRoutes from './freeswitchRoutes';
-import testCallRoutes from './testCallRoutes';
+import testCall from './testCall';
 import provisionRoutes from './provisionRoutes';
 import webchatRoutes from './webchatRoutes';
 import channelRoutes from './channelRoutes';
@@ -71,7 +71,7 @@ router.use('/voice', requireAuth, voiceRoutes);
 router.use('/telephony', requireAuth, telephonyRoutes);
 router.use('/phone', phoneRoutes); // Check internal auth inside
 router.use('/calls', callsRoutes); // Check internal auth inside
-router.use('/test-call', testCallRoutes);
+router.use('/test-call', testCall);
 router.use('/provision', provisionRoutes);
 router.use('/sync', requireAuth, syncRoutes);
 

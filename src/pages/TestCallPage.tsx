@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useTwilioVoice } from '../hooks/useTwilioVoice';
-import { useLocationId } from '../hooks/useAuth';
-import { useDashboardOverview } from '../hooks/useDashboardOverview';
-import { Phone, PhoneOff, Loader, MessageSquare, Mic } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
+import { Phone, PhoneOff, Loader, MessageSquare, Mic, AlertCircle } from 'lucide-react';
+import { apiClient } from '../services/apiClient.js';
+import { Device } from '@twilio/voice-sdk';
+import { toast } from '../components/ui/Toast.js';
+import { useLocationId } from '../hooks/useAuth.js';
+import { useDashboardOverview } from '../hooks/useDashboardOverview.js';
 
 type TestMode = 'voice' | 'chat';
 
@@ -18,8 +19,8 @@ interface ChatMessage {
   timestamp: string;
   toolCalls?: Array<{
     name: string;
-    arguments: any;
-    result?: any;
+    arguments: Record<string, unknown>;
+    result?: unknown;
     error?: string;
   }>;
 }
@@ -37,26 +38,135 @@ export const TestCallPage: React.FC = () => {
   const chatCallSidRef = useRef<string | null>(null);
 
   // 2. All useState hooks
-  const [mode, setMode] = useState<TestMode>('voice');
+  const [activeTab, setActiveTab] = useState<TestMode>('voice');
   const [callDuration, setCallDuration] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChatMessage, setIsSendingChatMessage] = useState(false);
+  const [twilioDevice, setTwilioDevice] = useState<Device | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<
+    'disconnected' | 'connecting' | 'connected'
+  >('disconnected');
+  const [callStatus, setCallStatus] = useState<'idle' | 'initiating' | 'in-progress' | 'error'>(
+    'idle',
+  );
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // 3. Custom hooks
   const locationId = useLocationId();
   const dashboardData = useDashboardOverview();
   const agentId = dashboardData.data?.agent_config?.id;
 
-  // 4. WebRTC hook (using Twilio Voice implementation)
-  const webRTC = useTwilioVoice({
-    locationId: locationId || '',
-    agentId,
-  });
+  // ÄNDERUNG 3: connectToVoice Funktion komplett ersetzen
+  const connectToVoice = async () => {
+    try {
+      setIsInitializing(true);
+      setConnectionStatus('connecting');
+      setConnectionError(null);
+
+      // Token vom Backend holen
+      const response = await apiClient.get<{
+        success: boolean;
+        token: string;
+        identity: string;
+        appSid: string;
+      }>('/test-call/voice-token');
+
+      if (!response.data.success) {
+        throw new Error('Token generation failed');
+      }
+
+      console.log('[TestCall] Received token for identity:', response.data.identity);
+
+      // Twilio Device initialisieren
+      const device = new Device(response.data.token, {
+        logLevel: 'debug',
+        codecPreferences: ['opus', 'pcmu'],
+        enableImprovedSignalingErrorPrecision: true,
+      });
+
+      // Event Listener
+      device.on('registered', () => {
+        console.log('[TestCall] Device registered successfully');
+        setConnectionStatus('connected');
+        setIsInitializing(false);
+      });
+
+      device.on('error', (error: { message: string }) => {
+        console.error('[TestCall] Device error:', error);
+        setConnectionError(`Twilio Device Error: ${error.message}`);
+        setConnectionStatus('disconnected');
+        setIsInitializing(false);
+      });
+
+      device.on('incoming', (call: { accept: () => void }) => {
+        console.log('[TestCall] Incoming call received');
+        call.accept();
+        setCallStatus('in-progress');
+      });
+
+      // Device registrieren
+      await device.register();
+      setTwilioDevice(device);
+
+      toast.success('Erfolgreich mit Twilio verbunden!');
+    } catch (error: any) {
+      console.error('[TestCall] Connection error:', error);
+      setConnectionError(error.message || 'Verbindung fehlgeschlagen');
+      setConnectionStatus('disconnected');
+      setIsInitializing(false);
+      toast.error('Verbindung fehlgeschlagen: ' + error.message);
+    }
+  };
+
+  // ÄNDERUNG 4: startCall Funktion hinzufügen
+  const startCall = async () => {
+    if (!twilioDevice) {
+      toast.error('Nicht verbunden');
+      return;
+    }
+
+    try {
+      setCallStatus('initiating');
+
+      // Anruf zum Voice Agent starten
+      const call = await twilioDevice.connect({
+        params: {
+          To: 'agent', // Verbindet zu unserem Agent
+        },
+      });
+
+      call.on('accept', () => {
+        console.log('[TestCall] Call accepted');
+        setCallStatus('in-progress');
+        toast.success('Verbunden mit Voice Agent!');
+      });
+
+      call.on('disconnect', () => {
+        console.log('[TestCall] Call disconnected');
+        setCallStatus('idle');
+        toast.info('Anruf beendet');
+      });
+    } catch (error: any) {
+      console.error('[TestCall] Call error:', error);
+      setCallStatus('error');
+      toast.error('Anruf fehlgeschlagen: ' + error.message);
+    }
+  };
+
+  // ÄNDERUNG 5: Cleanup bei Unmount
+  useEffect(() => {
+    return () => {
+      if (twilioDevice) {
+        twilioDevice.destroy();
+      }
+    };
+  }, [twilioDevice]);
 
   // 5. useEffect hooks
   useEffect(() => {
-    if (webRTC.isInCall) {
+    if (callStatus === 'in-progress') {
       const interval = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
@@ -64,7 +174,7 @@ export const TestCallPage: React.FC = () => {
     } else {
       setCallDuration(0);
     }
-  }, [webRTC.isInCall]);
+  }, [callStatus]);
 
   // 6. Event handlers as regular async functions (no useCallback to avoid TDZ issues)
   async function sendChatMessage(): Promise<void> {
@@ -95,8 +205,8 @@ export const TestCallPage: React.FC = () => {
         audio_url: string;
         toolCalls?: Array<{
           name: string;
-          arguments: any;
-          result?: any;
+          arguments: Record<string, unknown>;
+          result?: unknown;
           error?: string;
         }>;
       }>('/v1/test-call/chat-message', {
@@ -148,62 +258,15 @@ export const TestCallPage: React.FC = () => {
 
   // 7. useMemo hooks
   const combinedTranscript = useMemo(() => {
-    if (mode === 'voice') {
-      return webRTC.transcript;
+    if (activeTab === 'voice') {
+      return []; // Voice SDK transcript handling would go here if needed
     }
     return chatMessages.map((msg) => ({
       role: msg.role,
       text: msg.text,
       timestamp: msg.timestamp,
     }));
-  }, [mode, webRTC.transcript, chatMessages]);
-
-  // Render main action button based on connection and call state
-  const renderMainButton = () => {
-    if (!webRTC.isConnected) {
-      return (
-        <button
-          onClick={webRTC.connect}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
-        >
-          <Phone className="w-4 h-4" />
-          Mit Twilio Voice verbinden
-        </button>
-      );
-    }
-
-    if (!webRTC.isInCall) {
-      return (
-        <button
-          onClick={webRTC.startCall}
-          disabled={webRTC.isCalling}
-          className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {webRTC.isCalling ? (
-            <>
-              <Loader className="w-4 h-4 animate-spin" />
-              Verbinde...
-            </>
-          ) : (
-            <>
-              <Phone className="w-4 h-4" />
-              Test Call starten
-            </>
-          )}
-        </button>
-      );
-    }
-
-    return (
-      <button
-        onClick={webRTC.endCall}
-        className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
-      >
-        <PhoneOff className="w-4 h-4" />
-        Call beenden
-      </button>
-    );
-  };
+  }, [activeTab, chatMessages]);
 
   if (!locationId) {
     return (
@@ -234,9 +297,9 @@ export const TestCallPage: React.FC = () => {
         {/* Mode Toggle */}
         <div className="flex gap-2 justify-center mb-6">
           <button
-            onClick={() => setMode('voice')}
+            onClick={() => setActiveTab('voice')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-              mode === 'voice'
+              activeTab === 'voice'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
@@ -245,9 +308,9 @@ export const TestCallPage: React.FC = () => {
             Voice
           </button>
           <button
-            onClick={() => setMode('chat')}
+            onClick={() => setActiveTab('chat')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-              mode === 'chat'
+              activeTab === 'chat'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
@@ -260,61 +323,130 @@ export const TestCallPage: React.FC = () => {
         {/* Hidden audio element for chat mode */}
         <audio ref={audioRef} className="hidden" />
 
-        {/* Voice Mode: Connection Status & Controls */}
-        {mode === 'voice' && (
-          <>
-            <div className="bg-white/5 rounded-lg p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-400">Verbindungsstatus:</span>
-                <span
-                  className={`font-semibold ${webRTC.isConnected ? 'text-green-500' : 'text-red-500'}`}
-                >
-                  {webRTC.isConnected ? 'Verbunden' : 'Nicht verbunden'}
-                </span>
+        {/* ÄNDERUNG 6: Voice Tab UI aktualisieren */}
+        {activeTab === 'voice' && (
+          <div className="space-y-4">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Mic size={24} className="text-primary" />
+                <div>
+                  <h3 className="text-lg font-semibold">Browser Voice Test</h3>
+                  <p className="text-sm text-gray-400">
+                    Teste den Agent direkt im Browser mit Twilio WebRTC
+                  </p>
+                </div>
               </div>
 
-              {webRTC.callStatus !== 'idle' && (
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-gray-400">Call Status:</span>
-                  <span className="font-semibold text-blue-500">
-                    {webRTC.callStatus === 'connecting' && 'Verbinde...'}
-                    {webRTC.callStatus === 'ringing' && 'Klingelt...'}
-                    {webRTC.callStatus === 'active' && `Aktiv (${formatDuration(callDuration)})`}
-                    {webRTC.callStatus === 'ended' && 'Beendet'}
-                    {webRTC.callStatus === 'error' && 'Fehler'}
-                  </span>
+              {/* Status Anzeigen */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-slate-900 p-4 rounded-lg">
+                  <div className="text-sm text-gray-400 mb-1">Verbindungsstatus:</div>
+                  <div
+                    className={`font-semibold ${
+                      connectionStatus === 'connected'
+                        ? 'text-green-400'
+                        : connectionStatus === 'connecting'
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                    }`}
+                  >
+                    {connectionStatus === 'connected'
+                      ? 'Verbunden'
+                      : connectionStatus === 'connecting'
+                        ? 'Verbinde...'
+                        : 'Nicht verbunden'}
+                  </div>
                 </div>
-              )}
 
-              {webRTC.error && (
-                <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">
-                  <div className="font-semibold mb-2">Verbindungsfehler:</div>
-                  <div className="mb-2">{webRTC.error}</div>
-                  <div className="text-xs text-red-300/80 mt-2">
-                    <p>Hinweis: Überprüfen Sie Ihre Internetverbindung und Berechtigungen.</p>
+                <div className="bg-slate-900 p-4 rounded-lg">
+                  <div className="text-sm text-gray-400 mb-1">Call Status:</div>
+                  <div
+                    className={`font-semibold ${
+                      callStatus === 'in-progress'
+                        ? 'text-green-400'
+                        : callStatus === 'initiating'
+                          ? 'text-yellow-400'
+                          : callStatus === 'error'
+                            ? 'text-red-400'
+                            : 'text-gray-400'
+                    }`}
+                  >
+                    {callStatus === 'in-progress'
+                      ? `Aktiv (${formatDuration(callDuration)})`
+                      : callStatus === 'initiating'
+                        ? 'Startet...'
+                        : callStatus === 'error'
+                          ? 'Fehler'
+                          : 'Bereit'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Fehleranzeige */}
+              {connectionError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="text-red-400 mt-0.5" size={20} />
+                    <div>
+                      <h3 className="text-sm font-semibold text-red-300 mb-1">
+                        Verbindungsfehler:
+                      </h3>
+                      <p className="text-xs text-red-200/80">{connectionError}</p>
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Controls */}
-            <div className="flex gap-4 justify-center mb-8">
-              {renderMainButton()}
+              {/* Buttons */}
+              <div className="flex gap-3">
+                {connectionStatus !== 'connected' ? (
+                  <button
+                    onClick={connectToVoice}
+                    disabled={isInitializing}
+                    className="flex-1 px-6 py-3 bg-primary text-black rounded-lg font-medium hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isInitializing ? (
+                      <>
+                        <Loader className="animate-spin" size={20} />
+                        Verbinde...
+                      </>
+                    ) : (
+                      <>
+                        <Phone size={20} />
+                        Mit Twilio Voice verbinden
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={startCall}
+                      disabled={callStatus !== 'idle'}
+                      className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Mic size={20} />
+                      Anruf starten
+                    </button>
+                    <button
+                      onClick={() => twilioDevice?.disconnectAll()}
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <PhoneOff size={20} />
+                      Trennen
+                    </button>
+                  </>
+                )}
+              </div>
 
-              {webRTC.isConnected && (
-                <button
-                  onClick={webRTC.disconnect}
-                  className="flex items-center gap-2 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition"
-                >
-                  Trennen
-                </button>
-              )}
+              <p className="text-xs text-gray-400 mt-4">
+                💡 Tipp: Stelle sicher, dass dein Browser Mikrofon-Zugriff hat
+              </p>
             </div>
-          </>
+          </div>
         )}
 
         {/* Chat Mode: Input */}
-        {mode === 'chat' && (
+        {activeTab === 'chat' && (
           <div className="bg-white/5 rounded-lg p-6 mb-6">
             <div className="space-y-4">
               <div className="flex gap-2">
@@ -359,7 +491,7 @@ export const TestCallPage: React.FC = () => {
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {combinedTranscript.map((entry, index) => {
                 // Get tool calls for chat messages
-                const chatMessage = mode === 'chat' ? chatMessages[index] : null;
+                const chatMessage = activeTab === 'chat' ? chatMessages[index] : null;
                 const toolCalls = chatMessage?.toolCalls;
 
                 return (
@@ -399,8 +531,11 @@ export const TestCallPage: React.FC = () => {
                             toolCall.name === 'calendar' &&
                             toolCall.arguments?.action === 'create_appointment'
                           ) {
-                            const args = toolCall.arguments;
-                            const result = toolCall.result as any;
+                            const args = toolCall.arguments as { action: string; summary?: string };
+                            const result = toolCall.result as {
+                              success: boolean;
+                              data?: { start: string };
+                            };
                             if (result?.success && result?.data) {
                               const event = result.data;
                               const startDate = new Date(event.start);
@@ -430,34 +565,16 @@ export const TestCallPage: React.FC = () => {
         )}
 
         {/* Help Text */}
-        {mode === 'voice' && !webRTC.isInCall && (
+        {activeTab === 'voice' && callStatus === 'idle' && (
           <div className="mt-8 space-y-4">
             <div className="text-center text-gray-400 text-sm">
-              <p>Verbinden Sie sich mit FreeSWITCH und starten Sie einen Test-Call.</p>
+              <p>Verbinden Sie sich mit Twilio Voice und starten Sie einen Test-Call.</p>
               <p className="mt-2">Der Agent wird Ihre Sprache transkribieren und antworten.</p>
             </div>
-
-            {/* Info Box for Production */}
-            {import.meta.env.PROD && !webRTC.isConnected && (
-              <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-300 text-sm">
-                <div className="font-semibold mb-2">⚠️ FreeSWITCH in Production</div>
-                <p className="text-xs text-yellow-200/80">
-                  FreeSWITCH ist für Production noch nicht eingerichtet. Für lokale Tests können Sie
-                  FreeSWITCH mit{' '}
-                  <code className="bg-yellow-500/20 px-1 rounded">
-                    docker-compose up freeswitch
-                  </code>{' '}
-                  starten.
-                </p>
-                <p className="text-xs text-yellow-200/80 mt-2">
-                  Die WebRTC-Test-Funktion ist derzeit nur für lokale Entwicklung verfügbar.
-                </p>
-              </div>
-            )}
           </div>
         )}
 
-        {mode === 'chat' && chatMessages.length === 0 && (
+        {activeTab === 'chat' && chatMessages.length === 0 && (
           <div className="mt-8 space-y-4">
             <div className="text-center text-gray-400 text-sm">
               <p>Schreiben Sie eine Nachricht an den Agent.</p>
