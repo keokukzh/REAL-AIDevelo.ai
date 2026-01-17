@@ -622,18 +622,35 @@ export const testAgentCall = async (
     await ensureAgentConfig(location.id);
 
     // Get the connected phone number for this location
+    // Check for both 'connected' and 'active' status (different parts of the app use different values)
     const { data: phoneData } = await supabaseAdmin
       .from('phone_numbers')
-      .select('e164, twilio_number_sid')
+      .select('e164, twilio_number_sid, status')
       .eq('location_id', location.id)
-      .eq('status', 'connected')
+      .in('status', ['connected', 'active'])
       .limit(1)
       .maybeSingle();
 
     if (!phoneData?.e164) {
+      // Check if there's a phone number with a different status
+      const { data: anyPhoneData } = await supabaseAdmin
+        .from('phone_numbers')
+        .select('e164, status')
+        .eq('location_id', location.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (anyPhoneData) {
+        return next(
+          new BadRequestError(
+            `Telefonnummer gefunden, aber Status ist "${anyPhoneData.status}". Bitte verbinden Sie die Nummer zuerst.`,
+          ),
+        );
+      }
+
       return next(
         new BadRequestError(
-          'No connected phone number found. Please connect a phone number first.',
+          'Keine Telefonnummer gefunden. Bitte verbinden Sie zuerst eine Telefonnummer.',
         ),
       );
     }

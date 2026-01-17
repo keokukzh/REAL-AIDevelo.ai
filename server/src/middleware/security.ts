@@ -148,10 +148,23 @@ export const helmetMiddleware = config.isProduction
             'https://www.googletagmanager.com', // GA4
             'https://plausible.io', // Plausible Analytics
             'https://*.plausible.io', // Plausible Analytics subdomains
-            'https://sdk.twilio.com', // Twilio SDK
-            'wss://voice-js.roaming.twilio.com', // Twilio Voice JS Signaling
-            'wss://*.twilio.com', // Twilio subdomains
-            'https://*.twilio.com', // Twilio subdomains
+            // Twilio SDK and Voice connections - comprehensive list
+            'https://sdk.twilio.com',
+            'https://*.twilio.com',
+            'wss://*.twilio.com',
+            'wss://voice-js.roaming.twilio.com',
+            'wss://eventgw.twilio.com',
+            'wss://*.region1.twilio.com',
+            'wss://sdkgw.us1.twilio.com',
+            'wss://sdkgw.us2.twilio.com',
+            'wss://sdkgw.eu1.twilio.com',
+            'wss://sdkgw.au1.twilio.com',
+            'https://eventgw.twilio.com',
+            'https://ecs.us1.twilio.com',
+            'https://ecs.us2.twilio.com',
+            'https://ecs.eu1.twilio.com',
+            'https://voice.twilio.com',
+            'https://regions.twilio.com',
           ],
           frameSrc: ["'self'", 'https://*.supabase.co'],
           mediaSrc: ["'self'", 'blob:', 'https://*.twilio.com'],
