@@ -24,8 +24,9 @@ export function getTestAgents(): TestAgent[] {
       description: 'Optimierter Agent für Schweizer Gastronomie',
       industry: 'Gastronomie',
       language: 'de-CH',
-      audioUrl: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c35270364f.mp3', // Placeholder audio
-      demoText: 'Grüezi! Willkomme bi aidevelo.ai. Ich bin Ihre digitale Assistent für Reservierige. Wie cha ich Ihne hüt hälfe?',
+      // Audio is generated dynamically by TTS service
+      demoText:
+        'Grüezi! Willkomme bi aidevelo.ai. Ich bin Ihre digitale Assistent für Reservierige. Wie cha ich Ihne hüt hälfe?',
     },
     {
       id: 'test-agent-2',
@@ -33,8 +34,9 @@ export function getTestAgents(): TestAgent[] {
       description: 'Demo-Agent für technischi Dienstleistige',
       industry: 'Service / Handwerk',
       language: 'de-CH',
-      audioUrl: 'https://cdn.pixabay.com/audio/2022/01/21/audio_248c084f67.mp3', // Placeholder audio
-      demoText: 'Guten Tag! Vielen Dank für Ihren Anruf. Unser Team ist spezialisiert auf effiziente Lösungen. Möchten Sie einen Beratungstermin vereinbaren?',
+      // Audio is generated dynamically by TTS service
+      demoText:
+        'Guten Tag! Vielen Dank für Ihren Anruf. Unser Team ist spezialisiert auf effiziente Lösungen. Möchten Sie einen Beratungstermin vereinbaren?',
     },
     {
       id: 'test-agent-3',
@@ -42,8 +44,9 @@ export function getTestAgents(): TestAgent[] {
       description: 'Support Agent für Online-Shops',
       industry: 'E-Commerce',
       language: 'de-CH',
-      audioUrl: 'https://cdn.pixabay.com/audio/2022/03/15/audio_1e3e8f8f3c.mp3', // Placeholder audio
-      demoText: 'Hoi! Ich hälfe Ihne gärn bi Froge zue Ihrer Bestellig oder bi dr Auswahl vom passende Produkt. Was suechid Sie gnau?',
+      // Audio is generated dynamically by TTS service
+      demoText:
+        'Hoi! Ich hälfe Ihne gärn bi Froge zue Ihrer Bestellig oder bi dr Auswahl vom passende Produkt. Was suechid Sie gnau?',
     },
   ];
 }
@@ -52,6 +55,5 @@ export function getTestAgents(): TestAgent[] {
  * Get a specific test agent by ID
  */
 export function getTestAgentById(id: string): TestAgent | undefined {
-  return getTestAgents().find(agent => agent.id === id);
+  return getTestAgents().find((agent) => agent.id === id);
 }
-
