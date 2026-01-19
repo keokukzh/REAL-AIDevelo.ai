@@ -96,6 +96,13 @@ router.get(
 
       const hasConnectedNumber = !!phoneData;
 
+      // Get user's personal phone number for test calls
+      const { data: userData } = await supabaseAdmin
+        .from('users')
+        .select('personal_phone_number')
+        .eq('supabase_user_id', supabaseUserId)
+        .maybeSingle();
+
       // Check webhook configuration (optional)
       let webhookConfigured = false;
       if (twilioConfigured && phoneData?.twilio_number_sid) {
@@ -127,6 +134,7 @@ router.get(
           hasConnectedNumber,
           webhookConfigured,
           phoneNumber: phoneData?.e164 || null,
+          personalPhoneNumber: userData?.personal_phone_number || null, // For test calls
           details: {
             accountSid: twilioConfigured
               ? process.env.TWILIO_ACCOUNT_SID?.substring(0, 8) + '...'

@@ -76,6 +76,8 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   const [isMakingCall, setIsMakingCall] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [callSid, setCallSid] = useState<string | null>(null);
+  const [savedPersonalNumber, setSavedPersonalNumber] = useState<string | null>(null);
+  const [isFetchingPersonalNumber, setIsFetchingPersonalNumber] = useState(false);
 
   // Common refs
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -107,6 +109,33 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
       setTestPhoneNumber(adminTestNumber);
     }
   }, [adminTestNumber]);
+
+  // Fetch user's personal phone number when phone mode is active
+  useEffect(() => {
+    if (isOpen && testMode === 'phone' && !savedPersonalNumber) {
+      const fetchPersonalNumber = async () => {
+        setIsFetchingPersonalNumber(true);
+        try {
+          const res = await apiClient.get<{
+            success: boolean;
+            data: { personalPhoneNumber?: string | null };
+          }>('/phone/status');
+          if (res.data?.success && res.data.data?.personalPhoneNumber) {
+            setSavedPersonalNumber(res.data.data.personalPhoneNumber);
+            // Also pre-fill the input if empty
+            if (!testPhoneNumber) {
+              setTestPhoneNumber(res.data.data.personalPhoneNumber);
+            }
+          }
+        } catch (err) {
+          console.error('[AgentTestModal] Failed to fetch personal number:', err);
+        } finally {
+          setIsFetchingPersonalNumber(false);
+        }
+      };
+      fetchPersonalNumber();
+    }
+  }, [isOpen, testMode, savedPersonalNumber, testPhoneNumber]);
 
   // Fetch current prompt when modal opens or agent changes
   useEffect(() => {
@@ -618,13 +647,38 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                 )}
 
                 {testMode === 'phone' && (
-                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-3">
+                    {/* Info box showing saved personal number */}
+                    {savedPersonalNumber && (
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-start gap-2">
+                        <Phone className="text-green-400 mt-0.5" size={14} />
+                        <div>
+                          <p className="text-xs text-green-200">
+                            Deine gespeicherte Nummer:{' '}
+                            <strong className="font-mono">{savedPersonalNumber}</strong>
+                          </p>
+                          <p className="text-[10px] text-green-300/60 mt-0.5">
+                            Klick unten auf "Mich jetzt anrufen" — wir rufen dich an.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {!savedPersonalNumber && !isFetchingPersonalNumber && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-start gap-2">
+                        <AlertCircle className="text-amber-400 mt-0.5" size={14} />
+                        <p className="text-xs text-amber-200">
+                          Keine Handynummer gespeichert. Gib unten eine Nummer ein oder speichere
+                          deine Nummer in den Einstellungen.
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <input
                         type="tel"
                         value={testPhoneNumber}
                         onChange={(e) => setTestPhoneNumber(e.target.value)}
                         placeholder="+41791234567"
+                        aria-label="Telefonnummer für Testanruf"
                         className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white focus:outline-none focus:border-accent"
                         disabled={isMakingCall || callStatus !== 'idle'}
                       />
@@ -638,7 +692,9 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                         ) : (
                           <Phone size={14} />
                         )}
-                        Anrufen
+                        {savedPersonalNumber && testPhoneNumber === savedPersonalNumber
+                          ? 'Mich jetzt anrufen'
+                          : 'Anrufen'}
                       </button>
                       {callStatus !== 'idle' &&
                         !['completed', 'failed', 'busy', 'no-answer'].includes(callStatus) && (
@@ -768,6 +824,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
                       <button
                         onClick={sendChatMessage}
                         disabled={!chatInput.trim() || isSending}
+                        aria-label="Nachricht senden"
                         className="p-3 bg-accent text-black rounded-lg hover:bg-accent/80 transition disabled:opacity-50"
                       >
                         {isSending ? (
