@@ -59,8 +59,9 @@ Die Skills befinden sich in `.agent/skills/`:
 10. **using-git-worktrees** - Parallele Arbeit mit Git Worktrees
 11. **using-superpowers** - Meta-Skill: Wie man Superpowers effektiv nutzt
 12. **verification-before-completion** - Verifizierung vor Abschluss einer Aufgabe
-13. **writing-plans** - Erstellung von TDD-fokussierten Implementierungsplänen
+13. **writing-plans** - Erstellung von TDD-fokussierter Implementierungspläne
 14. **writing-skills** - Neue Skills erstellen und dokumentieren
+15. **autonomous-loop** - Autonome iterative Ausführung von Entwicklungsplänen (Ralph-inspiriert)
 
 ---
 
@@ -84,4 +85,32 @@ Um die vollständigen Anweisungen eines Skills zu laden, nutze:
 view_file .agent/skills/<skill-name>/SKILL.md
 ```
 
+Oder in Cursor: Lese die Datei direkt: `.agent/skills/<skill-name>/SKILL.md`
+
 Scanne den Ordner `.agent/skills`, um die Details dieser Fähigkeiten bei Bedarf zu laden.
+
+## 🔧 Cursor-spezifische Integration
+
+**Wichtiger Unterschied zu Claude Code:**
+- Cursor hat kein Plugin-System wie Claude Code
+- Skills werden durch Lesen der SKILL.md Dateien geladen
+- Keine `/superpowers:brainstorming` Befehle verfügbar
+- Stattdessen: Lese `.agent/skills/brainstorming/SKILL.md` und folge den Anweisungen
+
+**Workflow in Cursor:**
+1. Identifiziere anwendbaren Skill (auch bei 1% Wahrscheinlichkeit)
+2. Lese die SKILL.md Datei
+3. Kündige Verwendung an: "Ich nutze [skill-name] um [Zweck]"
+4. Folge den Anweisungen genau
+5. Verifiziere Abschluss
+
+**Hilfreiche Dateien:**
+- `.agent/skills/INDEX.md` - Übersicht aller Skills
+- `.agent/WORKFLOW.md` - Kompletter Workflow
+- `.agent/load-skill.md` - Detaillierte Anleitung zum Laden von Skills
+- `.agent/rules/superpowers.md` - Diese Datei (erweiterte Regeln)
+
+**Troubleshooting:**
+- Skill nicht gefunden? → Prüfe `.agent/skills/INDEX.md`
+- Unklar welcher Skill? → Lese `.agent/skills/using-superpowers/SKILL.md`
+- Workflow unklar? → Lese `.agent/WORKFLOW.md`

@@ -46,6 +46,17 @@ Use the launch configuration "Launch Chrome to Vite (http://localhost:4000)" fro
 - src/pages/WebdesignPage.tsx: Webdesign page wiring (lazy Ultra hero, fallbacks)
 - src/styles: CSS tokens and terminal styles
 
+## Superpowers Development Workflow
+
+This project uses [Superpowers](https://github.com/obra/superpowers) for structured development:
+
+- **Skills**: Available in `.agent/skills/` - TDD, debugging, planning workflows
+- **Setup**: See [docs/SUPERPOWERS_SETUP.md](../docs/SUPERPOWERS_SETUP.md)
+- **Usage**: See [docs/SUPERPOWERS_USAGE.md](../docs/SUPERPOWERS_USAGE.md)
+- **Quick Reference**: `.agent/skills/INDEX.md`
+
+The workflow enforces test-driven development, systematic debugging, and structured planning. Always use TDD when writing code.
+
 ## Notes
 - Suspense uses an animated loader while Ultra hero loads; errors render the standard WebdesignHero.
 - Debug overlay components are not rendered in production; terminal styles are only used for UI elements, not overlays.

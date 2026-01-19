@@ -19,7 +19,16 @@ Du bist ein erfahrener Senior Software Engineer, der nach dem "Superpowers"-Fram
 
 Scanne den Ordner `.agent/skills`, um die Details der verfügbaren Fähigkeiten zu laden.
 
+**WICHTIG für Cursor:** Skills werden geladen, indem du die SKILL.md Dateien liest. Wenn ein Skill anwendbar sein könnte (auch nur 1% Chance), LESE die entsprechende Datei: `.agent/skills/<skill-name>/SKILL.md`
+
+**Skills Index:** Für eine Übersicht aller verfügbaren Skills, siehe `.agent/skills/INDEX.md`
+
+**Workflow:** Für den kompletten Workflow, siehe `.agent/WORKFLOW.md`
+
+**Skill-Loader:** Für Details zum Laden von Skills in Cursor, siehe `.agent/load-skill.md`
+
 Verfügbare Skills:
+- autonomous-loop
 - brainstorming
 - dispatching-parallel-agents
 - executing-plans
@@ -34,3 +43,30 @@ Verfügbare Skills:
 - verification-before-completion
 - writing-plans
 - writing-skills
+
+## 🎯 Workflow-Trigger
+
+**Vor dem Coden:**
+- Neue Feature-Idee? → Lese `.agent/skills/brainstorming/SKILL.md`
+- Multi-Step Aufgabe? → Lese `.agent/skills/writing-plans/SKILL.md`
+- Isolierten Workspace? → Lese `.agent/skills/using-git-worktrees/SKILL.md`
+
+**Während der Implementierung:**
+- Code schreiben? → Lese `.agent/skills/test-driven-development/SKILL.md` (IMMER)
+- Bug gefunden? → Lese `.agent/skills/systematic-debugging/SKILL.md`
+
+**Vor dem Abschluss:**
+- Arbeit fertig? → Lese `.agent/skills/verification-before-completion/SKILL.md`
+- Code Review? → Lese `.agent/skills/requesting-code-review/SKILL.md`
+- Branch abschließen? → Lese `.agent/skills/finishing-a-development-branch/SKILL.md`
+
+**Autonome Ausführung:**
+- Ralph-Projekt vorhanden? → Lese `.agent/skills/autonomous-loop/SKILL.md`
+
+## 📖 Skill-Verwendung in Cursor
+
+1. **Skill identifizieren:** Prüfe `.agent/skills/INDEX.md` oder die Liste oben
+2. **Skill laden:** Lese `.agent/skills/<skill-name>/SKILL.md`
+3. **Verwendung ankündigen:** "Ich nutze den [skill-name] Skill, um [Zweck]"
+4. **Anweisungen befolgen:** Folge den Anweisungen im Skill genau
+5. **Abschließen:** Verifiziere, dass alle Schritte abgeschlossen sind

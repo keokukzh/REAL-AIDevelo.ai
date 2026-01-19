@@ -127,6 +127,17 @@ The project uses a custom Tailwind configuration (`tailwind.config.cjs`) with:
 - **Server API Docs**: See [server/API_DOCUMENTATION.md](server/API_DOCUMENTATION.md)
 - **Voice Agent Service**: See [server/src/voice-agent/README.md](server/src/voice-agent/README.md)
 
+### Superpowers Development Workflow
+
+This project uses [Superpowers](https://github.com/obra/superpowers) - a structured development workflow framework for AI coding agents.
+
+- **[docs/SUPERPOWERS_SETUP.md](docs/SUPERPOWERS_SETUP.md)** - Installation and setup guide
+- **[docs/SUPERPOWERS_USAGE.md](docs/SUPERPOWERS_USAGE.md)** - Complete usage guide and examples
+- **Skills Index**: `.agent/skills/INDEX.md` - Quick reference for all available skills
+- **Workflow Guide**: `.agent/WORKFLOW.md` - Complete development workflow
+
+The workflow enforces TDD, systematic debugging, and structured planning. See the documentation for details.
+
 ## 🚀 Deployment
 
 See **[docs/DEPLOY.md](docs/DEPLOY.md)** for complete deployment instructions:
@@ -139,3 +150,4 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for complete deployment instructions:
 1. Ensure clean code structure (Service/Data separation).
 2. Run standard formatted build before committing.
 3. Follow the existing code style and patterns.
+4. **Use Superpowers workflow** - Follow TDD, use skills for planning and debugging. See [docs/SUPERPOWERS_USAGE.md](docs/SUPERPOWERS_USAGE.md).
