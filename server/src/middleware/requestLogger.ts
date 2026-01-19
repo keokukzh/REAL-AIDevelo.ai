@@ -9,9 +9,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   const start = Date.now();
   // Normalize requestId to always be a string (headers can be string | string[])
   const requestIdHeader = req.headers['x-request-id'];
-  const requestId = Array.isArray(requestIdHeader) 
-    ? requestIdHeader[0] 
-    : (requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const requestId: string = (
+    Array.isArray(requestIdHeader) 
+      ? requestIdHeader[0] 
+      : requestIdHeader
+  ) || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   // Attach request ID to request object
   (req as any).requestId = requestId;
