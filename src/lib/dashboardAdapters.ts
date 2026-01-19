@@ -10,6 +10,8 @@ export interface KPIMetrics {
   appointmentsBooked: number;
   missedCalls: number;
   avgDuration: string;
+  savedTime: string;
+  efficiency: string;
   totalCallsTrend?: string;
   appointmentsTrend?: string;
   missedCallsTrend?: string;
@@ -42,7 +44,7 @@ export function mapCallsToChartData(calls: DashboardOverview['recent_calls']): C
   // Group calls by actual hour of day (last 24 hours)
   const now = new Date();
   const hourMap = new Map<string, number>();
-  
+
   // Initialize all hours to 0
   for (let i = 0; i < 24; i++) {
     const hour = String(i).padStart(2, '0');
@@ -50,11 +52,11 @@ export function mapCallsToChartData(calls: DashboardOverview['recent_calls']): C
   }
 
   // Count calls per hour using actual hour of day from timestamp
-  calls.forEach(call => {
+  calls.forEach((call) => {
     if (call.started_at) {
       const callDate = new Date(call.started_at);
       const hoursAgo = Math.floor((now.getTime() - callDate.getTime()) / (1000 * 60 * 60));
-      
+
       // Only include calls from the last 24 hours
       if (hoursAgo >= 0 && hoursAgo < 24) {
         // Use actual hour of day from the call's timestamp (0-23)
@@ -76,21 +78,20 @@ export function mapCallsToChartData(calls: DashboardOverview['recent_calls']): C
 export function mapOverviewToKPIs(overview: DashboardOverview): KPIMetrics {
   const calls = overview.recent_calls || [];
   const totalCalls = calls.length;
-  
+
   // Count missed calls (outcome === 'missed' or status indicates missed)
-  const missedCalls = calls.filter(call => 
-    call.outcome === 'missed' || call.outcome === 'failed'
+  const missedCalls = calls.filter(
+    (call) => call.outcome === 'missed' || call.outcome === 'failed',
   ).length;
 
   // Calculate average duration
   const durations = calls
-    .filter(call => call.duration_sec !== null && call.duration_sec > 0)
-    .map(call => call.duration_sec!);
-  
-  const avgDurationSec = durations.length > 0
-    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-    : 0;
-  
+    .filter((call) => call.duration_sec !== null && call.duration_sec > 0)
+    .map((call) => call.duration_sec!);
+
+  const avgDurationSec =
+    durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+
   const avgDuration = formatDuration(avgDurationSec);
 
   // Appointments booked - this would come from calendar integration
@@ -99,11 +100,27 @@ export function mapOverviewToKPIs(overview: DashboardOverview): KPIMetrics {
   // Note: Calendar integration would provide this data via a separate API endpoint
   const appointmentsBooked = 0;
 
+  // Calculate saved time (Total handled calls * ~3 minutes)
+  const totalDurationSec = durations.reduce((a, b) => a + b, 0);
+  // We assume every handled call saves about 3-5 minutes of human time
+  // But let's use actual handled duration + 2 minute overhead as "saved time"
+  const handledCalls = calls.filter(
+    (c) => c.outcome === 'completed' || c.outcome === 'voicemail',
+  ).length;
+  const savedTimeSec = totalDurationSec + handledCalls * 120;
+  const savedTime = formatDuration(savedTimeSec);
+
+  // Efficiency (Success rate)
+  const efficiency =
+    totalCalls > 0 ? `${Math.round(((totalCalls - missedCalls) / totalCalls) * 100)}%` : '100%';
+
   return {
     totalCalls,
     appointmentsBooked,
     missedCalls,
     avgDuration,
+    savedTime,
+    efficiency,
   };
 }
 
@@ -126,9 +143,8 @@ function formatDuration(seconds: number): string {
  * Maps a call log entry to table row data format
  */
 export function mapCallToTableRow(call: DashboardOverview['recent_calls'][0]): TableRowData {
-  const duration = call.duration_sec !== null && call.duration_sec > 0
-    ? formatDuration(call.duration_sec)
-    : '0s';
+  const duration =
+    call.duration_sec !== null && call.duration_sec > 0 ? formatDuration(call.duration_sec) : '0s';
 
   // Determine status
   let status = 'completed';
@@ -141,9 +157,9 @@ export function mapCallToTableRow(call: DashboardOverview['recent_calls'][0]): T
 
   // Format timestamp
   const timestamp = call.started_at
-    ? new Date(call.started_at).toLocaleTimeString('de-CH', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    ? new Date(call.started_at).toLocaleTimeString('de-CH', {
+        hour: '2-digit',
+        minute: '2-digit',
       })
     : '';
 

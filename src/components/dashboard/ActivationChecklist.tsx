@@ -30,40 +30,53 @@ export const ActivationChecklist: React.FC<ActivationChecklistProps> = ({
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-      <div className="relative z-10 flex items-center justify-between mb-6">
-        <div>
-          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-1">{title}</p>
-          <h3 className="text-xl font-bold font-display text-white">
-            {completed} / {items.length} abgeschlossen
-          </h3>
-        </div>
-        <div className="text-right">
-          <div className="relative w-12 h-12 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90">
-              <circle
-                cx="24"
-                cy="24"
-                r="20"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="transparent"
-                className="text-slate-800"
-              />
-              <circle
-                cx="24"
-                cy="24"
-                r="20"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="transparent"
-                strokeDasharray={`${2 * Math.PI * 20}`}
-                strokeDashoffset={`${2 * Math.PI * 20 * (1 - percent / 100)}`}
-                className="text-accent transition-all duration-1000 ease-out"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="absolute text-[10px] font-bold text-white">{percent}%</span>
+      <div className="relative z-10 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-1">
+              {title}
+            </p>
+            <h3 className="text-xl font-bold font-display text-white">
+              {completed} von {items.length} Schritten bereit
+            </h3>
           </div>
+          <div className="flex items-center gap-3 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90">
+                <circle
+                  cx="16"
+                  cy="16"
+                  r="14"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  className="text-slate-800"
+                />
+                <circle
+                  cx="16"
+                  cy="16"
+                  r="14"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  strokeDasharray={`${2 * Math.PI * 14}`}
+                  strokeDashoffset={`${2 * Math.PI * 14 * (1 - percent / 100)}`}
+                  className="text-accent transition-all duration-1000 ease-out"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="absolute text-[8px] font-bold text-white">{percent}%</span>
+            </div>
+            <span className="text-xs font-bold text-white">Setup-Fortschritt</span>
+          </div>
+        </div>
+
+        {/* Horizontal Progress Bar */}
+        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+          <div
+            className="h-full bg-gradient-to-r from-accent to-cyan shadow-[0_0_10px_rgba(34,211,238,0.3)] transition-all duration-1000 ease-out"
+            style={{ width: `${percent}%` }}
+          />
         </div>
       </div>
 

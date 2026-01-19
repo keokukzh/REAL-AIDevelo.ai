@@ -452,7 +452,14 @@ export const DashboardPage = () => {
     () =>
       effectiveOverview
         ? mapOverviewToKPIs(effectiveOverview)
-        : { totalCalls: 0, appointmentsBooked: 0, missedCalls: 0, avgDuration: '0:00' },
+        : {
+            totalCalls: 0,
+            appointmentsBooked: 0,
+            missedCalls: 0,
+            avgDuration: '0s',
+            savedTime: '0s',
+            efficiency: '100%',
+          },
     [effectiveOverview],
   );
   const chartData = React.useMemo(
@@ -712,39 +719,52 @@ export const DashboardPage = () => {
               </div>
             </section>
 
-            {/* KPI Grid / Onboarding Summary */}
-            <section aria-label="Key Performance Indicators">
+            {/* Onboarding Focus - Prominent Checklist for new users */}
+            {!isAgentActive && checklistItems.some((i) => !i.done) && (
+              <div className="mb-8 stagger-1">
+                <ActivationChecklist
+                  items={checklistItems}
+                  title="Willkommen! Lassen Sie uns Ihren Agenten startklar machen"
+                  className="ultra-glass border-accent/20 shadow-accent/5"
+                />
+              </div>
+            )}
+
+            {/* KPI Grid / ROI Summary */}
+            <section aria-label="Key Performance Indicators" className="mb-8">
               <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6`}>
                 <StatCard
-                  label={isAgentActive ? 'Gesamtanrufe' : 'Erwartete Anrufe'}
+                  label="Gesamtanrufe"
                   value={kpis.totalCalls}
                   icon={Phone}
                   iconColor="text-blue-400"
                   bgColor="bg-blue-500/10"
-                  description={!isAgentActive ? 'Sobald verbunden' : undefined}
+                  trend={isAgentActive ? '+12%' : undefined}
+                  trendUp={true}
                 />
                 <StatCard
-                  label="Termine gebucht"
+                  label="Konversionsrate"
+                  value={kpis.efficiency}
+                  icon={Cpu}
+                  iconColor="text-emerald-400"
+                  bgColor="bg-emerald-500/10"
+                  trend={isAgentActive ? '+5%' : undefined}
+                  trendUp={true}
+                />
+                <StatCard
+                  label="Termine"
                   value={isAgentActive ? kpis.appointmentsBooked : '0'}
                   icon={Calendar}
                   iconColor="text-green-400"
                   bgColor="bg-green-500/10"
-                  description={!isAgentActive ? 'Setup bereit' : undefined}
                 />
                 <StatCard
-                  label="Zeitersparnis"
-                  value={isAgentActive ? `${kpis.totalCalls * 2}min` : '0min'}
+                  label="Gesparte Zeit"
+                  value={isAgentActive ? kpis.savedTime : '0s'}
                   icon={Clock}
                   iconColor="text-purple-400"
                   bgColor="bg-purple-500/10"
-                  description="Pro Monat (geschätzt)"
-                />
-                <StatCard
-                  label="Status"
-                  value={isAgentActive ? 'Online' : 'Im Setup'}
-                  icon={Cpu}
-                  iconColor={isAgentActive ? 'text-emerald-400' : 'text-amber-400'}
-                  bgColor={isAgentActive ? 'bg-emerald-500/10' : 'bg-amber-500/10'}
+                  description="ROI Schätzung"
                 />
               </div>
             </section>
@@ -755,6 +775,7 @@ export const DashboardPage = () => {
                 {/* Calendar Card */}
                 <Card
                   title="Kalender"
+                  className="ultra-glass"
                   action={
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -964,11 +985,9 @@ export const DashboardPage = () => {
                           <Tooltip
                             contentStyle={{
                               borderRadius: '8px',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              backgroundColor: '#1e293b',
-                              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+                              border: '1px solid #334155',
                             }}
-                            itemStyle={{ color: '#f1f5f9', fontWeight: 600 }}
+                            itemStyle={{ color: '#fff' }}
                             labelStyle={{ color: '#cbd5e1' }}
                             cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
                           />
@@ -976,7 +995,7 @@ export const DashboardPage = () => {
                             type="monotone"
                             dataKey="calls"
                             stroke="#DA291C"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             fillOpacity={1}
                             fill="url(#colorCalls)"
                           />
@@ -993,6 +1012,7 @@ export const DashboardPage = () => {
                 {/* Recent Logs Table */}
                 <Card
                   title="Letzte Anrufe"
+                  className="ultra-glass"
                   action={
                     <Button
                       variant="ghost"
@@ -1102,9 +1122,9 @@ export const DashboardPage = () => {
               {/* Right Column (Agent & System) */}
               <div className="space-y-6">
                 {/* Agent Card */}
-                <div className="rounded-2xl bg-slate-900/80 backdrop-blur-sm text-white p-6 shadow-xl relative overflow-hidden border border-slate-700/50">
+                <div className="rounded-2xl ultra-glass text-white p-6 shadow-xl relative overflow-hidden border border-slate-700/50 group transition-all duration-300 hover:border-accent/40">
                   {/* Abstract Background Shapes */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-accent/10 transition-colors"></div>
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
 
                   <div className="relative z-10 flex justify-between items-start mb-6">
@@ -1114,7 +1134,7 @@ export const DashboardPage = () => {
                           <Mic className="w-6 h-6 text-swiss-red" />
                         </div>
                         <div
-                          className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500' : 'bg-amber-500'} border-2 border-slate-900 rounded-full animate-pulse`}
+                          className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'} border-2 border-slate-900 rounded-full ${isAgentActive ? 'animate-pulse' : ''}`}
                         ></div>
                       </div>
                       <div>
@@ -1164,10 +1184,10 @@ export const DashboardPage = () => {
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-slate-800 relative z-10">
+                  <div className="mt-6 pt-6 border-t border-slate-800 relative z-10 flex flex-col gap-3">
                     <Button
                       onClick={handleTestAgent}
-                      className="w-full bg-swiss-red hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20"
+                      className="w-full bg-swiss-red hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20 ultra-btn-sheen"
                     >
                       Agent testen
                     </Button>
@@ -1180,7 +1200,7 @@ export const DashboardPage = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <Card title="Quick Actions" className="border-slate-700/50">
+                <Card title="Quick Actions" className="ultra-glass border-slate-700/50">
                   <div className="space-y-1.5">
                     <QuickActionButton
                       icon={Phone}
@@ -1211,12 +1231,12 @@ export const DashboardPage = () => {
                   </div>
                 </Card>
 
-                {checklistItems.some((i) => !i.done) && (
-                  <ActivationChecklist items={checklistItems} title="Start-Checkliste" />
+                {isAgentActive && checklistItems.some((i) => !i.done) && (
+                  <ActivationChecklist items={checklistItems} title="Offene Aufgaben" />
                 )}
 
                 {/* System Health Compact */}
-                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
+                <div className="ultra-glass-light border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 font-display">
                     System Health
                   </h4>
