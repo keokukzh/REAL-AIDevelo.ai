@@ -66,6 +66,7 @@ router.get('/health', verifySupabaseAuth, async (req, res, next) => {
 /**
  * GET /api/phone/status
  * Check Twilio connection status and return gateway health
+ * Cached for 30 seconds to reduce database load
  */
 router.get(
   '/status',
@@ -76,6 +77,17 @@ router.get(
         return next(new InternalServerError('User not authenticated'));
       }
       const { supabaseUserId, email } = req.supabaseUser;
+
+      // Check cache first (user-specific cache key)
+      const { cacheService } = await import('../services/cacheService.js');
+      const { CacheKeys, CacheTTL } = await import('../services/cacheService.js');
+      const cacheKey = `phone:status:${supabaseUserId}`;
+      const cached = await cacheService.get<any>(cacheKey);
+
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached);
+      }
 
       // Get user's organization and location
       await ensureUserRow(supabaseUserId, email);
@@ -126,7 +138,7 @@ router.get(
         gatewayStatus = 'ERROR';
       }
 
-      res.json({
+      const response = {
         success: true,
         data: {
           twilioGateway: gatewayStatus,
@@ -145,7 +157,13 @@ router.get(
               : null,
           },
         },
-      });
+      };
+
+      // Cache response for 30 seconds
+      await cacheService.set(cacheKey, response, 30);
+
+      res.setHeader('X-Cache', 'MISS');
+      res.json(response);
     } catch (error) {
       next(error);
     }

@@ -10,6 +10,9 @@ export class VectorStore {
   private qdrantClient: QdrantClient;
   private openaiClient: OpenAI;
   private embeddingModel: string;
+  // Cache for verified collections to avoid repeated Qdrant API calls
+  private collectionCache: Set<string> = new Set();
+  private collectionsLoaded: boolean = false;
 
   constructor() {
     this.qdrantClient = new QdrantClient({
@@ -33,14 +36,41 @@ export class VectorStore {
   }
 
   /**
+   * Load all existing collections into cache (call once at startup)
+   */
+  async loadCollectionsCache(): Promise<void> {
+    if (this.collectionsLoaded) return;
+    
+    try {
+      const collections = await this.qdrantClient.getCollections();
+      collections.collections.forEach((c) => {
+        if (c.name.startsWith('location_')) {
+          this.collectionCache.add(c.name);
+        }
+      });
+      this.collectionsLoaded = true;
+      console.log(`[VectorStore] Loaded ${this.collectionCache.size} collections into cache`);
+    } catch (error) {
+      console.warn('[VectorStore] Failed to load collections cache:', error);
+      // Continue anyway - will fall back to per-request checks
+    }
+  }
+
+  /**
    * Get or create collection for a location
    * Collection name: location_<locationId>
+   * Uses in-memory cache to avoid repeated Qdrant API calls
    */
   async ensureCollection(locationId: string): Promise<void> {
     const collectionName = `location_${locationId}`;
 
+    // Fast path: check cache first
+    if (this.collectionCache.has(collectionName)) {
+      return; // Collection exists, no need to check Qdrant
+    }
+
     try {
-      // Check if collection exists
+      // Only check Qdrant if not in cache
       const collections = await this.qdrantClient.getCollections();
       const exists = collections.collections.some((c) => c.name === collectionName);
 
@@ -54,8 +84,14 @@ export class VectorStore {
         });
         console.log(`[VectorStore] Created collection: ${collectionName}`);
       } else {
-        console.log(`[VectorStore] Collection already exists: ${collectionName}`);
+        // Only log if not already in cache (first time we see it)
+        if (!this.collectionCache.has(collectionName)) {
+          console.log(`[VectorStore] Collection already exists: ${collectionName}`);
+        }
       }
+      
+      // Add to cache
+      this.collectionCache.add(collectionName);
     } catch (error) {
       throw new Error(`Failed to ensure collection for location ${locationId}: ${error}`);
     }

@@ -320,6 +320,7 @@ export const CacheTTL = {
   calendarAvailability: 60, // 1 minute
   voices: 60 * 60, // 1 hour
   dashboardOverview: 30, // 30 seconds (short TTL for near-real-time data)
+  phoneStatus: 30, // 30 seconds (phone status doesn't change frequently)
   // agentVerification and signedUrl were ElevenLabs-specific; keep if needed for other services or remove.
   // For now, keep generic placeholders.
   // agentVerification: 5 * 60,   // 5 minutes - placeholder

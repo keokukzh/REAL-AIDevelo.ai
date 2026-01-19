@@ -357,8 +357,13 @@ export const getDashboardOverview = async (
     const cached = await cacheService.get<DashboardOverviewResponse>(cacheKey);
 
     if (cached) {
-      // Add cache hit header
-      const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      // Add cache hit header - normalize requestId to always be a string
+      const requestIdHeader = req.headers['x-request-id'];
+      const requestId: string = (
+        Array.isArray(requestIdHeader) 
+          ? requestIdHeader[0] 
+          : requestIdHeader
+      ) || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       
       // Log cache hit
       StructuredLoggingService.info(

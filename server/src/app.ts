@@ -54,6 +54,18 @@ console.log('[Startup] Initializing database stack...');
 initDatabaseStack().catch((err) => {
   StructuredLoggingService.error('Critical DB init failure', err);
 });
+
+// Pre-load VectorStore collections cache to avoid repeated Qdrant calls
+(async () => {
+  try {
+    const { vectorStore } = await import('./voice-agent/rag/vectorStore.js');
+    await vectorStore.loadCollectionsCache();
+    console.log('[Startup] VectorStore collections cache loaded');
+  } catch (err) {
+    console.warn('[Startup] Failed to load VectorStore cache (non-critical):', err);
+  }
+})();
+
 console.log('[Startup] app creation started');
 const app = express();
 
@@ -274,6 +286,18 @@ if (require.main === module) {
     try {
       const { twilioVoiceService } = await import('./services/twilioMediaStream.js');
       twilioVoiceService.cleanup();
+      
+      // Clear VectorStore cache
+      const { vectorStore } = await import('./voice-agent/rag/vectorStore.js');
+      (vectorStore as any).collectionCache?.clear();
+      
+      // Log memory usage before exit
+      const memUsage = process.memoryUsage();
+      console.log('[Cleanup] Memory usage:', {
+        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+        rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+      });
     } catch (e) {
       console.warn('Cleanup error:', e);
     }
@@ -281,6 +305,24 @@ if (require.main === module) {
   };
   process.on('SIGTERM', cleanup);
   process.on('SIGINT', cleanup);
+  
+  // Memory monitoring (log every 5 minutes in production)
+  if (process.env.NODE_ENV === 'production') {
+    setInterval(() => {
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+      const rssMB = Math.round(memUsage.rss / 1024 / 1024);
+      
+      // Warn if memory usage is high (>400MB on 512MB instance)
+      if (heapUsedMB > 400 || rssMB > 450) {
+        StructuredLoggingService.warn('High memory usage detected', {
+          heapUsedMB,
+          rssMB,
+          heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+        });
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
+  }
 
   // Background Jobs
   console.log('[Startup] Registering sync jobs...');
