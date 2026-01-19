@@ -4,8 +4,12 @@ import { config } from '../config/env';
 let Redis: any = null;
 try {
   Redis = require('ioredis');
-} catch (e) {
+} catch (e: unknown) {
   // Redis not installed - will use in-memory cache fallback
+  // This is expected in some environments, so we silently continue
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[CacheService] Redis not available, using in-memory cache');
+  }
 }
 
 /**
@@ -14,8 +18,15 @@ try {
  */
 export class CacheService {
   private redis: any = null;
-  private memoryCache: Map<string, { value: unknown; expiry: number }> = new Map();
+  private readonly memoryCache = new Map<string, { value: unknown; expiry: number }>();
   private isRedisAvailable: boolean = false;
+  private metrics = {
+    hits: 0,
+    misses: 0,
+    sets: 0,
+    deletes: 0,
+    errors: 0,
+  };
 
   constructor() {
     this.initialize();
@@ -81,23 +92,39 @@ export class CacheService {
       try {
         const value = await this.redis.get(key);
         if (value) {
+          this.metrics.hits++;
           return JSON.parse(value) as T;
         }
+        this.metrics.misses++;
         return null;
       } catch (err) {
+        this.metrics.errors++;
         console.warn('[CacheService] Redis get error:', (err as Error).message);
         // Fallback to memory cache
-        return this.getFromMemory<T>(key);
+        const memoryValue = this.getFromMemory<T>(key);
+        if (memoryValue) {
+          this.metrics.hits++;
+        } else {
+          this.metrics.misses++;
+        }
+        return memoryValue;
       }
     }
 
-    return this.getFromMemory<T>(key);
+    const memoryValue = this.getFromMemory<T>(key);
+    if (memoryValue) {
+      this.metrics.hits++;
+    } else {
+      this.metrics.misses++;
+    }
+    return memoryValue;
   }
 
   /**
    * Set value in cache
    */
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+    this.metrics.sets++;
     const serialized = JSON.stringify(value);
 
     if (this.isRedisAvailable && this.redis) {
@@ -109,6 +136,7 @@ export class CacheService {
         }
         return;
       } catch (err) {
+        this.metrics.errors++;
         console.warn('[CacheService] Redis set error:', (err as Error).message);
         // Fallback to memory cache
         this.setInMemory(key, value, ttlSeconds);
@@ -123,10 +151,12 @@ export class CacheService {
    * Delete value from cache
    */
   async delete(key: string): Promise<void> {
+    this.metrics.deletes++;
     if (this.isRedisAvailable && this.redis) {
       try {
         await this.redis.del(key);
       } catch (err) {
+        this.metrics.errors++;
         console.warn('[CacheService] Redis delete error:', (err as Error).message);
       }
     }
@@ -227,6 +257,32 @@ export class CacheService {
         console.warn('[CacheService] Redis close error:', (err as Error).message);
       }
     }
+  }
+
+  /**
+   * Get cache metrics
+   */
+  getMetrics() {
+    const total = this.metrics.hits + this.metrics.misses;
+    const hitRate = total > 0 ? (this.metrics.hits / total) * 100 : 0;
+    return {
+      ...this.metrics,
+      hitRate: Math.round(hitRate * 100) / 100,
+      total,
+    };
+  }
+
+  /**
+   * Reset cache metrics
+   */
+  resetMetrics() {
+    this.metrics = {
+      hits: 0,
+      misses: 0,
+      sets: 0,
+      deletes: 0,
+      errors: 0,
+    };
   }
 }
 

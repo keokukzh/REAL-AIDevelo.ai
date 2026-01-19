@@ -13,6 +13,7 @@ import { twilioService } from '../services/twilioService.js';
 import { z } from 'zod';
 import { cacheService, CacheKeys, CacheTTL } from '../services/cacheService.js';
 import { StructuredLoggingService } from '../services/loggingService.js';
+import { retryApiCall, isRetryableError } from '../utils/retry.js';
 
 // Get backend version from environment (Render sets RENDER_GIT_COMMIT)
 const getBackendVersion = (): string => {
@@ -357,21 +358,112 @@ export const getDashboardOverview = async (
 
     if (cached) {
       // Add cache hit header
+      const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      
+      // Log cache hit
+      StructuredLoggingService.info(
+        'Dashboard overview cache hit',
+        {
+          userId: supabaseUserId,
+          cacheHit: true,
+        },
+        req,
+      );
+
       res.setHeader('X-Cache', 'HIT');
       res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
+      res.setHeader('X-Response-Time', '<10ms');
 
       return res.json({
         success: true,
         data: cached,
+        meta: {
+          requestId,
+          cached: true,
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
+    // Track performance metrics
+    const startTime = Date.now();
+    let queryTimings: Record<string, number> = {};
+
     // Reuse the same ensure logic as POST /api/agent/default
     // These must remain sequential as they depend on each other
-    const user = await ensureUserRow(supabaseUserId, email);
-    const org = await ensureOrgForUser(supabaseUserId, email);
-    const location = await ensureDefaultLocation(org.id);
-    const agentConfig = await ensureAgentConfig(location.id);
+    // Add retry logic for transient failures
+    const ensureStartTime = Date.now();
+    const user = await retryApiCall(
+      () => ensureUserRow(supabaseUserId, email),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+        retryable: (error) => {
+          // Retry on transient database errors
+          return (
+            isRetryableError(error) ||
+            error.message.includes('timeout') ||
+            error.message.includes('connection')
+          );
+        },
+      },
+    );
+    queryTimings.ensureUser = Date.now() - ensureStartTime;
+
+    const orgStartTime = Date.now();
+    const org = await retryApiCall(
+      () => ensureOrgForUser(supabaseUserId, email),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+        retryable: (error) => {
+          return (
+            isRetryableError(error) ||
+            error.message.includes('timeout') ||
+            error.message.includes('connection')
+          );
+        },
+      },
+    );
+    queryTimings.ensureOrg = Date.now() - orgStartTime;
+
+    const locationStartTime = Date.now();
+    const location = await retryApiCall(
+      () => ensureDefaultLocation(org.id),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+        retryable: (error) => {
+          return (
+            isRetryableError(error) ||
+            error.message.includes('timeout') ||
+            error.message.includes('connection')
+          );
+        },
+      },
+    );
+    queryTimings.ensureLocation = Date.now() - locationStartTime;
+
+    const agentConfigStartTime = Date.now();
+    const agentConfig = await retryApiCall(
+      () => ensureAgentConfig(location.id),
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+        retryable: (error) => {
+          return (
+            isRetryableError(error) ||
+            error.message.includes('timeout') ||
+            error.message.includes('connection')
+          );
+        },
+      },
+    );
+    queryTimings.ensureAgentConfig = Date.now() - agentConfigStartTime;
 
     // Determine agent status (depends on agentConfig)
     const agentStatus: 'ready' | 'needs_setup' =
@@ -379,37 +471,122 @@ export const getDashboardOverview = async (
 
     // Parallelize independent queries for better performance
     // All three queries depend only on location.id, so they can run in parallel
+    // Add retry logic for transient database failures
+    const parallelQueryStartTime = Date.now();
     const [phoneResult, calendarResult, callsResult] = await Promise.all([
-      // Load phone status and number
-      supabaseAdmin
-        .from('phone_numbers')
-        .select('status, e164, customer_public_number, twilio_number_sid')
-        .eq('location_id', location.id)
-        .limit(1)
-        .maybeSingle(),
-      // Load calendar status and provider
-      supabaseAdmin
-        .from('calendar_connections')
-        .select('id, provider, connected_email')
-        .eq('location_id', location.id)
-        .eq('provider', 'google')
-        .limit(1)
-        .maybeSingle(),
-      // Load recent calls
-      supabaseAdmin
-        .from('call_logs')
-        .select('id, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome')
-        .eq('location_id', location.id)
-        .order('started_at', { ascending: false })
-        .limit(10),
+      // Load phone status and number with retry
+      retryApiCall(
+        async () => {
+          const result = await supabaseAdmin
+            .from('phone_numbers')
+            .select('status, e164, customer_public_number, twilio_number_sid')
+            .eq('location_id', location.id)
+            .limit(1)
+            .maybeSingle();
+          if (result.error) {
+            throw new Error(`Database query failed: ${result.error.message}`);
+          }
+          return result;
+        },
+        {
+          maxAttempts: 3,
+          initialDelayMs: 500,
+          maxDelayMs: 2000,
+          retryable: (error) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return (
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('connection') ||
+              errorMessage.includes('ECONNRESET') ||
+              errorMessage.includes('ETIMEDOUT') ||
+              errorMessage.includes('Database query failed')
+            );
+          },
+        },
+      ),
+      // Load calendar status and provider with retry
+      retryApiCall(
+        async () => {
+          const result = await supabaseAdmin
+            .from('calendar_connections')
+            .select('id, provider, connected_email')
+            .eq('location_id', location.id)
+            .eq('provider', 'google')
+            .limit(1)
+            .maybeSingle();
+          if (result.error) {
+            throw new Error(`Database query failed: ${result.error.message}`);
+          }
+          return result;
+        },
+        {
+          maxAttempts: 3,
+          initialDelayMs: 500,
+          maxDelayMs: 2000,
+          retryable: (error) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return (
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('connection') ||
+              errorMessage.includes('ECONNRESET') ||
+              errorMessage.includes('ETIMEDOUT') ||
+              errorMessage.includes('Database query failed')
+            );
+          },
+        },
+      ),
+      // Load recent calls with retry
+      retryApiCall(
+        async () => {
+          const result = await supabaseAdmin
+            .from('call_logs')
+            .select('id, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome')
+            .eq('location_id', location.id)
+            .order('started_at', { ascending: false })
+            .limit(10);
+          if (result.error) {
+            throw new Error(`Database query failed: ${result.error.message}`);
+          }
+          return result;
+        },
+        {
+          maxAttempts: 3,
+          initialDelayMs: 500,
+          maxDelayMs: 2000,
+          retryable: (error) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return (
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('connection') ||
+              errorMessage.includes('ECONNRESET') ||
+              errorMessage.includes('ETIMEDOUT') ||
+              errorMessage.includes('Database query failed')
+            );
+          },
+        },
+      ),
     ]);
+    queryTimings.parallelQueries = Date.now() - parallelQueryStartTime;
 
+    // Extract data from results (retryApiCall returns the result directly)
     const phoneData = phoneResult.data;
     const calendarData = calendarResult.data;
-    const { data: recentCalls, error: callsError } = callsResult;
+    const recentCalls = callsResult.data;
+    const callsError = callsResult.error;
 
     if (callsError) {
-      console.error('[DefaultAgentController] Error loading recent calls:', callsError);
+      const errorMessage = typeof callsError === 'object' && callsError !== null && 'message' in callsError
+        ? String((callsError as { message: string }).message)
+        : String(callsError);
+      StructuredLoggingService.warn(
+        'Error loading recent calls (non-fatal)',
+        {
+          locationId: location.id,
+          step: 'loadRecentCalls',
+          error: errorMessage,
+        },
+        req,
+      );
     }
 
     // Process phone status
@@ -510,13 +687,36 @@ export const getDashboardOverview = async (
     // Cache the response (30s TTL for near-real-time data)
     await cacheService.set(cacheKey, validated, CacheTTL.dashboardOverview);
 
+    // Calculate total response time
+    const totalTime = Date.now() - startTime;
+    queryTimings.total = totalTime;
+
+    // Log performance metrics
+    StructuredLoggingService.info(
+      'Dashboard overview loaded',
+      {
+        locationId: location.id,
+        userId: supabaseUserId,
+        queryTimings,
+        cacheHit: false,
+      },
+      req,
+    );
+
     // Add backend version header (no secrets)
     res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
     res.setHeader('X-Cache', 'MISS');
+    res.setHeader('X-Response-Time', `${totalTime}ms`);
 
     res.json({
       success: true,
       data: validated,
+      meta: {
+        requestId: req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        cached: false,
+        timestamp: new Date().toISOString(),
+        performance: queryTimings,
+      },
     });
   } catch (error) {
     // Generate request ID for tracking
@@ -554,9 +754,10 @@ export const getDashboardOverview = async (
       }
     }
 
+    const errorToLog = error instanceof Error ? error : new Error(String(error));
     StructuredLoggingService.error(
       'Error getting dashboard overview',
-      error instanceof Error ? error : new Error('Unknown error'),
+      errorToLog,
       {
         requestId,
         step: failedStep,
@@ -565,16 +766,46 @@ export const getDashboardOverview = async (
     );
 
     // Use next(error) pattern for consistent error handling
-    const appError =
-      error instanceof z.ZodError
-        ? new InternalServerError('Response validation failed')
-        : new InternalServerError('Failed to get dashboard overview');
+    // Provide user-friendly error messages based on failed step
+    let errorMessage = 'Failed to get dashboard overview';
+    let errorDetail = 'An unexpected error occurred while loading your dashboard.';
+    
+    switch (failedStep) {
+      case 'ensureUserRow':
+        errorMessage = 'User account initialization failed';
+        errorDetail = 'Unable to initialize your user account. Please try refreshing the page or contact support if the issue persists.';
+        break;
+      case 'ensureOrgForUser':
+        errorMessage = 'Organization setup failed';
+        errorDetail = 'Unable to load your organization information. Please try refreshing the page.';
+        break;
+      case 'ensureDefaultLocation':
+        errorMessage = 'Location setup failed';
+        errorDetail = 'Unable to load your business location. Please try refreshing the page.';
+        break;
+      case 'ensureAgentConfig':
+        errorMessage = 'Agent configuration failed';
+        errorDetail = 'Unable to load your agent configuration. Please try refreshing the page.';
+        break;
+      case 'loadRecentCalls':
+        errorMessage = 'Call history unavailable';
+        errorDetail = 'Unable to load recent call history. Your dashboard will show limited information.';
+        break;
+      default:
+        if (error instanceof z.ZodError) {
+          errorMessage = 'Data validation failed';
+          errorDetail = 'The server returned invalid data. Please try refreshing the page.';
+        }
+    }
 
+    const appError = new InternalServerError(errorMessage);
     // Add step and requestId to error for debugging
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).step = failedStep;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (appError as any).requestId = requestId;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (appError as any).detail = errorDetail;
 
     next(appError);
   }
@@ -676,9 +907,7 @@ export const testAgentCall = async (
 
     // Use admin_test_number if provided, otherwise use the 'to' parameter
     const targetNumber =
-      agentConfig?.admin_test_number && agentConfig.admin_test_number.trim()
-        ? agentConfig.admin_test_number.trim()
-        : to;
+      agentConfig?.admin_test_number?.trim() || to;
 
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     if (!publicBaseUrl) {

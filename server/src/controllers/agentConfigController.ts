@@ -7,6 +7,7 @@ import {
   ensureAgentConfig,
 } from '../services/supabaseDb.js';
 import { z } from 'zod';
+import { cacheService, CacheKeys } from '../services/cacheService.js';
 
 // Get backend version from environment
 const getBackendVersion = (): string => {
@@ -275,6 +276,27 @@ export const updateAgentConfig = async (
         data: { setup_state: normalizedForResponse.setup_state },
         requestId,
       });
+    }
+
+    // Invalidate dashboard overview cache for this user's location
+    // Find user to get userId for cache invalidation
+    try {
+      const { data: userData } = await supabaseAdmin
+        .from('users')
+        .select('supabase_user_id')
+        .eq('org_id', org.id)
+        .limit(1)
+        .maybeSingle();
+      
+      if (userData?.supabase_user_id) {
+        // Invalidate dashboard overview cache
+        await cacheService.delete(CacheKeys.dashboardOverview(userData.supabase_user_id));
+        // Also invalidate agent config cache
+        await cacheService.delete(CacheKeys.agentConfig(location.id));
+      }
+    } catch (cacheError) {
+      // Non-fatal: log but don't fail the request
+      console.warn('[AgentConfigController] Cache invalidation failed (non-fatal):', cacheError);
     }
 
     res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
