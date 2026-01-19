@@ -3,6 +3,7 @@ import { AlertCircle, RefreshCw, Home, Mail } from 'lucide-react';
 import { Button } from './ui/Button.js';
 import { extractUserFriendlyError } from '../lib/errorUtils.js';
 import { UserFriendlyError } from './ui/UserFriendlyError.js';
+import { logger } from '../lib/logger.js';
 
 interface Props {
   children: ReactNode;
@@ -27,9 +28,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to error reporting service in production
-    // Always log errors for debugging
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Log error to error reporting service
+    logger.error('ErrorBoundary: Error caught by boundary', error, {
+      componentStack: errorInfo.componentStack,
+      errorInfo: errorInfo.toString(),
+    });
     this.setState({ errorInfo });
   }
 

@@ -20,6 +20,7 @@ import { Device } from '@twilio/voice-sdk';
 import { toast } from '../ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractErrorMessage } from '../../lib/errorUtils.js';
+import { logger } from '../../lib/logger.js';
 
 interface AgentTestModalProps {
   isOpen: boolean;
@@ -128,7 +129,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
             }
           }
         } catch (err) {
-          console.error('[AgentTestModal] Failed to fetch personal number:', err);
+          logger.error('AgentTestModal: Failed to fetch personal number', err);
         } finally {
           setIsFetchingPersonalNumber(false);
         }
@@ -262,7 +263,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
         throw new Error('Failed to get response');
       }
     } catch (error: unknown) {
-      console.error('[AgentTestModal] Chat message error:', error);
+      logger.error('AgentTestModal: Chat message error', error);
       const errorMessage = extractErrorMessage(error, 'Fehler beim Senden der Nachricht');
       const errorMsg: ChatMessage = {
         role: 'assistant',
@@ -332,7 +333,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
         throw new Error('Testanruf fehlgeschlagen');
       }
     } catch (err: unknown) {
-      console.error('[AgentTestModal] Error making test call:', err);
+      logger.error('AgentTestModal: Error making test call', err);
       const errorMsg = extractErrorMessage(err, 'Fehler beim Starten des Testanrufs');
       setCallStatus('failed');
       toast.error(errorMsg);
@@ -482,7 +483,7 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play().catch((err) => {
-        console.error('Failed to play audio:', err);
+        logger.error('AgentTestModal: Failed to play audio', err);
         toast.error('Fehler beim Abspielen der Audio');
       });
     }

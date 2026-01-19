@@ -6,6 +6,11 @@ import { useDashboardOverview, DashboardOverview } from '../hooks/useDashboardOv
 import { useNavigation } from '../hooks/useNavigation.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
 import { useAgentActivation } from '../hooks/useAgentActivation.js';
+import { useDashboardData } from '../hooks/useDashboardData.js';
+import { useDashboardModals } from '../hooks/useDashboardModals.js';
+import { usePhoneStatus } from '../hooks/usePhoneStatus.js';
+import { useCalendarIntegration } from '../hooks/useCalendarIntegration.js';
+import { isAllowedOrigin } from '../config/allowedOrigins.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
@@ -19,8 +24,7 @@ import {
   ActivationChecklist,
   type SelectionItem,
 } from '../components/dashboard/ActivationChecklist.js';
-import { apiClient } from '../services/apiClient.js';
-import { checkPhoneStatus } from '../services/api.js';
+import { logger } from '../lib/logger.js';
 import { TestCallButton } from '../components/dashboard/TestCallButton.js';
 import { toast } from '../components/ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
@@ -56,13 +60,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  mapCallsToChartData,
-  mapOverviewToKPIs,
-  mapCallToTableRow,
-} from '../lib/dashboardAdapters.js';
-import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents.js';
-import { CallLog } from '../hooks/useCallLogs.js';
+import { CalendarEvent } from '../hooks/useCalendarEvents.js';
 import { extractErrorMessage, extractUserFriendlyError } from '../lib/errorUtils.js';
 import { UserFriendlyError } from '../components/ui/UserFriendlyError.js';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
@@ -70,13 +68,19 @@ import { NotificationCenter } from '../components/notifications/NotificationCent
 import { NotificationBell } from '../components/notifications/NotificationBell.js';
 import { useProactiveAlerts } from '../hooks/useProactiveAlerts.js';
 import { useSuccessNotifications } from '../hooks/useSuccessNotifications.js';
+import { DashboardErrorBoundary } from '../components/dashboard/DashboardErrorBoundary.js';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const nav = useNavigation();
   const { user, logout } = useAuthContext();
   const queryClient = useQueryClient();
-  const { data: overview, isLoading, error, refetch } = useDashboardOverview();
+  
+  // Use custom hooks for data and modals
+  const dashboardData = useDashboardData();
+  const { overview, isLoading, error, refetch } = dashboardData;
+  const modals = useDashboardModals();
+  const { phoneStatus, refreshStatus: refreshPhoneStatus } = usePhoneStatus();
   
   // Pull-to-refresh for mobile
   const { isRefreshing, pullDistance, elementRef } = usePullToRefresh({
@@ -107,59 +111,7 @@ export const DashboardPage = () => {
     }
   }, [queryClient, refetch]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-  const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
-  const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
-  const [isAgentTestOpen, setIsAgentTestOpen] = useState(false);
-  const [isPhoneWizardOpen, setIsPhoneWizardOpen] = useState(false);
-  const [isWebhookStatusOpen, setIsWebhookStatusOpen] = useState(false);
-  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
-  const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | undefined>(
-    undefined,
-  );
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
   const previousOverviewRef = React.useRef<DashboardOverview | undefined>(undefined);
-  const [phoneStatus, setPhoneStatus] = useState<{
-    twilioGateway: 'OK' | 'WARN' | 'ERROR';
-    twilioConfigured: boolean;
-    hasConnectedNumber: boolean;
-    webhookConfigured: boolean;
-    phoneNumber: string | null;
-    details: {
-      accountSid: string | null;
-      publicBaseUrl: string | null;
-      expectedWebhookUrl: string | null;
-    };
-  } | null>(null);
-
-  // Fetch phone status periodically
-  React.useEffect(() => {
-    async function fetchStatus() {
-      try {
-        const status = await checkPhoneStatus();
-        setPhoneStatus(status);
-      } catch (error) {
-        console.error('[DashboardPage] Failed to fetch phone status:', error);
-        setPhoneStatus({
-          twilioGateway: 'ERROR',
-          twilioConfigured: false,
-          hasConnectedNumber: false,
-          webhookConfigured: false,
-          phoneNumber: null,
-          details: {
-            accountSid: null,
-            publicBaseUrl: null,
-            expectedWebhookUrl: null,
-          },
-        });
-      }
-    }
-
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   // Handle 401 - redirect to login (NOT onboarding)
   React.useEffect(() => {
@@ -170,13 +122,12 @@ export const DashboardPage = () => {
       // Log other errors but don't crash the dashboard
       const errorMessage = extractErrorMessage(error);
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        console.warn(
-          '[DashboardPage] Network error - dashboard may show limited data:',
+        logger.warn('Network error - dashboard may show limited data', {
           errorMessage,
-        );
+        });
         // Don't show toast for network errors on initial load - user might be offline
       } else {
-        console.error('[DashboardPage] Dashboard error:', error);
+        logger.error('Dashboard error', error);
       }
     }
   }, [error, logout, navigate]);
@@ -188,202 +139,19 @@ export const DashboardPage = () => {
     }
   }, [overview]);
 
-  // Handle calendar OAuth postMessage events
-  React.useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Security: Accept messages from our frontend URL or backend (for OAuth callback)
-      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || globalThis.location.origin;
-      const allowedOrigins = [
-        frontendUrl,
-        'https://aidevelo.ai',
-        'https://www.aidevelo.ai',
-        'https://real-aidevelo-ai.onrender.com',
-        globalThis.location.origin,
-      ];
+  // Calendar integration hook handles postMessage events
+  const { connectCalendar, disconnectCalendar } = useCalendarIntegration(
+    () => {
+      refetch();
+    },
+    (error) => {
+      logger.error('Calendar connection error', new Error(error));
+    },
+  );
 
-      // Check if origin is allowed (strict check for security)
-      const isAllowedOrigin = allowedOrigins.some((allowed) => event.origin === allowed);
-
-      if (!isAllowedOrigin) {
-        console.warn('[DashboardPage] Rejected postMessage from origin:', event.origin);
-        return;
-      }
-
-      if (event.data?.type === 'calendar-oauth-success') {
-        console.log('[DashboardPage] Calendar OAuth success received');
-        toast.success('Kalender erfolgreich verbunden');
-        // Refetch dashboard overview
-        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-        refetch();
-      } else if (event.data?.type === 'calendar-oauth-error') {
-        const errorMsg =
-          typeof event.data.message === 'string'
-            ? event.data.message
-            : 'Fehler beim Verbinden des Kalenders';
-        toast.error(errorMsg);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [queryClient, refetch]);
-
-  // Handle calendar OAuth connection
-  const handleConnectCalendar = React.useCallback(async () => {
-    try {
-      const response = await apiClient.get<{ success: boolean; data: { authUrl: string } }>(
-        '/calendar/google/auth',
-      );
-      if (response.data?.success && response.data.data?.authUrl) {
-        // Check if this is a mock URL (for testing without OAuth configured)
-        const isMockUrl =
-          response.data.data.authUrl.includes('/calendar/') &&
-          response.data.data.authUrl.includes('code=mock_code');
-
-        if (isMockUrl) {
-          // For testing: show info message
-          toast.warning(
-            'OAuth ist noch nicht konfiguriert. Bitte setze GOOGLE_OAUTH_CLIENT_ID in Render Environment Variables.',
-          );
-          return;
-        }
-
-        // Open OAuth window
-        const width = 600;
-        const height = 700;
-        const left = globalThis.screen.width / 2 - width / 2;
-        const top = globalThis.screen.height / 2 - height / 2;
-        const authWindow = globalThis.open(
-          response.data.data.authUrl,
-          'Calendar OAuth',
-          `width=${width},height=${height},left=${left},top=${top}`,
-        );
-
-        if (!authWindow) {
-          toast.error('Pop-up wurde blockiert. Bitte erlaube Pop-ups für diese Seite.');
-          return;
-        }
-
-        // Store interval ID for cleanup
-        let pollInterval: NodeJS.Timeout | null = null;
-
-        // Listen for OAuth callback postMessage
-        const messageListener = (event: MessageEvent) => {
-          // Accept messages from backend (real-aidevelo-ai.onrender.com) or frontend
-          const allowedOrigins = [
-            'https://real-aidevelo-ai.onrender.com',
-            'https://aidevelo.ai',
-            'https://www.aidevelo.ai',
-            globalThis.location.origin,
-          ];
-
-          const isAllowed = allowedOrigins.some(
-            (origin) =>
-              event.origin === origin ||
-              event.origin.includes(origin.replace('https://', '').replace('http://', '')),
-          );
-
-          if (!isAllowed) {
-            return;
-          }
-
-          if (event.data?.type === 'calendar-oauth-success') {
-            console.log('[DashboardPage] Calendar OAuth success via postMessage');
-            toast.success('Kalender erfolgreich verbunden');
-            queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-            refetch();
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-            // Clean up polling if it exists
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-          } else if (event.data?.type === 'calendar-oauth-error') {
-            const errorMsg =
-              typeof event.data.message === 'string'
-                ? event.data.message
-                : 'Fehler beim Verbinden des Kalenders';
-            toast.error(errorMsg);
-            authWindow?.close();
-            window.removeEventListener('message', messageListener);
-            // Clean up polling if it exists
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-          }
-        };
-
-        window.addEventListener('message', messageListener);
-
-        // Fallback: Poll for calendar connection if postMessage doesn't work
-        // (e.g., if Chrome blocks the callback page)
-        let pollCount = 0;
-        const maxPolls = 30; // 30 seconds
-        pollInterval = setInterval(() => {
-          pollCount++;
-
-          // Check if window was closed
-          if (authWindow?.closed) {
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-            window.removeEventListener('message', messageListener);
-
-            // If window closed and we haven't received success, check if calendar is connected
-            if (pollCount < maxPolls) {
-              // Wait a bit for backend to process, then check
-              setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-                refetch().then((result) => {
-                  // Check if calendar is now connected using refetched data
-                  if (result.data?.status?.calendar === 'connected') {
-                    toast.success('Kalender erfolgreich verbunden');
-                  }
-                });
-              }, 2000);
-            }
-            return;
-          }
-
-          // Stop polling after max attempts
-          if (pollCount >= maxPolls) {
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              pollInterval = null;
-            }
-            window.removeEventListener('message', messageListener);
-          }
-        }, 1000);
-      } else {
-        throw new Error('Keine Auth-URL erhalten');
-      }
-    } catch (error: unknown) {
-      console.error('[DashboardPage] Calendar connection error:', error);
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Kalenders');
-      toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
-    }
-  }, [queryClient, refetch]);
-
-  // Handle calendar disconnect
-  const handleDisconnectCalendar = React.useCallback(async () => {
-    try {
-      const response = await apiClient.delete('/calendar/google/disconnect');
-      if (response.data?.success) {
-        toast.success('Kalender erfolgreich getrennt');
-        // Refetch dashboard overview
-        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-        refetch();
-      } else {
-        throw new Error('Disconnect fehlgeschlagen');
-      }
-    } catch (error: unknown) {
-      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Trennen des Kalenders');
-      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
-    }
-  }, [queryClient, refetch]);
+  // Calendar integration - use hook instead of inline implementation
+  const handleConnectCalendar = connectCalendar;
+  const handleDisconnectCalendar = disconnectCalendar;
 
   // Determine effective overview early (before any hooks that depend on it)
   // This allows dashboard to work even with network errors
@@ -404,7 +172,7 @@ export const DashboardPage = () => {
       persona_gender: null,
       persona_age_range: null,
       goals_json: [] as string[],
-      services_json: [] as any[],
+      services_json: [] as unknown[],
       business_type: null,
       admin_test_number: null,
     },
@@ -421,39 +189,18 @@ export const DashboardPage = () => {
   };
 
   // Use safe overview for rendering (allows dashboard to work even with network errors)
-  const displayOverview = overview || safeOverview;
-  const effectiveOverview = displayOverview;
+  const effectiveOverview = overview || safeOverview;
 
-  // Fetch today's and next few days' events for dashboard
-  // IMPORTANT: ALL hooks must be called before any early returns
-  // Note: We create a new Date() each render for "today" since we want current date
-  // For weekEnd, we memoize based on today's date string to avoid unnecessary recalculations
-  const today = new Date();
-  const todayDateString = today.toDateString();
-  const weekEnd = React.useMemo(() => addDays(new Date(todayDateString), 7), [todayDateString]);
-  const calendarConnected = effectiveOverview?.status?.calendar === 'connected';
-  const { events: calendarEvents, isLoading: isLoadingEvents } = useCalendarEvents({
-    locationId: effectiveOverview?.location?.id || '',
-    start: startOfDay(today),
-    end: endOfDay(weekEnd),
-    enabled: calendarConnected && !!effectiveOverview?.location?.id,
-  });
-
-  // Get next 5 upcoming events
-  // Use a ref for "now" to avoid creating new Date on every render
-  const nowRef = useRef(new Date());
-  const upcomingEvents = React.useMemo(() => {
-    // Update nowRef periodically (every minute) or use current time for comparison
-    const now = new Date();
-    // Update ref if more than a minute has passed
-    if (now.getTime() - nowRef.current.getTime() > 60000) {
-      nowRef.current = now;
-    }
-    return calendarEvents
-      .filter((event) => new Date(event.start) >= nowRef.current)
-      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-      .slice(0, 5);
-  }, [calendarEvents]);
+  // Extract data from dashboardData hook
+  const {
+    kpis,
+    chartData,
+    recentCallsTableData,
+    upcomingEvents,
+    isLoadingEvents,
+    todayDateString,
+    calendarConnected,
+  } = dashboardData;
 
   // Compute derived values - must be before early returns
   const userName = React.useMemo(
@@ -469,31 +216,6 @@ export const DashboardPage = () => {
   // Agent activation hook for VoiceAgentControlCenter
   const agentActivation = useAgentActivation(effectiveOverview?.agent_config?.id || '');
 
-  // Map data for new UI (memoized to prevent recalculation on every render)
-  const kpis = React.useMemo(
-    () =>
-      effectiveOverview
-        ? mapOverviewToKPIs(effectiveOverview)
-        : {
-            totalCalls: 0,
-            appointmentsBooked: 0,
-            missedCalls: 0,
-            avgDuration: '0s',
-            savedTime: '0s',
-            efficiency: '100%',
-          },
-    [effectiveOverview],
-  );
-  const chartData = React.useMemo(
-    () =>
-      effectiveOverview?.recent_calls ? mapCallsToChartData(effectiveOverview.recent_calls) : [],
-    [effectiveOverview?.recent_calls],
-  );
-  const recentCallsTableData = React.useMemo(
-    () =>
-      effectiveOverview?.recent_calls ? effectiveOverview.recent_calls.map(mapCallToTableRow) : [],
-    [effectiveOverview?.recent_calls],
-  );
 
   // Determine system health status (memoized)
   const phoneHealth: 'ok' | 'error' | 'warning' = React.useMemo(() => {
@@ -542,36 +264,12 @@ export const DashboardPage = () => {
   }, [effectiveOverview]);
 
   // Memoize callbacks to prevent unnecessary re-renders
-  const handleTestAgent = React.useCallback(() => {
-    setIsAgentTestOpen(true);
-  }, []);
-
-  const handleConnectPhone = React.useCallback(() => {
-    setIsPhoneWizardOpen(true);
-  }, []);
-
-  const handlePhoneConnectionSuccess = React.useCallback(async () => {
-    // Refresh phone status immediately after connection
-    try {
-      const status = await checkPhoneStatus();
-      setPhoneStatus(status);
-    } catch (error) {
-      console.error('[DashboardPage] Failed to refresh phone status:', error);
-    }
-    // Also invalidate queries to refresh overview
-    queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-    queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
-    await refetch();
-  }, [queryClient, refetch]);
-
-  const handleCheckWebhook = React.useCallback(() => {
-    setIsWebhookStatusOpen(true);
-  }, []);
-
+  const handleTestAgent = modals.openAgentTest;
+  const handleConnectPhone = modals.openPhoneWizard;
+  const handleCheckWebhook = modals.openWebhookStatus;
   const handleViewCalls = React.useCallback(() => {
     navigate('/calls');
   }, [navigate]);
-
   const handleCallClick = React.useCallback(
     (call: {
       id: string;
@@ -584,11 +282,19 @@ export const DashboardPage = () => {
       duration_sec: number | null;
       outcome: string | null;
     }) => {
-      setSelectedCall(call as CallLog);
-      setIsCallDetailsOpen(true);
+      modals.openCallDetails(call as CallLog);
     },
-    [],
+    [modals],
   );
+
+  const handlePhoneConnectionSuccess = React.useCallback(async () => {
+    // Refresh phone status immediately after connection
+    await refreshPhoneStatus();
+    // Also invalidate queries to refresh overview
+    queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+    queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
+    await refetch();
+  }, [queryClient, refetch, refreshPhoneStatus]);
 
   // Checklist items based on dashboard status
   const checklistItems: SelectionItem[] = React.useMemo(
@@ -609,7 +315,7 @@ export const DashboardPage = () => {
         id: 'calendar',
         label: 'Kalender synchronisiert',
         done: effectiveOverview?.status?.calendar === 'connected',
-        action: handleConnectCalendar,
+        action: () => handleConnectCalendar(),
       },
       {
         id: 'test',
@@ -724,7 +430,7 @@ export const DashboardPage = () => {
             <CrossSectionNav variant="header" className="ml-6 pl-6 border-l border-white/10" />
           </nav>
           <div className="flex items-center gap-2">
-            <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
+            <NotificationBell onClick={() => modals.openNotificationCenter()} />
           </div>
         </header>
 
@@ -798,8 +504,9 @@ export const DashboardPage = () => {
 
             {/* KPI Grid / ROI Summary */}
             <section aria-label="Key Performance Indicators" className="mb-8">
-              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6`}>
-                <EnhancedStatCard
+              <DashboardErrorBoundary sectionName="KPIs">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6`}>
+                  <EnhancedStatCard
                   label="Gesamtanrufe"
                   value={kpis.totalCalls}
                   icon={Phone}
@@ -836,8 +543,9 @@ export const DashboardPage = () => {
                   bgColor="bg-purple-500/10"
                   description="ROI Schätzung"
                   trend={isAgentActive && kpis.savedTimeTrend ? kpis.savedTimeTrend : undefined}
-                />
-              </div>
+                  />
+                </div>
+              </DashboardErrorBoundary>
             </section>
 
             {/* Voice Agent Control Center - FULL WIDTH HERO */}
@@ -929,9 +637,10 @@ export const DashboardPage = () => {
                     </div>
                   }
                 >
-                  {calendarConnected ? (
-                    <div className="space-y-4">
-                      {effectiveOverview.calendar_connected_email && (
+                  <DashboardErrorBoundary sectionName="Kalender">
+                    {calendarConnected ? (
+                      <div className="space-y-4">
+                        {effectiveOverview.calendar_connected_email && (
                         <div className="text-sm text-gray-300 mb-3">
                           Verbunden mit:{' '}
                           <span className="font-medium">
@@ -962,14 +671,12 @@ export const DashboardPage = () => {
                                     : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800'
                                 }`}
                                 onClick={() => {
-                                  setSelectedEvent(event);
-                                  setIsCreateAppointmentModalOpen(true);
+                                  modals.openCreateAppointment(event, undefined);
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
-                                    setSelectedEvent(event);
-                                    setIsCreateAppointmentModalOpen(true);
+                                    modals.openCreateAppointment(event, undefined);
                                   }
                                 }}
                                 role="button"
@@ -1025,7 +732,7 @@ export const DashboardPage = () => {
                       <div className="flex gap-2 pt-2 border-t border-slate-700/50">
                         <Button
                           size="sm"
-                          onClick={() => setIsAvailabilityModalOpen(true)}
+                          onClick={() => modals.openAvailability()}
                           className="flex-1"
                           variant="outline"
                         >
@@ -1035,9 +742,7 @@ export const DashboardPage = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setSelectedEvent(null);
-                            setSelectedSlot(undefined);
-                            setIsCreateAppointmentModalOpen(true);
+                            modals.openCreateAppointment(null, undefined);
                           }}
                           className="flex-1"
                         >
@@ -1057,7 +762,8 @@ export const DashboardPage = () => {
                   ) : (
                     <EmptyCalendar onConnect={handleConnectCalendar} />
                   )}
-                </Card>
+                </DashboardErrorBoundary>
+              </Card>
 
                 {/* Activity Chart */}
                 <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
@@ -1104,11 +810,12 @@ export const DashboardPage = () => {
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        <p>Noch keine Anrufdaten verfügbar</p>
-                      </div>
-                    )}
-                  </div>
+                        <div className="flex items-center justify-center h-full text-gray-500">
+                          <p>Noch keine Anrufdaten verfügbar</p>
+                        </div>
+                      )}
+                    </div>
+                  </DashboardErrorBoundary>
                 </Card>
 
                 {/* Recent Logs Table */}
@@ -1127,7 +834,8 @@ export const DashboardPage = () => {
                     </Button>
                   }
                 >
-                  {recentCallsTableData.length > 0 ? (
+                  <DashboardErrorBoundary sectionName="Letzte Anrufe">
+                    {recentCallsTableData.length > 0 ? (
                     <>
                       {/* Desktop: Table View */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -1240,9 +948,10 @@ export const DashboardPage = () => {
                         disabled={false}
                       />
                     </div>
-                  ) : (
-                    <EmptyCalls onAction={handleTestAgent} />
-                  )}
+                    ) : (
+                      <EmptyCalls onAction={handleTestAgent} />
+                    )}
+                  </DashboardErrorBoundary>
                 </Card>
               </div>
 
@@ -1313,57 +1022,52 @@ export const DashboardPage = () => {
         </div>
       </main>
 
-      {/* Modals - All existing modals remain unchanged */}
+      {/* Modals */}
       <CallDetailsModal
-        isOpen={isCallDetailsOpen}
-        onClose={() => {
-          setIsCallDetailsOpen(false);
-          setSelectedCall(null);
-        }}
-        call={selectedCall}
+        isOpen={modals.isCallDetailsOpen}
+        onClose={modals.closeCallDetails}
+        call={modals.selectedCall}
       />
 
       <AgentTestModal
-        isOpen={isAgentTestOpen}
-        onClose={() => setIsAgentTestOpen(false)}
+        isOpen={modals.isAgentTestOpen}
+        onClose={modals.closeAgentTest}
         agentConfigId={effectiveOverview.agent_config.id}
         locationId={effectiveOverview.location.id}
         adminTestNumber={effectiveOverview.agent_config.admin_test_number || null}
       />
 
       <PhoneSetupWizard
-        isOpen={isPhoneWizardOpen}
-        onClose={() => setIsPhoneWizardOpen(false)}
+        isOpen={modals.isPhoneWizardOpen}
+        onClose={modals.closePhoneWizard}
         onSuccess={handlePhoneConnectionSuccess}
       />
 
       <WebhookStatusModal
-        isOpen={isWebhookStatusOpen}
-        onClose={() => setIsWebhookStatusOpen(false)}
+        isOpen={modals.isWebhookStatusOpen}
+        onClose={modals.closeWebhookStatus}
       />
 
       <AvailabilityModal
-        isOpen={isAvailabilityModalOpen}
-        onClose={() => setIsAvailabilityModalOpen(false)}
+        isOpen={modals.isAvailabilityModalOpen}
+        onClose={modals.closeAvailability}
         locationId={effectiveOverview.location.id}
         onCreateAppointment={(slot) => {
-          setSelectedSlot(slot);
-          setIsAvailabilityModalOpen(false);
-          setIsCreateAppointmentModalOpen(true);
+          modals.setSelectedSlot(slot);
+          modals.closeAvailability();
+          modals.openCreateAppointment(null, slot);
         }}
       />
 
       <CalendarEventModal
-        isOpen={isCreateAppointmentModalOpen}
+        isOpen={modals.isCreateAppointmentModalOpen}
         onClose={() => {
-          setIsCreateAppointmentModalOpen(false);
-          setSelectedSlot(undefined);
-          setSelectedEvent(null);
+          modals.closeCreateAppointment();
           queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
         }}
         locationId={effectiveOverview.location.id}
-        event={selectedEvent || undefined}
-        initialSlot={selectedSlot}
+        event={modals.selectedEvent || undefined}
+        initialSlot={modals.selectedSlot}
       />
 
       {/* Pull-to-Refresh Indicator */}
@@ -1378,8 +1082,8 @@ export const DashboardPage = () => {
 
       {/* Notification Center */}
       <NotificationCenter
-        isOpen={isNotificationCenterOpen}
-        onClose={() => setIsNotificationCenterOpen(false)}
+        isOpen={modals.isNotificationCenterOpen}
+        onClose={modals.closeNotificationCenter}
       />
     </div>
   );

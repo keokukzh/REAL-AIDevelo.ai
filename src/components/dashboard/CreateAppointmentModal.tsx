@@ -105,7 +105,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
         throw new Error(response.data?.error || 'Fehler beim Erstellen des Termins');
       }
     } catch (err: any) {
-      console.error('[CreateAppointmentModal] Error creating appointment:', err);
+      logger.error('CreateAppointmentModal: Error creating appointment', err);
       const errorMsg = err?.userFriendlyMessage 
         || err?.response?.data?.error 
         || err?.message 

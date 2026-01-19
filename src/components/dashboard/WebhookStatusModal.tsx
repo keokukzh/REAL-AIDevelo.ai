@@ -4,6 +4,7 @@ import { useWebhookStatus } from '../../hooks/useWebhookStatus';
 import { toast } from '../ui/Toast';
 import { Loader, AlertCircle, CheckCircle, Copy, RefreshCw, Phone } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import { logger } from '../../lib/logger.js';
 
 interface WebhookStatusModalProps {
   isOpen: boolean;
@@ -74,7 +75,7 @@ export const WebhookStatusModal: React.FC<WebhookStatusModalProps> = ({ isOpen, 
         throw new Error('Test fehlgeschlagen');
       }
     } catch (err: any) {
-      console.error('[WebhookStatusModal] Error testing webhook:', err);
+      logger.error('WebhookStatusModal: Error testing webhook', err);
       const errorMsg = err?.response?.data?.error || err?.message || 'Webhook-Test fehlgeschlagen';
       toast.error(errorMsg);
     } finally {

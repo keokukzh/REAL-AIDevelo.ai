@@ -4,6 +4,7 @@ import { Phone, AlertCircle, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal.js';
 import { Button } from '../ui/Button.js';
 import { toast } from '../ui/Toast.js';
+import { logger } from '../../lib/logger.js';
 
 interface TestCallButtonProps {
   phoneNumber: string | null;
@@ -43,7 +44,7 @@ export function TestCallButton({ phoneNumber, disabled, onTestCall }: TestCallBu
       setIsModalOpen(false);
       setTargetNumber('');
     } catch (err: unknown) {
-      console.error('Test call failed:', err);
+      logger.error('TestCallButton: Test call failed', err);
       const errorResponse = err as { details?: { error?: string }; message?: string };
       const errorMessage =
         errorResponse.details?.error ||

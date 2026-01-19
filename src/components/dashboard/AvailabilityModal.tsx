@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { apiClient } from '../../services/apiClient';
 import { toast } from '../ui/Toast';
 import { Calendar, Loader, AlertCircle, Copy, Clock } from 'lucide-react';
+import { logger } from '../../lib/logger.js';
 
 interface AvailabilityModalProps {
   isOpen: boolean;
@@ -73,7 +74,7 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
         throw new Error(response.data?.error || 'Fehler beim Prüfen der Verfügbarkeit');
       }
     } catch (err: any) {
-      console.error('[AvailabilityModal] Error checking availability:', err);
+      logger.error('AvailabilityModal: Error checking availability', err);
       const errorMsg = err?.response?.data?.error || err?.message || 'Fehler beim Prüfen der Verfügbarkeit';
       setError(errorMsg);
       toast.error(errorMsg);

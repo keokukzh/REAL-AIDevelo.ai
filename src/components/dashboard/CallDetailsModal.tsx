@@ -17,6 +17,7 @@ import { CallLog } from '../../hooks/useCallLogs.js';
 import { toast } from '../ui/Toast.js';
 import { apiRequest } from '../../services/api.js';
 import { Button } from '../ui/Button.js';
+import { logger } from '../../lib/logger.js';
 
 interface CallNotes {
   transcript?: string;
@@ -159,7 +160,7 @@ export const CallDetailsModal: React.FC<CallDetailsModalProps> = ({
       setFeedbackSaved(true);
       toast.success('Feedback gespeichert');
     } catch (error) {
-      console.error('Failed to save feedback', error);
+      logger.error('CallDetailsModal: Failed to save feedback', error);
       toast.error('Feedback konnte nicht gespeichert werden');
     } finally {
       setIsSubmittingFeedback(false);

@@ -5,6 +5,7 @@ import { toast } from '../ui/Toast.js';
 import { Phone, Loader, AlertCircle, CheckCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractErrorMessage } from '../../lib/errorUtils.js';
+import { logger } from '../../lib/logger.js';
 
 interface PhoneNumber {
   id: string;
@@ -80,7 +81,7 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         throw new Error('Ungültige Antwort vom Server');
       }
     } catch (err: unknown) {
-      console.error('[PhoneConnectionModal] Error loading numbers:', err);
+      logger.error('PhoneConnectionModal: Error loading numbers', err);
       const errorMsg = extractErrorMessage(err, 'Fehler beim Laden der verfügbaren Nummern');
       setError(errorMsg);
       toast.error(errorMsg);
@@ -133,7 +134,7 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
         throw new Error('Verbindung fehlgeschlagen');
       }
     } catch (err: unknown) {
-      console.error('[PhoneConnectionModal] Error connecting number:', err);
+      logger.error('PhoneConnectionModal: Error connecting number', err);
       const errorMsg = extractErrorMessage(err, 'Fehler beim Verbinden der Telefonnummer');
       setError(errorMsg);
       toast.error(errorMsg);

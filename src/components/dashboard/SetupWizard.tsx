@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useUpdateAgentConfig } from '../../hooks/useUpdateAgentConfig';
 import { useDashboardOverview } from '../../hooks/useDashboardOverview';
 import { LoadingSpinner } from '../LoadingSpinner';
+import { logger } from '../../lib/logger';
 
 type WizardStep = 'persona' | 'business' | 'services' | 'goals' | 'confirm';
 
@@ -99,8 +100,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         onComplete();
       }
     } catch (error: any) {
-      console.error('[SetupWizard] Error saving step:', {
-        error,
+      logger.error('SetupWizard: Error saving step', error, {
         message: error?.message,
         response: error?.response?.data,
         status: error?.response?.status,
