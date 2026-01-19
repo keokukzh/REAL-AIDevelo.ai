@@ -117,8 +117,10 @@ export const PhoneConnectionModal: React.FC<PhoneConnectionModalProps> = ({
       if (response.data?.success) {
         toast.success('Telefonnummer erfolgreich verbunden');
 
-        // Invalidate dashboard query to refresh data
+        // Invalidate all relevant queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
+        queryClient.invalidateQueries({ queryKey: ['phone', 'numbers'] });
 
         // Call success callback
         onSuccess?.();

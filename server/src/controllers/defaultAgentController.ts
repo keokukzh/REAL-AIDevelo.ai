@@ -47,6 +47,10 @@ const DefaultAgentResponseSchema = z.object({
     company_name: z.string().nullable().optional(),
     booking_required_fields_json: z.array(z.string()).optional(),
     booking_default_duration_min: z.number().optional(),
+    primary_locale: z.string().nullable().optional(),
+    system_prompt: z.string().nullable().optional(),
+    recording_consent: z.boolean().optional(),
+    eleven_agent_id: z.string().nullable().optional(),
   }),
   status: z.object({
     agent: z.enum(['ready', 'needs_setup']),
@@ -204,6 +208,10 @@ export const createDefaultAgent = async (
           ? agentConfig.booking_required_fields_json
           : [],
         booking_default_duration_min: agentConfig.booking_default_duration_min ?? 30,
+        primary_locale: (agentConfig as any).primary_locale ?? null,
+        system_prompt: (agentConfig as any).system_prompt ?? null,
+        recording_consent: (agentConfig as any).recording_consent ?? true,
+        eleven_agent_id: agentConfig.eleven_agent_id ?? null,
       },
       status: {
         agent: agentStatus,
@@ -468,6 +476,10 @@ export const getDashboardOverview = async (
           ? agentConfig.booking_required_fields_json
           : [],
         booking_default_duration_min: agentConfig.booking_default_duration_min ?? 30,
+        primary_locale: (agentConfig as any).primary_locale ?? null,
+        system_prompt: (agentConfig as any).system_prompt ?? null,
+        recording_consent: (agentConfig as any).recording_consent ?? true,
+        eleven_agent_id: agentConfig.eleven_agent_id ?? null,
       },
       status: {
         agent: agentStatus,

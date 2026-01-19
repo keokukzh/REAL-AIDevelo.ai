@@ -16,6 +16,7 @@ import { toast } from '../components/ui/Toast';
 import { extractErrorMessage } from '../lib/errorUtils';
 import { supabase } from '../lib/supabase';
 import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard';
+import { VoiceSelector } from '../components/agent/VoiceSelector';
 import {
   Settings,
   Mail,
@@ -29,6 +30,9 @@ import {
   Info,
   Bot,
   Save,
+  Mic,
+  Globe,
+  Wand2,
 } from 'lucide-react';
 import { useUpdateAgentConfig } from '../hooks/useUpdateAgentConfig';
 
@@ -47,6 +51,12 @@ export const SettingsPage = () => {
   const [adminTestNumber, setAdminTestNumber] = useState<string>('');
   const [bookingRequiredFields, setBookingRequiredFields] = useState<string[]>([]);
   const [bookingDurationMin, setBookingDurationMin] = useState<number>(30);
+
+  // Voice settings fields
+  const [primaryLocale, setPrimaryLocale] = useState<string>('de-CH');
+  const [voiceId, setVoiceId] = useState<string>('');
+  const [systemPrompt, setSystemPrompt] = useState<string>('');
+  const [recordingConsent, setRecordingConsent] = useState<boolean>(true);
 
   // Available booking field options
   const availableBookingFields = [
@@ -79,6 +89,11 @@ export const SettingsPage = () => {
           : ['name', 'phone', 'service', 'preferredTime', 'timezone'],
       );
       setBookingDurationMin(overview.agent_config.booking_default_duration_min || 30);
+      // Initialize voice settings
+      setPrimaryLocale(overview.agent_config.primary_locale || 'de-CH');
+      setVoiceId(overview.agent_config.eleven_agent_id || '');
+      setSystemPrompt(overview.agent_config.system_prompt || '');
+      setRecordingConsent(overview.agent_config.recording_consent ?? true);
     }
   }, [overview?.agent_config]);
 
@@ -342,6 +357,10 @@ export const SettingsPage = () => {
         admin_test_number: adminTestNumber.trim() || null,
         booking_required_fields_json: bookingRequiredFields,
         booking_default_duration_min: bookingDurationMin,
+        primary_locale: primaryLocale,
+        eleven_agent_id: voiceId || null,
+        system_prompt: systemPrompt.trim() || null,
+        recording_consent: recordingConsent,
       });
 
       toast.success('Agent-Konfiguration gespeichert');
@@ -697,6 +716,96 @@ export const SettingsPage = () => {
               </div>
             </Card>
 
+            {/* Voice Settings Section */}
+            <Card title="Voice-Einstellungen" icon={Mic}>
+              <div className="space-y-4">
+                {/* Primary Locale */}
+                <div className="flex items-start gap-3">
+                  <Globe className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label
+                      htmlFor="primary-locale"
+                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
+                      Sprache
+                    </label>
+                    <select
+                      id="primary-locale"
+                      value={primaryLocale}
+                      onChange={(e) => setPrimaryLocale(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50"
+                    >
+                      <option value="de-CH">Deutsch (CH)</option>
+                      <option value="de-DE">Deutsch (DE)</option>
+                      <option value="en-US">English (US)</option>
+                      <option value="en-GB">English (UK)</option>
+                      <option value="fr-CH">Français (CH)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Voice Selection */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Mic className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                      Stimme auswählen & testen
+                    </label>
+                    <VoiceSelector selectedVoiceId={voiceId} onVoiceSelect={setVoiceId} />
+                  </div>
+                </div>
+
+                {/* Recording Consent */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <div className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={recordingConsent}
+                        onChange={(e) => setRecordingConsent(e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-white/20 bg-white/5 text-accent focus:ring-accent"
+                      />
+                      <div>
+                        <p className="font-semibold text-white">Aufzeichnung aktivieren</p>
+                        <p className="text-sm text-gray-400">
+                          Anrufe werden aufgezeichnet und stehen in den Logs zur Verfügung.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* System Prompt */}
+                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                  <Wand2 className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <label
+                      htmlFor="system-prompt"
+                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
+                      System Prompt
+                    </label>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Beschreibe Tonalität, Aufgaben und Grenzen des Agents.
+                    </p>
+                    <textarea
+                      id="system-prompt"
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                      rows={8}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 font-mono text-sm"
+                      placeholder="Beschreibe Tonalität, Aufgaben und Grenzen..."
+                    />
+                    <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4 text-sm text-gray-400 mt-2 flex items-start gap-2">
+                      <Wand2 size={16} className="mt-0.5" />
+                      <span>Halte Antworten prägnant und nenne dem Anrufer die nächsten Schritte klar.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             {/* Integrations Section */}
             <Card title="Integrationen" icon={Settings}>
               <div className="space-y-6">
@@ -885,9 +994,11 @@ export const SettingsPage = () => {
       <PhoneSetupWizard
         isOpen={isPhoneConnectionOpen}
         onClose={() => setIsPhoneConnectionOpen(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-          refetch();
+          queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
+          queryClient.invalidateQueries({ queryKey: ['phone', 'numbers'] });
+          await refetch();
         }}
       />
     </div>

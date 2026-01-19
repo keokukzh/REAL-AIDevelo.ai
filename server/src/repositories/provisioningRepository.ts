@@ -15,6 +15,9 @@ export interface AgentConfigDBRow {
   booking_default_duration_min: number;
   admin_test_number?: string | null;
   eleven_agent_id: string | null;
+  primary_locale?: string | null;
+  system_prompt?: string | null;
+  recording_consent?: boolean;
   updated_at?: string;
 }
 
@@ -267,6 +270,9 @@ export async function ensureAgentConfig(locationId: string): Promise<AgentConfig
       booking_required_fields_json: ['name', 'phone'],
       booking_default_duration_min: 30,
       eleven_agent_id: null,
+      primary_locale: 'de-CH',
+      system_prompt: null,
+      recording_consent: true,
     };
   }
 

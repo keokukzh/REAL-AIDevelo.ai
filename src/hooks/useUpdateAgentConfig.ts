@@ -9,6 +9,14 @@ export interface UpdateAgentConfigRequest {
   services_json?: any[];
   setup_state?: 'needs_persona' | 'needs_business' | 'needs_phone' | 'needs_calendar' | 'ready';
   eleven_agent_id?: string | null;
+  primary_locale?: string;
+  system_prompt?: string | null;
+  recording_consent?: boolean;
+  admin_test_number?: string | null;
+  greeting_template?: string | null;
+  company_name?: string | null;
+  booking_required_fields_json?: string[];
+  booking_default_duration_min?: number;
 }
 
 export interface AgentConfigResponse {
@@ -21,6 +29,14 @@ export interface AgentConfigResponse {
   goals_json: string[];
   services_json: any[];
   business_type: string | null;
+  primary_locale?: string | null;
+  system_prompt?: string | null;
+  recording_consent?: boolean;
+  admin_test_number?: string | null;
+  greeting_template?: string | null;
+  company_name?: string | null;
+  booking_required_fields_json?: string[];
+  booking_default_duration_min?: number;
 }
 
 export const useUpdateAgentConfig = () => {

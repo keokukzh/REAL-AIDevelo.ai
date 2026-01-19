@@ -16,6 +16,7 @@ import { Button } from '../ui/Button.js';
 import { apiClient } from '../../services/apiClient.js';
 import { toast } from '../ui/Toast.js';
 import { extractErrorMessage } from '../../lib/errorUtils.js';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PhoneSetupWizardProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('choose-method');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +111,9 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         userPhoneNumber: personalNumber,
       });
       if (resp.data.success) {
+        // Invalidate queries after registration
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
         setStep('verification');
       }
     } catch (err: unknown) {
@@ -130,6 +135,11 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
         country: selectedCountry,
       });
       if (resp.data.success) {
+        // Invalidate all relevant queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
+        queryClient.invalidateQueries({ queryKey: ['phone', 'numbers'] });
+        
         setStep('success');
         onSuccess?.();
       }

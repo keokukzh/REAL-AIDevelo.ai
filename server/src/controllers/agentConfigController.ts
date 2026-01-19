@@ -7,7 +7,6 @@ import {
   ensureAgentConfig,
 } from '../services/supabaseDb.js';
 import { z } from 'zod';
-import { InternalServerError, BadRequestError } from '../utils/errors.js';
 
 // Get backend version from environment
 const getBackendVersion = (): string => {
@@ -31,6 +30,9 @@ const UpdateAgentConfigSchema = z
     company_name: z.string().optional().nullable(),
     booking_required_fields_json: z.array(z.string()).optional(),
     booking_default_duration_min: z.number().int().min(5).max(480).optional(),
+    primary_locale: z.string().regex(/^[a-z]{2}-[A-Z]{2}$/, 'Invalid locale format (expected: de-CH)').optional(),
+    system_prompt: z.string().max(5000, 'System prompt must be less than 5000 characters').optional().nullable(),
+    recording_consent: z.boolean().optional(),
   })
   .strict();
 
@@ -52,6 +54,9 @@ const AgentConfigResponseSchema = z.object({
   company_name: z.string().nullable().optional(),
   booking_required_fields_json: z.array(z.string()).optional(),
   booking_default_duration_min: z.number().optional(),
+  primary_locale: z.string().nullable().optional(),
+  system_prompt: z.string().nullable().optional(),
+  recording_consent: z.boolean().optional(),
   updated_at: z.string().optional(),
 });
 
@@ -94,6 +99,9 @@ export const updateAgentConfig = async (
       'company_name',
       'booking_required_fields_json',
       'booking_default_duration_min',
+      'primary_locale',
+      'system_prompt',
+      'recording_consent',
     ] as const;
     const rawBody = (req.body ?? {}) as Record<string, unknown>;
     const whitelistedBody: Record<string, unknown> = {};
@@ -159,6 +167,9 @@ export const updateAgentConfig = async (
         goals_json: Array.isArray(agentConfig.goals_json) ? agentConfig.goals_json : [],
         services_json: agentConfig.services_json || [],
         business_type: agentConfig.business_type,
+        primary_locale: (agentConfig as any).primary_locale ?? null,
+        system_prompt: (agentConfig as any).system_prompt ?? null,
+        recording_consent: (agentConfig as any).recording_consent ?? true,
       });
 
       res.setHeader('x-aidevelo-backend-sha', getBackendVersion());
@@ -174,7 +185,7 @@ export const updateAgentConfig = async (
       .update(updatePayload)
       .eq('id', agentConfig.id)
       .select(
-        'id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, updated_at',
+        'id, location_id, setup_state, persona_gender, persona_age_range, goals_json, services_json, business_type, eleven_agent_id, admin_test_number, greeting_template, company_name, booking_required_fields_json, booking_default_duration_min, primary_locale, system_prompt, recording_consent, updated_at',
       )
       .single();
 
@@ -233,6 +244,9 @@ export const updateAgentConfig = async (
           )
         : [],
       booking_default_duration_min: (updatedConfig as any).booking_default_duration_min ?? 30,
+      primary_locale: (updatedConfig as any).primary_locale ?? null,
+      system_prompt: (updatedConfig as any).system_prompt ?? null,
+      recording_consent: (updatedConfig as any).recording_consent ?? true,
       updated_at: (updatedConfig as any).updated_at,
     };
     const validatedResult = AgentConfigResponseSchema.safeParse(normalizedForResponse);

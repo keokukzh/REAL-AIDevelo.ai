@@ -31,6 +31,10 @@ export interface DashboardOverview {
     admin_test_number?: string | null;
     booking_required_fields_json?: string[];
     booking_default_duration_min?: number;
+    primary_locale?: string | null;
+    system_prompt?: string | null;
+    recording_consent?: boolean;
+    eleven_agent_id?: string | null;
   };
   status: {
     agent: 'ready' | 'needs_setup';

@@ -511,6 +511,20 @@ export const DashboardPage = () => {
     setIsPhoneWizardOpen(true);
   }, []);
 
+  const handlePhoneConnectionSuccess = React.useCallback(async () => {
+    // Refresh phone status immediately after connection
+    try {
+      const status = await checkPhoneStatus();
+      setPhoneStatus(status);
+    } catch (error) {
+      console.error('[DashboardPage] Failed to refresh phone status:', error);
+    }
+    // Also invalidate queries to refresh overview
+    queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+    queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
+    await refetch();
+  }, [queryClient, refetch]);
+
   const handleCheckWebhook = React.useCallback(() => {
     setIsWebhookStatusOpen(true);
   }, []);
@@ -1248,10 +1262,7 @@ export const DashboardPage = () => {
       <PhoneSetupWizard
         isOpen={isPhoneWizardOpen}
         onClose={() => setIsPhoneWizardOpen(false)}
-        onSuccess={() => {
-          refetch();
-          queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
-        }}
+        onSuccess={handlePhoneConnectionSuccess}
       />
 
       <WebhookStatusModal
