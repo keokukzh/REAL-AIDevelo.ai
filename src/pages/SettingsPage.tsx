@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '../components/ui/Toast';
 import { extractErrorMessage } from '../lib/errorUtils';
 import { supabase } from '../lib/supabase';
-import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal';
+import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard';
 import {
   Settings,
   Mail,
@@ -931,12 +931,10 @@ export const SettingsPage = () => {
         </div>
       </main>
 
-      {/* Phone Connection Modal */}
-      <PhoneConnectionModal
+      {/* PhoneSetupWizard */}
+      <PhoneSetupWizard
         isOpen={isPhoneConnectionOpen}
         onClose={() => setIsPhoneConnectionOpen(false)}
-        agentConfigId={overview.agent_config.id}
-        locationId={overview.location.id}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
           refetch();

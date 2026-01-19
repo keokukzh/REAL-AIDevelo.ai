@@ -687,9 +687,15 @@ export const registerPersonalPhone = async (
     const { userPhoneNumber } = req.body;
     if (!userPhoneNumber) return next(new BadRequestError('userPhoneNumber is required'));
 
-    const { supabaseUserId } = req.supabaseUser;
+    const { supabaseUserId, email } = req.supabaseUser;
 
-    const { error } = await supabaseAdmin
+    // Get user's location
+    await ensureUserRow(supabaseUserId, email);
+    const org = await ensureOrgForUser(supabaseUserId, email);
+    const location = await ensureDefaultLocation(org.id);
+
+    // Update user row
+    const { error: userError } = await supabaseAdmin
       .from('users')
       .update({
         personal_phone_number: userPhoneNumber,
@@ -698,11 +704,40 @@ export const registerPersonalPhone = async (
       })
       .eq('supabase_user_id', supabaseUserId);
 
-    if (error) {
-      console.error('[PhoneController] Error updating user phone:', error);
+    if (userError) {
+      console.error('[PhoneController] Error updating user phone:', userError);
       return next(
-        new InternalServerError(`Fehler beim Speichern der Telefonnummer: ${error.message}`),
+        new InternalServerError(`Fehler beim Speichern der Telefonnummer: ${userError.message}`),
       );
+    }
+
+    // Update channels_config to show this number as the active one (mode: forwarding)
+    try {
+      const { data: existingConfig } = await supabaseAdmin
+        .from('channels_config')
+        .select('id')
+        .eq('location_id', location.id)
+        .maybeSingle();
+
+      if (existingConfig) {
+        await supabaseAdmin
+          .from('channels_config')
+          .update({
+            phone_number: userPhoneNumber,
+            phone_enabled: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingConfig.id);
+      } else {
+        await supabaseAdmin.from('channels_config').insert({
+          location_id: location.id,
+          phone_number: userPhoneNumber,
+          phone_enabled: true,
+        });
+      }
+      console.log('[PhoneController] channels_config updated for forwarding:', location.id);
+    } catch (syncError) {
+      console.error('[PhoneController] Failed to sync channels_config for forwarding:', syncError);
     }
 
     res.json({ success: true, message: 'Personal phone number registered' });

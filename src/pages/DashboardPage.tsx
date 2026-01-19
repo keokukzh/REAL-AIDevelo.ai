@@ -42,6 +42,7 @@ import {
   XCircle,
   MoreHorizontal,
   ArrowRight,
+  Cpu,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -694,65 +695,84 @@ export const DashboardPage = () => {
           <div className="space-y-8">
             {/* Welcome & Time Range */}
             <section aria-labelledby="welcome-heading">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex-1">
                   <h1
                     id="welcome-heading"
-                    className="text-3xl font-bold font-display text-white tracking-tight"
+                    className="text-3xl md:text-4xl font-bold font-display text-white tracking-tight leading-tight"
                   >
-                    Willkommen, {userName.split('@')[0]}
+                    {isAgentActive
+                      ? `Willkommen zurück, ${userName.split('@')[0]}`
+                      : `Bereit für den Start, ${userName.split('@')[0]}?`}
                   </h1>
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-gray-400 text-sm">
-                      Hier ist der aktuelle Status Ihres Voice Agents für heute.
+                  <div className="flex items-center gap-3 mt-3">
+                    {!isAgentActive && (
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 border border-accent/20 text-accent text-xs font-bold uppercase tracking-wider">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+                        </span>
+                        Setup läuft
+                      </div>
+                    )}
+                    <p className="text-gray-400 text-sm md:text-base max-w-2xl">
+                      {isAgentActive
+                        ? 'Dein KI-Sekretariat arbeitet fleissig im Hintergrund.'
+                        : 'Vervollständige die folgenden Schritte, um deinen ersten Voice Agent live zu schalten.'}
                     </p>
                   </div>
                 </div>
+
                 {lastRefresh && (
-                  <output
-                    className="text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-md border border-slate-800"
-                    aria-live="polite"
-                  >
-                    Letzte Aktualisierung:{' '}
-                    {lastRefresh.toLocaleTimeString('de-CH', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </output>
+                  <div className="flex flex-col items-end gap-2">
+                    <output
+                      className="text-[10px] sm:text-xs text-gray-500 bg-surface/50 px-3 py-1.5 rounded-lg border border-slate-800 backdrop-blur-sm"
+                      aria-live="polite"
+                    >
+                      Aktualisiert:{' '}
+                      {lastRefresh.toLocaleTimeString('de-CH', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </output>
+                  </div>
                 )}
               </div>
             </section>
 
-            {/* KPI Grid */}
+            {/* KPI Grid / Onboarding Summary */}
             <section aria-label="Key Performance Indicators">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6`}>
                 <StatCard
-                  label="Gesamtanrufe"
+                  label={isAgentActive ? 'Gesamtanrufe' : 'Erwartete Anrufe'}
                   value={kpis.totalCalls}
                   icon={Phone}
                   iconColor="text-blue-400"
                   bgColor="bg-blue-500/10"
+                  description={!isAgentActive ? 'Sobald verbunden' : undefined}
                 />
                 <StatCard
                   label="Termine gebucht"
-                  value={kpis.appointmentsBooked}
+                  value={isAgentActive ? kpis.appointmentsBooked : '0'}
                   icon={Calendar}
                   iconColor="text-green-400"
                   bgColor="bg-green-500/10"
+                  description={!isAgentActive ? 'Setup bereit' : undefined}
                 />
                 <StatCard
-                  label="Verpasste Anrufe"
-                  value={kpis.missedCalls}
-                  icon={PhoneMissed}
-                  iconColor="text-swiss-red"
-                  bgColor="bg-swiss-red/10"
-                />
-                <StatCard
-                  label="Durchschn. Dauer"
-                  value={kpis.avgDuration}
+                  label="Zeitersparnis"
+                  value={isAgentActive ? `${kpis.totalCalls * 2}min` : '0min'}
                   icon={Clock}
                   iconColor="text-purple-400"
                   bgColor="bg-purple-500/10"
+                  description="Pro Monat (geschätzt)"
+                />
+                <StatCard
+                  label="Status"
+                  value={isAgentActive ? 'Online' : 'Im Setup'}
+                  icon={Cpu}
+                  iconColor={isAgentActive ? 'text-emerald-400' : 'text-amber-400'}
+                  bgColor={isAgentActive ? 'bg-emerald-500/10' : 'bg-amber-500/10'}
                 />
               </div>
             </section>

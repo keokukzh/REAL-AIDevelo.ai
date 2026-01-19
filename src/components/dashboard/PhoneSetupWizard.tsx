@@ -366,11 +366,14 @@ export const PhoneSetupWizard: React.FC<PhoneSetupWizardProps> = ({
   const renderVerification = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="inline-flex p-4 bg-accent/20 rounded-full mb-4">
-          <ShieldCheck className="text-accent" size={32} />
+        <div className="inline-flex p-4 bg-blue-500/20 rounded-full mb-4">
+          <Zap className="text-blue-400" size={32} />
         </div>
-        <h3 className="text-2xl font-bold mb-2">Fast geschafft!</h3>
-        <p className="text-gray-400">Richte nun die Weiterleitung auf deinem Handy ein.</p>
+        <h3 className="text-2xl font-bold mb-2">Bedingte Rufweiterleitung</h3>
+        <p className="text-gray-400">
+          Richte dein Handy so ein, dass der Agent nur rangeht, wenn du besetzt bist oder nicht
+          abhebst.
+        </p>
       </div>
 
       <div className="space-y-4">

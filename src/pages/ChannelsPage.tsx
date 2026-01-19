@@ -20,7 +20,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { ROUTES } from '../config/navigation.js';
-import { PhoneConnectionModal } from '../components/dashboard/PhoneConnectionModal.js';
+import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard.js';
 
 interface ChannelsConfig {
   location_id: string;
@@ -293,79 +293,125 @@ export const ChannelsPage = () => {
           <div className="flex items-center gap-3 mb-4">
             <Phone size={20} className="text-primary" />
             <h2 className="text-xl font-semibold">Telefon / Voice Agent</h2>
+            {config?.phone_enabled && config?.phone_number && (
+              <div className="ml-auto flex items-center gap-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Aktiviert
+              </div>
+            )}
           </div>
 
-          {config && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.phone_enabled}
-                    onChange={(e) => setConfig({ ...config, phone_enabled: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600"
-                  />
-                  <span>Telefon aktiviert</span>
-                </label>
-              </div>
-
-              {config.phone_number ? (
-                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Verbundene Nummer</p>
-                      <p className="font-mono text-lg">{config.phone_number}</p>
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Verbindungs-Status
+                </h4>
+                {config?.phone_number ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-accent/20 rounded-lg">
+                        <Phone size={18} className="text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Aktive Nummer</p>
+                        <p className="font-mono text-lg text-white">{config.phone_number}</p>
+                      </div>
                     </div>
-                    <Button onClick={() => setIsPhoneModalOpen(true)} variant="outline">
-                      Nummer ändern
+                    <Button
+                      onClick={() => setIsPhoneModalOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start h-10 border-slate-700 hover:border-slate-500"
+                    >
+                      Verbindung verwalten
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="text-yellow-400" size={20} />
-                    <div className="flex-1">
-                      <p className="text-sm text-yellow-200 mb-2">Keine Telefonnummer verbunden</p>
-                      <Button onClick={() => setIsPhoneModalOpen(true)} variant="primary" size="sm">
-                        <Plus size={16} className="mr-2" />
-                        Telefonnummer verbinden
-                      </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-3">
+                      <AlertCircle className="text-yellow-400 mt-0.5" size={18} />
+                      <p className="text-sm text-yellow-200/80 leading-relaxed">
+                        Es ist noch keine Telefonverbindung eingerichtet. Dein Voice Agent ist
+                        aktuell nicht erreichbar.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setIsPhoneModalOpen(true)}
+                      variant="primary"
+                      className="w-full h-12 shadow-lg shadow-primary/20"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Jetzt einrichten
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="md:border-l md:border-slate-700/50 md:pl-6">
+                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Einstellungen
+                </h4>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={config?.phone_enabled || false}
+                      onChange={(e) =>
+                        config && setConfig({ ...config, phone_enabled: e.target.checked })
+                      }
+                      className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-primary focus:ring-primary"
+                    />
+                    <div>
+                      <span className="block text-sm font-medium text-white">Anrufe annehmen</span>
+                      <span className="block text-xs text-gray-400">
+                        Voice Agent reagiert auf eingehende Anrufe
+                      </span>
+                    </div>
+                  </label>
+
+                  <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+                    <div className="flex gap-3">
+                      <Info size={16} className="text-blue-400 mt-0.5" />
+                      <p className="text-xs text-blue-200/60 leading-relaxed">
+                        Stelle sicher, dass dein Agent-Profil vollständig eingerichtet ist, bevor du
+                        den Voice Agent aktivierst.
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Agent Testen Bereich */}
-              <div className="border-t border-slate-700 pt-4">
-                <h3 className="text-lg font-medium mb-3">Agent testen</h3>
-                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
-                  <p className="text-sm text-gray-400 mb-3">
-                    Teste deinen Voice Agent direkt im Browser mit Mikrofon und Lautsprecher
-                  </p>
-                  <Button
-                    onClick={() => {
-                      // Navigiere zur Test-Call Seite
-                      nav.goTo(ROUTES.TEST_CALL);
-                    }}
-                    variant="primary"
-                    disabled={!config.phone_enabled}
-                  >
-                    <Phone size={16} className="mr-2" />
-                    Agent jetzt testen
-                  </Button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Agent Testen Bereich */}
+          <div className="border-t border-slate-700 pt-4">
+            <h3 className="text-lg font-medium mb-3">Agent testen</h3>
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
+              <p className="text-sm text-gray-400 mb-3">
+                Teste deinen Voice Agent direkt im Browser mit Mikrofon und Lautsprecher
+              </p>
+              <Button
+                onClick={() => {
+                  nav.goTo(ROUTES.TEST_CALL);
+                }}
+                variant="primary"
+                disabled={!config?.phone_enabled}
+              >
+                <Phone size={16} className="mr-2" />
+                Agent jetzt testen
+              </Button>
+            </div>
+          </div>
         </Card>
 
-        {/* PhoneConnectionModal */}
-        <PhoneConnectionModal
+        {/* PhoneSetupWizard */}
+        <PhoneSetupWizard
           isOpen={isPhoneModalOpen}
           onClose={() => setIsPhoneModalOpen(false)}
-          agentConfigId={config?.location_id || ''}
-          locationId={config?.location_id || ''}
           onSuccess={() => {
             loadChannelsConfig();
             setIsPhoneModalOpen(false);
