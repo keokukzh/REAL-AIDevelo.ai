@@ -46,7 +46,7 @@ export const telephonyRepository = {
     return Boolean(getPool());
   },
 
-  async getAvailableNumbers(): Promise<PhoneNumber[]> {
+  async getAvailableNumbers(country?: string): Promise<PhoneNumber[]> {
     // Note: Schema has 'e164' and 'twilio_number_sid'
     // If 'country' column is missing in DB, we'll exclude it from filter for now
     const rows = await query<PhoneNumberRow>(
@@ -56,7 +56,11 @@ export const telephonyRepository = {
        ORDER BY created_at ASC`,
       [],
     );
-    return rows.map(mapRow);
+    const all = rows.map(mapRow);
+    if (country) {
+      return all.filter((n) => n.country.toUpperCase() === country.toUpperCase());
+    }
+    return all;
   },
 
   async assignNumber(
