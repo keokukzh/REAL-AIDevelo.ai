@@ -124,7 +124,16 @@ export const DashboardPage = () => {
     } else if (error) {
       // Log other errors but don't crash the dashboard
       const errorMessage = extractErrorMessage(error);
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      
+      // Don't log 503 errors as errors - they're temporary service unavailability
+      if (status === 503) {
+        logger.warn('Dashboard service temporarily unavailable (503)', {
+          errorMessage,
+          retryable: true,
+        });
+        // Don't show toast for 503 on initial load - React Query will retry automatically
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
         logger.warn('Network error - dashboard may show limited data', {
           errorMessage,
         });

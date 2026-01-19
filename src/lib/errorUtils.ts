@@ -115,6 +115,14 @@ const ERROR_PATTERNS: Array<{
     solution: 'Unser Team wurde automatisch benachrichtigt. Bitte versuchen Sie es in ein paar Minuten erneut.',
     retryable: true,
   },
+  // Service unavailable (503)
+  {
+    pattern: /503|Service.*unavailable|temporarily.*unavailable/i,
+    title: 'Service vorübergehend nicht verfügbar',
+    message: 'Der Service ist vorübergehend nicht verfügbar.',
+    solution: 'Bitte versuchen Sie es in einem Moment erneut. Der Service wird automatisch neu versucht.',
+    retryable: true,
+  },
   // Calendar errors
   {
     pattern: /Calendar|Kalender.*verbinden|OAuth.*failed/i,

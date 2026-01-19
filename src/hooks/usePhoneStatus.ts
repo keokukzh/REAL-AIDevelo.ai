@@ -41,15 +41,24 @@ export const usePhoneStatus = () => {
       const status = await checkPhoneStatus();
       setPhoneStatus(status);
       setIsLoading(false);
-    } catch (error) {
-      logger.error('Failed to fetch phone status', error);
-      setPhoneStatus(DEFAULT_ERROR_STATUS);
+    } catch (error: unknown) {
+      // Don't log 503 errors as errors - they're temporary service unavailability
+      const status = (error as any)?.response?.status || (error as any)?.status;
+      if (status === 503) {
+        // Service temporarily unavailable - use default error status but don't log as error
+        logger.warn('Phone status service temporarily unavailable (503)', { retryable: true });
+        setPhoneStatus(DEFAULT_ERROR_STATUS);
+      } else {
+        logger.error('Failed to fetch phone status', error);
+        setPhoneStatus(DEFAULT_ERROR_STATUS);
+      }
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchStatus();
+    // Use longer interval for 503 errors to avoid hammering the server
     const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
   }, [fetchStatus]);

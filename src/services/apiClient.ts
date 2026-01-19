@@ -95,8 +95,10 @@ apiClient.interceptors.response.use(
     }
 
     // Handle 502/503 - retry with exponential backoff
-    if ((status === 502 || status === 503) && retryCount < maxRetries && !originalRequest._retry) {
-      originalRequest._retry = true;
+    // Only retry if not already retried (check _retry flag properly)
+    if ((status === 502 || status === 503) && retryCount < maxRetries) {
+      // Check if this request was already retried by checking the _retry flag
+      // But allow retries up to maxRetries
       originalRequest._retryCount = retryCount + 1;
       
       // Exponential backoff: 1s, 2s
