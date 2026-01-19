@@ -6,6 +6,7 @@ export interface RetryOptions {
   maxDelayMs?: number;
   backoffMultiplier?: number;
   retryable?: (error: Error) => boolean;
+  useJitter?: boolean;
 }
 
 /**
@@ -16,7 +17,7 @@ export interface RetryOptions {
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   const {
     maxAttempts = RETRY_CONFIG.MAX_ATTEMPTS,
@@ -24,6 +25,7 @@ export async function retryWithBackoff<T>(
     maxDelayMs = RETRY_CONFIG.MAX_DELAY_MS,
     backoffMultiplier = RETRY_CONFIG.BACKOFF_MULTIPLIER,
     retryable = () => true, // By default, retry all errors
+    useJitter = false,
   } = options;
 
   let lastError: Error | unknown;
@@ -46,7 +48,8 @@ export async function retryWithBackoff<T>(
       }
 
       // Wait before retrying with exponential backoff
-      await new Promise(resolve => setTimeout(resolve, delay));
+      const currentDelay = useJitter ? Math.random() * delay : delay;
+      await new Promise((resolve) => setTimeout(resolve, currentDelay));
       delay = Math.min(delay * backoffMultiplier, maxDelayMs);
     }
   }
@@ -59,6 +62,8 @@ export async function retryWithBackoff<T>(
  * Check if an error is retryable (transient failure)
  */
 export function isRetryableError(error: Error): boolean {
+  const statusCode = (error as { statusCode?: number }).statusCode;
+
   // Network errors
   if (
     error.message.includes('ECONNRESET') ||
@@ -71,17 +76,17 @@ export function isRetryableError(error: Error): boolean {
   }
 
   // HTTP 5xx errors (server errors)
-  if ((error as any).statusCode && (error as any).statusCode >= 500) {
+  if (statusCode && statusCode >= 500) {
     return true;
   }
 
   // Rate limiting (429) - retry with backoff
-  if ((error as any).statusCode === 429) {
+  if (statusCode === 429) {
     return true;
   }
 
   // HTTP 408 (Request Timeout)
-  if ((error as any).statusCode === 408) {
+  if (statusCode === 408) {
     return true;
   }
 
@@ -93,7 +98,7 @@ export function isRetryableError(error: Error): boolean {
  */
 export async function retryApiCall<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   return retryWithBackoff(fn, {
     ...options,

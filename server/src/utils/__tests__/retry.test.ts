@@ -15,11 +15,12 @@ describe('retry utilities', () => {
     });
 
     it('should retry on failure and eventually succeed', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new Error('fail'))
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValueOnce('success');
-      
+
       const result = await retryWithBackoff(fn, { maxAttempts: 3 });
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(3);
@@ -28,7 +29,7 @@ describe('retry utilities', () => {
     it('should throw after max attempts', async () => {
       const error = new Error('persistent error');
       const fn = vi.fn().mockRejectedValue(error);
-      
+
       await expect(retryWithBackoff(fn, { maxAttempts: 2 })).rejects.toThrow('persistent error');
       expect(fn).toHaveBeenCalledTimes(2);
     });
@@ -37,10 +38,36 @@ describe('retry utilities', () => {
       const error = new Error('non-retryable');
       const fn = vi.fn().mockRejectedValue(error);
       const retryable = vi.fn().mockReturnValue(false);
-      
+
       await expect(retryWithBackoff(fn, { retryable })).rejects.toThrow('non-retryable');
       expect(fn).toHaveBeenCalledTimes(1);
       expect(retryable).toHaveBeenCalledWith(error);
+    });
+
+    it('should accept useJitter option', async () => {
+      const fn = vi.fn().mockResolvedValue('success');
+      const result = await retryWithBackoff(fn, { useJitter: true });
+      expect(result).toBe('success');
+    });
+
+    it('should randomize delay when useJitter is true', async () => {
+      const fn = vi.fn().mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce('success');
+
+      const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
+
+      // We'll use a fixed initialDelay to make it predictable
+      await retryWithBackoff(fn, { maxAttempts: 2, initialDelayMs: 1000, useJitter: true });
+
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      const delay = setTimeoutSpy.mock.calls[0][1] as number;
+
+      // Without jitter, it should be exactly 1000
+      // With jitter, it should be between 0 and 1000
+      expect(delay).toBeLessThanOrEqual(1000);
+      // It's statistically unlikely to be exactly 1000 if jitter is working
+      expect(delay).toBeLessThan(1000);
+
+      setTimeoutSpy.mockRestore();
     });
   });
 
@@ -89,10 +116,8 @@ describe('retry utilities', () => {
   describe('retryApiCall', () => {
     it('should use isRetryableError by default', async () => {
       const retryableError = new Error('ECONNRESET');
-      const fn = vi.fn()
-        .mockRejectedValueOnce(retryableError)
-        .mockResolvedValueOnce('success');
-      
+      const fn = vi.fn().mockRejectedValueOnce(retryableError).mockResolvedValueOnce('success');
+
       const result = await retryApiCall(fn, { maxAttempts: 2 });
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(2);
@@ -102,7 +127,7 @@ describe('retry utilities', () => {
       const nonRetryableError = new Error('Bad request') as any;
       nonRetryableError.statusCode = 400;
       const fn = vi.fn().mockRejectedValue(nonRetryableError);
-      
+
       await expect(retryApiCall(fn)).rejects.toThrow('Bad request');
       expect(fn).toHaveBeenCalledTimes(1);
     });
