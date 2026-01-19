@@ -31,7 +31,17 @@ const WebdesignTechStack = lazy(() =>
   })),
 ) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
-import { Globe, Zap, Search, Palette, Code, Smartphone, Shield } from 'lucide-react';
+import {
+  Globe,
+  Zap,
+  Search,
+  Palette,
+  Code,
+  Smartphone,
+  Shield,
+  ArrowRight,
+  Layout,
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Footer } from '../components/Footer';
