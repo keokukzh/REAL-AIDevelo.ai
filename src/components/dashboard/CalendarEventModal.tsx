@@ -118,7 +118,10 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     } catch (error: any) {
       // Error is already shown via toast in the hook's onError callback
       // But we can also set local error state for UI feedback
-      const errorMsg = error?.response?.data?.error || error?.message || 'Fehler beim Speichern des Termins';
+      const errorMsg = error?.userFriendlyMessage 
+        || error?.response?.data?.error 
+        || error?.message 
+        || 'Fehler beim Speichern des Termins';
       setError(errorMsg);
       setSuccess(false);
     }

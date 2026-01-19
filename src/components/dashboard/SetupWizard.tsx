@@ -98,8 +98,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
       } else if (currentStep === 'confirm') {
         onComplete();
       }
-    } catch (error) {
-      console.error('[SetupWizard] Error saving step:', error);
+    } catch (error: any) {
+      console.error('[SetupWizard] Error saving step:', {
+        error,
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        userFriendlyMessage: error?.userFriendlyMessage,
+      });
       // Error is handled by mutation's onError callback (shows toast)
       // Don't advance to next step on error
     }
@@ -412,7 +418,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
       {updateConfig.isError && (
         <div className="mt-4 p-3 bg-red-900/50 rounded text-red-300">
-          Fehler beim Speichern: {updateConfig.error?.message || 'Unbekannter Fehler'}
+          Fehler beim Speichern: {(updateConfig.error as any)?.userFriendlyMessage 
+            || updateConfig.error?.message 
+            || 'Unbekannter Fehler'}
         </div>
       )}
     </div>

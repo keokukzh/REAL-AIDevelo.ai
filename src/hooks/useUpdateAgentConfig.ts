@@ -46,13 +46,13 @@ export const useUpdateAgentConfig = () => {
 
   return useMutation<AgentConfigResponse, Error, UpdateAgentConfigRequest>({
     mutationFn: async (updates: UpdateAgentConfigRequest) => {
-      const response = await apiClient.patch<{ success: boolean; data: AgentConfigResponse }>(
+      const response = await apiClient.patch<{ success: boolean; data?: AgentConfigResponse; error?: string }>(
         '/dashboard/agent/config',
         updates
       );
       
       if (!response.data?.success || !response.data.data) {
-        const errorMsg = response.data?.error || 'Failed to update agent config';
+        const errorMsg = (response.data as any)?.error || 'Failed to update agent config';
         throw new Error(errorMsg);
       }
       
@@ -63,7 +63,9 @@ export const useUpdateAgentConfig = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
     },
     onError: (error: any) => {
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Konfiguration');
+      // Use userFriendlyMessage if available (from apiClient interceptor)
+      const errorMsg = error?.userFriendlyMessage 
+        || extractErrorMessage(error, 'Fehler beim Speichern der Konfiguration');
       toast.error(errorMsg);
     },
   });

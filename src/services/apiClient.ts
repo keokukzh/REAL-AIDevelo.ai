@@ -68,9 +68,15 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as AxiosRequestConfig & { 
+      _retry?: boolean;
+      _retryCount?: number;
+    };
     const status = error.response?.status;
+    const maxRetries = 2;
+    const retryCount = originalRequest._retryCount || 0;
 
+    // Handle 401 - refresh token
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const {
@@ -86,6 +92,18 @@ apiClient.interceptors.response.use(
       } else {
         await supabase.auth.signOut();
       }
+    }
+
+    // Handle 502/503 - retry with exponential backoff
+    if ((status === 502 || status === 503) && retryCount < maxRetries && !originalRequest._retry) {
+      originalRequest._retry = true;
+      originalRequest._retryCount = retryCount + 1;
+      
+      // Exponential backoff: 1s, 2s
+      const delay = Math.pow(2, retryCount) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      return apiClient(originalRequest);
     }
 
     let errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
@@ -121,24 +139,39 @@ apiClient.interceptors.response.use(
         case 500:
           errorMessage = serverMsg || 'Interner Serverfehler.';
           break;
+        case 502:
+          errorMessage = 'Der Server ist vorübergehend nicht erreichbar. Bitte versuche es in einem Moment erneut.';
+          break;
+        case 503:
+          errorMessage = 'Der Service ist vorübergehend nicht verfügbar. Bitte versuche es in einem Moment erneut.';
+          break;
         default:
           errorMessage = serverMsg || errorMessage;
       }
     }
 
+    // Always attach userFriendlyMessage to the error object
     (error as Record<string, any>).userFriendlyMessage = errorMessage;
+    (error as Record<string, any>).status = status;
+    
+    // Override the error message with user-friendly message
+    if (error instanceof Error) {
+      error.message = errorMessage;
+    }
 
     if (error.response?.data && typeof error.response.data === 'object') {
       const apiError = error.response.data as Record<string, unknown>;
       const finalMsg = extractMessage(apiError.message) || extractMessage(apiError.error);
 
       if (finalMsg) {
-        const enhancedError = new Error(finalMsg);
+        const enhancedError = new Error(errorMessage); // Use userFriendlyMessage as the main message
         Object.assign(enhancedError, {
           response: error.response,
           config: error.config,
           isAxiosError: true,
           userFriendlyMessage: errorMessage,
+          status: status,
+          originalMessage: finalMsg, // Keep original for debugging
         });
         return Promise.reject(enhancedError);
       }
