@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { FileText, CreditCard, Code, CheckCircle, Search, LucideIcon } from 'lucide-react';
+import { FileText, CreditCard, Code, CheckCircle, Search } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 
 const PROCESS_DICTIONARY = {

@@ -48,7 +48,8 @@ import { Footer } from '../components/Footer';
 import { ROUTES } from '../config/navigation';
 
 interface Feature {
-  icon: React.ElementType; // Changed from LucideIcon to React.ElementType for broader compatibility
+  // Icon type definition for Lucide v0.4+
+  icon: React.ElementType;
   title: string;
   description: string;
 }
