@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CrossSectionNav } from '../components/navigation/CrossSectionNav.js';
 import { ROUTES } from '../config/navigation.js';
-import { useDashboardOverview } from '../hooks/useDashboardOverview.js';
+import { useDashboardOverview, DashboardOverview } from '../hooks/useDashboardOverview.js';
 import { useNavigation } from '../hooks/useNavigation.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
@@ -28,7 +28,6 @@ import { StatCard } from '../components/newDashboard/StatCard.js';
 import { StatusBadge } from '../components/newDashboard/StatusBadge.js';
 import { QuickActionButton } from '../components/newDashboard/QuickActionButton.js';
 import { HealthItem } from '../components/newDashboard/HealthItem.js';
-import { DemoAgentPlayer } from '../components/dashboard/DemoAgentPlayer.js';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState.js';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner.js';
 import {
@@ -62,16 +61,6 @@ import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents.js'
 import { CallLog } from '../hooks/useCallLogs.js';
 import { extractErrorMessage } from '../lib/errorUtils.js';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
-
-interface TestAgent {
-  id: string;
-  name: string;
-  description: string;
-  industry: string;
-  language: string;
-  audioUrl?: string;
-  demoText: string;
-}
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -112,7 +101,6 @@ export const DashboardPage = () => {
     undefined,
   );
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [testAgents, setTestAgents] = useState<TestAgent[]>([]);
   const [phoneStatus, setPhoneStatus] = useState<{
     twilioGateway: 'OK' | 'WARN' | 'ERROR';
     twilioConfigured: boolean;
@@ -152,23 +140,6 @@ export const DashboardPage = () => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
-  }, []);
-
-  // Fetch test agents
-  React.useEffect(() => {
-    const fetchTestAgents = async () => {
-      try {
-        const response = await apiClient.get<{ success: boolean; data: { agents: TestAgent[] } }>(
-          '/test-agents',
-        );
-        if (response.data?.success) {
-          setTestAgents(response.data.data.agents);
-        }
-      } catch (err) {
-        console.error('[DashboardPage] Failed to fetch test agents:', err);
-      }
-    };
-    fetchTestAgents();
   }, []);
 
   // Handle 401 - redirect to login (NOT onboarding)
@@ -404,7 +375,7 @@ export const DashboardPage = () => {
       extractErrorMessage(error).includes('Network request failed'));
 
   // Create safe fallback overview
-  const safeOverview = overview || {
+  const safeOverview: DashboardOverview = {
     user: { id: '', email: user?.email || null },
     organization: { id: '', name: '' },
     location: { id: '', name: '', timezone: 'Europe/Zurich' },
@@ -413,9 +384,10 @@ export const DashboardPage = () => {
       setup_state: 'needs_setup',
       persona_gender: null,
       persona_age_range: null,
-      goals_json: [],
-      services_json: [],
+      goals_json: [] as string[],
+      services_json: [] as any[],
       business_type: null,
+      admin_test_number: null,
     },
     status: {
       agent: 'needs_setup' as const,
@@ -1017,44 +989,6 @@ export const DashboardPage = () => {
                     )}
                   </div>
                 </Card>
-
-                {/* Demo Agents Library */}
-                <section aria-labelledby="demo-agents-heading" className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2
-                        id="demo-agents-heading"
-                        className="text-2xl font-bold font-display text-white"
-                      >
-                        Test-Agents Mediathek
-                      </h2>
-                      <p className="text-gray-400 text-sm mt-1">
-                        Hören Sie sich unsere verschiedenen Agent-Varianten im Einsatz an.
-                      </p>
-                    </div>
-                  </div>
-
-                  {testAgents.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {testAgents.map((agent) => (
-                        <DemoAgentPlayer
-                          key={agent.id}
-                          name={agent.name}
-                          industry={agent.industry}
-                          audioUrl={agent.audioUrl}
-                          demoText={agent.demoText}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Mic className="text-gray-600" />
-                      </div>
-                      <p className="text-gray-500 italic">Demo-Agents werden geladen...</p>
-                    </div>
-                  )}
-                </section>
 
                 {/* Recent Logs Table */}
                 <Card
