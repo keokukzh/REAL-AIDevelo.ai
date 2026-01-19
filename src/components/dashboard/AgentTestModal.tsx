@@ -10,6 +10,10 @@ import {
   Mic,
   PhoneOff,
   Video,
+  Wand2,
+  Save,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient.js';
 import { Device } from '@twilio/voice-sdk';
@@ -92,12 +96,37 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   >('idle');
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
-  // Update test phone number when adminTestNumber prop changes
+  // Refinement loop state
+  const [isRefinementOpen, setIsRefinementOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  const [isFetchingPrompt, setIsFetchingPrompt] = useState(false);
+
   useEffect(() => {
     if (adminTestNumber) {
       setTestPhoneNumber(adminTestNumber);
     }
   }, [adminTestNumber]);
+
+  // Fetch current prompt when modal opens or agent changes
+  useEffect(() => {
+    if (isOpen && agentConfigId) {
+      const fetchPrompt = async () => {
+        setIsFetchingPrompt(true);
+        try {
+          const res = await apiClient.get<any>(`/agents/${agentConfigId}`);
+          if (res.data?.success && res.data.data?.config?.systemPrompt) {
+            setSystemPrompt(res.data.data.config.systemPrompt);
+          }
+        } catch (err) {
+          console.error('[AgentTestModal] Failed to fetch prompt:', err);
+        } finally {
+          setIsFetchingPrompt(false);
+        }
+      };
+      fetchPrompt();
+    }
+  }, [isOpen, agentConfigId]);
 
   // Check if we have the required data for testing
   const canTest = !!locationId && !!agentConfigId;
@@ -126,7 +155,32 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
 
     setVoiceConnectionStatus('disconnected');
     setVoiceCallStatus('idle');
+    setIsRefinementOpen(false);
   }, [twilioDevice]);
+
+  const handleSaveInstructions = async () => {
+    if (!agentConfigId || !systemPrompt.trim()) return;
+
+    setIsSavingPrompt(true);
+    try {
+      await apiClient.patch(`/agents/${agentConfigId}`, {
+        config: {
+          systemPrompt: systemPrompt.trim(),
+        },
+      });
+      toast.success('Anweisungen erfolgreich aktualisiert & synchronisiert');
+      // Optionally reset session to use new prompt
+      if (testMode === 'chat') {
+        chatCallSid.current = `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        setChatMessages([]);
+      }
+    } catch (err) {
+      const msg = extractErrorMessage(err, 'Fehler beim Speichern der Anweisungen');
+      toast.error(msg);
+    } finally {
+      setIsSavingPrompt(false);
+    }
+  };
 
   // Reset state when modal closes
   useEffect(() => {
@@ -406,304 +460,394 @@ export const AgentTestModal: React.FC<AgentTestModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Agent testen" size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={
+        <div className="flex items-center gap-3">
+          <span>Agent testen</span>
+          <button
+            onClick={() => setIsRefinementOpen(!isRefinementOpen)}
+            className={`p-1.5 rounded-md transition flex items-center gap-1.5 text-xs font-semibold ${
+              isRefinementOpen
+                ? 'bg-accent/20 text-accent border border-accent/30'
+                : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
+            }`}
+          >
+            <Wand2 size={14} />
+            Quick-Edit
+          </button>
+        </div>
+      }
+      size={isRefinementOpen ? 'xl' : 'lg'}
+    >
       <audio ref={audioRef} className="hidden" />
 
-      <div className="space-y-4">
-        {!canTest ? (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
-            <div>
-              <h3 className="text-sm font-semibold text-yellow-300 mb-1">
-                Agent-Konfiguration fehlt
-              </h3>
-              <p className="text-xs text-yellow-200/80">
-                Bitte vervollständige zuerst die Agent-Konfiguration, um den Agent testen zu können.
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className={`space-y-4 ${isRefinementOpen ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
+          {!canTest ? (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="text-yellow-400 mt-0.5" size={20} />
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-300 mb-1">
+                  Agent-Konfiguration fehlt
+                </h3>
+                <p className="text-xs text-yellow-200/80">
+                  Bitte vervollständige zuerst die Agent-Konfiguration, um den Agent testen zu
+                  können.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {/* Mode Switcher */}
-            <div className="flex gap-2 p-1 bg-gray-800 rounded-lg">
-              <button
-                onClick={() => setTestMode('chat')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
-                  testMode === 'chat'
-                    ? 'bg-accent text-black'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                <MessageSquare size={16} />
-                Chat
-              </button>
-              <button
-                onClick={() => setTestMode('voice')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
-                  testMode === 'voice'
-                    ? 'bg-accent text-black'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                <Mic size={16} />
-                Voice
-              </button>
-              <button
-                onClick={() => setTestMode('phone')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
-                  testMode === 'phone'
-                    ? 'bg-accent text-black'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                <Phone size={16} />
-                Telefon
-              </button>
-            </div>
-
-            {/* Status & Controls Section */}
-            <div className="space-y-3">
-              {testMode === 'chat' && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
-                  <MessageSquare className="text-blue-400 mt-0.5" size={16} />
-                  <p className="text-xs text-blue-200">
-                    Teste deinen Voice Agent im Chat-Modus. Der Agent antwortet mit Text und Audio.
-                  </p>
-                </div>
-              )}
-
-              {testMode === 'voice' && (
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-full ${voiceConnectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}
-                      >
-                        <Mic size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white">Browser Voice Test</h4>
-                        <p className="text-[10px] text-gray-400">
-                          {voiceConnectionStatus === 'connected'
-                            ? 'Verbunden & Bereit'
-                            : 'Mikrofon-Test im Browser'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {voiceConnectionStatus !== 'connected' ? (
-                        <button
-                          onClick={connectToVoice}
-                          disabled={isInitializingVoice}
-                          className="px-4 py-2 bg-gray-700 text-white rounded-lg text-xs font-medium hover:bg-gray-600 transition flex items-center gap-2"
-                        >
-                          {isInitializingVoice ? (
-                            <Loader className="animate-spin text-accent" size={14} />
-                          ) : (
-                            <Video size={14} />
-                          )}
-                          Initialisieren
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            onClick={handleStartVoiceTest}
-                            disabled={voiceCallStatus !== 'idle'}
-                            className={`px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${
-                              voiceCallStatus === 'in-progress'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-accent text-black hover:bg-accent/80'
-                            }`}
-                          >
-                            {voiceCallStatus === 'initiating' ? (
-                              <Loader className="animate-spin" size={14} />
-                            ) : (
-                              <Phone size={14} />
-                            )}
-                            {voiceCallStatus === 'in-progress' ? 'Verbunden' : 'Sprechen'}
-                          </button>
-                          {voiceCallStatus === 'in-progress' && (
-                            <button
-                              onClick={() => twilioDevice?.disconnectAll()}
-                              className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                              title="Auflegen"
-                            >
-                              <PhoneOff size={14} />
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {voiceError && <p className="text-[10px] text-red-400 mt-2">{voiceError}</p>}
-                </div>
-              )}
-
-              {testMode === 'phone' && (
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      value={testPhoneNumber}
-                      onChange={(e) => setTestPhoneNumber(e.target.value)}
-                      placeholder="+41791234567"
-                      className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white focus:outline-none focus:border-accent"
-                      disabled={isMakingCall || callStatus !== 'idle'}
-                    />
-                    <button
-                      onClick={handleMakeTestCall}
-                      disabled={isMakingCall || !testPhoneNumber.trim() || callStatus !== 'idle'}
-                      className="px-4 py-2 bg-accent text-black rounded-lg text-xs font-semibold hover:bg-accent/80 transition disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {isMakingCall ? (
-                        <Loader className="animate-spin" size={14} />
-                      ) : (
-                        <Phone size={14} />
-                      )}
-                      Anrufen
-                    </button>
-                    {callStatus !== 'idle' &&
-                      !['completed', 'failed', 'busy', 'no-answer'].includes(callStatus) && (
-                        <div className="flex items-center gap-2 px-3 bg-blue-500/20 rounded-lg border border-blue-500/30 text-blue-300 text-[10px] font-medium animate-pulse">
-                          <Loader className="animate-spin" size={12} />
-                          {callStatus === 'ringing' ? 'Klingelt...' : 'In-Progress'}
-                        </div>
-                      )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Conversation / Transcript Feed */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 h-[450px] flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {chatMessages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 space-y-2 py-8">
-                    <div className="p-4 rounded-full bg-gray-700/50 mb-2">
-                      {testMode === 'chat' ? (
-                        <MessageSquare size={32} className="opacity-20" />
-                      ) : (
-                        <Mic size={32} className="opacity-20" />
-                      )}
-                    </div>
-                    <p className="text-sm font-medium">Bereit zum Testen</p>
-                    <p className="text-xs text-gray-500 max-w-[200px]">
-                      {testMode === 'chat'
-                        ? 'Schreibe eine Nachricht, um das Gespräch zu beginnen.'
-                        : 'Starte einen Anruf, um das Live-Transkript hier zu sehen.'}
-                    </p>
-                  </div>
-                ) : (
-                  chatMessages.map((msg, index) => (
-                    <div
-                      key={`${msg.timestamp}-${index}`}
-                      className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                    >
-                      <div className={`flex items-center gap-2 mb-1 px-1`}>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
-                          {msg.role === 'user' ? 'Du' : 'Agent'}
-                        </span>
-                        <span className="text-[9px] text-gray-600">
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm ${
-                          msg.role === 'user'
-                            ? 'bg-accent text-black rounded-tr-none'
-                            : 'bg-gray-700 text-white rounded-tl-none border border-gray-600'
-                        }`}
-                      >
-                        <p className="text-sm leading-relaxed">{msg.text}</p>
-
-                        {msg.audioUrl && msg.role === 'assistant' && (
-                          <button
-                            onClick={() => playAudio(msg.audioUrl!)}
-                            className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-black/60 bg-black/10 hover:bg-black/20 px-2 py-1 rounded-full transition"
-                          >
-                            <Volume2 size={12} />
-                            Anhören
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Tool Calls Display */}
-                      {msg.toolCalls && msg.toolCalls.length > 0 && (
-                        <div className="mt-2 w-[85%] space-y-1.5">
-                          {msg.toolCalls.map((tool, tIdx) => (
-                            <div
-                              key={tIdx}
-                              className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-2 flex items-start gap-2"
-                            >
-                              {tool.error ? (
-                                <AlertCircle size={14} className="text-red-400 mt-0.5" />
-                              ) : (
-                                <Loader size={12} className="text-green-400 mt-1" />
-                              )}
-                              <div className="flex-1 overflow-hidden">
-                                <p className="text-[10px] font-mono text-gray-400 truncate">
-                                  {tool.name === 'calendar'
-                                    ? '📅 Kalender-Aktion'
-                                    : `🛠️ ${tool.name}`}
-                                </p>
-                                {tool.error && (
-                                  <p className="text-[9px] text-red-300 mt-0.5">{tool.error}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
+          ) : (
+            <>
+              {/* Mode Switcher */}
+              <div className="flex gap-2 p-1 bg-gray-800 rounded-lg">
+                <button
+                  onClick={() => setTestMode('chat')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
+                    testMode === 'chat'
+                      ? 'bg-accent text-black'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  <MessageSquare size={16} />
+                  Chat
+                </button>
+                <button
+                  onClick={() => setTestMode('voice')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
+                    testMode === 'voice'
+                      ? 'bg-accent text-black'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  <Mic size={16} />
+                  Voice
+                </button>
+                <button
+                  onClick={() => setTestMode('phone')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition ${
+                    testMode === 'phone'
+                      ? 'bg-accent text-black'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  <Phone size={16} />
+                  Telefon
+                </button>
               </div>
 
-              {/* Debug footer if sid present */}
-              {callSid && (
-                <div className="px-4 py-1 bg-gray-900/80 border-t border-gray-700/50 flex justify-between items-center">
-                  <span className="text-[8px] font-mono text-gray-500">ID: {callSid}</span>
-                  <span className="text-[8px] font-mono text-accent/50 uppercase">
-                    {testMode} ACTIVE
-                  </span>
-                </div>
-              )}
-
-              {/* Chat Input (Only show in Chat mode) */}
-              {testMode === 'chat' && (
-                <div className="p-4 bg-gray-900/50 border-t border-gray-700">
-                  <div className="flex gap-2 bg-gray-800 p-1.5 rounded-xl border border-gray-700 focus-within:border-accent transition">
-                    <textarea
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Deine Nachricht..."
-                      className="flex-1 bg-transparent text-white text-sm px-3 py-2 outline-none resize-none"
-                      rows={1}
-                      disabled={isSending}
-                    />
-                    <button
-                      onClick={sendChatMessage}
-                      disabled={!chatInput.trim() || isSending}
-                      className="p-3 bg-accent text-black rounded-lg hover:bg-accent/80 transition disabled:opacity-50"
-                    >
-                      {isSending ? (
-                        <Loader className="animate-spin" size={18} />
-                      ) : (
-                        <Send size={18} />
-                      )}
-                    </button>
+              {/* Status & Controls Section */}
+              <div className="space-y-3">
+                {testMode === 'chat' && (
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+                    <MessageSquare className="text-blue-400 mt-0.5" size={16} />
+                    <p className="text-xs text-blue-200">
+                      Teste deinen Voice Agent im Chat-Modus. Der Agent antwortet mit Text und
+                      Audio.
+                    </p>
                   </div>
+                )}
+
+                {testMode === 'voice' && (
+                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-2 rounded-full ${voiceConnectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}
+                        >
+                          <Mic size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">Browser Voice Test</h4>
+                          <p className="text-[10px] text-gray-400">
+                            {voiceConnectionStatus === 'connected'
+                              ? 'Verbunden & Bereit'
+                              : 'Mikrofon-Test im Browser'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        {voiceConnectionStatus !== 'connected' ? (
+                          <button
+                            onClick={connectToVoice}
+                            disabled={isInitializingVoice}
+                            className="px-4 py-2 bg-gray-700 text-white rounded-lg text-xs font-medium hover:bg-gray-600 transition flex items-center gap-2"
+                          >
+                            {isInitializingVoice ? (
+                              <Loader className="animate-spin text-accent" size={14} />
+                            ) : (
+                              <Video size={14} />
+                            )}
+                            Initialisieren
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={handleStartVoiceTest}
+                              disabled={voiceCallStatus !== 'idle'}
+                              className={`px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${
+                                voiceCallStatus === 'in-progress'
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-accent text-black hover:bg-accent/80'
+                              }`}
+                            >
+                              {voiceCallStatus === 'initiating' ? (
+                                <Loader className="animate-spin" size={14} />
+                              ) : (
+                                <Phone size={14} />
+                              )}
+                              {voiceCallStatus === 'in-progress' ? 'Verbunden' : 'Sprechen'}
+                            </button>
+                            {voiceCallStatus === 'in-progress' && (
+                              <button
+                                onClick={() => twilioDevice?.disconnectAll()}
+                                className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                title="Auflegen"
+                              >
+                                <PhoneOff size={14} />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {voiceError && <p className="text-[10px] text-red-400 mt-2">{voiceError}</p>}
+                  </div>
+                )}
+
+                {testMode === 'phone' && (
+                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        value={testPhoneNumber}
+                        onChange={(e) => setTestPhoneNumber(e.target.value)}
+                        placeholder="+41791234567"
+                        className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white focus:outline-none focus:border-accent"
+                        disabled={isMakingCall || callStatus !== 'idle'}
+                      />
+                      <button
+                        onClick={handleMakeTestCall}
+                        disabled={isMakingCall || !testPhoneNumber.trim() || callStatus !== 'idle'}
+                        className="px-4 py-2 bg-accent text-black rounded-lg text-xs font-semibold hover:bg-accent/80 transition disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {isMakingCall ? (
+                          <Loader className="animate-spin" size={14} />
+                        ) : (
+                          <Phone size={14} />
+                        )}
+                        Anrufen
+                      </button>
+                      {callStatus !== 'idle' &&
+                        !['completed', 'failed', 'busy', 'no-answer'].includes(callStatus) && (
+                          <div className="flex items-center gap-2 px-3 bg-blue-500/20 rounded-lg border border-blue-500/30 text-blue-300 text-[10px] font-medium animate-pulse">
+                            <Loader className="animate-spin" size={12} />
+                            {callStatus === 'ringing' ? 'Klingelt...' : 'In-Progress'}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Conversation / Transcript Feed */}
+              <div className="bg-gray-800 rounded-lg border border-gray-700 h-[450px] flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {chatMessages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 space-y-2 py-8">
+                      <div className="p-4 rounded-full bg-gray-700/50 mb-2">
+                        {testMode === 'chat' ? (
+                          <MessageSquare size={32} className="opacity-20" />
+                        ) : (
+                          <Mic size={32} className="opacity-20" />
+                        )}
+                      </div>
+                      <p className="text-sm font-medium">Bereit zum Testen</p>
+                      <p className="text-xs text-gray-500 max-w-[200px]">
+                        {testMode === 'chat'
+                          ? 'Schreibe eine Nachricht, um das Gespräch zu beginnen.'
+                          : 'Starte einen Anruf, um das Live-Transkript hier zu sehen.'}
+                      </p>
+                    </div>
+                  ) : (
+                    chatMessages.map((msg, index) => (
+                      <div
+                        key={`${msg.timestamp}-${index}`}
+                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className={`flex items-center gap-2 mb-1 px-1`}>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+                            {msg.role === 'user' ? 'Du' : 'Agent'}
+                          </span>
+                          <span className="text-[9px] text-gray-600">
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                            msg.role === 'user'
+                              ? 'bg-accent text-black rounded-tr-none'
+                              : 'bg-gray-700 text-white rounded-tl-none border border-gray-600'
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
+
+                          {msg.audioUrl && msg.role === 'assistant' && (
+                            <button
+                              onClick={() => playAudio(msg.audioUrl!)}
+                              className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-black/60 bg-black/10 hover:bg-black/20 px-2 py-1 rounded-full transition"
+                            >
+                              <Volume2 size={12} />
+                              Anhören
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Tool Calls Display */}
+                        {msg.toolCalls && msg.toolCalls.length > 0 && (
+                          <div className="mt-2 w-[85%] space-y-1.5">
+                            {msg.toolCalls.map((tool, tIdx) => (
+                              <div
+                                key={tIdx}
+                                className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-2 flex items-start gap-2"
+                              >
+                                {tool.error ? (
+                                  <AlertCircle size={14} className="text-red-400 mt-0.5" />
+                                ) : (
+                                  <Loader size={12} className="text-green-400 mt-1" />
+                                )}
+                                <div className="flex-1 overflow-hidden">
+                                  <p className="text-[10px] font-mono text-gray-400 truncate">
+                                    {tool.name === 'calendar'
+                                      ? '📅 Kalender-Aktion'
+                                      : `🛠️ ${tool.name}`}
+                                  </p>
+                                  {tool.error && (
+                                    <p className="text-[9px] text-red-300 mt-0.5">{tool.error}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
-              )}
+
+                {/* Debug footer if sid present */}
+                {callSid && (
+                  <div className="px-4 py-1 bg-gray-900/80 border-t border-gray-700/50 flex justify-between items-center">
+                    <span className="text-[8px] font-mono text-gray-500">ID: {callSid}</span>
+                    <span className="text-[8px] font-mono text-accent/50 uppercase">
+                      {testMode} ACTIVE
+                    </span>
+                  </div>
+                )}
+
+                {/* Chat Input (Only show in Chat mode) */}
+                {testMode === 'chat' && (
+                  <div className="p-4 bg-gray-900/50 border-t border-gray-700">
+                    <div className="flex gap-2 bg-gray-800 p-1.5 rounded-xl border border-gray-700 focus-within:border-accent transition">
+                      <textarea
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Deine Nachricht..."
+                        className="flex-1 bg-transparent text-white text-sm px-3 py-2 outline-none resize-none"
+                        rows={1}
+                        disabled={isSending}
+                      />
+                      <button
+                        onClick={sendChatMessage}
+                        disabled={!chatInput.trim() || isSending}
+                        className="p-3 bg-accent text-black rounded-lg hover:bg-accent/80 transition disabled:opacity-50"
+                      >
+                        {isSending ? (
+                          <Loader className="animate-spin" size={18} />
+                        ) : (
+                          <Send size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Refinement Side Panel */}
+        {isRefinementOpen && (
+          <div className="lg:col-span-5 bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden flex flex-col h-[700px]">
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-accent/20 rounded-lg text-accent">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Anweisungen verfeinern</h3>
+                  <p className="text-[10px] text-gray-400">Verhalten des Agents direkt anpassen</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRefinementOpen(false)}
+                className="p-1 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white transition"
+              >
+                <X size={16} />
+              </button>
             </div>
-          </>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                  System Prompt / Instruktionen
+                </label>
+                {isFetchingPrompt ? (
+                  <div className="h-40 flex flex-col items-center justify-center bg-gray-900/50 rounded-lg border border-gray-800 animate-pulse">
+                    <Loader size={20} className="animate-spin text-accent/50 mb-2" />
+                    <span className="text-xs text-gray-500">Lade Instruktionen...</span>
+                  </div>
+                ) : (
+                  <textarea
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                    placeholder="Beschreibe hier, wie sich der Agent verhalten soll..."
+                    className="w-full h-[450px] bg-gray-900 text-white text-sm px-4 py-3 rounded-lg border border-gray-700 focus:border-accent outline-none font-mono leading-relaxed"
+                  />
+                )}
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-[10px] text-blue-300 leading-relaxed">
+                  <strong>Pro-Tipp:</strong> Änderungen hier werden sofort gespeichert und
+                  synchronisiert. Starte danach einen neuen Test, um die Änderungen zu prüfen.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-800 border-t border-gray-700">
+              <button
+                onClick={handleSaveInstructions}
+                disabled={isSavingPrompt || !systemPrompt.trim() || isFetchingPrompt}
+                className="w-full py-2.5 bg-accent text-black rounded-lg font-bold text-sm hover:bg-accent/80 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSavingPrompt ? (
+                  <Loader size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                Speichern & Synchronisieren
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </Modal>
