@@ -94,6 +94,9 @@ const SubscriptionDashboard = React.lazy(() =>
 const AdminDashboard = React.lazy(() =>
   import('./pages/AdminDashboard.js').then((m) => ({ default: m.AdminDashboard })),
 );
+const PersonalizedAIPage = React.lazy(() =>
+  import('./pages/PersonalizedAIPage.js').then((m) => ({ default: m.PersonalizedAIPage })),
+);
 
 import { AuthProvider } from './contexts/AuthContext.js';
 import { ProtectedRoute } from './components/ProtectedRoute.js';
@@ -211,6 +214,14 @@ function AppContent() {
               element={
                 <Suspense fallback={<PageLoader />}>
                   <WebdesignPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/personalized-ai"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <PersonalizedAIPage />
                 </Suspense>
               }
             />

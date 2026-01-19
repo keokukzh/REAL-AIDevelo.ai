@@ -32,6 +32,7 @@ export const ROUTES = {
   PRICING: '/pricing',
   SUBSCRIPTION: '/dashboard/subscription',
   TEST_CALL: '/dashboard/test-call',
+  PERSONALIZED_AI: '/personalized-ai',
 } as const;
 
 /**
@@ -236,6 +237,12 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [ROUTES.PRICING]: {
     title: 'Preise',
     breadcrumb: 'Preise',
+    group: 'public',
+    parent: null,
+  },
+  [ROUTES.PERSONALIZED_AI]: {
+    title: 'Personalisierte KI',
+    breadcrumb: 'Personalisierte KI',
     group: 'public',
     parent: null,
   },
