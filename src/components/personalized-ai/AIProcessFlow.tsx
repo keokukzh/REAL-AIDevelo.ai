@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { Search, Lightbulb, Code, Plug, HeadphonesIcon } from 'lucide-react';
+import { Search, Lightbulb, Code, Plug, Headset } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 
 interface AIProcessFlowProps {
@@ -29,7 +29,7 @@ export const AIProcessFlow: React.FC<AIProcessFlowProps> = ({ t }) => {
 
   const stepsData = t.steps.map((s, i) => ({
     ...s,
-    icon: [Search, Lightbulb, Code, Plug, Headphones][i],
+    icon: [Search, Lightbulb, Code, Plug, Headset][i],
     color: [
       'text-blue-400',
       'text-amber-400',
@@ -72,7 +72,7 @@ export const AIProcessFlow: React.FC<AIProcessFlowProps> = ({ t }) => {
               const Icon = step.icon;
               return (
                 <motion.div
-                  key={index}
+                  key={`process-step-${step.number}-${index}`}
                   initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
