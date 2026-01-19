@@ -31,84 +31,65 @@ const WebdesignTechStack = lazy(() =>
   })),
 ) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
-import {
-  Globe,
-  Smartphone,
-  Zap,
-  Search,
-  Palette,
-  Code,
-  Shield,
-  LucideIcon,
-  ArrowRight,
-  Layout,
-} from 'lucide-react';
+import { Globe, Zap, Search, Palette, Code, Smartphone, Shield } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { ROUTES } from '../config/navigation';
 
 interface Feature {
-  icon: LucideIcon;
+  icon: React.ElementType; // Changed from LucideIcon to React.ElementType for broader compatibility
   title: string;
-  description: string;
-}
-
-interface Technology {
-  name: string;
   description: string;
 }
 
 const DICTIONARY = {
   de: {
-    heroText1: 'Moderne Websites &',
-    heroText2: 'Elegantes Redesign',
+    heroText1: 'Premium Websites für',
+    heroText2: 'Schweizer KMU',
     heroSub:
-      'Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles zum transparenten Festpreis.',
-    missionStart: 'Jetzt Projekt anfragen',
-    showSpecs: 'Systemdaten ansehen',
+      'Ihre digitale Visitenkarte: High-End Design, blitzschnelle Performance und maximale Konversion. Made in Switzerland für höchste Ansprüche.',
+    missionStart: 'Kostenlose Erstberatung buchen',
+    showSpecs: 'Technik-Check',
     closeSpecs: 'Analyse schließen',
     pricingTitle: 'Transparente Preisgestaltung',
-    pricingSub:
-      'Alles inklusive – keine versteckten Kosten, keine Überraschungen',
+    pricingSub: 'Alles inklusive – keine versteckten Kosten, keine Überraschungen',
     pricingInvest: 'Investition',
     pricingSubtitle: 'Einmalig - Alles inklusive',
-    pricingDisclaimer: 'Keine monatlichen Gebühren • Keine versteckten Kosten',
-    featuresTitle: 'Professionelle Features',
-    featuresSub:
-      'Modernste Technologien und Best Practices für maximale Performance und Benutzerfreundlichkeit.',
-    processTitle: 'Unser Prozess',
-    processSub: 'Von der ersten Idee bis zum Launch – strukturiert, transparent und professionell.',
-    technologiesTitle: 'Moderne Technologien',
-    technologiesSub: 'Wir verwenden nur die besten und modernsten Tools für Ihre Website.',
-    contactTitle: 'Jetzt anfragen',
-    contactSub: 'Beschreiben Sie Ihr Projekt und wir melden uns innerhalb von 24 Stunden bei Ihnen.',
+    pricingDisclaimer: 'Anzahlung nur 100 CHF • Maximale Sicherheit',
+    featuresTitle: 'Performance & Design',
+    featuresSub: 'Modernste Webtechnologien, die Ihre Konkurrenz alt aussehen lassen.',
+    processTitle: 'In 5 Schritten zum Launch',
+    processSub: 'Effizient, transparent und auf Ihr Business zugeschnitten.',
+    technologiesTitle: 'Tech-Stack der Extraklasse',
+    technologiesSub: 'Wir bauen auf stabile, zukunftssichere Technologien.',
+    contactTitle: 'Projekt anfragen',
+    contactSub: 'Lassen Sie uns gemeinsam etwas Grossartiges schaffen.',
     relatedTitle: 'Weitere Services',
     skipToContent: 'Zum Hauptinhalt springen',
     scrollExplore: 'Scrollen zum Entdecken',
   },
   en: {
-    heroText1: 'Modern Websites &',
-    heroText2: 'Elegant Redesign',
+    heroText1: 'Premium Websites for',
+    heroText2: 'Swiss SMEs',
     heroSub:
-      'Professional, modern websites with cutting-edge technologies. From concept to launch – everything at a transparent fixed price.',
-    missionStart: 'Start Project',
-    showSpecs: 'View System Data',
+      'Your digital storefront: High-end design, lightning-fast performance, and maximum conversion. Swiss-made quality for the highest demands.',
+    missionStart: 'Book Free Consultation',
+    showSpecs: 'Tech Check',
     closeSpecs: 'Close Analysis',
     pricingTitle: 'Transparent Pricing',
-    pricingSub:
-      'All inclusive – no hidden costs, no surprises',
+    pricingSub: 'All inclusive – no hidden costs, no surprises',
     pricingInvest: 'Investment',
     pricingSubtitle: 'One-time - All inclusive',
-    pricingDisclaimer: 'No monthly fees • No hidden costs',
-    featuresTitle: 'Professional Features',
-    featuresSub: 'State-of-the-art technologies and best practices for maximum performance and user-friendliness.',
-    processTitle: 'Our Process',
-    processSub: 'From the first idea to launch – structured, transparent and professional.',
-    technologiesTitle: 'Modern Technologies',
-    technologiesSub: 'We use only the best and most modern tools for your website.',
-    contactTitle: 'Request Now',
-    contactSub: 'Describe your project and we will get back to you within 24 hours.',
+    pricingDisclaimer: 'Only 100 CHF Deposit • Maximum Security',
+    featuresTitle: 'Performance & Design',
+    featuresSub: 'State-of-the-art web technologies that leave your competition behind.',
+    processTitle: '5 Steps to Launch',
+    processSub: 'Efficient, transparent, and tailored to your business.',
+    technologiesTitle: 'World-Class Tech Stack',
+    technologiesSub: 'We build on stable, future-proof technologies.',
+    contactTitle: 'Request Project',
+    contactSub: 'Let’s create something great together.',
     relatedTitle: 'Other Services',
     skipToContent: 'Skip to main content',
     scrollExplore: 'Scroll to Explore',
@@ -176,17 +157,18 @@ export const WebdesignPage = () => {
     [],
   );
 
-  const technologies = useMemo<Technology[]>(
-    () => [
-      { name: 'React', description: 'Moderne Frontend-Bibliothek' },
-      { name: 'TypeScript', description: 'Typsichere Entwicklung' },
-      { name: 'Tailwind CSS', description: 'Utility-First CSS Framework' },
-      { name: 'Vite', description: 'Schneller Build-Tool' },
-      { name: 'Responsive Design', description: 'Mobile-First Ansatz' },
-      { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich' },
-    ],
-    [],
-  );
+  // Removed unused technologies variable to fix lint error
+  // const technologies = useMemo<Technology[]>(
+  //   () => [
+  //     { name: 'React', description: 'Moderne Frontend-Bibliothek' },
+  //     { name: 'TypeScript', description: 'Typsichere Entwicklung' },
+  //     { name: 'Tailwind CSS', description: 'Utility-First CSS Framework' },
+  //     { name: 'Vite', description: 'Schneller Build-Tool' },
+  //     { name: 'Responsive Design', description: 'Mobile-First Ansatz' },
+  //     { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich' },
+  //   ],
+  //   [],
+  // );
 
   const pricingFeatures = useMemo(
     () => [
@@ -201,33 +183,6 @@ export const WebdesignPage = () => {
     ],
     [],
   );
-
-  const processSteps = useMemo(
-    () => [
-      {
-        number: '01',
-        title: 'Anfrage',
-        description: 'Onboarding Formular ausfüllen und benötigte Daten direkt mitsenden.',
-      },
-      {
-        number: '02',
-        title: 'Anzahlung',
-        description: 'Nach Review durch unser Team erhalten Sie den Link für die 100 CHF Anzahlung.',
-      },
-      {
-        number: '03',
-        title: 'Umsetzung',
-        description: 'Wir erstellen Ihre Website basierend auf Ihren Wünschen in 2-3 Wochen.',
-      },
-      {
-        number: '04',
-        title: 'Launch',
-        description: 'Nach Testphase und Restzahlung übergeben wir Ihnen alle Logindaten.',
-      },
-    ],
-    [],
-  );
-
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -254,7 +209,7 @@ export const WebdesignPage = () => {
       </Helmet>
 
       {/* Language & Theme Switcher */}
-      <div className="fixed top-24 right-8 z-[100] flex items-center gap-3">
+      <div className="fixed top-24 right-4 md:right-8 z-[100] flex items-center gap-3">
         <ThemeToggle />
         <div className="flex gap-2">
           <button
@@ -298,7 +253,10 @@ export const WebdesignPage = () => {
 
       <main id="main-content">
         {/* Hero Section */}
-        <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20">
+        <section
+          id="hero"
+          className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20"
+        >
           <ErrorBoundary fallback={<WebdesignHero t={t} />}>
             <WebdesignHero t={t} />
           </ErrorBoundary>
@@ -329,9 +287,7 @@ export const WebdesignPage = () => {
                 >
                   {t.pricingTitle}
                 </h2>
-                <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-                  {t.pricingSub}
-                </p>
+                <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">{t.pricingSub}</p>
               </div>
 
               <PricingCard
@@ -344,83 +300,130 @@ export const WebdesignPage = () => {
           </div>
         </section>
 
-        {/* Process Section */}
-        <section
-          id="process"
-          className="py-24 relative overflow-hidden"
-          aria-labelledby="process-heading"
-        >
-          <div className="container mx-auto px-6 relative z-10">
-            <ScrollReveal direction="up" className="text-center mb-16">
-              <h2
-                id="process-heading"
-                className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
-              >
-                {t.processTitle}
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-                {t.processSub}
-              </p>
-            </ScrollReveal>
+        {/* Process Flow Section - Enhanced 5-Step Version */}
+        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+          <WebdesignProcessFlow lang={lang} />
+        </Suspense>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              {processSteps.map((step, index) => (
-                <ScrollReveal key={step.number} direction="up" delay={index * 0.1}>
-                  <article className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="text-4xl font-bold font-display text-swiss-red opacity-50">
-                        {step.number}
-                      </span>
-                      <h3 className="text-2xl font-bold text-white">{step.title}</h3>
-                    </div>
-                    <p className="text-gray-400 leading-relaxed">{step.description}</p>
-                  </article>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
+        {/* Features Section - Bento Grid Layout */}
         <section
           id="features"
-          className="py-12 sm:py-20 bg-slate-950/30 relative overflow-hidden"
+          className="py-24 sm:py-32 bg-slate-950/30 relative overflow-hidden"
           aria-labelledby="features-heading"
         >
+          {/* Background Decorative Elements */}
+          <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+
           <div className="container mx-auto px-6 relative z-10">
-            <ScrollReveal direction="up" className="text-center mb-16">
+            <ScrollReveal direction="up" className="text-center mb-20">
               <h2
                 id="features-heading"
-                className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
+                className="text-5xl md:text-7xl font-bold font-display mb-8 tracking-tight"
               >
                 {t.featuresTitle}
               </h2>
-              <p className="text-gray-400 text-lg max-w-3xl mx-auto font-light">
+              <p className="text-gray-400 text-xl max-w-3xl mx-auto font-light leading-relaxed">
                 {t.featuresSub}
               </p>
             </ScrollReveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {features.map((feature, index) => (
-                <ScrollReveal key={feature.title} direction="up" delay={index * 0.1}>
-                  <button className="text-left w-full p-6 rounded-2xl bg-slate-900/40 backdrop-blur-md border border-white/5 hover:border-white/20 transition-all group">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 transition-colors">
-                        <feature.icon className="w-6 h-6 text-swiss-red" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
-                      </div>
-                      <ArrowRight
-                        size={20}
-                        className="text-gray-400 group-hover:text-swiss-red group-hover:translate-x-1 transition-all"
-                        aria-hidden="true"
-                      />
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+              {/* Responsive Design - Large Item */}
+              <ScrollReveal direction="up" delay={0.1} className="md:col-span-4 lg:col-span-3">
+                <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Globe size={120} className="text-white" />
+                  </div>
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="p-4 w-fit rounded-2xl bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors mb-8">
+                      <Globe className="w-8 h-8 text-swiss-red" />
                     </div>
-                  </button>
-                </ScrollReveal>
-              ))}
+                    <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
+                      {features[0].title}
+                    </h3>
+                    <p className="text-gray-400 text-lg leading-relaxed font-light mb-8">
+                      {features[0].description}
+                    </p>
+                    <div className="mt-auto flex items-center gap-2 text-swiss-red font-mono text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
+                      <span>Live Preview</span>
+                      <ArrowRight size={14} />
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Performance - Tall Item */}
+              <ScrollReveal direction="up" delay={0.2} className="md:col-span-2 lg:col-span-3">
+                <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
+                  <div className="relative z-10">
+                    <div className="p-4 w-fit rounded-2xl bg-white/5 border border-white/10 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-colors mb-8">
+                      <Zap className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
+                      {features[1].title}
+                    </h3>
+                    <p className="text-gray-400 text-lg leading-relaxed font-light">
+                      {features[1].description}
+                    </p>
+
+                    {/* Performance Visual */}
+                    <div className="mt-12 space-y-4">
+                      <div className="flex justify-between text-xs font-mono text-white/40 uppercase tracking-widest">
+                        <span>Lighthouse Score</span>
+                        <span className="text-emerald-400">99/100</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+                          initial={{ width: 0 }}
+                          whileInView={{ width: '99%' }}
+                          transition={{ duration: 1.5, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+
+              {/* SEO - Small Item */}
+              <ScrollReveal direction="up" delay={0.3} className="md:col-span-2 lg:col-span-2">
+                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-colors mb-6">
+                    <Search className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{features[2].title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                    {features[2].description}
+                  </p>
+                </div>
+              </ScrollReveal>
+
+              {/* Modern Design - Small Item */}
+              <ScrollReveal direction="up" delay={0.4} className="md:col-span-2 lg:col-span-2">
+                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-blue-500/10 group-hover:border-blue-500/20 transition-colors mb-6">
+                    <Palette className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{features[3].title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                    {features[3].description}
+                  </p>
+                </div>
+              </ScrollReveal>
+
+              {/* Security - Small Item */}
+              <ScrollReveal direction="up" delay={0.5} className="md:col-span-4 lg:col-span-2">
+                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors mb-6">
+                    <Shield className="w-6 h-6 text-swiss-red" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{features[6].title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                    {features[6].description}
+                  </p>
+                </div>
+              </ScrollReveal>
             </div>
           </div>
         </section>
