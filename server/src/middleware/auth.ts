@@ -12,13 +12,13 @@ const safeLogAuth = (message: string, data: any) => {
   if (process.env.NODE_ENV !== 'production') {
     try {
       console.log(`[Auth] ${message}`, data);
-    } catch (e) {
+    } catch {
       // Ignore logging errors - never crash on logging
     }
   }
 };
 
-export const requireAuth = (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   // Safe logging outside try/catch to prevent logging errors from affecting auth
   const header = req.headers.authorization || '';
   const token = header.replace(/Bearer\s+/i, '');
@@ -28,7 +28,7 @@ export const requireAuth = (req: AuthenticatedRequest, _res: Response, next: Nex
     hasToken: !!token,
     tokenLength: token.length,
     path: req.path,
-    method: req.method
+    method: req.method,
   });
 
   try {
@@ -36,16 +36,40 @@ export const requireAuth = (req: AuthenticatedRequest, _res: Response, next: Nex
       return next(new UnauthorizedError('Authentication required'));
     }
 
-    const decoded = verifyAccessToken(token);
-    req.auth = decoded;
-    next();
+    // 1. Try Legacy JWT Auth
+    try {
+      const decoded = verifyAccessToken(token);
+      req.auth = decoded;
+      return next();
+    } catch {
+      // 2. Fallback to Supabase Auth
+      const { verifySupabaseAuth } = await import('./supabaseAuth');
+
+      // We wrap verifySupabaseAuth to capture its result
+      // But verifySupabaseAuth is designed to call next() or send a response
+      // For this unified middleware, we'll try to use a more direct approach if possible,
+      // but verifySupabaseAuth already does everything we need.
+      // However, it might set req.supabaseUser instead of req.auth.
+
+      return verifySupabaseAuth(req as any, res, () => {
+        // If Supabase auth succeeded, map it to req.auth for legacy compatibility
+        if ((req as any).supabaseUser) {
+          req.auth = {
+            userId: (req as any).supabaseUser.id,
+            email: (req as any).supabaseUser.email,
+            role: 'user', // Default role for Supabase users
+          };
+          return next();
+        }
+        next(new UnauthorizedError('Invalid or expired token'));
+      });
+    }
   } catch (error) {
     // Safe logging for auth errors
-    safeLogAuth('requireAuth token verification failed', {
+    safeLogAuth('requireAuth failed', {
       error: (error as Error).message,
-      path: req.path
+      path: req.path,
     });
-    // Only return 401 for actual auth errors, not logging errors
     return next(new UnauthorizedError('Invalid or expired token'));
   }
 };
@@ -63,4 +87,3 @@ export const authorize =
 
     next();
   };
-

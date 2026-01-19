@@ -407,7 +407,14 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
           supabaseUpdates.company_name = updates.businessProfile.companyName;
         if (updates.businessProfile.industry)
           supabaseUpdates.business_type = updates.businessProfile.industry;
-        // In locations table: city/timezone/etc
+        if (updates.businessProfile.location?.city) {
+          // Note: city is in locations table, but for now we'll log it
+          // In a full implementation, we'd update the linked location record here
+          console.log(
+            '[AgentController] City update requested (not yet implemented in locations table sync):',
+            updates.businessProfile.location.city,
+          );
+        }
       }
 
       if (updates.config) {
@@ -438,12 +445,16 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
 
         if (updateError) throw updateError;
 
-        // Fetch full data for response
         const fullData = await AgentService.getAgentConfigWithLocation(id);
         return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
       }
-    } catch (supabaseError) {
+    } catch (supabaseError: any) {
       console.error('[AgentController] Supabase update failed:', supabaseError);
+      // Return 404 only if it's a "not found" error from single(), otherwise 500
+      if (supabaseError.code === 'PGRST116') {
+        return next(new NotFoundError('Agent'));
+      }
+      return next(new InternalServerError(`Supabase update failed: ${supabaseError.message}`));
     }
 
     return next(new NotFoundError('Agent'));
