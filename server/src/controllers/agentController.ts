@@ -419,83 +419,37 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
       return res.json({ success: true, data: updatedAgent });
     }
 
-    // 2. Try Supabase Agent
+    // 2. Use atomic Supabase function
     console.log(
-      `[AgentController] Updating Supabase agent ${id}`,
+      `[AgentController] Updating Supabase agent ${id} with atomic transaction`,
       JSON.stringify(updates, null, 2),
     );
 
-    // Fetch existing agent config to get location_id
-    const { data: agentConfig, error: fetchError } = await supabaseAdmin
-      .from('agent_configs')
-      .select('id, location_id')
-      .eq('id', id)
-      .maybeSingle();
+    const { data: resultData, error } = await supabaseAdmin.rpc('update_agent_atomic', {
+      p_agent_id: id,
+      p_company_name: updates.businessProfile?.companyName,
+      p_city: updates.businessProfile?.location?.city,
+      p_system_prompt: updates.config?.systemPrompt,
+      p_greeting_template: updates.config?.greetingTemplate,
+      p_recording_consent: updates.config?.recordingConsent,
+      p_voice_id: updates.config?.voiceSettings?.voiceId,
+      p_primary_locale: updates.config?.primaryLocale,
+    });
 
-    if (fetchError) throw fetchError;
-    if (!agentConfig) return next(new NotFoundError('Agent'));
-
-    const { location_id } = agentConfig;
-    const supabaseUpdates: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
-
-    // Mapping Business Profile
-    if (updates.businessProfile) {
-      if (updates.businessProfile.companyName !== undefined)
-        supabaseUpdates.company_name = updates.businessProfile.companyName;
-      if (updates.businessProfile.industry !== undefined)
-        supabaseUpdates.business_type = updates.businessProfile.industry;
-
-      // Update location city if provided
-      if (updates.businessProfile.location?.city !== undefined) {
-        console.log(
-          `[AgentController] Updating city to ${updates.businessProfile.location.city} for location ${location_id}`,
-        );
-        const { error: locError } = await supabaseAdmin
-          .from('locations')
-          .update({ name: updates.businessProfile.location.city })
-          .eq('id', location_id);
-        if (locError) console.error('[AgentController] City update failed:', locError);
-      }
+    if (error) {
+      console.error('[AgentController] Supabase RPC failed:', error);
+      throw error;
     }
 
-    // Mapping Config
-    if (updates.config) {
-      if (updates.config.systemPrompt !== undefined)
-        supabaseUpdates.system_prompt = updates.config.systemPrompt;
-      if (updates.config.greetingTemplate !== undefined)
-        supabaseUpdates.greeting_template = updates.config.greetingTemplate;
-      if (updates.config.recordingConsent !== undefined)
-        supabaseUpdates.recording_consent = updates.config.recordingConsent;
-      if (updates.config.primaryLocale !== undefined)
-        supabaseUpdates.primary_locale = updates.config.primaryLocale;
-      if (updates.config.voiceSettings?.voiceId !== undefined)
-        supabaseUpdates.eleven_agent_id = updates.config.voiceSettings.voiceId;
+    if (!resultData || resultData.length === 0) {
+      return next(new NotFoundError('Agent'));
     }
 
-    // Mapping Status
-    if (updates.setup_state !== undefined) {
-      supabaseUpdates.setup_state = updates.setup_state;
-    } else if (updates.status === 'live' || updates.status === 'active') {
-      supabaseUpdates.setup_state = 'ready';
-    } else if (updates.status === 'inactive') {
-      supabaseUpdates.setup_state = 'inactive';
-    }
-
-    // Perform Update
-    const { error: updateError } = await supabaseAdmin
-      .from('agent_configs')
-      .update(supabaseUpdates)
-      .eq('id', id);
-
-    if (updateError) throw updateError;
-
-    // Purge Cache (Best Effort)
+    // 3. Invalidate cache AFTER successful update
     const publicUrl = process.env.PUBLIC_BASE_URL || 'https://aidevelo.ai';
     fetch(`${publicUrl}/api/agents/${id}`, { method: 'PURGE' }).catch(() => {});
 
-    // Return Refreshed Data
+    // 4. Return refreshed data using existing service method to ensure full object structure
     const fullData = await AgentService.getAgentConfigWithLocation(id);
     return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
   } catch (err: unknown) {
