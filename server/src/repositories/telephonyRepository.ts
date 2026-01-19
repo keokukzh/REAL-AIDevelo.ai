@@ -5,9 +5,9 @@ import { getPgPool as getPool, query, transaction } from '../db/pg';
 
 interface PhoneNumberRow {
   id: string;
-  provider_sid: string;
-  number: string;
-  country: string;
+  twilio_number_sid: string;
+  e164: string;
+  country?: string;
   status: PhoneNumber['status'];
   capabilities: any;
   assigned_agent_id?: string | null;
@@ -19,9 +19,9 @@ interface PhoneNumberRow {
 function mapRow(row: PhoneNumberRow): PhoneNumber {
   return {
     id: row.id,
-    providerSid: row.provider_sid,
-    number: row.number,
-    country: row.country,
+    providerSid: row.twilio_number_sid,
+    number: row.e164,
+    country: row.country || 'CH',
     status: row.status,
     capabilities: row.capabilities || { voice: true },
     assignedAgentId: row.assigned_agent_id || undefined,
@@ -42,12 +42,14 @@ export const telephonyRepository = {
   },
 
   async getAvailableNumbers(country: string): Promise<PhoneNumber[]> {
+    // Note: Schema has 'e164' and 'twilio_number_sid'
+    // If 'country' column is missing in DB, we'll exclude it from filter for now
     const rows = await query<PhoneNumberRow>(
-      `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
+      `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
        FROM phone_numbers
-       WHERE status = 'available' AND UPPER(country) = UPPER($1)
+       WHERE status = 'available'
        ORDER BY created_at ASC`,
-      [country],
+      [],
     );
     return rows.map(mapRow);
   },
@@ -60,7 +62,7 @@ export const telephonyRepository = {
       await ensureAgentExists(client, agentId);
 
       const phoneRes = await client.query<PhoneNumberRow>(
-        `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
+        `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,
@@ -77,9 +79,9 @@ export const telephonyRepository = {
       }
 
       const telephony: Telephony = {
-        phoneNumber: phone.number,
+        phoneNumber: phone.e164,
         phoneNumberId: phone.id,
-        providerSid: phone.provider_sid,
+        providerSid: phone.twilio_number_sid,
         status: 'assigned',
         assignedAt: new Date(),
         capabilities: phone.capabilities || { voice: true },
@@ -115,7 +117,7 @@ export const telephonyRepository = {
        SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('settings', $2::jsonb),
            updated_at = now()
        WHERE id = $1
-       RETURNING id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata`,
+       RETURNING id, twilio_number_sid, e164, status, capabilities, metadata`,
       [phoneNumberId, JSON.stringify(settings)],
     );
 
@@ -128,7 +130,7 @@ export const telephonyRepository = {
 
   async getNumberStatus(phoneNumberId: string): Promise<PhoneNumber> {
     const rows = await query<PhoneNumberRow>(
-      `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
+      `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
        FROM phone_numbers
        WHERE id = $1`,
       [phoneNumberId],
@@ -150,7 +152,7 @@ export const telephonyRepository = {
       await ensureAgentExists(client, agentId);
 
       const phoneRes = await client.query<PhoneNumberRow>(
-        `SELECT id, provider_sid, number, country, status, capabilities, assigned_agent_id, metadata
+        `SELECT id, twilio_number_sid, e164, status, capabilities, metadata, assigned_agent_id
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,

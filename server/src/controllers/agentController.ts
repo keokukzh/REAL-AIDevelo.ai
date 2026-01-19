@@ -386,10 +386,10 @@ export const initiateCall = async (req: Request, res: Response, next: NextFuncti
  * Update agent - handles both legacy and Supabase agents
  */
 export const updateAgent = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
+  const { id } = req.params;
+  const updates = req.body;
 
+  try {
     // 1. Try legacy DB first
     const legacyAgent = db.getAgent(id);
     if (legacyAgent) {
@@ -397,69 +397,86 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
       return res.json({ success: true, data: updatedAgent });
     }
 
-    // 2. Try Supabase
-    try {
-      // Map legacy updates to Supabase schema if needed
-      const supabaseUpdates: Record<string, unknown> = {};
+    // 2. Try Supabase Agent
+    console.log(
+      `[AgentController] Updating Supabase agent ${id}`,
+      JSON.stringify(updates, null, 2),
+    );
 
-      if (updates.businessProfile) {
-        if (updates.businessProfile.companyName)
-          supabaseUpdates.company_name = updates.businessProfile.companyName;
-        if (updates.businessProfile.industry)
-          supabaseUpdates.business_type = updates.businessProfile.industry;
-        if (updates.businessProfile.location?.city) {
-          // Note: city is in locations table, but for now we'll log it
-          // In a full implementation, we'd update the linked location record here
-          console.log(
-            '[AgentController] City update requested (not yet implemented in locations table sync):',
-            updates.businessProfile.location.city,
-          );
-        }
+    // Fetch existing agent config to get location_id
+    const { data: agentConfig, error: fetchError } = await supabaseAdmin
+      .from('agent_configs')
+      .select('id, location_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!agentConfig) return next(new NotFoundError('Agent'));
+
+    const { location_id } = agentConfig;
+    const supabaseUpdates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    // Mapping Business Profile
+    if (updates.businessProfile) {
+      if (updates.businessProfile.companyName !== undefined)
+        supabaseUpdates.company_name = updates.businessProfile.companyName;
+      if (updates.businessProfile.industry !== undefined)
+        supabaseUpdates.business_type = updates.businessProfile.industry;
+
+      // Update location city if provided
+      if (updates.businessProfile.location?.city !== undefined) {
+        console.log(
+          `[AgentController] Updating city to ${updates.businessProfile.location.city} for location ${location_id}`,
+        );
+        const { error: locError } = await supabaseAdmin
+          .from('locations')
+          .update({ name: updates.businessProfile.location.city })
+          .eq('id', location_id);
+        if (locError) console.error('[AgentController] City update failed:', locError);
       }
-
-      if (updates.config) {
-        if (updates.config.systemPrompt !== undefined)
-          supabaseUpdates.greeting_template = updates.config.systemPrompt;
-        if (updates.config.recordingConsent !== undefined)
-          supabaseUpdates.recording_consent = updates.config.recordingConsent;
-        if (updates.config.voiceSettings?.voiceId)
-          supabaseUpdates.eleven_agent_id = updates.config.voiceSettings.voiceId;
-        if (updates.config.primaryLocale)
-          supabaseUpdates.primary_locale = updates.config.primaryLocale;
-      }
-
-      if (updates.status === 'live' || updates.status === 'active') {
-        supabaseUpdates.setup_state = 'ready';
-      } else if (updates.status === 'inactive') {
-        supabaseUpdates.setup_state = 'inactive';
-      }
-
-      // If we have updates for agent_configs
-      if (Object.keys(supabaseUpdates).length > 0) {
-        const { error: updateError } = await supabaseAdmin
-          .from('agent_configs')
-          .update(supabaseUpdates as any)
-          .eq('id', id)
-          .select()
-          .single();
-
-        if (updateError) throw updateError;
-
-        const fullData = await AgentService.getAgentConfigWithLocation(id);
-        return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
-      }
-    } catch (supabaseError: any) {
-      console.error('[AgentController] Supabase update failed:', supabaseError);
-      // Return 404 only if it's a "not found" error from single(), otherwise 500
-      if (supabaseError.code === 'PGRST116') {
-        return next(new NotFoundError('Agent'));
-      }
-      return next(new InternalServerError(`Supabase update failed: ${supabaseError.message}`));
     }
 
-    return next(new NotFoundError('Agent'));
-  } catch (error) {
+    // Mapping Config
+    if (updates.config) {
+      if (updates.config.systemPrompt !== undefined)
+        supabaseUpdates.greeting_template = updates.config.systemPrompt;
+      if (updates.config.recordingConsent !== undefined)
+        supabaseUpdates.recording_consent = updates.config.recordingConsent;
+      if (updates.config.primaryLocale !== undefined)
+        supabaseUpdates.primary_locale = updates.config.primaryLocale;
+      if (updates.config.voiceSettings?.voiceId !== undefined)
+        supabaseUpdates.eleven_agent_id = updates.config.voiceSettings.voiceId;
+    }
+
+    // Mapping Status
+    if (updates.setup_state !== undefined) {
+      supabaseUpdates.setup_state = updates.setup_state;
+    } else if (updates.status === 'live' || updates.status === 'active') {
+      supabaseUpdates.setup_state = 'ready';
+    } else if (updates.status === 'inactive') {
+      supabaseUpdates.setup_state = 'inactive';
+    }
+
+    // Perform Update
+    const { error: updateError } = await supabaseAdmin
+      .from('agent_configs')
+      .update(supabaseUpdates)
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Purge Cache (Best Effort)
+    const publicUrl = process.env.PUBLIC_BASE_URL || 'https://aidevelo.ai';
+    fetch(`${publicUrl}/api/agents/${id}`, { method: 'PURGE' }).catch(() => {});
+
+    // Return Refreshed Data
+    const fullData = await AgentService.getAgentConfigWithLocation(id);
+    return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
+  } catch (error: any) {
     console.error('[AgentController] updateAgent error:', error);
-    next(new InternalServerError('Failed to update agent'));
+    if (error.code === 'PGRST116') return next(new NotFoundError('Agent'));
+    next(new InternalServerError(`Failed to update agent: ${error.message}`));
   }
 };
