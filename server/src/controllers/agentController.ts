@@ -419,30 +419,92 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
       return res.json({ success: true, data: updatedAgent });
     }
 
-    // 2. Use atomic Supabase function
+    // 2. Try atomic Supabase function first
     console.log(
       `[AgentController] Updating Supabase agent ${id} with atomic transaction`,
       JSON.stringify(updates, null, 2),
     );
 
-    const { data: resultData, error } = await supabaseAdmin.rpc('update_agent_atomic', {
-      p_agent_id: id,
-      p_company_name: updates.businessProfile?.companyName,
-      p_city: updates.businessProfile?.location?.city,
-      p_system_prompt: updates.config?.systemPrompt,
-      p_greeting_template: updates.config?.greetingTemplate,
-      p_recording_consent: updates.config?.recordingConsent,
-      p_voice_id: updates.config?.voiceSettings?.voiceId,
-      p_primary_locale: updates.config?.primaryLocale,
-    });
+    let updateSuccessful = false;
 
-    if (error) {
-      console.error('[AgentController] Supabase RPC failed:', error);
-      throw error;
+    try {
+      const { data: resultData, error: rpcError } = await supabaseAdmin.rpc('update_agent_atomic', {
+        p_agent_id: id,
+        p_company_name: updates.businessProfile?.companyName,
+        p_city: updates.businessProfile?.location?.city,
+        p_system_prompt: updates.config?.systemPrompt,
+        p_greeting_template: updates.config?.greetingTemplate,
+        p_recording_consent: updates.config?.recordingConsent,
+        p_voice_id: updates.config?.voiceSettings?.voiceId,
+        p_primary_locale: updates.config?.primaryLocale,
+      });
+
+      if (rpcError) throw rpcError;
+      if (resultData && resultData.length > 0) {
+        updateSuccessful = true;
+      }
+    } catch (rpcErr: any) {
+      console.warn(
+        '[AgentController] Atomic update failed, falling back to sequential update:',
+        rpcErr.message,
+      );
+      // Fallback: Continue to sequential update below
     }
 
-    if (!resultData || resultData.length === 0) {
-      return next(new NotFoundError('Agent'));
+    if (!updateSuccessful) {
+      // Fallback: Sequential Update Logic
+      const { data: agentConfig, error: fetchError } = await supabaseAdmin
+        .from('agent_configs')
+        .select('id, location_id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      if (!agentConfig) return next(new NotFoundError('Agent'));
+
+      const { location_id } = agentConfig;
+      const supabaseUpdates: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      // Map fields manually
+      if (updates.businessProfile) {
+        if (updates.businessProfile.companyName !== undefined)
+          supabaseUpdates.company_name = updates.businessProfile.companyName;
+        if (updates.businessProfile.industry !== undefined)
+          supabaseUpdates.business_type = updates.businessProfile.industry;
+
+        if (updates.businessProfile.location?.city !== undefined) {
+          await supabaseAdmin
+            .from('locations')
+            .update({ name: updates.businessProfile.location.city })
+            .eq('id', location_id);
+        }
+      }
+
+      if (updates.config) {
+        if (updates.config.systemPrompt !== undefined)
+          supabaseUpdates.system_prompt = updates.config.systemPrompt;
+        if (updates.config.greetingTemplate !== undefined)
+          supabaseUpdates.greeting_template = updates.config.greetingTemplate;
+        if (updates.config.recordingConsent !== undefined)
+          supabaseUpdates.recording_consent = updates.config.recordingConsent;
+        if (updates.config.primaryLocale !== undefined)
+          supabaseUpdates.primary_locale = updates.config.primaryLocale;
+        if (updates.config.voiceSettings?.voiceId !== undefined)
+          supabaseUpdates.eleven_agent_id = updates.config.voiceSettings.voiceId;
+      }
+
+      if (updates.setup_state !== undefined) {
+        supabaseUpdates.setup_state = updates.setup_state;
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('agent_configs')
+        .update(supabaseUpdates)
+        .eq('id', id);
+
+      if (updateError) throw updateError;
     }
 
     // 3. Invalidate cache AFTER successful update
