@@ -321,6 +321,153 @@ router.patch('/:id/activate', requireAuth, validateParams(AgentIdParamSchema), a
 
 /**
  * @swagger
+ * /agents/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate an agent (set to inactive)
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent deactivated successfully
+ */
+router.post(
+  '/:id/deactivate',
+  verifySupabaseAuth,
+  validateParams(AgentIdParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const result = await AgentService.deactivateAgent(id);
+      res.json({
+        success: true,
+        message: 'Agent deactivated successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /agents/{id}/pause:
+ *   post:
+ *     summary: Pause an agent (keeps config, stops processing)
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent paused successfully
+ */
+router.post(
+  '/:id/pause',
+  verifySupabaseAuth,
+  validateParams(AgentIdParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const result = await AgentService.pauseAgent(id);
+      res.json({
+        success: true,
+        message: 'Agent paused successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /agents/{id}/resume:
+ *   post:
+ *     summary: Resume a paused agent (set back to ready)
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent resumed successfully
+ */
+router.post(
+  '/:id/resume',
+  verifySupabaseAuth,
+  validateParams(AgentIdParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const result = await AgentService.activateAgent(id);
+      res.json({
+        success: true,
+        message: 'Agent resumed successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /agents/{id}/quick-status:
+ *   get:
+ *     summary: Get quick agent status for dashboard
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Quick status retrieved
+ */
+router.get(
+  '/:id/quick-status',
+  verifySupabaseAuth,
+  validateParams(AgentIdParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const status = await AgentService.getAgentQuickStatus(id);
+      res.json({
+        success: true,
+        data: status,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @swagger
  * /agents/{id}/sync:
  *   post:
  *     summary: Sync agent

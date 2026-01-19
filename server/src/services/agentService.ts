@@ -50,7 +50,8 @@ export class AgentService {
   static async getAgentConfigWithLocation(agentConfigId: string) {
     const { data, error } = await supabaseAdmin
       .from('agent_configs')
-      .select(`
+      .select(
+        `
         *,
         locations (
           id,
@@ -62,7 +63,8 @@ export class AgentService {
             name
           )
         )
-      `)
+      `,
+      )
       .eq('id', agentConfigId)
       .maybeSingle();
 
@@ -84,5 +86,91 @@ export class AgentService {
   static async verifyAgentExists(agentConfigId: string) {
     const config = await this.getAgentConfigById(agentConfigId);
     return config;
+  }
+
+  /**
+   * Activate agent - set setup_state to 'ready'
+   */
+  static async activateAgent(agentConfigId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('agent_configs')
+      .update({
+        setup_state: 'ready',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', agentConfigId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to activate agent: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Deactivate agent - set setup_state to 'inactive'
+   */
+  static async deactivateAgent(agentConfigId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('agent_configs')
+      .update({
+        setup_state: 'inactive',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', agentConfigId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to deactivate agent: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Pause agent - set setup_state to 'paused' (keeps configuration)
+   */
+  static async pauseAgent(agentConfigId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('agent_configs')
+      .update({
+        setup_state: 'paused',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', agentConfigId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to pause agent: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Get quick status for dashboard (minimal payload)
+   */
+  static async getAgentQuickStatus(agentConfigId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('agent_configs')
+      .select('id, setup_state, updated_at')
+      .eq('id', agentConfigId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to get agent status: ${error.message}`);
+    }
+
+    return {
+      id: data.id,
+      isActive: data.setup_state === 'ready',
+      isPaused: data.setup_state === 'paused',
+      setupState: data.setup_state,
+      lastUpdated: data.updated_at,
+    };
   }
 }

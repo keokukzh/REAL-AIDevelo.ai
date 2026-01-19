@@ -5,6 +5,7 @@ import { ROUTES } from '../config/navigation.js';
 import { useDashboardOverview, DashboardOverview } from '../hooks/useDashboardOverview.js';
 import { useNavigation } from '../hooks/useNavigation.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
+import { useAgentActivation } from '../hooks/useAgentActivation.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
@@ -13,6 +14,7 @@ import { WebhookStatusModal } from '../components/dashboard/WebhookStatusModal.j
 import { AvailabilityModal } from '../components/dashboard/AvailabilityModal.js';
 import { CalendarEventModal } from '../components/dashboard/CalendarEventModal.js';
 import { SideNav } from '../components/dashboard/SideNav.js';
+import { VoiceAgentControlCenter } from '../components/dashboard/VoiceAgentControlCenter.js';
 import {
   ActivationChecklist,
   type SelectionItem,
@@ -35,9 +37,7 @@ import {
   Calendar,
   PhoneMissed,
   Clock,
-  Mic,
   Settings,
-  Globe,
   XCircle,
   MoreHorizontal,
   ArrowRight,
@@ -446,6 +446,9 @@ export const DashboardPage = () => {
     [effectiveOverview?.agent_config?.setup_state],
   );
   const showWizard = React.useMemo(() => !isAgentActive, [isAgentActive]);
+
+  // Agent activation hook for VoiceAgentControlCenter
+  const agentActivation = useAgentActivation(effectiveOverview?.agent_config?.id || '');
 
   // Map data for new UI (memoized to prevent recalculation on every render)
   const kpis = React.useMemo(
@@ -1121,83 +1124,40 @@ export const DashboardPage = () => {
 
               {/* Right Column (Agent & System) */}
               <div className="space-y-6">
-                {/* Agent Card */}
-                <div className="rounded-2xl ultra-glass text-white p-6 shadow-xl relative overflow-hidden border border-slate-700/50 group transition-all duration-300 hover:border-accent/40">
-                  {/* Abstract Background Shapes */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-accent/10 transition-colors"></div>
-                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
-
-                  <div className="relative z-10 flex justify-between items-start mb-6">
-                    <div className="flex gap-4">
-                      <div className="relative">
-                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-lg">
-                          <Mic className="w-6 h-6 text-swiss-red" />
-                        </div>
-                        <div
-                          className={`absolute bottom-0 right-0 w-4 h-4 ${isAgentActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'} border-2 border-slate-900 rounded-full ${isAgentActive ? 'animate-pulse' : ''}`}
-                        ></div>
-                      </div>
-                      <div>
-                        <h3 className="font-bold font-display text-lg">AIDevelo Receptionist</h3>
-                        <div className="flex items-center gap-2 text-gray-400 text-xs mt-0.5">
-                          <Globe className="w-3 h-3" />
-                          <span>Schweizerdeutsch</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span
-                        className={`text-xs font-bold uppercase tracking-wider mb-1 ${isAgentActive ? 'text-emerald-400' : 'text-amber-400'}`}
-                      >
-                        {isAgentActive ? 'Active' : 'Setup'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider">
-                        Agent Status
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      {isAgentActive
-                        ? 'Agent ist aktiv und bereit für Anrufe.'
-                        : 'Agent benötigt Konfiguration. Bitte Setup abschließen.'}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 relative z-10">
-                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                      <div className="text-[10px] text-gray-500 uppercase mb-1">Branche</div>
-                      <div className="font-medium text-sm text-white">
-                        {effectiveOverview.agent_config.business_type || 'Nicht gesetzt'}
-                      </div>
-                    </div>
-                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                      <div className="text-[10px] text-gray-500 uppercase mb-1">Nummer</div>
-                      <div className="font-medium text-sm font-mono text-white">
-                        {effectiveOverview.phone_number
-                          ? `${effectiveOverview.phone_number.substring(0, 8)}...`
-                          : 'Nicht verbunden'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-slate-800 relative z-10 flex flex-col gap-3">
-                    <Button
-                      onClick={handleTestAgent}
-                      className="w-full bg-swiss-red hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20 ultra-btn-sheen"
-                    >
-                      Agent testen
-                    </Button>
-
-                    <TestCallButton
-                      phoneNumber={phoneStatus?.phoneNumber || effectiveOverview.phone_number}
-                      disabled={phoneStatus?.twilioGateway !== 'OK'}
-                    />
-                  </div>
-                </div>
+                {/* Voice Agent Control Center - NEW */}
+                <VoiceAgentControlCenter
+                  agentConfig={{
+                    id: effectiveOverview.agent_config.id,
+                    setup_state: effectiveOverview.agent_config.setup_state as
+                      | 'ready'
+                      | 'paused'
+                      | 'inactive'
+                      | 'needs_setup',
+                    business_type: effectiveOverview.agent_config.business_type,
+                  }}
+                  phoneStatus={
+                    phoneStatus
+                      ? {
+                          twilioGateway: phoneStatus.twilioGateway,
+                          twilioConfigured: phoneStatus.twilioConfigured,
+                          hasConnectedNumber: phoneStatus.hasConnectedNumber,
+                          webhookConfigured: phoneStatus.webhookConfigured,
+                          phoneNumber: phoneStatus.phoneNumber,
+                        }
+                      : null
+                  }
+                  isActivating={agentActivation.isActivating}
+                  isDeactivating={agentActivation.isDeactivating}
+                  isPausing={agentActivation.isPausing}
+                  onActivate={agentActivation.activate}
+                  onDeactivate={agentActivation.deactivate}
+                  onPause={agentActivation.pause}
+                  onResume={agentActivation.resume}
+                  onTestCall={handleTestAgent}
+                  onConfigurePhone={handleConnectPhone}
+                  onSettings={() => navigate(ROUTES.AGENT_EDIT(effectiveOverview.agent_config.id))}
+                  onViewLogs={handleViewCalls}
+                />
 
                 {/* Quick Actions */}
                 <Card title="Quick Actions" className="ultra-glass border-slate-700/50">
