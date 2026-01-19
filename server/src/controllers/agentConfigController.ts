@@ -72,6 +72,9 @@ export const updateAgentConfig = async (
   const requestId =
     req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Add timeout handling (25 seconds) for database operations
+  const TIMEOUT_MS = 25000;
+
   try {
     if (!req.supabaseUser) {
       return res.status(401).json({
@@ -135,12 +138,21 @@ export const updateAgentConfig = async (
       });
     }
 
-    // Get user's organization and location
-    const org = await ensureOrgForUser(supabaseUserId, email);
-    const location = await ensureDefaultLocation(org.id);
+    // Get user's organization and location with timeout protection
+    const orgPromise = ensureOrgForUser(supabaseUserId, email);
+    const locationPromise = orgPromise.then((org) => ensureDefaultLocation(org.id));
+    const agentConfigPromise = locationPromise.then((location) => ensureAgentConfig(location.id));
 
-    // Ensure agent config exists (idempotent)
-    const agentConfig = await ensureAgentConfig(location.id);
+    // Add timeout for these operations
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Request timeout - database operations took too long'));
+      }, TIMEOUT_MS);
+    });
+
+    const org = await Promise.race([orgPromise, timeoutPromise]);
+    const location = await Promise.race([locationPromise, timeoutPromise]);
+    const agentConfig = await Promise.race([agentConfigPromise, timeoutPromise]);
 
     // Build update payload by filtering out undefined values, normalize arrays
     const updatePayload = Object.fromEntries(

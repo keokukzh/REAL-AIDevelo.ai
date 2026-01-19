@@ -198,8 +198,10 @@ export const KnowledgeBasePage = () => {
           }
           if (error) {
             // Parse error message for better user feedback
-            let errorMessage = error.message || 'Unknown error';
+            const errorAny = error as any;
+            let errorMessage = errorAny?.userFriendlyMessage || error.message || 'Unknown error';
             let errorTitle = 'Error loading documents';
+            const is503 = errorAny?.response?.status === 503;
             
             // Check for specific error types
             if (errorMessage.includes('locationId') || errorMessage.includes('location_id')) {
@@ -214,6 +216,9 @@ export const KnowledgeBasePage = () => {
             } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
               errorTitle = 'Connection Error';
               errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+            } else if (is503 || errorMessage.includes('temporarily unavailable')) {
+              errorTitle = 'Service Temporarily Unavailable';
+              errorMessage = 'The knowledge base service is temporarily unavailable. Please try again in a moment.';
             }
             
             return (

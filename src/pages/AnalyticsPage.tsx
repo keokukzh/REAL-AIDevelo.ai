@@ -282,14 +282,28 @@ export const AnalyticsPage = () => {
 
         {/* Error States */}
         {(summaryError || sourcesError) && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-center gap-3">
-            <AlertCircle size={20} className="text-red-400" />
-            <div>
+          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertCircle size={20} className="text-red-400" />
               <p className="text-red-300 font-medium">Fehler beim Laden der Daten</p>
-              <p className="text-red-400 text-sm mt-1">
-                {summaryError?.message || sourcesError?.message || 'Unbekannter Fehler'}
-              </p>
             </div>
+            <p className="text-red-400 text-sm mt-1 mb-3">
+              {(summaryError as any)?.userFriendlyMessage || 
+               (sourcesError as any)?.userFriendlyMessage ||
+               summaryError?.message || 
+               sourcesError?.message || 
+               'Unbekannter Fehler'}
+            </p>
+            {/* Show retry button for 503 errors */}
+            {((summaryError as any)?.response?.status === 503 || 
+              (sourcesError as any)?.response?.status === 503) && (
+              <button
+                onClick={handleRefetch}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded text-red-300 text-sm transition-colors"
+              >
+                Erneut versuchen
+              </button>
+            )}
           </div>
         )}
 

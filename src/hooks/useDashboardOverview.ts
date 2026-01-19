@@ -131,6 +131,15 @@ export const useDashboardOverview = () => {
       ) {
         return false;
       }
+      // Retry up to 2 times for 503 errors (service unavailable)
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as any).status === 503
+      ) {
+        return failureCount < 2;
+      }
       return failureCount < 1;
     },
     staleTime: 30000, // 30 seconds

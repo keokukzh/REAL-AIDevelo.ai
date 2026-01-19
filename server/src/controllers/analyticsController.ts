@@ -4,6 +4,7 @@ import { BadRequestError, InternalServerError } from '../utils/errors';
 import { resolveLocationId } from '../utils/locationIdResolver';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { logger, serializeError, redact } from '../utils/logger';
+import { retryApiCall } from '../utils/retry';
 
 /**
  * GET /api/analytics/calls/summary
@@ -71,7 +72,21 @@ export const getCallsSummary = async (
     }
 
     const startTime = Date.now();
-    const { data: calls, error, count } = await query;
+    // Retry database query up to 3 times for transient failures
+    const { data: calls, error, count } = await retryApiCall(
+      async () => {
+        const result = await query;
+        if (result.error) {
+          throw new Error(`Database query failed: ${result.error.message}`);
+        }
+        return result;
+      },
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+      }
+    );
 
     if (error) {
       logger.error(
@@ -268,7 +283,21 @@ export const getTopSources = async (
     }
 
     const startTime = Date.now();
-    const { data: calls, error } = await query;
+    // Retry database query up to 3 times for transient failures
+    const { data: calls, error } = await retryApiCall(
+      async () => {
+        const result = await query;
+        if (result.error) {
+          throw new Error(`Database query failed: ${result.error.message}`);
+        }
+        return result;
+      },
+      {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 2000,
+      }
+    );
 
     if (error) {
       logger.error(

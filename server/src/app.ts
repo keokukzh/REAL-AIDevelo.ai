@@ -23,6 +23,7 @@ import {
 import { timeoutMiddleware } from './middleware/timeout.js';
 import { queryMonitorMiddleware } from './middleware/queryMonitor.js';
 import { attachApiVersionHeader, deprecationWarningMiddleware } from './middleware/apiVersion.js';
+import { requestLogger } from './middleware/requestLogger.js';
 import { devBypassAuth } from './middleware/devBypassAuth.js';
 import { attachBackendSha } from './middleware/backendSha.js';
 import {
@@ -107,6 +108,7 @@ app.use((req, res, next) => {
 });
 
 // --- Logging & Monitoring ---
+app.use(requestLogger);
 app.use(timeoutMiddleware);
 app.use(queryMonitorMiddleware);
 app.use(morgan(config.isProduction ? 'combined' : 'dev'));
@@ -160,21 +162,59 @@ app.use('/api', deprecationWarningMiddleware, attachApiVersionHeader, apiV1Route
 
 // Public Health
 app.get('/health', async (req, res) => {
-  const { twilioService } = await import('./services/twilioService.js');
-  const twilioOk = await twilioService.testConnection();
+  try {
+    const { twilioService } = await import('./services/twilioService.js');
+    const twilioOk = await Promise.race([
+      twilioService.testConnection(),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)), // 5s timeout
+    ]);
 
-  res.json({
-    ok: true,
-    timestamp: new Date().toISOString(),
-    services: {
-      twilio: twilioOk ? 'OK' : 'ERROR',
-      database: 'CONNECTED', // Status set by pool initialization
-    },
-  });
+    // Check database connection
+    let dbOk = false;
+    try {
+      const { supabaseAdmin } = await import('./services/supabaseDb.js');
+      const { data, error } = await Promise.race([
+        supabaseAdmin.from('agent_configs').select('id').limit(1),
+        new Promise<{ data: null; error: Error }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 3000)
+        ),
+      ]);
+      dbOk = !error && data !== null;
+    } catch (dbError) {
+      dbOk = false;
+    }
+
+    const status = twilioOk && dbOk ? 'healthy' : 'degraded';
+    const httpStatus = status === 'healthy' ? 200 : 503;
+
+    res.status(httpStatus).json({
+      ok: status === 'healthy',
+      status,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.RENDER_GIT_COMMIT || 'dev',
+      services: {
+        twilio: twilioOk ? 'OK' : 'ERROR',
+        database: dbOk ? 'CONNECTED' : 'ERROR',
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      ok: false,
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed',
+    });
+  }
 });
 
 app.get('/api/health', (req, res) =>
-  res.json({ ok: true, version: process.env.RENDER_GIT_COMMIT || 'dev' }),
+  res.json({ 
+    ok: true, 
+    version: process.env.RENDER_GIT_COMMIT || 'dev',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  }),
 );
 
 app.get('/health/ready', async (req, res) => {
