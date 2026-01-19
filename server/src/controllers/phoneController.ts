@@ -7,7 +7,7 @@ import {
   ensureUserRow,
   ensureOrgForUser,
 } from '../services/supabaseDb';
-import { BadRequestError, InternalServerError } from '../utils/errors';
+import { BadRequestError, InternalServerError, AppError } from '../utils/errors';
 import { config } from '../config/env';
 
 /**
@@ -707,7 +707,7 @@ export const registerPersonalPhone = async (
     if (userError) {
       console.error('[PhoneController] Error updating user phone:', userError);
       return next(
-        new InternalServerError(`Fehler beim Speichern der Telefonnummer: ${userError.message}`),
+        new AppError(500, `Fehler beim Speichern der Telefonnummer: ${userError.message}`, true),
       );
     }
 
