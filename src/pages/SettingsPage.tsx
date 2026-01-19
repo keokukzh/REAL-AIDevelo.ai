@@ -369,8 +369,12 @@ export const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
     } catch (error: unknown) {
-      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Speichern der Agent-Konfiguration');
-      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
+      const status = (error as any)?.response?.status || (error as any)?.status;
+      // Don't show duplicate error for 503 - mutation's onError already handles it
+      if (status !== 503) {
+        const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Speichern der Agent-Konfiguration');
+        toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
+      }
     } finally {
       setIsSavingConfig(false);
     }

@@ -58,6 +58,20 @@ export const useUpdateAgentConfig = () => {
       
       return response.data.data;
     },
+    // Retry logic for 502/503 errors
+    retry: (failureCount, error: any) => {
+      const status = error?.response?.status || error?.status;
+      // Retry up to 2 times for 502/503 errors (service unavailable)
+      if (status === 502 || status === 503) {
+        return failureCount < 2;
+      }
+      // Don't retry other errors
+      return false;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * Math.pow(2, attemptIndex), 2000);
+    },
     onSuccess: () => {
       // Invalidate and refetch dashboard overview after successful update
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
@@ -66,6 +80,14 @@ export const useUpdateAgentConfig = () => {
       // Use userFriendlyMessage if available (from apiClient interceptor)
       const errorMsg = error?.userFriendlyMessage 
         || extractErrorMessage(error, 'Fehler beim Speichern der Konfiguration');
+      
+      // Don't show error toast for 503 errors during retry - only show final error
+      const status = error?.response?.status || error?.status;
+      if (status === 503 && error?.config?._retryCount && error?.config?._retryCount < 2) {
+        // Still retrying - don't show error yet
+        return;
+      }
+      
       toast.error(errorMsg);
     },
   });

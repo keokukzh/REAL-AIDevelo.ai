@@ -100,12 +100,21 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         onComplete();
       }
     } catch (error: any) {
-      logger.error('SetupWizard: Error saving step', error, {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        userFriendlyMessage: error?.userFriendlyMessage,
-      });
+      const status = error?.response?.status || error?.status;
+      // Don't log 503 errors as errors - they're temporary service unavailability
+      if (status === 503) {
+        logger.warn('SetupWizard: Service temporarily unavailable (503)', {
+          step: currentStep,
+          retryable: true,
+        });
+      } else {
+        logger.error('SetupWizard: Error saving step', error, {
+          message: error?.message,
+          response: error?.response?.data,
+          status,
+          userFriendlyMessage: error?.userFriendlyMessage,
+        });
+      }
       // Error is handled by mutation's onError callback (shows toast)
       // Don't advance to next step on error
     }
@@ -418,9 +427,24 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
       {updateConfig.isError && (
         <div className="mt-4 p-3 bg-red-900/50 rounded text-red-300">
-          Fehler beim Speichern: {(updateConfig.error as any)?.userFriendlyMessage 
-            || updateConfig.error?.message 
-            || 'Unbekannter Fehler'}
+          <div className="font-medium mb-1">Fehler beim Speichern</div>
+          <div className="text-sm">
+            {(updateConfig.error as any)?.userFriendlyMessage 
+              || updateConfig.error?.message 
+              || 'Unbekannter Fehler'}
+          </div>
+          {/* Show retry button for 502/503 errors */}
+          {((updateConfig.error as any)?.response?.status === 502 || 
+            (updateConfig.error as any)?.response?.status === 503 ||
+            (updateConfig.error as any)?.status === 502 ||
+            (updateConfig.error as any)?.status === 503) && (
+            <button
+              onClick={() => handleNext()}
+              className="mt-2 px-4 py-2 bg-red-700 hover:bg-red-600 rounded text-sm transition-colors"
+            >
+              Erneut versuchen
+            </button>
+          )}
         </div>
       )}
     </div>
