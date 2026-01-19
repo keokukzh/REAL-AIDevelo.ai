@@ -186,12 +186,18 @@ export const AgentEditPage: React.FC = () => {
       const res = await apiRequest<{ data: PhoneNumber[] }>(
         `/telephony/numbers?${params.toString()}`,
       );
+      if (res.data.length === 0) {
+        setNumberError(
+          `Keine Nummern für ${numberCountry} verfügbar. Bitte kontaktiere den Support oder versuche ein anderes Land.`,
+        );
+      }
       setAvailableNumbers(res.data);
     } catch (err: unknown) {
+      console.error('Failed to fetch numbers:', err);
       const msg =
         err instanceof ApiRequestError
-          ? err.message
-          : 'Telefonnummern konnten nicht geladen werden.';
+          ? `Fehler beim Laden der Nummern: ${err.message}`
+          : 'Verbindung zum Telefonie-Dienst fehlgeschlagen.';
       setNumberError(msg);
       setAvailableNumbers([]);
     } finally {
