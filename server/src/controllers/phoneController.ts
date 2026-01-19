@@ -157,6 +157,36 @@ export const connectPhoneNumber = async (
       }
     }
 
+    // Update channels_config to keep it in sync with the connected phone number
+    try {
+      const { data: existingConfig } = await supabaseAdmin
+        .from('channels_config')
+        .select('id')
+        .eq('location_id', location.id)
+        .maybeSingle();
+
+      if (existingConfig) {
+        await supabaseAdmin
+          .from('channels_config')
+          .update({
+            phone_number: phoneNumber,
+            phone_enabled: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingConfig.id);
+      } else {
+        await supabaseAdmin.from('channels_config').insert({
+          location_id: location.id,
+          phone_number: phoneNumber,
+          phone_enabled: true,
+        });
+      }
+      console.log('[PhoneController] channels_config updated for location:', location.id);
+    } catch (syncError) {
+      console.error('[PhoneController] Failed to sync channels_config:', syncError);
+      // We don't fail the whole request if this sync fails, as the core connection in phone_numbers is done
+    }
+
     // Update webhook URLs in Twilio
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || '';
     if (publicBaseUrl) {

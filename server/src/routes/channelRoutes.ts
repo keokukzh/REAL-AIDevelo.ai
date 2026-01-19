@@ -61,17 +61,35 @@ router.get('/config', verifySupabaseAuth, async (req: AuthenticatedRequest, res:
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://aidevelo.ai';
     const webhookUrl = `${publicBaseUrl}/api/twilio/whatsapp/inbound`;
 
+    // Fallback: If config doesn't have a phone_number, check if one is connected in phone_numbers table
+    const finalConfig = config || {
+      location_id: resolution.locationId,
+      whatsapp_to: null,
+      whatsapp_enabled: true,
+      webchat_enabled: true,
+      phone_enabled: false,
+      phone_number: null,
+    };
+
+    if (!finalConfig.phone_number) {
+      const { data: connectedPhone } = await supabaseAdmin
+        .from('phone_numbers')
+        .select('e164')
+        .eq('location_id', resolution.locationId)
+        .eq('status', 'connected')
+        .limit(1)
+        .maybeSingle();
+
+      if (connectedPhone?.e164) {
+        finalConfig.phone_number = connectedPhone.e164;
+        finalConfig.phone_enabled = true;
+      }
+    }
+
     res.json({
       success: true,
       data: {
-        config: config || {
-          location_id: resolution.locationId,
-          whatsapp_to: null,
-          whatsapp_enabled: true,
-          webchat_enabled: true,
-          phone_enabled: false,
-          phone_number: null,
-        },
+        config: finalConfig,
         widgetKeys: widgetKeys || [],
         webhookUrl,
       },
