@@ -112,14 +112,27 @@ CREATE TRIGGER trg_call_logs_updated
 -- 5. Verification of other critical tables from user request
 -- These should already exist but we ensure they have basic structure
 
--- users
-CREATE TABLE IF NOT EXISTS users (
+-- users (ensure public prefix and role column)
+CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY, -- Usually from Supabase Auth
   email TEXT UNIQUE,
   role TEXT DEFAULT 'user',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure role column exists if table was created by older migration
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'users' 
+      AND column_name = 'role'
+  ) THEN
+    ALTER TABLE public.users ADD COLUMN role TEXT DEFAULT 'user';
+  END IF;
+END $$;
 
 -- scheduled_reports
 CREATE TABLE IF NOT EXISTS scheduled_reports (

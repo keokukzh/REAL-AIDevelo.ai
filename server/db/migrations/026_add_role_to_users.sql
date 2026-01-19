@@ -3,13 +3,9 @@
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name = 'role'
-  ) THEN
-    ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
-  END IF;
+  -- Use ADD COLUMN IF NOT EXISTS for robustness
+  ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
 
   -- Use EXECUTE to avoid parse-time errors if the column doesn't exist yet
-  EXECUTE 'UPDATE users SET role = ''admin'' WHERE email = ''keokukmusic@gmail.com''';
+  EXECUTE 'UPDATE public.users SET role = ''admin'' WHERE email = ''keokukmusic@gmail.com''';
 END $$;
