@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Power, Pause, Play, Loader2, AlertTriangle } from 'lucide-react';
 
-export type AgentState = 'ready' | 'paused' | 'inactive' | 'needs_setup';
+export type AgentState =
+  | 'ready'
+  | 'paused'
+  | 'inactive'
+  | 'needs_setup'
+  | 'needs_persona'
+  | 'needs_business'
+  | 'needs_phone'
+  | 'needs_calendar';
 
 interface AgentActivationToggleProps {
   currentState: AgentState;
@@ -53,6 +61,42 @@ const stateConfig = {
     glowClass: 'shadow-blue-500/20',
     icon: AlertTriangle,
   },
+  needs_persona: {
+    label: 'Setup',
+    color: 'blue',
+    bgClass: 'bg-blue-500',
+    textClass: 'text-blue-400',
+    borderClass: 'border-blue-500/30',
+    glowClass: 'shadow-blue-500/20',
+    icon: AlertTriangle,
+  },
+  needs_business: {
+    label: 'Setup',
+    color: 'blue',
+    bgClass: 'bg-blue-500',
+    textClass: 'text-blue-400',
+    borderClass: 'border-blue-500/30',
+    glowClass: 'shadow-blue-500/20',
+    icon: AlertTriangle,
+  },
+  needs_phone: {
+    label: 'Setup',
+    color: 'blue',
+    bgClass: 'bg-blue-500',
+    textClass: 'text-blue-400',
+    borderClass: 'border-blue-500/30',
+    glowClass: 'shadow-blue-500/20',
+    icon: AlertTriangle,
+  },
+  needs_calendar: {
+    label: 'Setup',
+    color: 'blue',
+    bgClass: 'bg-blue-500',
+    textClass: 'text-blue-400',
+    borderClass: 'border-blue-500/30',
+    glowClass: 'shadow-blue-500/20',
+    icon: AlertTriangle,
+  },
 };
 
 const sizeConfig = {
@@ -75,7 +119,7 @@ export const AgentActivationToggle: React.FC<AgentActivationToggleProps> = ({
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAction, setPendingAction] = useState<'deactivate' | 'pause' | null>(null);
 
-  const config = stateConfig[currentState];
+  const config = stateConfig[currentState] || stateConfig.needs_setup;
   const sizes = sizeConfig[size];
   const isActive = currentState === 'ready';
   const isPaused = currentState === 'paused';
