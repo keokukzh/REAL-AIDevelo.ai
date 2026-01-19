@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CrossSectionNav } from '../components/navigation/CrossSectionNav.js';
 import { ROUTES } from '../config/navigation.js';
-import { useDashboardOverview, DashboardOverview } from '../hooks/useDashboardOverview.js';
+import { DashboardOverview } from '../hooks/useDashboardOverview.js';
 import { useNavigation } from '../hooks/useNavigation.js';
 import { useAuthContext } from '../contexts/AuthContext.js';
 import { useAgentActivation } from '../hooks/useAgentActivation.js';
@@ -10,7 +10,6 @@ import { useDashboardData } from '../hooks/useDashboardData.js';
 import { useDashboardModals } from '../hooks/useDashboardModals.js';
 import { usePhoneStatus } from '../hooks/usePhoneStatus.js';
 import { useCalendarIntegration } from '../hooks/useCalendarIntegration.js';
-import { isAllowedOrigin } from '../config/allowedOrigins.js';
 import { SetupWizard } from '../components/dashboard/SetupWizard.js';
 import { CallDetailsModal } from '../components/dashboard/CallDetailsModal.js';
 import { AgentTestModal } from '../components/dashboard/AgentTestModal.js';
@@ -60,10 +59,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { CalendarEvent } from '../hooks/useCalendarEvents.js';
+import { CallLog } from '../hooks/useCallLogs.js';
 import { extractErrorMessage, extractUserFriendlyError } from '../lib/errorUtils.js';
 import { UserFriendlyError } from '../components/ui/UserFriendlyError.js';
-import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { NotificationCenter } from '../components/notifications/NotificationCenter.js';
 import { NotificationBell } from '../components/notifications/NotificationBell.js';
 import { useProactiveAlerts } from '../hooks/useProactiveAlerts.js';
@@ -71,6 +69,9 @@ import { useSuccessNotifications } from '../hooks/useSuccessNotifications.js';
 import { DashboardErrorBoundary } from '../components/dashboard/DashboardErrorBoundary.js';
 
 export const DashboardPage = () => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:74',message:'Component mount',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H2_H3_H4_H5'})}).catch(()=>{});
+  // #endregion
   const navigate = useNavigate();
   const nav = useNavigation();
   const { user, logout } = useAuthContext();
@@ -79,8 +80,17 @@ export const DashboardPage = () => {
   // Use custom hooks for data and modals
   const dashboardData = useDashboardData();
   const { overview, isLoading, error, refetch } = dashboardData;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:82',message:'Dashboard data loaded',data:{hasOverview:!!overview,isLoading,hasError:!!error,overviewKeys:overview?Object.keys(overview):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   const modals = useDashboardModals();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:85',message:'Modals hook initialized',data:{modalKeys:Object.keys(modals)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+  // #endregion
   const { phoneStatus, refreshStatus: refreshPhoneStatus } = usePhoneStatus();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:88',message:'Phone status loaded',data:{hasPhoneStatus:!!phoneStatus,phoneStatusKeys:phoneStatus?Object.keys(phoneStatus):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
   
   // Pull-to-refresh for mobile
   const { isRefreshing, pullDistance, elementRef } = usePullToRefresh({
@@ -142,9 +152,15 @@ export const DashboardPage = () => {
   // Calendar integration hook handles postMessage events
   const { connectCalendar, disconnectCalendar } = useCalendarIntegration(
     () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:148',message:'Calendar connected callback',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       refetch();
     },
     (error) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:152',message:'Calendar connection error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       logger.error('Calendar connection error', new Error(error));
     },
   );
@@ -190,6 +206,9 @@ export const DashboardPage = () => {
 
   // Use safe overview for rendering (allows dashboard to work even with network errors)
   const effectiveOverview = overview || safeOverview;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:196',message:'Effective overview computed',data:{usingOverview:!!overview,usingSafeOverview:!overview,hasAgentConfig:!!effectiveOverview?.agent_config,setupState:effectiveOverview?.agent_config?.setup_state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H5'})}).catch(()=>{});
+  // #endregion
 
   // Extract data from dashboardData hook
   const {
@@ -282,14 +301,23 @@ export const DashboardPage = () => {
       duration_sec: number | null;
       outcome: string | null;
     }) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:287',message:'Call click handler',data:{callId:call.id,hasModals:!!modals},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       modals.openCallDetails(call as CallLog);
     },
     [modals],
   );
 
   const handlePhoneConnectionSuccess = React.useCallback(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:294',message:'Phone connection success handler called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     // Refresh phone status immediately after connection
     await refreshPhoneStatus();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:297',message:'Phone status refreshed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     // Also invalidate queries to refresh overview
     queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
     queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
@@ -767,49 +795,50 @@ export const DashboardPage = () => {
 
                 {/* Activity Chart */}
                 <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
-                  <div className="h-[280px] sm:h-[320px] w-full mt-4 overflow-x-auto" aria-label="Anrufvolumen Chart">
-                    {chartData.some((d) => d.calls > 0) ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} aria-label="Anrufvolumen über Zeit">
-                          <defs>
-                            <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1} />
-                              <stop offset="95%" stopColor="#DA291C" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                          <XAxis
-                            dataKey="name"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 12 }}
-                            dy={10}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 12 }}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: '8px',
-                              border: '1px solid #334155',
-                            }}
-                            itemStyle={{ color: '#fff' }}
-                            labelStyle={{ color: '#cbd5e1' }}
-                            cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="calls"
-                            stroke="#DA291C"
-                            strokeWidth={3}
-                            fillOpacity={1}
-                            fill="url(#colorCalls)"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
+                  <DashboardErrorBoundary sectionName="Anrufvolumen Chart">
+                    <div className="h-[280px] sm:h-[320px] w-full mt-4 overflow-x-auto" aria-label="Anrufvolumen Chart">
+                      {chartData.some((d) => d.calls > 0) ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData} aria-label="Anrufvolumen über Zeit">
+                            <defs>
+                              <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#DA291C" stopOpacity={0.1} />
+                                <stop offset="95%" stopColor="#DA291C" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                            <XAxis
+                              dataKey="name"
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#94a3b8', fontSize: 12 }}
+                              dy={10}
+                            />
+                            <YAxis
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#94a3b8', fontSize: 12 }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: '8px',
+                                border: '1px solid #334155',
+                              }}
+                              itemStyle={{ color: '#fff' }}
+                              labelStyle={{ color: '#cbd5e1' }}
+                              cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="calls"
+                              stroke="#DA291C"
+                              strokeWidth={3}
+                              fillOpacity={1}
+                              fill="url(#colorCalls)"
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
                         <div className="flex items-center justify-center h-full text-gray-500">
                           <p>Noch keine Anrufdaten verfügbar</p>
                         </div>
@@ -1009,7 +1038,7 @@ export const DashboardPage = () => {
                             ? `Twilio Fehler: ${!phoneStatus.twilioConfigured ? 'Keys fehlen' : 'Nummer fehlt'}`
                             : undefined
                       }
-                      onFix={phoneHealth !== 'ok' ? () => setIsWebhookStatusOpen(true) : undefined}
+                      onFix={phoneHealth !== 'ok' ? () => modals.openWebhookStatus() : undefined}
                     />
                     <HealthItem label="Google Calendar Sync" status={calendarHealth} />
                     <HealthItem label="Azure TTS" status="ok" />

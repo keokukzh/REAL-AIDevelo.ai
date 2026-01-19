@@ -7,7 +7,11 @@ import { logger } from '../utils/logger';
  */
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  const requestId = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Normalize requestId to always be a string (headers can be string | string[])
+  const requestIdHeader = req.headers['x-request-id'];
+  const requestId = Array.isArray(requestIdHeader) 
+    ? requestIdHeader[0] 
+    : (requestIdHeader || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   // Attach request ID to request object
   (req as any).requestId = requestId;
