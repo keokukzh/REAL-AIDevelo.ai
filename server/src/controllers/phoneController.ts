@@ -694,13 +694,12 @@ export const registerPersonalPhone = async (
     const org = await ensureOrgForUser(supabaseUserId, email);
     const location = await ensureDefaultLocation(org.id);
 
-    // Update user row
+    // Update user row (omit updated_at to avoid schema cache issues)
     const { error: userError } = await supabaseAdmin
       .from('users')
       .update({
         personal_phone_number: userPhoneNumber,
         call_forwarding_enabled: true,
-        updated_at: new Date().toISOString(),
       })
       .eq('supabase_user_id', supabaseUserId);
 
@@ -725,7 +724,6 @@ export const registerPersonalPhone = async (
           .update({
             phone_number: userPhoneNumber,
             phone_enabled: true,
-            updated_at: new Date().toISOString(),
           })
           .eq('id', existingConfig.id);
       } else {
