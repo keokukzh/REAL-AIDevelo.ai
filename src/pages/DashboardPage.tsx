@@ -69,9 +69,11 @@ import { useSuccessNotifications } from '../hooks/useSuccessNotifications.js';
 import { DashboardErrorBoundary } from '../components/dashboard/DashboardErrorBoundary.js';
 
 export const DashboardPage = () => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:74',message:'Component mount',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H2_H3_H4_H5'})}).catch(()=>{});
-  // #endregion
+  // Debug logging only in development (localhost)
+  const __canDebugLog =
+    globalThis.window !== undefined &&
+    (globalThis.window.location.hostname === 'localhost' || globalThis.window.location.hostname === '127.0.0.1');
+
   const navigate = useNavigate();
   const nav = useNavigation();
   const { user, logout } = useAuthContext();
@@ -80,17 +82,8 @@ export const DashboardPage = () => {
   // Use custom hooks for data and modals
   const dashboardData = useDashboardData();
   const { overview, isLoading, error, refetch } = dashboardData;
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:82',message:'Dashboard data loaded',data:{hasOverview:!!overview,isLoading,hasError:!!error,overviewKeys:overview?Object.keys(overview):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
   const modals = useDashboardModals();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:85',message:'Modals hook initialized',data:{modalKeys:Object.keys(modals)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-  // #endregion
   const { phoneStatus, refreshStatus: refreshPhoneStatus } = usePhoneStatus();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:88',message:'Phone status loaded',data:{hasPhoneStatus:!!phoneStatus,phoneStatusKeys:phoneStatus?Object.keys(phoneStatus):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-  // #endregion
   
   // Pull-to-refresh for mobile
   const { isRefreshing, pullDistance, elementRef } = usePullToRefresh({
@@ -152,15 +145,9 @@ export const DashboardPage = () => {
   // Calendar integration hook handles postMessage events
   const { connectCalendar, disconnectCalendar } = useCalendarIntegration(
     () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:148',message:'Calendar connected callback',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       refetch();
     },
     (error) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:152',message:'Calendar connection error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       logger.error('Calendar connection error', new Error(error));
     },
   );
@@ -206,9 +193,6 @@ export const DashboardPage = () => {
 
   // Use safe overview for rendering (allows dashboard to work even with network errors)
   const effectiveOverview = overview || safeOverview;
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:196',message:'Effective overview computed',data:{usingOverview:!!overview,usingSafeOverview:!overview,hasAgentConfig:!!effectiveOverview?.agent_config,setupState:effectiveOverview?.agent_config?.setup_state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H5'})}).catch(()=>{});
-  // #endregion
 
   // Extract data from dashboardData hook
   const {
@@ -301,23 +285,14 @@ export const DashboardPage = () => {
       duration_sec: number | null;
       outcome: string | null;
     }) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:287',message:'Call click handler',data:{callId:call.id,hasModals:!!modals},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
       modals.openCallDetails(call as CallLog);
     },
     [modals],
   );
 
   const handlePhoneConnectionSuccess = React.useCallback(async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:294',message:'Phone connection success handler called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
     // Refresh phone status immediately after connection
     await refreshPhoneStatus();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:297',message:'Phone status refreshed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
     // Also invalidate queries to refresh overview
     queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
     queryClient.invalidateQueries({ queryKey: ['phone', 'status'] });
