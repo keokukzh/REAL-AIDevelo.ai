@@ -42,7 +42,8 @@ export async function apiRequest<T>(endpoint: string, config: AxiosRequestConfig
       );
     }
 
-    throw new ApiRequestError(0, 'Unknown API error', error);
+    const finalMessage = (error as Error)?.message || String(error) || 'Unknown API error';
+    throw new ApiRequestError(0, finalMessage, error);
   }
 }
 

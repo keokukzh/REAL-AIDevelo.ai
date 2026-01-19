@@ -7,12 +7,17 @@ import { vectorStore } from '../voice-agent/rag/vectorStore';
 import { supabaseAdmin } from '../services/supabaseDb';
 import { v4 as uuidv4 } from 'uuid';
 import { StructuredLoggingService } from '../services/loggingService';
+import { QdrantClient } from '@qdrant/js-client-rest';
 
 /**
  * POST /api/rag/documents
  * Upload document (file or raw text) and embed it
  */
-export const uploadDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const uploadDocument = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -28,7 +33,11 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         email,
       });
       locationId = resolution.locationId;
-      StructuredLoggingService.debug(`Upload document: resolved locationId=${locationId} from source=${resolution.source}`, { locationId, source: resolution.source }, req);
+      StructuredLoggingService.debug(
+        `Upload document: resolved locationId=${locationId} from source=${resolution.source}`,
+        { locationId, source: resolution.source },
+        req,
+      );
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -61,7 +70,11 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
       fileName = undefined;
       mimeType = 'text/plain';
     } else {
-      return next(new BadRequestError('Either file (multipart/form-data) or text (application/json) is required'));
+      return next(
+        new BadRequestError(
+          'Either file (multipart/form-data) or text (application/json) is required',
+        ),
+      );
     }
 
     if (!text || text.trim().length === 0) {
@@ -82,12 +95,23 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         status: 'uploaded',
         chunk_count: 0,
       })
-      .select('id, location_id, title, original_file_name, mime_type, source, status, chunk_count, created_at')
+      .select(
+        'id, location_id, title, original_file_name, mime_type, source, status, chunk_count, created_at',
+      )
       .single();
 
     if (insertError || !docRow) {
-      StructuredLoggingService.error('Error inserting document', new Error(insertError?.message || 'Unknown error'), { error: insertError }, req);
-      return next(new InternalServerError(`Failed to create document record: ${insertError?.message || 'Unknown error'}`));
+      StructuredLoggingService.error(
+        'Error inserting document',
+        new Error(insertError?.message || 'Unknown error'),
+        { error: insertError },
+        req,
+      );
+      return next(
+        new InternalServerError(
+          `Failed to create document record: ${insertError?.message || 'Unknown error'}`,
+        ),
+      );
     }
 
     try {
@@ -97,7 +121,7 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         documentId,
         text,
         title,
-        fileName
+        fileName,
       );
 
       // Update document record with embedded status
@@ -111,11 +135,20 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         .eq('id', documentId);
 
       if (updateError) {
-        StructuredLoggingService.error('Error updating document status', new Error(updateError?.message || 'Unknown error'), { error: updateError }, req);
+        StructuredLoggingService.error(
+          'Error updating document status',
+          new Error(updateError?.message || 'Unknown error'),
+          { error: updateError },
+          req,
+        );
         // Don't fail - document is already embedded
       }
 
-      StructuredLoggingService.info(`Document ${documentId} uploaded and embedded: ${processed.chunkCount} chunks`, { documentId, chunkCount: processed.chunkCount }, req);
+      StructuredLoggingService.info(
+        `Document ${documentId} uploaded and embedded: ${processed.chunkCount} chunks`,
+        { documentId, chunkCount: processed.chunkCount },
+        req,
+      );
 
       res.json({
         success: true,
@@ -142,11 +175,23 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
         })
         .eq('id', documentId);
 
-      StructuredLoggingService.error('Error processing document', error instanceof Error ? error : new Error(String(error)), {}, req);
-      return next(new InternalServerError(`Failed to process document: ${error.message || 'Unknown error'}`));
+      StructuredLoggingService.error(
+        'Error processing document',
+        error instanceof Error ? error : new Error(String(error)),
+        {},
+        req,
+      );
+      return next(
+        new InternalServerError(`Failed to process document: ${error.message || 'Unknown error'}`),
+      );
     }
   } catch (error: any) {
-    StructuredLoggingService.error('Error in uploadDocument', error instanceof Error ? error : new Error(String(error)), {}, req);
+    StructuredLoggingService.error(
+      'Error in uploadDocument',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req,
+    );
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 };
@@ -155,7 +200,11 @@ export const uploadDocument = async (req: AuthenticatedRequest, res: Response, n
  * GET /api/rag/documents
  * List documents for a location
  */
-export const listDocuments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const listDocuments = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -171,46 +220,71 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
         email,
       });
       locationId = resolution.locationId;
-      StructuredLoggingService.debug(`List documents: resolved locationId=${locationId} from source=${resolution.source}`, { locationId, source: resolution.source }, req);
+      StructuredLoggingService.debug(
+        `List documents: resolved locationId=${locationId} from source=${resolution.source}`,
+        { locationId, source: resolution.source },
+        req,
+      );
     } catch (error: any) {
-      StructuredLoggingService.error('Failed to resolve locationId', error instanceof Error ? error : new Error(String(error)), { 
-        supabaseUserId,
-        email,
-      }, req);
+      StructuredLoggingService.error(
+        'Failed to resolve locationId',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          supabaseUserId,
+          email,
+        },
+        req,
+      );
       return res.status(400).json({
         success: false,
         error: 'locationId missing',
-        message: error.message || 'Unable to resolve locationId. Please ensure you are properly authenticated and have a location assigned.',
+        message:
+          error.message ||
+          'Unable to resolve locationId. Please ensure you are properly authenticated and have a location assigned.',
       });
     }
 
     // Query documents with improved error handling
     const { data: documents, error } = await supabaseAdmin
       .from('rag_documents')
-      .select('id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, created_at, updated_at')
+      .select(
+        'id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, created_at, updated_at',
+      )
       .eq('location_id', locationId)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[RAGController] Supabase error:', error);
-      StructuredLoggingService.error('Error querying documents', new Error(error.message || 'Unknown error'), { error, locationId }, req);
-      
+      StructuredLoggingService.error(
+        'Error querying documents',
+        new Error(error.message || 'Unknown error'),
+        { error, locationId },
+        req,
+      );
+
       // Check if table exists or schema issue
-      if (error.code === 'PGRST204' || 
-          error.code === '42P01' || 
-          error.message?.includes('relation') || 
-          error.message?.includes('does not exist') || 
-          error.message?.includes('Could not find') ||
-          error.message?.includes('table') ||
-          error.message?.includes('migration')) {
+      if (
+        error.code === 'PGRST204' ||
+        error.code === '42P01' ||
+        error.message?.includes('relation') ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('Could not find') ||
+        error.message?.includes('table') ||
+        error.message?.includes('migration')
+      ) {
         return res.status(500).json({
           success: false,
           error: 'Database schema error',
-          message: 'The rag_documents table may not exist or is missing required columns. Please run database migrations.',
+          message:
+            'The rag_documents table may not exist or is missing required columns. Please run database migrations.',
         });
       }
       // Check for permission/RLS issues
-      if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('RLS')) {
+      if (
+        error.code === '42501' ||
+        error.message?.includes('permission') ||
+        error.message?.includes('RLS')
+      ) {
         return res.status(403).json({
           success: false,
           error: 'Permission denied',
@@ -222,7 +296,8 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
         return res.status(500).json({
           success: false,
           error: 'Database schema error',
-          message: 'The rag_documents table is missing required columns. Please run database migrations.',
+          message:
+            'The rag_documents table is missing required columns. Please run database migrations.',
         });
       }
       return res.status(500).json({
@@ -239,7 +314,12 @@ export const listDocuments = async (req: AuthenticatedRequest, res: Response, ne
       },
     });
   } catch (error: any) {
-    StructuredLoggingService.error('Unexpected error in listDocuments', error instanceof Error ? error : new Error(String(error)), {}, req);
+    StructuredLoggingService.error(
+      'Unexpected error in listDocuments',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req,
+    );
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 };
@@ -269,7 +349,9 @@ export const getDocument = async (req: AuthenticatedRequest, res: Response, next
         email,
       });
       locationId = resolution.locationId;
-      console.log(`[RAGController] Get document: resolved locationId=${locationId} from source=${resolution.source}`);
+      console.log(
+        `[RAGController] Get document: resolved locationId=${locationId} from source=${resolution.source}`,
+      );
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -281,14 +363,23 @@ export const getDocument = async (req: AuthenticatedRequest, res: Response, next
     // Query document with raw_text
     const { data: document, error } = await supabaseAdmin
       .from('rag_documents')
-      .select('id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, raw_text, created_at, updated_at')
+      .select(
+        'id, location_id, title, original_file_name, mime_type, source, status, chunk_count, error, raw_text, created_at, updated_at',
+      )
       .eq('id', documentId)
       .eq('location_id', locationId)
       .maybeSingle();
 
     if (error) {
-      StructuredLoggingService.error('Error fetching document', new Error(error.message || 'Unknown error'), { error }, req);
-      return next(new InternalServerError(`Failed to fetch document: ${error.message || 'Unknown error'}`));
+      StructuredLoggingService.error(
+        'Error fetching document',
+        new Error(error.message || 'Unknown error'),
+        { error },
+        req,
+      );
+      return next(
+        new InternalServerError(`Failed to fetch document: ${error.message || 'Unknown error'}`),
+      );
     }
 
     if (!document) {
@@ -309,7 +400,11 @@ export const getDocument = async (req: AuthenticatedRequest, res: Response, next
  * DELETE /api/rag/documents/:id
  * Delete document and its chunks
  */
-export const deleteDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const deleteDocument = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -330,7 +425,11 @@ export const deleteDocument = async (req: AuthenticatedRequest, res: Response, n
         email,
       });
       locationId = resolution.locationId;
-      StructuredLoggingService.debug(`Delete document: resolved locationId=${locationId} from source=${resolution.source}`, { locationId, source: resolution.source }, req);
+      StructuredLoggingService.debug(
+        `Delete document: resolved locationId=${locationId} from source=${resolution.source}`,
+        { locationId, source: resolution.source },
+        req,
+      );
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -357,7 +456,11 @@ export const deleteDocument = async (req: AuthenticatedRequest, res: Response, n
       deletedChunkCount = await vectorStore.deleteDocument(locationId, documentId);
       console.log(`[RAGController] Deleted ${deletedChunkCount} chunks for document ${documentId}`);
     } catch (error: any) {
-      StructuredLoggingService.warn(`Failed to delete chunks from Qdrant: ${error.message}`, { error: error.message }, req);
+      StructuredLoggingService.warn(
+        `Failed to delete chunks from Qdrant: ${error.message}`,
+        { error: error.message },
+        req,
+      );
       // Continue with DB deletion even if Qdrant deletion fails
     }
 
@@ -370,7 +473,11 @@ export const deleteDocument = async (req: AuthenticatedRequest, res: Response, n
 
     if (deleteError) {
       console.error('[RAGController] Error deleting document:', deleteError);
-      return next(new InternalServerError(`Failed to delete document: ${deleteError.message || 'Unknown error'}`));
+      return next(
+        new InternalServerError(
+          `Failed to delete document: ${deleteError.message || 'Unknown error'}`,
+        ),
+      );
     }
 
     res.json({
@@ -381,7 +488,12 @@ export const deleteDocument = async (req: AuthenticatedRequest, res: Response, n
       },
     });
   } catch (error: any) {
-    StructuredLoggingService.error('Error in deleteDocument', error instanceof Error ? error : new Error(String(error)), {}, req);
+    StructuredLoggingService.error(
+      'Error in deleteDocument',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req,
+    );
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 };
@@ -390,7 +502,11 @@ export const deleteDocument = async (req: AuthenticatedRequest, res: Response, n
  * POST /api/rag/documents/:id/embed
  * Re-embed document using stored raw_text
  */
-export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const reEmbedDocument = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.supabaseUser) {
       return next(new InternalServerError('User not authenticated'));
@@ -411,7 +527,9 @@ export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, 
         email,
       });
       locationId = resolution.locationId;
-      console.log(`[RAGController] Re-embed document: resolved locationId=${locationId} from source=${resolution.source}`);
+      console.log(
+        `[RAGController] Re-embed document: resolved locationId=${locationId} from source=${resolution.source}`,
+      );
     } catch (error: any) {
       return res.status(400).json({
         success: false,
@@ -440,7 +558,9 @@ export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, 
     let deletedChunkCount = 0;
     try {
       deletedChunkCount = await vectorStore.deleteDocument(locationId, documentId);
-      console.log(`[RAGController] Deleted ${deletedChunkCount} old chunks for document ${documentId}`);
+      console.log(
+        `[RAGController] Deleted ${deletedChunkCount} old chunks for document ${documentId}`,
+      );
     } catch (error: any) {
       console.warn(`[RAGController] Failed to delete old chunks: ${error.message}`);
       // Continue with re-embedding
@@ -464,7 +584,7 @@ export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, 
         documentId,
         document.raw_text,
         document.title,
-        document.original_file_name || undefined
+        document.original_file_name || undefined,
       );
 
       // Update document record with embedded status
@@ -478,10 +598,19 @@ export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, 
         .eq('id', documentId);
 
       if (updateError) {
-        StructuredLoggingService.error('Error updating document status', new Error(updateError?.message || 'Unknown error'), { error: updateError }, req);
+        StructuredLoggingService.error(
+          'Error updating document status',
+          new Error(updateError?.message || 'Unknown error'),
+          { error: updateError },
+          req,
+        );
       }
 
-      StructuredLoggingService.info(`Document ${documentId} re-embedded: ${processed.chunkCount} chunks`, { documentId, chunkCount: processed.chunkCount }, req);
+      StructuredLoggingService.info(
+        `Document ${documentId} re-embedded: ${processed.chunkCount} chunks`,
+        { documentId, chunkCount: processed.chunkCount },
+        req,
+      );
 
       res.json({
         success: true,
@@ -503,10 +632,94 @@ export const reEmbedDocument = async (req: AuthenticatedRequest, res: Response, 
         .eq('id', documentId);
 
       console.error('[RAGController] Error re-embedding document:', error);
-      return next(new InternalServerError(`Failed to re-embed document: ${error.message || 'Unknown error'}`));
+      return next(
+        new InternalServerError(`Failed to re-embed document: ${error.message || 'Unknown error'}`),
+      );
     }
   } catch (error: any) {
-    StructuredLoggingService.error('Error in reEmbedDocument', error instanceof Error ? error : new Error(String(error)), {}, req);
+    StructuredLoggingService.error(
+      'Error in reEmbedDocument',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req,
+    );
+    next(new InternalServerError(error.message || 'Unknown error'));
+  }
+};
+
+/**
+ * GET /api/rag/status
+ * Get vector store connectivity and metrics
+ */
+export const getStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.supabaseUser) {
+      return next(new InternalServerError('User not authenticated'));
+    }
+
+    const { supabaseUserId, email } = req.supabaseUser;
+
+    // Resolve locationId
+    let locationId: string;
+    try {
+      const resolution = await resolveLocationId(req, {
+        supabaseUserId,
+        email,
+      });
+      locationId = resolution.locationId;
+    } catch (error: any) {
+      locationId = 'unresolved';
+    }
+
+    // Check Qdrant connectivity
+    let connected = false;
+    let version = 'unknown';
+    try {
+      const client = new QdrantClient({
+        url: process.env.QDRANT_URL || 'http://localhost:6333',
+        apiKey: process.env.QDRANT_API_KEY,
+      });
+      await client.getCollections();
+      connected = true;
+      version = 'unknown'; // Version not easily available via JS client
+    } catch (error) {
+      StructuredLoggingService.warn('Qdrant connectivity check failed', { error });
+    }
+
+    // Get metrics from DB
+    let totalDocuments = 0;
+    let totalChunks = 0;
+
+    if (locationId !== 'unresolved') {
+      const { data, error } = await supabaseAdmin
+        .from('rag_documents')
+        .select('chunk_count')
+        .eq('location_id', locationId);
+
+      if (!error && data) {
+        totalDocuments = data.length;
+        totalChunks = data.reduce((sum, doc) => sum + (doc.chunk_count || 0), 0);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        connected,
+        version,
+        locationId,
+        totalDocuments,
+        totalChunks,
+        status: connected ? 'healthy' : 'degraded',
+      },
+    });
+  } catch (error: any) {
+    StructuredLoggingService.error(
+      'Error in getStatus',
+      error instanceof Error ? error : new Error(String(error)),
+      {},
+      req,
+    );
     next(new InternalServerError(error.message || 'Unknown error'));
   }
 };

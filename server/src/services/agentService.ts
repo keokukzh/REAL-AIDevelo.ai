@@ -60,7 +60,10 @@ export class AgentService {
           org_id,
           organizations (
             id,
-            name
+            name,
+            users (
+              email
+            )
           )
         )
       `,

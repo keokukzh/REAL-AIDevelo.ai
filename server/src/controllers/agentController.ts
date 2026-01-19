@@ -147,7 +147,29 @@ export const getAgents = (req: Request, res: Response, next: NextFunction) => {
  * Helper: Map Supabase agent data to the legacy VoiceAgent model
  * This ensures compatibility with the existing AgentEditPage frontend
  */
-const mapSupabaseToVoiceAgent = (supabaseData: any): VoiceAgent => {
+interface SupabaseAgentConfig {
+  id: string;
+  setup_state: string;
+  eleven_agent_id?: string;
+  greeting_template?: string;
+  company_name?: string;
+  locations?: {
+    id: string;
+    name: string;
+    organizations?: {
+      id: string;
+      name: string;
+      users?: { email: string }[];
+    };
+  };
+  created_at: string;
+  updated_at: string;
+  business_type?: string;
+  primary_locale?: string;
+  recording_consent?: boolean;
+}
+
+const mapSupabaseToVoiceAgent = (supabaseData: SupabaseAgentConfig): VoiceAgent => {
   const {
     id,
     setup_state,
@@ -160,8 +182,8 @@ const mapSupabaseToVoiceAgent = (supabaseData: any): VoiceAgent => {
     business_type,
   } = supabaseData;
 
-  const location = locations || {};
-  const org = location.organizations || {};
+  const location = locations;
+  const org = location?.organizations;
 
   // Find a suitable voice from locations or defaults
   // In a real scenario, this might be stored in a separate column or JSON
@@ -170,23 +192,23 @@ const mapSupabaseToVoiceAgent = (supabaseData: any): VoiceAgent => {
   return {
     id,
     businessProfile: {
-      companyName: company_name || location.name || org.name || 'Mein Unternehmen',
+      companyName: company_name || location?.name || org?.name || 'Mein Unternehmen',
       industry: business_type || 'general',
       website: '',
       location: {
         country: 'CH',
-        city: location.name || '',
+        city: location?.name || '',
       },
       contact: {
         phone: '',
-        email: '', // Could be fetched from user if needed
+        email: org?.users?.[0]?.email || '',
       },
       openingHours: {},
     },
     config: {
-      primaryLocale: (supabaseData as any).primary_locale || 'de-CH',
+      primaryLocale: supabaseData.primary_locale || 'de-CH',
       fallbackLocales: [],
-      recordingConsent: (supabaseData as any).recording_consent ?? true,
+      recordingConsent: supabaseData.recording_consent ?? true,
       systemPrompt: greeting_template || '',
       voiceSettings: {
         voiceId: voiceId,
@@ -474,9 +496,10 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
     // Return Refreshed Data
     const fullData = await AgentService.getAgentConfigWithLocation(id);
     return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as Error & { code?: string };
     console.error('[AgentController] updateAgent error:', error);
     if (error.code === 'PGRST116') return next(new NotFoundError('Agent'));
-    next(new InternalServerError(`Failed to update agent: ${error.message}`));
+    next(new InternalServerError(`Failed to update agent: ${error.message || String(err)}`));
   }
 };

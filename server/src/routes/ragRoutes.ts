@@ -7,6 +7,7 @@ import {
   getDocument,
   deleteDocument,
   reEmbedDocument,
+  getStatus,
 } from '../controllers/ragController';
 
 const router = Router();
@@ -27,7 +28,7 @@ const upload = multer({
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
-    
+
     if (allowedMimes.includes(file.mimetype) || file.mimetype.startsWith('text/')) {
       cb(null, true);
     } else {
@@ -39,7 +40,7 @@ const upload = multer({
 /**
  * POST /api/rag/documents
  * Upload document (file or raw text) and embed it
- * 
+ *
  * Accepts:
  * - multipart/form-data: file + title (optional)
  * - application/json: { title, text }
@@ -69,5 +70,11 @@ router.delete('/documents/:id', verifySupabaseAuth, deleteDocument);
  * Re-embed document using stored raw_text
  */
 router.post('/documents/:id/embed', verifySupabaseAuth, reEmbedDocument);
+
+/**
+ * GET /api/rag/status
+ * Get vector store connectivity and metrics
+ */
+router.get('/status', verifySupabaseAuth, getStatus);
 
 export default router;

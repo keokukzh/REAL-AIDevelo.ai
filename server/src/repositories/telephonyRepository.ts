@@ -5,13 +5,18 @@ import { getPgPool as getPool, query, transaction } from '../db/pg';
 
 interface PhoneNumberRow {
   id: string;
-  twilio_number_sid: string;
-  e164: string;
+  twilio_number_sid?: string;
+  provider_sid?: string;
+  e164?: string;
+  number?: string;
   country?: string;
   status: PhoneNumber['status'];
-  capabilities: any;
+  capabilities: {
+    voice: boolean;
+    sms?: boolean;
+  };
   assigned_agent_id?: string | null;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -19,11 +24,11 @@ interface PhoneNumberRow {
 function mapRow(row: PhoneNumberRow): PhoneNumber {
   return {
     id: row.id,
-    providerSid: row.twilio_number_sid,
-    number: row.e164,
+    providerSid: row.twilio_number_sid || row.provider_sid || '',
+    number: row.e164 || row.number || '',
     country: row.country || 'CH',
     status: row.status,
-    capabilities: row.capabilities || { voice: true },
+    capabilities: (row.capabilities as PhoneNumber['capabilities']) || { voice: true },
     assignedAgentId: row.assigned_agent_id || undefined,
     metadata: row.metadata || undefined,
   };
@@ -41,11 +46,11 @@ export const telephonyRepository = {
     return Boolean(getPool());
   },
 
-  async getAvailableNumbers(country: string): Promise<PhoneNumber[]> {
+  async getAvailableNumbers(): Promise<PhoneNumber[]> {
     // Note: Schema has 'e164' and 'twilio_number_sid'
     // If 'country' column is missing in DB, we'll exclude it from filter for now
     const rows = await query<PhoneNumberRow>(
-      `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
+      `SELECT *
        FROM phone_numbers
        WHERE status = 'available'
        ORDER BY created_at ASC`,
@@ -62,7 +67,7 @@ export const telephonyRepository = {
       await ensureAgentExists(client, agentId);
 
       const phoneRes = await client.query<PhoneNumberRow>(
-        `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
+        `SELECT *
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,
@@ -117,7 +122,7 @@ export const telephonyRepository = {
        SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('settings', $2::jsonb),
            updated_at = now()
        WHERE id = $1
-       RETURNING id, twilio_number_sid, e164, status, capabilities, metadata`,
+       RETURNING *`,
       [phoneNumberId, JSON.stringify(settings)],
     );
 
@@ -130,7 +135,7 @@ export const telephonyRepository = {
 
   async getNumberStatus(phoneNumberId: string): Promise<PhoneNumber> {
     const rows = await query<PhoneNumberRow>(
-      `SELECT id, twilio_number_sid, e164, status, capabilities, metadata
+      `SELECT *
        FROM phone_numbers
        WHERE id = $1`,
       [phoneNumberId],
@@ -152,7 +157,7 @@ export const telephonyRepository = {
       await ensureAgentExists(client, agentId);
 
       const phoneRes = await client.query<PhoneNumberRow>(
-        `SELECT id, twilio_number_sid, e164, status, capabilities, metadata, assigned_agent_id
+        `SELECT *
          FROM phone_numbers
          WHERE id = $1
          FOR UPDATE`,

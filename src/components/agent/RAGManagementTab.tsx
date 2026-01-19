@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/Button';
-import { 
-  Upload, 
-  FileText, 
-  Trash2, 
-  Search, 
-  CheckCircle, 
-  Clock, 
+import {
+  Upload,
+  FileText,
+  Trash2,
+  Search,
+  CheckCircle,
+  Clock,
   XCircle,
   Database,
   Eye,
-  Download
 } from 'lucide-react';
 import { apiRequest, ApiRequestError } from '../../services/api';
 
@@ -71,15 +70,24 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
 
   const fetchVectorStoreStatus = async () => {
     try {
-      // Mock status - in production, this would come from the backend
-      const totalChunks = documents.reduce((sum, doc) => sum + (doc.chunks?.length || 0), 0);
-      setVectorStoreStatus({
-        connected: true,
-        totalChunks,
-        totalDocuments: documents.length,
-      });
+      const res = await apiRequest<{
+        data: {
+          connected: boolean;
+          totalChunks: number;
+          totalDocuments: number;
+        };
+      }>('/rag/status');
+
+      if (res && res.data) {
+        setVectorStoreStatus({
+          connected: res.data.connected,
+          totalChunks: res.data.totalChunks,
+          totalDocuments: res.data.totalDocuments,
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch vector store status:', error);
+      setVectorStoreStatus({ connected: false, totalChunks: 0, totalDocuments: 0 });
     }
   };
 
@@ -102,9 +110,8 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
       // Poll for status updates
       setTimeout(() => fetchDocuments(), 2000);
     } catch (error) {
-      const errorMessage = error instanceof ApiRequestError
-        ? error.message
-        : 'Fehler beim Hochladen des Dokuments.';
+      const errorMessage =
+        error instanceof ApiRequestError ? error.message : 'Fehler beim Hochladen des Dokuments.';
       alert(errorMessage);
     } finally {
       setUploading(false);
@@ -124,9 +131,8 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
         setSelectedDocument(null);
       }
     } catch (error) {
-      const errorMessage = error instanceof ApiRequestError
-        ? error.message
-        : 'Fehler beim Löschen des Dokuments.';
+      const errorMessage =
+        error instanceof ApiRequestError ? error.message : 'Fehler beim Löschen des Dokuments.';
       alert(errorMessage);
     }
   };
@@ -182,11 +188,13 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
             <Database size={20} />
             Vector Store Status
           </h3>
-          <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-            vectorStoreStatus.connected
-              ? 'bg-green-500/20 text-green-400'
-              : 'bg-red-500/20 text-red-400'
-          }`}>
+          <div
+            className={`px-3 py-1 rounded-full text-xs font-bold ${
+              vectorStoreStatus.connected
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-red-500/20 text-red-400'
+            }`}
+          >
             {vectorStoreStatus.connected ? 'Verbunden' : 'Nicht verbunden'}
           </div>
         </div>
@@ -219,12 +227,7 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
             id="file-upload"
           />
           <label htmlFor="file-upload">
-            <Button
-              variant="outline"
-              disabled={uploading}
-              className="cursor-pointer"
-              type="button"
-            >
+            <Button variant="outline" disabled={uploading} className="cursor-pointer" type="button">
               {uploading ? 'Wird hochgeladen...' : 'Datei auswählen'}
             </Button>
           </label>
@@ -240,9 +243,7 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
         {loading ? (
           <div className="text-center py-8 text-gray-400">Lade Dokumente...</div>
         ) : documents.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            Noch keine Dokumente hochgeladen.
-          </div>
+          <div className="text-center py-8 text-gray-400">Noch keine Dokumente hochgeladen.</div>
         ) : (
           <div className="space-y-2">
             {documents.map((doc) => (
@@ -262,14 +263,10 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
                       <span>{doc.type.toUpperCase()}</span>
                       <span>{formatFileSize(doc.fileSize)}</span>
-                      <span>
-                        {new Date(doc.uploadedAt).toLocaleDateString('de-CH')}
-                      </span>
+                      <span>{new Date(doc.uploadedAt).toLocaleDateString('de-CH')}</span>
                       {doc.chunks && <span>{doc.chunks.length} Chunks</span>}
                     </div>
-                    {doc.error && (
-                      <p className="text-xs text-red-400 mt-1">{doc.error}</p>
-                    )}
+                    {doc.error && <p className="text-xs text-red-400 mt-1">{doc.error}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -311,10 +308,7 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
             {selectedDocument.chunks && selectedDocument.chunks.length > 0 ? (
               <div className="space-y-4">
                 {selectedDocument.chunks.map((chunk, index) => (
-                  <div
-                    key={chunk.id}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10"
-                  >
+                  <div key={chunk.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400">Chunk #{chunk.index + 1}</span>
                       {chunk.metadata && (
@@ -323,9 +317,7 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-300 whitespace-pre-wrap">
-                      {chunk.content}
-                    </p>
+                    <p className="text-sm text-gray-300 whitespace-pre-wrap">{chunk.content}</p>
                   </div>
                 ))}
               </div>
@@ -364,11 +356,8 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
               </div>
               <div className="space-y-2">
                 <span className="text-sm text-gray-400">Gefundene Chunks:</span>
-                {testResults.chunks.map((chunk: any, index: number) => (
-                  <div
-                    key={index}
-                    className="bg-black/20 rounded p-3 border border-white/10"
-                  >
+                {testResults.chunks.map((chunk: any) => (
+                  <div key={chunk.id} className="bg-black/20 rounded p-3 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400">
                         {chunk.document} (Score: {(chunk.score * 100).toFixed(1)}%)
@@ -385,4 +374,3 @@ export const RAGManagementTab: React.FC<RAGManagementTabProps> = ({ agentId }) =
     </div>
   );
 };
-

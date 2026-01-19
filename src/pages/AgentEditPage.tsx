@@ -17,6 +17,7 @@ import { apiRequest, ApiRequestError } from '../services/api.js';
 import { ActivationChecklist } from '../components/dashboard/ActivationChecklist.js';
 import { VoiceSelector } from '../components/agent/VoiceSelector.js';
 import { Button } from '../components/ui/Button.js';
+import { toast } from '../components/ui/Toast.js';
 import { industries } from '../data/industries.js';
 import { RAGManagementTab } from '../components/agent/RAGManagementTab.js';
 
@@ -168,7 +169,7 @@ export const AgentEditPage: React.FC = () => {
     try {
       const res = await apiRequest<{ data: Array<{ id: string }> }>(`/agents/${id}/rag/documents`);
       setRagCount(res.data.length);
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       setRagCount(0);
     }
   }, [id]);
@@ -246,45 +247,56 @@ export const AgentEditPage: React.FC = () => {
           ? err.message
           : 'Änderungen konnten nicht gespeichert werden.';
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleBusinessSave = () => {
+  const handleBusinessSave = async () => {
     if (!agent) return;
-    return saveAgent({
-      businessProfile: {
-        ...agent.businessProfile,
-        companyName: businessForm.companyName,
-        industry: businessForm.industry,
-        location: {
-          ...agent.businessProfile.location,
-          city: businessForm.city,
+    try {
+      await saveAgent({
+        businessProfile: {
+          ...agent.businessProfile,
+          companyName: businessForm.companyName,
+          industry: businessForm.industry,
+          location: {
+            ...agent.businessProfile.location,
+            city: businessForm.city,
+          },
+          contact: {
+            email: businessForm.email,
+            phone: businessForm.phone,
+          },
+          website: businessForm.website || undefined,
         },
-        contact: {
-          email: businessForm.email,
-          phone: businessForm.phone,
-        },
-        website: businessForm.website || undefined,
-      },
-    });
+      });
+      toast.success('Business Info gespeichert');
+    } catch (_err) {
+      // Error handled in saveAgent
+    }
   };
 
-  const handleVoiceSave = () => {
+  const handleVoiceSave = async () => {
     if (!agent) return;
-    return saveAgent({
-      config: {
-        ...agent.config,
-        primaryLocale: voiceForm.primaryLocale,
-        systemPrompt: voiceForm.systemPrompt,
-        recordingConsent: voiceForm.recordingConsent,
-        voiceSettings: {
-          voiceId: voiceForm.voiceId,
-          modelId: voiceForm.modelId,
+    try {
+      await saveAgent({
+        config: {
+          ...agent.config,
+          primaryLocale: voiceForm.primaryLocale,
+          systemPrompt: voiceForm.systemPrompt,
+          recordingConsent: voiceForm.recordingConsent,
+          voiceSettings: {
+            voiceId: voiceForm.voiceId,
+            modelId: voiceForm.modelId,
+          },
         },
-      },
-    });
+      });
+      toast.success('Voice Config gespeichert');
+    } catch (_err) {
+      // Error handled in saveAgent
+    }
   };
 
   const handleAssignNumber = async (phoneNumberId: string) => {
