@@ -83,9 +83,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         updates.setup_state = 'ready';
       }
 
+      // Wait for mutation to complete successfully before moving to next step
       await updateConfig.mutateAsync(updates);
 
-      // Move to next step
+      // Only move to next step if save was successful
       if (currentStep === 'persona') {
         setCurrentStep('business');
       } else if (currentStep === 'business') {
@@ -99,7 +100,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
       }
     } catch (error) {
       console.error('[SetupWizard] Error saving step:', error);
-      // Error is handled by mutation, but we can show a toast here if needed
+      // Error is handled by mutation's onError callback (shows toast)
+      // Don't advance to next step on error
     }
   };
 

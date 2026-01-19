@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/apiClient';
+import { toast } from '../components/ui/Toast';
+import { extractErrorMessage } from '../lib/errorUtils';
 
 export interface UpdateAgentConfigRequest {
   persona_gender?: 'male' | 'female';
@@ -50,7 +52,8 @@ export const useUpdateAgentConfig = () => {
       );
       
       if (!response.data?.success || !response.data.data) {
-        throw new Error('Failed to update agent config');
+        const errorMsg = response.data?.error || 'Failed to update agent config';
+        throw new Error(errorMsg);
       }
       
       return response.data.data;
@@ -58,6 +61,10 @@ export const useUpdateAgentConfig = () => {
     onSuccess: () => {
       // Invalidate and refetch dashboard overview after successful update
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+    },
+    onError: (error: any) => {
+      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Konfiguration');
+      toast.error(errorMsg);
     },
   });
 };

@@ -21,7 +21,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
   initialSlot,
 }) => {
   const isEditMode = !!event;
-  const { createEvent, updateEvent, deleteEvent, isCreating, isUpdating, isDeleting } = useCalendarEvents({
+  const { createEventAsync, updateEventAsync, deleteEventAsync, isCreating, isUpdating, isDeleting } = useCalendarEvents({
     locationId,
     start: new Date(),
     end: new Date(),
@@ -82,13 +82,14 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!summary || !start || !end) {
       setError('Bitte fülle alle Pflichtfelder aus');
       return;
     }
 
     setError(null);
+    setSuccess(false);
 
     const eventData = {
       summary,
@@ -100,35 +101,50 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
       timezone: 'Europe/Zurich',
     };
 
-    if (isEditMode && event) {
-      updateEvent({ eventId: event.id, ...eventData });
-    } else {
-      createEvent(eventData);
+    try {
+      if (isEditMode && event) {
+        // Use mutateAsync to properly handle errors
+        await updateEventAsync({ eventId: event.id, ...eventData });
+      } else {
+        // Use mutateAsync to properly handle errors
+        await createEventAsync(eventData);
+      }
+      
+      // Only show success and close modal if save was successful
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (error: any) {
+      // Error is already shown via toast in the hook's onError callback
+      // But we can also set local error state for UI feedback
+      const errorMsg = error?.response?.data?.error || error?.message || 'Fehler beim Speichern des Termins';
+      setError(errorMsg);
+      setSuccess(false);
     }
-    
-    // Note: Success handling is done in the hook's onSuccess callback
-    // We'll close the modal after a delay, but the hook will show the toast
-    setSuccess(true);
-    setTimeout(() => {
-      onClose();
-    }, 1500);
-    // Error handling is done in the hook's onError callback
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!event || !confirm('Möchten Sie diesen Termin wirklich löschen?')) {
       return;
     }
 
     setError(null);
+    setSuccess(false);
 
-    deleteEvent({ eventId: event.id, calendarId: event.calendarId });
-    // Note: Success handling is done in the hook's onSuccess callback
-    setSuccess(true);
-    setTimeout(() => {
-      onClose();
-    }, 1500);
-    // Error handling is done in the hook's onError callback
+    try {
+      await deleteEventAsync({ eventId: event.id, calendarId: event.calendarId });
+      // Only show success and close modal if delete was successful
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (error: any) {
+      // Error is already shown via toast in the hook's onError callback
+      const errorMsg = error?.response?.data?.error || error?.message || 'Fehler beim Löschen des Termins';
+      setError(errorMsg);
+      setSuccess(false);
+    }
   };
 
   const formatDateTimeLocal = (isoString: string) => {
