@@ -27,16 +27,19 @@ export const AIProcessFlow: React.FC<AIProcessFlowProps> = ({ t }) => {
     restDelta: 0.001,
   });
 
+  const icons = [Search, Lightbulb, Code, Plug, Headset];
+  const colors = [
+    'text-blue-400',
+    'text-amber-400',
+    'text-emerald-400',
+    'text-purple-400',
+    'text-swiss-red',
+  ];
+
   const stepsData = t.steps.map((s, i) => ({
     ...s,
-    icon: [Search, Lightbulb, Code, Plug, Headset][i],
-    color: [
-      'text-blue-400',
-      'text-amber-400',
-      'text-emerald-400',
-      'text-purple-400',
-      'text-swiss-red',
-    ][i],
+    icon: icons[i] || Headset,
+    color: colors[i] || 'text-swiss-red',
   }));
 
   return (
