@@ -1,0 +1,83 @@
+/* Mobile Touch Optimizations */
+
+/* Ensure minimum touch target size (44x44px) */
+button,
+a[role="button"],
+[role="button"],
+input[type="button"],
+input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Touch manipulation for better performance */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Active state for touch feedback */
+.touch-manipulation:active {
+  opacity: 0.8;
+}
+
+/* Safe area insets for mobile devices */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  
+  .safe-area-left {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+  
+  .safe-area-right {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+/* Mobile-specific spacing adjustments */
+@media (max-width: 640px) {
+  /* Increase padding for better touch targets */
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  /* Larger text on mobile for readability */
+  .mobile-text {
+    font-size: 1rem;
+  }
+  
+  /* Prevent text selection on interactive elements */
+  button,
+  [role="button"],
+  a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Prevent double-tap zoom on buttons */
+@media (max-width: 1024px) {
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+}
+
+/* Improved scrolling on mobile */
+@media (max-width: 1024px) {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}

@@ -26,12 +26,16 @@ import { toast } from '../components/ui/Toast.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/newDashboard/ui/Card.js';
 import { Button } from '../components/newDashboard/ui/Button.js';
-import { StatCard } from '../components/newDashboard/StatCard.js';
+import { EnhancedStatCard } from '../components/newDashboard/EnhancedStatCard.js';
 import { StatusBadge } from '../components/newDashboard/StatusBadge.js';
 import { QuickActionButton } from '../components/newDashboard/QuickActionButton.js';
 import { HealthItem } from '../components/newDashboard/HealthItem.js';
 import { EmptyCalls, EmptyCalendar } from '../components/newDashboard/EmptyState.js';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner.js';
+import { DashboardSkeleton, CalendarEventSkeleton } from '../components/ui/Skeleton.js';
+import { MobileBottomNav } from '../components/mobile/MobileBottomNav.js';
+import { MobileTableCard, MobileTableCardList } from '../components/mobile/MobileTableCard.js';
+import { PullToRefreshIndicator } from '../components/mobile/PullToRefreshIndicator.js';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
 import {
   Phone,
   Calendar,
@@ -59,8 +63,13 @@ import {
 } from '../lib/dashboardAdapters.js';
 import { useCalendarEvents, CalendarEvent } from '../hooks/useCalendarEvents.js';
 import { CallLog } from '../hooks/useCallLogs.js';
-import { extractErrorMessage } from '../lib/errorUtils.js';
+import { extractErrorMessage, extractUserFriendlyError } from '../lib/errorUtils.js';
+import { UserFriendlyError } from '../components/ui/UserFriendlyError.js';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
+import { NotificationCenter } from '../components/notifications/NotificationCenter.js';
+import { NotificationBell } from '../components/notifications/NotificationBell.js';
+import { useProactiveAlerts } from '../hooks/useProactiveAlerts.js';
+import { useSuccessNotifications } from '../hooks/useSuccessNotifications.js';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -68,6 +77,14 @@ export const DashboardPage = () => {
   const { user, logout } = useAuthContext();
   const queryClient = useQueryClient();
   const { data: overview, isLoading, error, refetch } = useDashboardOverview();
+  
+  // Pull-to-refresh for mobile
+  const { isRefreshing, pullDistance, elementRef } = usePullToRefresh({
+    onRefresh: async () => {
+      await refetch();
+    },
+    enabled: true,
+  });
 
   // Check for calendar connection success/error in URL params (fallback if postMessage fails)
   React.useEffect(() => {
@@ -77,7 +94,7 @@ export const DashboardPage = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
       // Clean up URL
-      window.history.replaceState({}, '', '/dashboard');
+      globalThis.window.history.replaceState({}, '', '/dashboard');
     } else if (urlParams.get('error') === 'calendar_connection_failed') {
       const errorMsg =
         urlParams.get('msg') ||
@@ -86,7 +103,7 @@ export const DashboardPage = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
       // Clean up URL
-      window.history.replaceState({}, '', '/dashboard');
+      globalThis.window.history.replaceState({}, '', '/dashboard');
     }
   }, [queryClient, refetch]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -101,6 +118,8 @@ export const DashboardPage = () => {
     undefined,
   );
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const previousOverviewRef = React.useRef<DashboardOverview | undefined>(undefined);
   const [phoneStatus, setPhoneStatus] = useState<{
     twilioGateway: 'OK' | 'WARN' | 'ERROR';
     twilioConfigured: boolean;
@@ -361,8 +380,8 @@ export const DashboardPage = () => {
         throw new Error('Disconnect fehlgeschlagen');
       }
     } catch (error: unknown) {
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Trennen des Kalenders');
-      toast.error(errorMsg);
+      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Trennen des Kalenders');
+      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
     }
   }, [queryClient, refetch]);
 
@@ -502,6 +521,26 @@ export const DashboardPage = () => {
     [effectiveOverview?.status?.calendar],
   );
 
+  // Proactive alerts based on system state
+  useProactiveAlerts({
+    overview: effectiveOverview,
+    phoneHealth,
+    calendarHealth,
+  });
+
+  // Success notifications for milestones
+  useSuccessNotifications({
+    overview: effectiveOverview,
+    previousOverview: previousOverviewRef.current,
+  });
+
+  // Update previous overview ref
+  React.useEffect(() => {
+    if (effectiveOverview) {
+      previousOverviewRef.current = effectiveOverview;
+    }
+  }, [effectiveOverview]);
+
   // Memoize callbacks to prevent unnecessary re-renders
   const handleTestAgent = React.useCallback(() => {
     setIsAgentTestOpen(true);
@@ -595,9 +634,7 @@ export const DashboardPage = () => {
               <span className="text-sm text-gray-400">Tagesübersicht</span>
             </div>
           </header>
-          <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full flex items-center justify-center min-h-[60vh]">
-            <LoadingSpinner size="lg" message="Dashboard wird geladen..." />
-          </div>
+          <DashboardSkeleton />
         </main>
       </div>
     );
@@ -605,17 +642,22 @@ export const DashboardPage = () => {
 
   // Only show error screen for non-network errors
   if ((error && !isNetworkError) || (!overview && !isLoading && !isNetworkError)) {
+    const userFriendlyError = extractUserFriendlyError(error || new Error('Dashboard konnte nicht geladen werden'), 'Dashboard konnte nicht geladen werden');
+    
     return (
       <div className="min-h-screen bg-background flex font-sans text-white relative">
         <SideNav />
         <main className="flex-1 lg:ml-64 flex flex-col min-w-0">
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="text-center max-w-md">
-              <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
-              <p className="text-gray-400 mb-4">
-                {error instanceof Error ? error.message : 'Unbekannter Fehler'}
-              </p>
-              <Button onClick={() => refetch()}>Erneut versuchen</Button>
+          <div className="flex min-h-screen items-center justify-center p-6">
+            <div className="max-w-lg w-full">
+              <UserFriendlyError
+                error={{
+                  ...userFriendlyError,
+                  action: () => navigate(ROUTES.DASHBOARD),
+                  actionLabel: 'Zur Startseite',
+                }}
+                onRetry={() => refetch()}
+              />
             </div>
           </div>
         </main>
@@ -624,7 +666,11 @@ export const DashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex font-sans text-white relative">
+    <div 
+      ref={elementRef as React.RefObject<HTMLDivElement>}
+      className="min-h-screen bg-background flex font-sans text-white relative"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
+    >
       {/* Skip to main content link */}
       <a
         href="#main-content"
@@ -663,7 +709,7 @@ export const DashboardPage = () => {
           className="h-16 bg-background/80 backdrop-blur-lg border-b border-white/10 flex items-center justify-between px-8 sticky top-0 z-40 shadow-lg"
           role="banner"
         >
-          <nav aria-label="Breadcrumb" className="flex items-center gap-4">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-4 flex-1">
             <ol className="flex items-center gap-3 text-gray-400" role="list">
               <li>
                 <span className="text-sm font-semibold text-white font-display">Dashboard</span>
@@ -677,10 +723,13 @@ export const DashboardPage = () => {
             </ol>
             <CrossSectionNav variant="header" className="ml-6 pl-6 border-l border-white/10" />
           </nav>
+          <div className="flex items-center gap-2">
+            <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
+          </div>
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full pb-20 lg:pb-8">
           {/* Setup Wizard (shown when setup_state != 'ready') */}
           {showWizard && (
             <div className="mb-8">
@@ -750,38 +799,43 @@ export const DashboardPage = () => {
             {/* KPI Grid / ROI Summary */}
             <section aria-label="Key Performance Indicators" className="mb-8">
               <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6`}>
-                <StatCard
+                <EnhancedStatCard
                   label="Gesamtanrufe"
                   value={kpis.totalCalls}
                   icon={Phone}
                   iconColor="text-blue-400"
                   bgColor="bg-blue-500/10"
-                  trend={isAgentActive ? '+12%' : undefined}
-                  trendUp={true}
+                  trend={isAgentActive ? kpis.totalCallsTrend : undefined}
+                  sparkline={isAgentActive ? kpis.totalCallsSparkline : undefined}
+                  onClick={() => navigate('/calls')}
                 />
-                <StatCard
+                <EnhancedStatCard
                   label="Konversionsrate"
                   value={kpis.efficiency}
                   icon={Cpu}
                   iconColor="text-emerald-400"
                   bgColor="bg-emerald-500/10"
-                  trend={isAgentActive ? '+5%' : undefined}
-                  trendUp={true}
+                  trend={isAgentActive ? kpis.efficiencyTrend : undefined}
+                  sparkline={isAgentActive ? kpis.efficiencySparkline : undefined}
                 />
-                <StatCard
+                <EnhancedStatCard
                   label="Termine"
                   value={isAgentActive ? kpis.appointmentsBooked : '0'}
                   icon={Calendar}
                   iconColor="text-green-400"
                   bgColor="bg-green-500/10"
+                  trend={isAgentActive && kpis.appointmentsTrend ? kpis.appointmentsTrend : undefined}
+                  sparkline={isAgentActive ? kpis.appointmentsSparkline : undefined}
+                  onClick={() => navigate('/calendar')}
                 />
-                <StatCard
+                <EnhancedStatCard
                   label="Gesparte Zeit"
                   value={isAgentActive ? kpis.savedTime : '0s'}
                   icon={Clock}
                   iconColor="text-purple-400"
                   bgColor="bg-purple-500/10"
                   description="ROI Schätzung"
+                  trend={isAgentActive && kpis.savedTimeTrend ? kpis.savedTimeTrend : undefined}
                 />
               </div>
             </section>
@@ -888,14 +942,7 @@ export const DashboardPage = () => {
 
                       {/* Upcoming Events List */}
                       {isLoadingEvents ? (
-                        <div className="space-y-2">
-                          {[1, 2, 3].map((i) => (
-                            <div
-                              key={i}
-                              className="h-16 bg-slate-800/50 rounded-lg animate-pulse"
-                            />
-                          ))}
-                        </div>
+                        <CalendarEventSkeleton count={3} />
                       ) : upcomingEvents.length > 0 ? (
                         <div className="space-y-2">
                           {upcomingEvents.map((event) => {
@@ -1014,7 +1061,7 @@ export const DashboardPage = () => {
 
                 {/* Activity Chart */}
                 <Card title="Anrufvolumen (Live)" className="min-h-[400px]">
-                  <div className="h-[320px] w-full mt-4" aria-label="Anrufvolumen Chart">
+                  <div className="h-[280px] sm:h-[320px] w-full mt-4 overflow-x-auto" aria-label="Anrufvolumen Chart">
                     {chartData.some((d) => d.calls > 0) ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} aria-label="Anrufvolumen über Zeit">
@@ -1081,70 +1128,95 @@ export const DashboardPage = () => {
                   }
                 >
                   {recentCallsTableData.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table
-                        className="w-full text-sm text-left"
-                        role="table"
-                        aria-label="Letzte Anrufe"
-                      >
-                        <thead className="text-xs text-gray-400 uppercase bg-slate-800/50 border-b border-slate-700/50">
-                          <tr role="row">
-                            <th scope="col" className="px-4 py-3 font-semibold">
-                              Status
-                            </th>
-                            <th scope="col" className="px-4 py-3 font-semibold">
-                              Anrufer
-                            </th>
-                            <th scope="col" className="px-4 py-3 font-semibold">
-                              Dauer
-                            </th>
-                            <th scope="col" className="px-4 py-3 font-semibold text-right">
-                              Zeit
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                    <>
+                      {/* Desktop: Table View */}
+                      <div className="hidden lg:block overflow-x-auto">
+                        <table
+                          className="w-full text-sm text-left"
+                          role="table"
+                          aria-label="Letzte Anrufe"
+                        >
+                          <thead className="text-xs text-gray-400 uppercase bg-slate-800/50 border-b border-slate-700/50">
+                            <tr role="row">
+                              <th scope="col" className="px-4 py-3 font-semibold">
+                                Status
+                              </th>
+                              <th scope="col" className="px-4 py-3 font-semibold">
+                                Anrufer
+                              </th>
+                              <th scope="col" className="px-4 py-3 font-semibold">
+                                Dauer
+                              </th>
+                              <th scope="col" className="px-4 py-3 font-semibold text-right">
+                                Zeit
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/50">
+                            {recentCallsTableData.slice(0, 10).map((row) => {
+                              const originalCall = effectiveOverview.recent_calls.find(
+                                (c) => c.id === row.id,
+                              );
+                              return (
+                                <tr
+                                  key={row.id}
+                                  role="row"
+                                  className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
+                                  onClick={() => originalCall && handleCallClick(originalCall)}
+                                  onKeyDown={(e) => {
+                                    if ((e.key === 'Enter' || e.key === ' ') && originalCall) {
+                                      e.preventDefault();
+                                      handleCallClick(originalCall);
+                                    }
+                                  }}
+                                  tabIndex={0}
+                                  aria-label={`Anruf von ${row.caller}, ${row.status}, ${row.duration}`}
+                                >
+                                  <td className="px-4 py-4">
+                                    <StatusBadge status={row.status} />
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="font-medium text-white">{row.caller}</div>
+                                  </td>
+                                  <td className="px-4 py-4 text-gray-400 font-mono text-xs">
+                                    {row.duration}
+                                  </td>
+                                  <td className="px-4 py-4 text-right">
+                                    <span className="text-gray-400">{row.timestamp}</span>
+                                    <MoreHorizontal
+                                      className="ml-2 w-4 h-4 text-gray-600 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all inline-block"
+                                      aria-hidden="true"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile: Card View */}
+                      <div className="lg:hidden">
+                        <MobileTableCardList>
                           {recentCallsTableData.slice(0, 10).map((row) => {
                             const originalCall = effectiveOverview.recent_calls.find(
                               (c) => c.id === row.id,
                             );
                             return (
-                              <tr
+                              <MobileTableCard
                                 key={row.id}
-                                role="row"
-                                className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
+                                id={row.id}
+                                caller={row.caller}
+                                duration={row.duration}
+                                status={row.status}
+                                timestamp={row.timestamp}
                                 onClick={() => originalCall && handleCallClick(originalCall)}
-                                onKeyDown={(e) => {
-                                  if ((e.key === 'Enter' || e.key === ' ') && originalCall) {
-                                    e.preventDefault();
-                                    handleCallClick(originalCall);
-                                  }
-                                }}
-                                tabIndex={0}
-                                aria-label={`Anruf von ${row.caller}, ${row.status}, ${row.duration}`}
-                              >
-                                <td className="px-4 py-4">
-                                  <StatusBadge status={row.status} />
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="font-medium text-white">{row.caller}</div>
-                                </td>
-                                <td className="px-4 py-4 text-gray-400 font-mono text-xs">
-                                  {row.duration}
-                                </td>
-                                <td className="px-4 py-4 text-right">
-                                  <span className="text-gray-400">{row.timestamp}</span>
-                                  <MoreHorizontal
-                                    className="ml-2 w-4 h-4 text-gray-600 group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all inline-block"
-                                    aria-hidden="true"
-                                  />
-                                </td>
-                              </tr>
+                              />
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
+                        </MobileTableCardList>
+                      </div>
+                    </>
                   ) : effectiveOverview?.status?.phone === 'connected' ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
                       <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center animate-pulse">
@@ -1292,6 +1364,22 @@ export const DashboardPage = () => {
         locationId={effectiveOverview.location.id}
         event={selectedEvent || undefined}
         initialSlot={selectedSlot}
+      />
+
+      {/* Pull-to-Refresh Indicator */}
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        threshold={80}
+        isRefreshing={isRefreshing}
+      />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
       />
     </div>
   );

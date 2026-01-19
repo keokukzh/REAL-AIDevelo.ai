@@ -105,6 +105,7 @@ import { DevQuickLogin } from './components/auth/DevQuickLogin.js';
 import { useRoutePrefetch } from './hooks/useRoutePrefetch.js';
 import { useCoreWebVitals } from './hooks/useCoreWebVitals.js';
 import { initScrollTracking, trackPageView } from './lib/analytics.js';
+import { NotificationProvider } from './contexts/NotificationContext.js';
 
 const ReactQueryDevtools = import.meta.env.PROD
   ? null
@@ -127,11 +128,13 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ToastProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </ToastProvider>
+          <NotificationProvider>
+            <ToastProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </ToastProvider>
+          </NotificationProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

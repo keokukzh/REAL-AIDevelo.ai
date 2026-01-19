@@ -27,9 +27,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-base",
-    lg: "px-6 py-3 text-lg",
+    sm: "px-3 py-1.5 text-sm min-h-[44px] min-w-[44px] touch-manipulation",
+    md: "px-4 py-2 text-base min-h-[44px] min-w-[44px] touch-manipulation",
+    lg: "px-6 py-3 text-lg min-h-[48px] min-w-[48px] touch-manipulation",
   };
 
   const isDisabled = disabled || isLoading;

@@ -13,7 +13,9 @@ import { ROUTES } from '../config/navigation';
 import { apiClient } from '../services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '../components/ui/Toast';
-import { extractErrorMessage } from '../lib/errorUtils';
+import { extractErrorMessage, extractUserFriendlyError } from '../lib/errorUtils';
+import { UserFriendlyError } from '../components/ui/UserFriendlyError';
+import { SettingsPageSkeleton } from '../components/ui/Skeleton';
 import { supabase } from '../lib/supabase';
 import { PhoneSetupWizard } from '../components/dashboard/PhoneSetupWizard';
 import { VoiceSelector } from '../components/agent/VoiceSelector';
@@ -177,8 +179,8 @@ export const SettingsPage = () => {
       }
     } catch (error: unknown) {
       console.error('[SettingsPage] Calendar connection error:', error);
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Kalenders');
-      toast.error(`Fehler beim Verbinden des Kalenders: ${errorMsg}`);
+      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Verbinden des Kalenders');
+      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
     }
   };
 
@@ -209,8 +211,8 @@ export const SettingsPage = () => {
       }
     } catch (error: unknown) {
       console.error('[SettingsPage] Microsoft Calendar connection error:', error);
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Verbinden des Microsoft Kalenders');
-      toast.error(`Fehler beim Verbinden des Microsoft Kalenders: ${errorMsg}`);
+      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Verbinden des Microsoft Kalenders');
+      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
     }
   };
 
@@ -310,8 +312,8 @@ export const SettingsPage = () => {
         throw new Error('Disconnect fehlgeschlagen');
       }
     } catch (error: unknown) {
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Trennen des Kalenders');
-      toast.error(errorMsg);
+      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Trennen des Kalenders');
+      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
     }
   };
 
@@ -367,8 +369,8 @@ export const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
       refetch();
     } catch (error: unknown) {
-      const errorMsg = extractErrorMessage(error, 'Fehler beim Speichern der Agent-Konfiguration');
-      toast.error(errorMsg);
+      const userFriendlyError = extractUserFriendlyError(error, 'Fehler beim Speichern der Agent-Konfiguration');
+      toast.error(`${userFriendlyError.title}: ${userFriendlyError.message}`);
     } finally {
       setIsSavingConfig(false);
     }
@@ -411,15 +413,18 @@ export const SettingsPage = () => {
               <span className="text-sm font-semibold text-white font-display">Einstellungen</span>
             </div>
           </header>
-          <div className="p-8 max-w-[1600px] mx-auto w-full">
-            <LoadingSpinner />
-          </div>
+          <SettingsPageSkeleton />
         </main>
       </div>
     );
   }
 
   if (error || !overview) {
+    const userFriendlyError = extractUserFriendlyError(
+      error || new Error('Einstellungen konnten nicht geladen werden'),
+      'Einstellungen konnten nicht geladen werden'
+    );
+
     return (
       <div className="min-h-screen bg-background flex font-sans text-white relative">
         <SideNav />
@@ -431,12 +436,11 @@ export const SettingsPage = () => {
           </header>
           <div className="p-8 max-w-[1600px] mx-auto w-full">
             <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4 text-white">Fehler beim Laden</h2>
-                <p className="text-gray-400 mb-4">
-                  {error instanceof Error ? error.message : 'Unbekannter Fehler'}
-                </p>
-                <Button onClick={() => globalThis.location.reload()}>Seite neu laden</Button>
+              <div className="max-w-lg w-full">
+                <UserFriendlyError
+                  error={userFriendlyError}
+                  onRetry={() => globalThis.location.reload()}
+                />
               </div>
             </div>
           </div>

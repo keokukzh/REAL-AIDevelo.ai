@@ -26,7 +26,7 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       disabled={disabled}
-      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 text-sm text-gray-300 group transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+      className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-slate-800/50 text-sm text-gray-300 group transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] touch-manipulation active:scale-[0.98]"
       aria-label={label}
       aria-disabled={disabled || undefined}
     >
