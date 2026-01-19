@@ -772,6 +772,44 @@ export const DashboardPage = () => {
               </div>
             </section>
 
+            {/* Voice Agent Control Center - FULL WIDTH HERO */}
+            <section aria-label="Voice Agent Control Center" className="mb-0">
+              <VoiceAgentControlCenter
+                agentConfig={{
+                  id: effectiveOverview.agent_config.id,
+                  setup_state: effectiveOverview.agent_config.setup_state as
+                    | 'ready'
+                    | 'paused'
+                    | 'inactive'
+                    | 'needs_setup',
+                  business_type: effectiveOverview.agent_config.business_type,
+                }}
+                phoneStatus={
+                  phoneStatus
+                    ? {
+                        twilioGateway: phoneStatus.twilioGateway,
+                        twilioConfigured: phoneStatus.twilioConfigured,
+                        hasConnectedNumber: phoneStatus.hasConnectedNumber,
+                        webhookConfigured: phoneStatus.webhookConfigured,
+                        phoneNumber: phoneStatus.phoneNumber,
+                      }
+                    : null
+                }
+                isActivating={agentActivation.isActivating}
+                isDeactivating={agentActivation.isDeactivating}
+                isPausing={agentActivation.isPausing}
+                onActivate={agentActivation.activate}
+                onDeactivate={agentActivation.deactivate}
+                onPause={agentActivation.pause}
+                onResume={agentActivation.resume}
+                onTestCall={handleTestAgent}
+                onConfigurePhone={handleConnectPhone}
+                onSettings={() => navigate(ROUTES.AGENT_EDIT(effectiveOverview.agent_config.id))}
+                onViewLogs={handleViewCalls}
+                className="shadow-accent/5 backdrop-blur-2xl"
+              />
+            </section>
+
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
               {/* Left Column (Calendar, Chart & Logs) */}
               <div className="xl:col-span-2 space-y-8">
@@ -1122,43 +1160,8 @@ export const DashboardPage = () => {
                 </Card>
               </div>
 
-              {/* Right Column (Agent & System) */}
+              {/* Right Column (System & Help) */}
               <div className="space-y-6">
-                {/* Voice Agent Control Center - NEW */}
-                <VoiceAgentControlCenter
-                  agentConfig={{
-                    id: effectiveOverview.agent_config.id,
-                    setup_state: effectiveOverview.agent_config.setup_state as
-                      | 'ready'
-                      | 'paused'
-                      | 'inactive'
-                      | 'needs_setup',
-                    business_type: effectiveOverview.agent_config.business_type,
-                  }}
-                  phoneStatus={
-                    phoneStatus
-                      ? {
-                          twilioGateway: phoneStatus.twilioGateway,
-                          twilioConfigured: phoneStatus.twilioConfigured,
-                          hasConnectedNumber: phoneStatus.hasConnectedNumber,
-                          webhookConfigured: phoneStatus.webhookConfigured,
-                          phoneNumber: phoneStatus.phoneNumber,
-                        }
-                      : null
-                  }
-                  isActivating={agentActivation.isActivating}
-                  isDeactivating={agentActivation.isDeactivating}
-                  isPausing={agentActivation.isPausing}
-                  onActivate={agentActivation.activate}
-                  onDeactivate={agentActivation.deactivate}
-                  onPause={agentActivation.pause}
-                  onResume={agentActivation.resume}
-                  onTestCall={handleTestAgent}
-                  onConfigurePhone={handleConnectPhone}
-                  onSettings={() => navigate(ROUTES.AGENT_EDIT(effectiveOverview.agent_config.id))}
-                  onViewLogs={handleViewCalls}
-                />
-
                 {/* Quick Actions */}
                 <Card title="Quick Actions" className="ultra-glass border-slate-700/50">
                   <div className="space-y-1.5">
