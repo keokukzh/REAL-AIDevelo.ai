@@ -9,7 +9,7 @@ BEGIN
   ) THEN
     ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
   END IF;
-END $$;
 
--- Set admin role for the specified user
-UPDATE users SET role = 'admin' WHERE email = 'keokukmusic@gmail.com';
+  -- Use EXECUTE to avoid parse-time errors if the column doesn't exist yet
+  EXECUTE 'UPDATE users SET role = ''admin'' WHERE email = ''keokukmusic@gmail.com''';
+END $$;

@@ -77,7 +77,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'call_logs' AND column_name = 'outcome') THEN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'call_logs' AND column_name = 'status') THEN
        ALTER TABLE call_logs ADD COLUMN outcome TEXT;
-       UPDATE call_logs SET outcome = status WHERE outcome IS NULL;
+       EXECUTE 'UPDATE call_logs SET outcome = status WHERE outcome IS NULL';
     ELSE
        ALTER TABLE call_logs ADD COLUMN outcome TEXT;
     END IF;
@@ -89,7 +89,7 @@ BEGIN
     
     -- Migrate transcription to notes_json if exists
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'call_logs' AND column_name = 'transcription') THEN
-       UPDATE call_logs SET notes_json = jsonb_set(notes_json, '{transcript}', to_jsonb(transcription)) WHERE transcription IS NOT NULL;
+       EXECUTE 'UPDATE call_logs SET notes_json = jsonb_set(notes_json, ''{transcript}'', to_jsonb(transcription)) WHERE transcription IS NOT NULL';
     END IF;
     -- Migrate recording_url to notes_json if exists (although controller uses it from column too)
   END IF;
