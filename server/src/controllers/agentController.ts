@@ -5,8 +5,11 @@ import { generateSystemPrompt } from '../services/promptService';
 import { defaultAgentService } from '../services/defaultAgentService';
 import { VoiceAgent } from '../models/types';
 import { NotFoundError, InternalServerError } from '../utils/errors';
+import { AgentService } from '../services/agentService';
+import { supabaseAdmin } from '../services/supabaseDb';
 
-// Plan-based phone number limits
+// Plan-based phone number limits (used in subscription logic)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PHONE_NUMBER_LIMITS: Record<string, number> = {
   starter: 1,
   business: 2,
@@ -15,11 +18,11 @@ const PHONE_NUMBER_LIMITS: Record<string, number> = {
 };
 
 // Safe logging helper - never throws, only logs in development
-const safeLogAgent = (message: string, data: any) => {
+const safeLogAgent = (message: string, data: unknown) => {
   if (process.env.NODE_ENV !== 'production') {
     try {
       console.log(`[AgentController] ${message}`, data);
-    } catch (e) {
+    } catch {
       // Ignore logging errors - never crash on logging
     }
   }
@@ -126,8 +129,8 @@ export const createAgent = async (req: Request, res: Response, next: NextFunctio
       success: true,
       data: newAgent,
     });
-  } catch (error) {
-    next(error);
+  } catch (err: unknown) {
+    next(err);
   }
 };
 
@@ -135,19 +138,92 @@ export const getAgents = (req: Request, res: Response, next: NextFunction) => {
   try {
     const agents = db.getAllAgents();
     res.json({ success: true, data: agents });
-  } catch (error) {
+  } catch {
     next(new InternalServerError('Failed to retrieve agents'));
   }
 };
 
-export const getAgentById = (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Helper: Map Supabase agent data to the legacy VoiceAgent model
+ * This ensures compatibility with the existing AgentEditPage frontend
+ */
+const mapSupabaseToVoiceAgent = (supabaseData: any): VoiceAgent => {
+  const {
+    id,
+    setup_state,
+    eleven_agent_id,
+    greeting_template,
+    company_name,
+    locations,
+    created_at,
+    updated_at,
+    business_type,
+  } = supabaseData;
+
+  const location = locations || {};
+  const org = location.organizations || {};
+
+  // Find a suitable voice from locations or defaults
+  // In a real scenario, this might be stored in a separate column or JSON
+  const voiceId = eleven_agent_id || 'de-CH-LeniNeural';
+
+  return {
+    id,
+    businessProfile: {
+      companyName: company_name || location.name || org.name || 'Mein Unternehmen',
+      industry: business_type || 'general',
+      website: '',
+      location: {
+        country: 'CH',
+        city: location.name || '',
+      },
+      contact: {
+        phone: '',
+        email: '', // Could be fetched from user if needed
+      },
+      openingHours: {},
+    },
+    config: {
+      primaryLocale: (supabaseData as any).primary_locale || 'de-CH',
+      fallbackLocales: [],
+      recordingConsent: (supabaseData as any).recording_consent ?? true,
+      systemPrompt: greeting_template || '',
+      voiceSettings: {
+        voiceId: voiceId,
+        modelId: 'eleven_turbo_v2_5',
+      },
+    },
+    status: setup_state === 'ready' ? 'active' : 'inactive',
+    createdAt: new Date(created_at),
+    updatedAt: new Date(updated_at || created_at),
+  };
+};
+
+export const getAgentById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const agent = db.getAgent(req.params.id);
-    if (!agent) {
-      return next(new NotFoundError('Agent'));
+    const { id } = req.params;
+
+    // 1. Try legacy DB first
+    const legacyAgent = db.getAgent(id);
+    if (legacyAgent) {
+      return res.json({ success: true, data: legacyAgent });
     }
-    res.json({ success: true, data: agent });
+
+    // 2. Fallback to Supabase if ID looks like a UUID or legacy not found
+    try {
+      const supabaseAgentData = await AgentService.getAgentConfigWithLocation(id);
+      if (supabaseAgentData) {
+        const mappedAgent = mapSupabaseToVoiceAgent(supabaseAgentData);
+        return res.json({ success: true, data: mappedAgent });
+      }
+    } catch {
+      // If AgentService throws NotFound, we'll hit the check below
+      console.warn('[AgentController] Supabase lookup failed or agent not found:', id);
+    }
+
+    return next(new NotFoundError('Agent'));
   } catch (error) {
+    console.error('[AgentController] getAgentById error:', error);
     next(new InternalServerError('Failed to retrieve agent'));
   }
 };
@@ -155,7 +231,6 @@ export const getAgentById = (req: Request, res: Response, next: NextFunction) =>
 export const activateAgent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agentId = req.params.id;
-    const { phoneNumberId } = req.body; // Optional: specific phone number to activate
     const agent = db.getAgent(agentId);
 
     if (!agent) {
@@ -181,7 +256,7 @@ export const activateAgent = async (req: Request, res: Response, next: NextFunct
       data: agent,
       message: 'Agent successfully activated. Status will update to "live" shortly.',
     });
-  } catch (error) {
+  } catch {
     next(new InternalServerError('Failed to activate agent'));
   }
 };
@@ -208,10 +283,10 @@ export const syncAgent = async (req: Request, res: Response, next: NextFunction)
         data: { agent },
         message: 'Agent synchronized successfully',
       });
-    } catch (error) {
-      next(error);
+    } catch (err: unknown) {
+      next(err);
     }
-  } catch (error) {
+  } catch {
     next(new InternalServerError('Failed to sync agent'));
   }
 };
@@ -282,7 +357,9 @@ export const initiateCall = async (req: Request, res: Response, next: NextFuncti
       return next(new InternalServerError('Twilio not configured'));
     }
 
-    const client = require('twilio')(accountSid, authToken);
+    // Dynamic import to avoid forbidden require() and maintain ESM compatibility
+    const twilio = (await import('twilio')).default;
+    const client = twilio(accountSid, authToken);
 
     // We point the call to our incoming handler which connects to the stream
     const call = await client.calls.create({
@@ -298,8 +375,80 @@ export const initiateCall = async (req: Request, res: Response, next: NextFuncti
         status: call.status,
       },
     });
-  } catch (error: any) {
-    console.error('[AgentController] Failed to initiate call:', error);
-    next(new InternalServerError(`Failed to initiate call: ${error.message}`));
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error('[AgentController] Failed to initiate call:', err);
+    next(new InternalServerError(`Failed to initiate call: ${errorMessage}`));
+  }
+};
+
+/**
+ * Update agent - handles both legacy and Supabase agents
+ */
+export const updateAgent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // 1. Try legacy DB first
+    const legacyAgent = db.getAgent(id);
+    if (legacyAgent) {
+      const updatedAgent = db.updateAgent(id, updates);
+      return res.json({ success: true, data: updatedAgent });
+    }
+
+    // 2. Try Supabase
+    try {
+      // Map legacy updates to Supabase schema if needed
+      const supabaseUpdates: Record<string, unknown> = {};
+
+      if (updates.businessProfile) {
+        if (updates.businessProfile.companyName)
+          supabaseUpdates.company_name = updates.businessProfile.companyName;
+        if (updates.businessProfile.industry)
+          supabaseUpdates.business_type = updates.businessProfile.industry;
+        // In locations table: city/timezone/etc
+      }
+
+      if (updates.config) {
+        if (updates.config.systemPrompt !== undefined)
+          supabaseUpdates.greeting_template = updates.config.systemPrompt;
+        if (updates.config.recordingConsent !== undefined)
+          supabaseUpdates.recording_consent = updates.config.recordingConsent;
+        if (updates.config.voiceSettings?.voiceId)
+          supabaseUpdates.eleven_agent_id = updates.config.voiceSettings.voiceId;
+        if (updates.config.primaryLocale)
+          supabaseUpdates.primary_locale = updates.config.primaryLocale;
+      }
+
+      if (updates.status === 'live' || updates.status === 'active') {
+        supabaseUpdates.setup_state = 'ready';
+      } else if (updates.status === 'inactive') {
+        supabaseUpdates.setup_state = 'inactive';
+      }
+
+      // If we have updates for agent_configs
+      if (Object.keys(supabaseUpdates).length > 0) {
+        const { error: updateError } = await supabaseAdmin
+          .from('agent_configs')
+          .update(supabaseUpdates as any)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        // Fetch full data for response
+        const fullData = await AgentService.getAgentConfigWithLocation(id);
+        return res.json({ success: true, data: mapSupabaseToVoiceAgent(fullData) });
+      }
+    } catch (supabaseError) {
+      console.error('[AgentController] Supabase update failed:', supabaseError);
+    }
+
+    return next(new NotFoundError('Agent'));
+  } catch (error) {
+    console.error('[AgentController] updateAgent error:', error);
+    next(new InternalServerError('Failed to update agent'));
   }
 };

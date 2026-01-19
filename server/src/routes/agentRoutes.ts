@@ -5,6 +5,7 @@ import {
   getAgentById,
   activateAgent,
   syncAgent,
+  updateAgent,
 } from '../controllers/agentController';
 import { createDefaultAgent } from '../controllers/defaultAgentController';
 import { validateRequest, validateParams } from '../middleware/validateRequest';
@@ -12,7 +13,6 @@ import { CreateAgentSchema, AgentIdParamSchema } from '../validators/agentValida
 import { requireAuth } from '../middleware/auth';
 import { verifySupabaseAuth } from '../middleware/supabaseAuth';
 import { AgentService } from '../services/agentService';
-import { db } from '../services/db'; // Legacy - TODO: Migrate to Supabase
 
 const router = Router();
 
@@ -546,30 +546,7 @@ router.post(
  *       200:
  *         description: Agent updated successfully
  */
-router.patch('/:id', requireAuth, validateParams(AgentIdParamSchema), async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    const agent = db.getAgentById(id);
-    if (!agent) {
-      return res.status(404).json({
-        success: false,
-        error: 'Agent not found',
-      });
-    }
-
-    // Update agent in database
-    const updatedAgent = db.updateAgent(id, updates);
-
-    res.json({
-      success: true,
-      data: updatedAgent,
-    });
-  } catch (error: any) {
-    next(error);
-  }
-});
+router.patch('/:id', requireAuth, validateParams(AgentIdParamSchema), updateAgent);
 
 /**
  * @swagger
