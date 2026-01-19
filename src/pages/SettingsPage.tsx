@@ -44,8 +44,6 @@ export const SettingsPage = () => {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   // New fields for agent configuration
-  const [companyName, setCompanyName] = useState<string>('');
-  const [greetingTemplate, setGreetingTemplate] = useState<string>('');
   const [adminTestNumber, setAdminTestNumber] = useState<string>('');
   const [bookingRequiredFields, setBookingRequiredFields] = useState<string[]>([]);
   const [bookingDurationMin, setBookingDurationMin] = useState<number>(30);
@@ -74,8 +72,6 @@ export const SettingsPage = () => {
   // Initialize agent config fields from overview
   useEffect(() => {
     if (overview?.agent_config) {
-      setCompanyName(overview.agent_config.company_name || '');
-      setGreetingTemplate(overview.agent_config.greeting_template || '');
       setAdminTestNumber(overview.agent_config.admin_test_number || '');
       setBookingRequiredFields(
         Array.isArray(overview.agent_config.booking_required_fields_json)
@@ -343,8 +339,6 @@ export const SettingsPage = () => {
     setIsSavingConfig(true);
     try {
       await updateAgentConfig.mutateAsync({
-        company_name: companyName.trim() || null,
-        greeting_template: greetingTemplate.trim() || null,
         admin_test_number: adminTestNumber.trim() || null,
         booking_required_fields_json: bookingRequiredFields,
         booking_default_duration_min: bookingDurationMin,
@@ -553,68 +547,24 @@ export const SettingsPage = () => {
             {/* Agent Configuration Section */}
             <Card title="Agent-Konfiguration" icon={Bot}>
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Building className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="company-name"
-                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
-                    >
-                      Firmenname
-                    </label>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Der Name deines Unternehmens, der in Begrüßungen verwendet wird.
-                    </p>
-                    <input
-                      id="company-name"
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="z.B. AIDevelo"
-                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
-                    />
-                  </div>
-                </div>
-
-                {/* Greeting Template */}
-                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
-                  <Bot className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="greeting-template"
-                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
-                    >
-                      Begrüßungstext
-                    </label>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Der Text, mit dem der Agent Anrufer begrüßt. Verwende{' '}
-                      <code className="text-blue-400">{'{{company_name}}'}</code> als Platzhalter
-                      für den Firmennamen.
-                    </p>
-                    <textarea
-                      id="greeting-template"
-                      value={greetingTemplate}
-                      onChange={(e) => setGreetingTemplate(e.target.value)}
-                      placeholder="z.B. Grüezi, hier ist {{company_name}}. Wie kann ich Ihnen helfen?"
-                      rows={3}
-                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
-                    />
-                  </div>
-                </div>
-
                 {/* Admin Test Number */}
-                <div className="flex items-start gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <label
-                      htmlFor="admin-test-number"
-                      className="text-xs text-gray-500 uppercase tracking-wider mb-2 block"
-                    >
-                      Test-Telefonnummer
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label
+                        htmlFor="admin-test-number"
+                        className="text-xs text-gray-500 uppercase tracking-wider block"
+                      >
+                        🧪 Admin Test-Nummer
+                      </label>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
+                        NUR FÜR TESTS
+                      </span>
+                    </div>
                     <p className="text-gray-400 text-sm mb-3">
-                      Deine Telefonnummer für Testanrufe (E.164 Format, z.B. +41791234567). Diese
-                      wird beim "Agent testen" verwendet.
+                      Diese Nummer wird <strong>ausschließlich</strong> für den "Agent testen"
+                      Button verwendet. Sie hat keinen Einfluss auf produktive Anrufe.
                     </p>
                     <input
                       id="admin-test-number"
@@ -622,7 +572,7 @@ export const SettingsPage = () => {
                       value={adminTestNumber}
                       onChange={(e) => setAdminTestNumber(e.target.value)}
                       placeholder="+41791234567"
-                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50"
                     />
                   </div>
                 </div>

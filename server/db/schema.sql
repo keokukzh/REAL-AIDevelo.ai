@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS agent_configs (
   setup_state TEXT NOT NULL DEFAULT 'needs_persona',
   eleven_agent_id TEXT,
   greeting_template TEXT,
+  system_prompt TEXT,
   company_name TEXT,
   primary_locale TEXT DEFAULT 'de-CH',
   recording_consent BOOLEAN DEFAULT true,

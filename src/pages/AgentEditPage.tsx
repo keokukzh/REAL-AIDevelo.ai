@@ -42,6 +42,7 @@ interface Agent {
     fallbackLocales: string[];
     recordingConsent?: boolean;
     systemPrompt?: string;
+    greetingTemplate?: string;
     voiceSettings: {
       voiceId: string;
       modelId: string;
@@ -138,6 +139,7 @@ export const AgentEditPage: React.FC = () => {
     voiceId: '',
     modelId: 'eleven_turbo_v2_5',
     systemPrompt: '',
+    greetingTemplate: '',
     recordingConsent: false,
   });
 
@@ -227,6 +229,7 @@ export const AgentEditPage: React.FC = () => {
       voiceId: agent.config.voiceSettings.voiceId,
       modelId: agent.config.voiceSettings.modelId,
       systemPrompt: agent.config.systemPrompt || '',
+      greetingTemplate: agent.config.greetingTemplate || '',
       recordingConsent: agent.config.recordingConsent || false,
     });
   }, [agent]);
@@ -286,6 +289,7 @@ export const AgentEditPage: React.FC = () => {
           ...agent.config,
           primaryLocale: voiceForm.primaryLocale,
           systemPrompt: voiceForm.systemPrompt,
+          greetingTemplate: voiceForm.greetingTemplate,
           recordingConsent: voiceForm.recordingConsent,
           voiceSettings: {
             voiceId: voiceForm.voiceId,
@@ -632,6 +636,7 @@ const VoiceTab: React.FC<{
     voiceId: string;
     modelId: string;
     systemPrompt: string;
+    greetingTemplate: string;
     recordingConsent: boolean;
   };
   onChange: React.Dispatch<
@@ -640,6 +645,7 @@ const VoiceTab: React.FC<{
       voiceId: string;
       modelId: string;
       systemPrompt: string;
+      greetingTemplate: string;
       recordingConsent: boolean;
     }>
   >;
@@ -702,6 +708,23 @@ const VoiceTab: React.FC<{
             </p>
           </label>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-400 mb-2" htmlFor="greetingTemplate">
+          Begrüßungstext
+        </label>
+        <p className="text-xs text-gray-500 mb-2">
+          Verwende <code className="text-accent">{'{{company_name}}'}</code> als Platzhalter.
+        </p>
+        <textarea
+          id="greetingTemplate"
+          value={form.greetingTemplate}
+          onChange={(e) => onChange((prev) => ({ ...prev, greetingTemplate: e.target.value }))}
+          rows={3}
+          className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none font-mono text-sm"
+          placeholder="Grüezi, hier ist {{company_name}}. Wie kann ich helfen?"
+        />
       </div>
 
       <div>

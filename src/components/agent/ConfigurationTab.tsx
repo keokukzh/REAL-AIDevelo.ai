@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building, FileText, Target, Clock, Settings, Save } from 'lucide-react';
+import { Building, FileText, Target, Clock, Settings, Save, Bot } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { industries } from '../../data/industries';
 
@@ -25,6 +25,7 @@ interface Agent {
     fallbackLocales: string[];
     recordingConsent?: boolean;
     systemPrompt?: string;
+    greetingTemplate?: string;
     elevenLabs: {
       voiceId: string;
       modelId: string;
@@ -45,12 +46,28 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
     email: agent.businessProfile.contact.email,
     phone: agent.businessProfile.contact.phone,
     website: agent.businessProfile.website || '',
+    greetingTemplate: agent.config.greetingTemplate || '',
     systemPrompt: agent.config.systemPrompt || '',
     recordingConsent: agent.config.recordingConsent || false,
     openingHours: agent.businessProfile.openingHours || {},
   });
   const [goals, setGoals] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    setFormData({
+      companyName: agent.businessProfile.companyName,
+      industry: agent.businessProfile.industry,
+      city: agent.businessProfile.location.city,
+      email: agent.businessProfile.contact.email,
+      phone: agent.businessProfile.contact.phone,
+      website: agent.businessProfile.website || '',
+      greetingTemplate: agent.config.greetingTemplate || '',
+      systemPrompt: agent.config.systemPrompt || '',
+      recordingConsent: agent.config.recordingConsent || false,
+      openingHours: agent.businessProfile.openingHours || {},
+    });
+  }, [agent]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -73,6 +90,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
         },
         config: {
           ...agent.config,
+          greetingTemplate: formData.greetingTemplate,
           systemPrompt: formData.systemPrompt,
           recordingConsent: formData.recordingConsent,
         },
@@ -161,6 +179,33 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
         </div>
       </motion.div>
 
+      {/* Greeting Template */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-surface rounded-2xl border border-white/10 p-6"
+      >
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Bot size={20} />
+          Begrüßung
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Begrüßungstext</label>
+            <p className="text-sm text-gray-400 mb-2">
+              Verwende <code className="text-accent">{'{{company_name}}'}</code> als Platzhalter.
+            </p>
+            <textarea
+              value={formData.greetingTemplate}
+              onChange={(e) => setFormData({ ...formData, greetingTemplate: e.target.value })}
+              rows={3}
+              className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-accent focus:outline-none font-mono text-sm"
+              placeholder="Grüezi, hier ist {{company_name}}. Wie kann ich helfen?"
+            />
+          </div>
+        </div>
+      </motion.div>
+
       {/* System Prompt */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -184,7 +229,9 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
           </div>
           <div className="bg-black/20 rounded-lg p-4 border border-white/5">
             <p className="text-xs text-gray-400 mb-2">Vorschau:</p>
-            <p className="text-sm text-gray-300 whitespace-pre-wrap">{formData.systemPrompt || 'Kein Prompt definiert'}</p>
+            <p className="text-sm text-gray-300 whitespace-pre-wrap">
+              {formData.systemPrompt || 'Kein Prompt definiert'}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -200,8 +247,16 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
           Agent-Ziele
         </h2>
         <div className="space-y-3">
-          {['Terminbuchung & Kalender', 'Lead-Qualifizierung', 'Support & FAQs', 'Bestellannahme'].map((goal) => (
-            <label key={goal} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+          {[
+            'Terminbuchung & Kalender',
+            'Lead-Qualifizierung',
+            'Support & FAQs',
+            'Bestellannahme',
+          ].map((goal) => (
+            <label
+              key={goal}
+              className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
+            >
               <input
                 type="checkbox"
                 checked={goals.includes(goal)}
@@ -209,7 +264,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
                   if (e.target.checked) {
                     setGoals([...goals, goal]);
                   } else {
-                    setGoals(goals.filter(g => g !== goal));
+                    setGoals(goals.filter((g) => g !== goal));
                   }
                 }}
                 className="w-5 h-5 rounded border-white/20 bg-white/5 text-accent focus:ring-accent"
@@ -232,12 +287,19 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
         </h2>
         <div className="space-y-3">
           {['24/7', 'Nur ausserhalb der Öffnungszeiten'].map((option) => (
-            <label key={option} className="flex items-center gap-3 p-4 border border-white/10 rounded-lg cursor-pointer hover:border-accent/50 transition-colors">
+            <label
+              key={option}
+              className="flex items-center gap-3 p-4 border border-white/10 rounded-lg cursor-pointer hover:border-accent/50 transition-colors"
+            >
               <input
                 type="radio"
                 name="openingHours"
                 value={option}
-                checked={Object.keys(formData.openingHours).length === 0 ? option === '24/7' : option === 'Nur ausserhalb der Öffnungszeiten'}
+                checked={
+                  Object.keys(formData.openingHours).length === 0
+                    ? option === '24/7'
+                    : option === 'Nur ausserhalb der Öffnungszeiten'
+                }
                 onChange={() => {
                   setFormData({
                     ...formData,
@@ -272,8 +334,8 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
           <div>
             <span className="font-semibold block mb-1">Anrufe aufzeichnen</span>
             <p className="text-sm text-gray-400">
-              Anrufe können für Qualitätssicherung und Training aufgezeichnet werden. 
-              Die Aufzeichnungen werden maximal 90 Tage gespeichert.
+              Anrufe können für Qualitätssicherung und Training aufgezeichnet werden. Die
+              Aufzeichnungen werden maximal 90 Tage gespeichert.
             </p>
           </div>
         </label>
@@ -281,7 +343,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button variant="primary" onClick={handleSave} disabled={saving} className="flex items-center gap-2">
+        <Button
+          variant="primary"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2"
+        >
           <Save size={18} />
           {saving ? 'Speichere...' : 'Änderungen speichern'}
         </Button>
@@ -289,5 +356,3 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({ agent, onSav
     </div>
   );
 };
-
-

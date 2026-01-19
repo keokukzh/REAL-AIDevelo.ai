@@ -463,7 +463,9 @@ export const updateAgent = async (req: Request, res: Response, next: NextFunctio
     // Mapping Config
     if (updates.config) {
       if (updates.config.systemPrompt !== undefined)
-        supabaseUpdates.greeting_template = updates.config.systemPrompt;
+        supabaseUpdates.system_prompt = updates.config.systemPrompt;
+      if (updates.config.greetingTemplate !== undefined)
+        supabaseUpdates.greeting_template = updates.config.greetingTemplate;
       if (updates.config.recordingConsent !== undefined)
         supabaseUpdates.recording_consent = updates.config.recordingConsent;
       if (updates.config.primaryLocale !== undefined)
