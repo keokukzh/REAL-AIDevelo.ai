@@ -191,21 +191,34 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="relative aspect-[16/10] group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl"
               >
-                {/* Animated Preview - Live Website */}
-                <div className="relative w-full h-full overflow-hidden">
-                  <iframe
-                    src={item.image}
-                    className="absolute inset-0 w-full h-full"
-                    style={{
-                      transform: 'scale(0.67)',
-                      transformOrigin: 'top left',
-                      width: '150%',
-                      height: '150%',
+                {/* Video Preview - Animated Website */}
+                <div className="relative w-full h-full overflow-hidden bg-slate-900">
+                  <video
+                    src={`https://api.screenshotone.com/animate?access_key=demo&url=${encodeURIComponent(item.image)}&viewport_width=1920&viewport_height=1080&format=mp4&video_duration=10&fps=30`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    title={`Video preview of ${item.title}`}
+                    onError={(e) => {
+                      // Fallback to iframe if video fails
+                      const video = e.target as HTMLVideoElement;
+                      const container = video.parentElement;
+                      if (container) {
+                        container.innerHTML = `
+                          <iframe
+                            src="${item.image}"
+                            class="absolute inset-0 w-full h-full"
+                            style="transform: scale(0.67); transform-origin: top left; width: 150%; height: 150%;"
+                            title="Live preview of ${item.title}"
+                            sandbox="allow-same-origin allow-scripts allow-popups"
+                            loading="lazy"
+                          ></iframe>
+                          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none"></div>
+                        `;
+                      }
                     }}
-                    title={`Live preview of ${item.title}`}
-                    sandbox="allow-same-origin allow-scripts allow-popups"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   />
                   {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />

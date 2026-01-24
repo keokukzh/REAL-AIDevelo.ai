@@ -120,20 +120,34 @@ export const WebdesignSlideshow: React.FC = () => {
             }}
             className="absolute inset-0"
           >
-            {/* Animated Preview - Live Website */}
-            <div className="relative w-full h-full overflow-hidden">
-              <iframe
-                src={currentSlide.image}
-                className="absolute inset-0 w-full h-full scale-150 origin-center pointer-events-none"
-                style={{
-                  transform: 'scale(1.5)',
-                  transformOrigin: 'top left',
-                  width: '133.33%',
-                  height: '133.33%',
+            {/* Video Preview - Animated Website */}
+            <div className="relative w-full h-full overflow-hidden bg-slate-900">
+              <video
+                src={`https://api.screenshotone.com/animate?access_key=demo&url=${encodeURIComponent(currentSlide.image)}&viewport_width=1920&viewport_height=1080&format=mp4&video_duration=10&fps=30`}
+                className="absolute inset-0 w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                title={`Video preview of ${currentSlide.title}`}
+                onError={(e) => {
+                  // Fallback to iframe if video fails
+                  const video = e.target as HTMLVideoElement;
+                  const container = video.parentElement;
+                  if (container) {
+                    container.innerHTML = `
+                      <iframe
+                        src="${currentSlide.image}"
+                        class="absolute inset-0 w-full h-full"
+                        style="transform: scale(1.5); transform-origin: top left; width: 133.33%; height: 133.33%;"
+                        title="Live preview of ${currentSlide.title}"
+                        sandbox="allow-same-origin allow-scripts allow-popups"
+                        loading="lazy"
+                      ></iframe>
+                      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none"></div>
+                    `;
+                  }
                 }}
-                title={`Live preview of ${currentSlide.title}`}
-                sandbox="allow-same-origin allow-scripts"
-                loading="lazy"
               />
               {/* Overlay gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
