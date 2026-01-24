@@ -12,6 +12,8 @@ import {
   SplashCursorBackground,
   WebdesignHero,
   WebdesignInquiryWidget,
+  BlurText,
+  AntigravityBackground,
 } from '../components/webdesign';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
@@ -203,7 +205,7 @@ export const WebdesignPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white relative">
+    <div className="min-h-screen text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white relative">
       <Helmet>
         <title>Premium Webdesign & Elegantes Redesign | AIDevelo</title>
         <meta
@@ -327,18 +329,35 @@ export const WebdesignPage = () => {
           className="py-24 sm:py-32 relative overflow-hidden"
           aria-labelledby="features-heading"
         >
+          {/* Antigravity Background Effect */}
+          <div className="absolute inset-0 z-0">
+            <AntigravityBackground
+              count={200}
+              color="#DA291C"
+              magnetRadius={8}
+              ringRadius={8}
+              waveSpeed={0.3}
+              particleSize={1.5}
+              autoAnimate={true}
+              particleShape="capsule"
+            />
+          </div>
           {/* Background Decorative Elements */}
           <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none z-0" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
           <div className="container mx-auto px-6 relative z-20">
             <ScrollReveal direction="up" className="text-center mb-20">
-              <h2
-                id="features-heading"
-                className="text-5xl md:text-7xl font-bold font-display mb-8 tracking-tight"
-              >
-                {t.featuresTitle}
-              </h2>
+              <div className="mb-8">
+                <BlurText
+                  text={t.featuresTitle}
+                  animateBy="words"
+                  direction="top"
+                  delay={100}
+                  stepDuration={0.3}
+                  className="text-5xl md:text-7xl font-bold font-display tracking-tight"
+                />
+              </div>
               <p className="text-gray-400 text-xl max-w-3xl mx-auto font-light leading-relaxed">
                 {t.featuresSub}
               </p>
@@ -477,7 +496,7 @@ export const WebdesignPage = () => {
         {/* Related Links Section */}
         <section
           id="related-links"
-          className="py-12 sm:py-20 bg-slate-950/30"
+          className="py-12 sm:py-20 relative overflow-hidden"
           aria-labelledby="related-links-heading"
         >
           <div className="container mx-auto px-6 relative z-10">

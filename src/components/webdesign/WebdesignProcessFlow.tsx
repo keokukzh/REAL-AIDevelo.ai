@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { FileText, CreditCard, Code, CheckCircle, Search } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
+import { BlurText } from './BlurText';
 
 const PROCESS_DICTIONARY = {
   de: {
@@ -129,9 +130,16 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
           >
             {t.workflow}
           </motion.div>
-          <h2 className="text-3xl md:text-5xl font-bold font-display mb-6 leading-tight">
-            {t.title} <span className="text-swiss-red">{t.titleHighlight}</span>
-          </h2>
+          <div className="mb-6">
+            <BlurText
+              text={`${t.title} ${t.titleHighlight}`}
+              animateBy="words"
+              direction="top"
+              delay={100}
+              stepDuration={0.3}
+              className="text-3xl md:text-5xl font-bold font-display leading-tight"
+            />
+          </div>
           <p className="text-gray-400 text-lg leading-relaxed">{t.sub}</p>
         </RevealSection>
 

@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { WebdesignSlideshow } from './WebdesignSlideshow';
+import { BlurText } from './BlurText';
 
 interface WebdesignHeroProps {
   t: {
@@ -62,19 +63,23 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
           </motion.div>
 
           {/* Headline */}
-          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold font-display text-white leading-[0.9] tracking-tight mb-8">
-            {t.heroText1} <br />
-            <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 group/title py-2">
-              {t.heroText2}
-              <motion.span
-                className="absolute -bottom-1 left-0 w-full h-2 bg-swiss-red shadow-[0_5px_15px_-3px_rgba(218,41,28,0.5)]"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.8, duration: 1, ease: 'circOut' }}
-                style={{ originX: 0 }}
-              />
-            </span>
-          </h1>
+          <div className="mb-8 relative">
+            <BlurText
+              text={`${t.heroText1} ${t.heroText2}`}
+              animateBy="words"
+              direction="top"
+              delay={150}
+              stepDuration={0.4}
+              className="text-6xl sm:text-7xl lg:text-8xl font-bold font-display text-white leading-[0.9] tracking-tight"
+            />
+            <motion.span
+              className="absolute -bottom-1 left-0 w-full h-2 bg-swiss-red shadow-[0_5px_15px_-3px_rgba(218,41,28,0.5)]"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 1.2, duration: 1, ease: 'circOut' }}
+              style={{ originX: 0 }}
+            />
+          </div>
 
           <p className="text-xl sm:text-2xl text-gray-400 mb-10 max-w-xl leading-relaxed font-light">
             {t.heroSub}

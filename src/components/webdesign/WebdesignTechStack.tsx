@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ScrollReveal } from './ScrollReveal';
+import { AnimatedList } from './AnimatedList';
 
 const TECH_DICTIONARY = {
   de: {
@@ -44,19 +45,36 @@ export const WebdesignTechStack: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'd
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {t.items.map((item, index) => (
-            <ScrollReveal key={item.name} direction="up" delay={index * 0.1}>
-              <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-white/20 transition-all">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-white mb-2">{item.name}</h3>
-                    <p className="text-gray-400 text-sm">{item.description}</p>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {t.items.map((item, index) => (
+              <ScrollReveal key={item.name} direction="up" delay={index * 0.1}>
+                <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-white/20 transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white mb-2">{item.name}</h3>
+                      <p className="text-gray-400 text-sm">{item.description}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ScrollReveal>
+            ))}
+          </div>
+          
+          {/* Animated List Alternative View */}
+          <div className="mt-12 max-w-2xl mx-auto">
+            <ScrollReveal direction="up" delay={0.6}>
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">Technologie-Übersicht</h3>
+              <AnimatedList
+                items={t.items.map(item => `${item.name} - ${item.description}`)}
+                showGradients={true}
+                enableArrowNavigation={true}
+                className="max-h-96"
+                itemClassName="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-xl p-4 hover:border-white/20 transition-all"
+                displayScrollbar={true}
+              />
             </ScrollReveal>
-          ))}
+          </div>
         </div>
       </div>
     </section>
