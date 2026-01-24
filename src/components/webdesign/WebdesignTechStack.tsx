@@ -34,7 +34,7 @@ export const WebdesignTechStack: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'd
 
   return (
     <section id="technologies" className="py-12 sm:py-20 relative overflow-hidden">
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container mx-auto px-6 relative z-20">
         <ScrollReveal direction="up" className="text-center mb-16">
           <h2 className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight">
             {t.title}

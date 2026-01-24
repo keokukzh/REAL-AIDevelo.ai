@@ -162,12 +162,12 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
     const xPercent = useTransform(x, (v) => `${(v % 50)}%`);
 
     return (
-    <section id="website-previews" className="py-24 bg-slate-950 relative overflow-hidden">
+    <section id="website-previews" className="py-24 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-swiss-red/5 rounded-full blur-[120px] -mr-64 -mt-32" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] -ml-64 -mb-32" />
 
-      <div className="container mx-auto px-6 relative z-10 mb-12">
+      <div className="container mx-auto px-6 relative z-20 mb-12">
         <div className="text-center max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

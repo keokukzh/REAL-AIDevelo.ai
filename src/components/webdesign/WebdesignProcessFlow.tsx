@@ -111,7 +111,7 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
     <section
       ref={containerRef}
       id="process-flow"
-      className="py-32 relative bg-slate-950 overflow-hidden"
+      className="py-32 relative overflow-hidden"
     >
       {/* Background Circuit Grid */}
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
@@ -120,7 +120,7 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
       <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/10 rounded-full blur-[128px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px] pointer-events-none" />
 
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container mx-auto px-6 relative z-20">
         <RevealSection className="text-center mb-24 max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
