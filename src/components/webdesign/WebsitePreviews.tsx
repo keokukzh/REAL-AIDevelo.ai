@@ -1,10 +1,9 @@
-import React, { useRef } from 'react';
-import { motion, useScroll, useSpring, useTransform, useVelocity, useAnimationFrame, useMotionValue } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { Magnetic } from './Magnetic';
 import { Button } from '../ui/Button';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { LazyImage } from '../ui/LazyImage';
 
 interface PreviewItem {
   id: string;
@@ -19,32 +18,56 @@ const PREVIEWS_DICTIONARY = {
     badge: "Portfolio",
     title: "Websites, die",
     titleHighlight: "begeistern",
-    sub: "Wir erstellen keine 0815-Websites. Wir designen digitale Erlebnisse, die Ihre Marke widerspiegeln und Ihre Kunden überzeugen.",
+    sub: "Inspiriert von den besten Designs der Welt. Wir kreieren digitale Erlebnisse auf höchstem Niveau.",
     cta: "Eigenes Projekt besprechen",
     items: [
       {
         id: '1',
-        title: 'Alpine Dental Clinic',
-        category: 'Medizintechnik',
-        image: '/assets/previews/dentist_website_mockup.png',
-        description: 'Modernes Redesign für eine Zahnarztpraxis mit Fokus auf Vertrauen und Online-Buchung.',
-        tags: ['Next.js', 'Booking System', 'SEO']
+        title: 'Lusion',
+        category: 'Creative Agency',
+        image: 'https://lusion.co',
+        description: 'Bold, experimental design mit innovativen Animationen und interaktiven Elementen.',
+        tags: ['WebGL', '3D', 'Animation']
       },
       {
         id: '2',
-        title: 'Alta Cucina',
-        category: 'Gastronomie',
-        image: '/assets/previews/restaurant_website_mockup.png',
-        description: 'Elegantes Design für ein High-End Restaurant mit Fokus auf Atmosphäre und Menü-Präsentation.',
-        tags: ['Animation', 'Menu API', 'Reservations']
+        title: 'Amie',
+        category: 'Productivity App',
+        image: 'https://amie.so',
+        description: 'Minimalistisches, funktionales Design für eine moderne Produktivitäts-App.',
+        tags: ['Minimalism', 'UX', 'Product Design']
       },
       {
         id: '3',
-        title: 'Neural Core AI',
-        category: 'Technik / SaaS',
-        image: '/assets/previews/saas_website_mockup.png',
-        description: 'Futuristisches Interface für ein KI-Startup mit komplexen Daten-Visualisierungen.',
-        tags: ['WebGL', 'Dark Mode', 'Dashboard']
+        title: 'Vercel Ship',
+        category: 'Tech / SaaS',
+        image: 'https://vercel.com/ship',
+        description: 'Futuristisches Interface mit Fokus auf Performance und User Experience.',
+        tags: ['Next.js', 'Performance', 'Modern']
+      },
+      {
+        id: '4',
+        title: 'Metalab',
+        category: 'Design Studio',
+        image: 'https://metalab.com',
+        description: 'Elegantes Portfolio-Design mit starkem visuellen Storytelling.',
+        tags: ['Portfolio', 'Creative', 'Storytelling']
+      },
+      {
+        id: '5',
+        title: 'Notion',
+        category: 'Product',
+        image: 'https://notion.so',
+        description: 'Clean, intuitive Design für eine komplexe Produktivitäts-Plattform.',
+        tags: ['Clean Design', 'Complex UX', 'Branding']
+      },
+      {
+        id: '6',
+        title: 'SuperHi',
+        category: 'Education',
+        image: 'https://superhi.com',
+        description: 'Engaging, interaktives Design für eine Online-Lernplattform.',
+        tags: ['Education', 'Interactive', 'Engagement']
       }
     ]
   },
@@ -52,114 +75,69 @@ const PREVIEWS_DICTIONARY = {
     badge: "Portfolio",
     title: "Websites that",
     titleHighlight: "inspire",
-    sub: "We don't create generic websites. We design digital experiences that reflect your brand and convince your customers.",
+    sub: "Inspired by the world's best designs. We create digital experiences at the highest level.",
     cta: "Discuss Your Project",
     items: [
       {
         id: '1',
-        title: 'Alpine Dental Clinic',
-        category: 'Medical Tech',
-        image: '/assets/previews/dentist_website_mockup.png',
-        description: 'Modern redesign for a dental clinic with a focus on trust and online booking.',
-        tags: ['Next.js', 'Booking System', 'SEO']
+        title: 'Lusion',
+        category: 'Creative Agency',
+        image: 'https://lusion.co',
+        description: 'Bold, experimental design with innovative animations and interactive elements.',
+        tags: ['WebGL', '3D', 'Animation']
       },
       {
         id: '2',
-        title: 'Alta Cucina',
-        category: 'Gastronomy',
-        image: '/assets/previews/restaurant_website_mockup.png',
-        description: 'Elegant design for a high-end restaurant with a focus on atmosphere and menu presentation.',
-        tags: ['Animation', 'Menu API', 'Reservations']
+        title: 'Amie',
+        category: 'Productivity App',
+        image: 'https://amie.so',
+        description: 'Minimalist, functional design for a modern productivity app.',
+        tags: ['Minimalism', 'UX', 'Product Design']
       },
       {
         id: '3',
-        title: 'Neural Core AI',
+        title: 'Vercel Ship',
         category: 'Tech / SaaS',
-        image: '/assets/previews/saas_website_mockup.png',
-        description: 'Futuristic interface for an AI startup with complex data visualizations.',
-        tags: ['WebGL', 'Dark Mode', 'Dashboard']
+        image: 'https://vercel.com/ship',
+        description: 'Futuristic interface with focus on performance and user experience.',
+        tags: ['Next.js', 'Performance', 'Modern']
+      },
+      {
+        id: '4',
+        title: 'Metalab',
+        category: 'Design Studio',
+        image: 'https://metalab.com',
+        description: 'Elegant portfolio design with strong visual storytelling.',
+        tags: ['Portfolio', 'Creative', 'Storytelling']
+      },
+      {
+        id: '5',
+        title: 'Notion',
+        category: 'Product',
+        image: 'https://notion.so',
+        description: 'Clean, intuitive design for a complex productivity platform.',
+        tags: ['Clean Design', 'Complex UX', 'Branding']
+      },
+      {
+        id: '6',
+        title: 'SuperHi',
+        category: 'Education',
+        image: 'https://superhi.com',
+        description: 'Engaging, interactive design for an online learning platform.',
+        tags: ['Education', 'Interactive', 'Engagement']
       }
     ]
   }
 };
 
-const PREVIEWS: PreviewItem[] = [
-  {
-    id: '1',
-    title: 'Alpine Dental Clinic',
-    category: 'Medizintechnik',
-    image: '/assets/previews/dentist_website_mockup.png',
-    description: 'Modernes Redesign für eine Zahnarztpraxis mit Fokus auf Vertrauen und Online-Buchung.',
-    tags: ['Next.js', 'Booking System', 'SEO']
-  },
-  {
-    id: '2',
-    title: 'Alta Cucina',
-    category: 'Gastronomie',
-    image: '/assets/previews/restaurant_website_mockup.png',
-    description: 'Elegantes Design für ein High-End Restaurant mit Fokus auf Atmosphäre und Menü-Präsentation.',
-    tags: ['Animation', 'Menu API', 'Reservations']
-  },
-  {
-    id: '3',
-    title: 'Neural Core AI',
-    category: 'Technik / SaaS',
-    image: '/assets/previews/saas_website_mockup.png',
-    description: 'Futuristisches Interface für ein KI-Startup mit komplexen Daten-Visualisierungen.',
-    tags: ['WebGL', 'Dark Mode', 'Dashboard']
-  },
-   {
-    id: '4',
-    title: 'Creative Agency',
-    category: 'Agentur',
-    image: '/assets/previews/agency_modern_mockup.png',
-    description: 'Minimalistisches Portfolio für eine Design-Agentur mit Fokus auf visuelle Hierarchie.',
-    tags: ['Minimalism', 'Portfolio', 'CMS']
-  },
-  {
-    id: '5',
-    title: 'Mobile App Showcase',
-    category: 'App Landing',
-    image: '/assets/previews/mobile_app_showcase.png',
-    description: 'Conversion-optimierte Landing Page für eine neue Fintech-App.',
-    tags: ['App Store', 'Conversion', '3D']
-  }
-];
+// Legacy previews removed - using PREVIEWS_DICTIONARY items only
 
 export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
     const t = PREVIEWS_DICTIONARY[lang];
-    // Duplicate items for infinite loop
-    const carouselItems = [...t.items, ...t.items]; 
-    
-    // Scroll-Linked Velocity Logic
-    const { scrollY } = useScroll();
-    const scrollVelocity = useVelocity(scrollY);
-    const smoothVelocity = useSpring(scrollVelocity, {
-      damping: 50,
-      stiffness: 400
-    });
-    
-    const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], {
-      clamp: false
-    });
     const prefersReducedMotion = useReducedMotion();
-
-    const baseVelocity = prefersReducedMotion ? 0 : -15; // Stop marquee if reduced motion is preferred
-    const x = useMotionValue(0);
-
-    useAnimationFrame((_t, delta) => {
-      if (prefersReducedMotion) return;
-      
-      let moveBy = baseVelocity * (delta / 1000);
-      
-      const currentVelocityFactor = velocityFactor.get();
-      moveBy += currentVelocityFactor * (delta / 1000) * -20;
-
-      x.set(x.get() + moveBy);
-    });
-
-    // We'll use percentage wrap for the infinite loop
-    const xPercent = useTransform(x, (v) => `${(v % 50)}%`);
+    
+    // Use items directly without duplication for better performance
+    const carouselItems = t.items;
 
     return (
     <section id="website-previews" className="py-24 relative overflow-hidden">
@@ -200,58 +178,68 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
         </div>
       </div>
 
-      {/* Infinite Marquee with Velocity-Linked Speed */}
-      <div 
-        className="relative w-full overflow-hidden py-20 perspective-marquee group/marquee"
-      >
-          {/* Gradient Masks */}
-          <div className="absolute top-0 left-0 w-48 h-full bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
-          <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
-
-          <motion.div 
-            className="flex gap-12 w-max px-12"
-            style={prefersReducedMotion ? {} : { x: xPercent }}
-          >
-              {carouselItems.map((item, index) => (
-                  <div 
-                    key={`${item.id}-${index}`}
-                    className="relative w-[450px] md:w-[600px] aspect-[16/10] flex-shrink-0 group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl perspective-card"
-                  >
-                        {/* Image */}
-                        <LazyImage 
-                            src={item.image} 
-                            alt={`Preview of ${item.title}: ${item.category} Website Design`}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
+      {/* Grid Layout - No infinite loop */}
+      <div className="relative w-full py-20">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {carouselItems.map((item, index) => (
+              <motion.div 
+                key={item.id}
+                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="relative aspect-[16/10] group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl"
+              >
+                {/* Animated Preview - Live Website */}
+                <div className="relative w-full h-full overflow-hidden">
+                  <iframe
+                    src={item.image}
+                    className="absolute inset-0 w-full h-full"
+                    style={{
+                      transform: 'scale(0.67)',
+                      transformOrigin: 'top left',
+                      width: '150%',
+                      height: '150%',
+                    }}
+                    title={`Live preview of ${item.title}`}
+                    sandbox="allow-same-origin allow-scripts allow-popups"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
+                </div>
                         
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-                            <div className="transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                                <span className="inline-block px-3 py-1 bg-swiss-red/20 text-swiss-red text-[10px] font-bold rounded-full mb-3 border border-swiss-red/20 uppercase tracking-widest">
-                                    {item.category}
-                                </span>
-                                <h3 className="text-3xl font-bold text-white mb-2">{item.title}</h3>
-                                <p className="text-gray-300 text-base line-clamp-2 mb-4 font-light">{item.description}</p>
-                                <div className="flex gap-2">
-                                    {item.tags.map(tag => (
-                                        <span key={tag} className="text-[10px] text-gray-200 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Interactive Hint */}
-                         <div 
-                            className="absolute top-6 right-6 bg-black/60 backdrop-blur-md rounded-full p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10 scale-75 group-hover:scale-100"
-                            aria-label={`Projekt ${item.title} ansehen`}
-                         >
-                            <ExternalLink size={20} className="text-white" aria-hidden="true" />
-                         </div>
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
+                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                    <span className="inline-block px-3 py-1 bg-swiss-red/20 text-swiss-red text-xs font-bold rounded-full mb-2 border border-swiss-red/20 uppercase tracking-widest">
+                      {item.category}
+                    </span>
+                    <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-gray-300 text-sm line-clamp-2 mb-3 font-light">{item.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {item.tags.map(tag => (
+                        <span key={tag} className="text-xs text-gray-200 bg-white/10 backdrop-blur-md px-2 py-1 rounded-full border border-white/20">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-              ))}
-          </motion.div>
+                </div>
+
+                {/* Interactive Hint */}
+                <div 
+                  className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/10"
+                  aria-label={`Projekt ${item.title} ansehen`}
+                >
+                  <ExternalLink size={16} className="text-white" aria-hidden="true" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="container mx-auto px-6 relative z-10 mt-16 text-center">

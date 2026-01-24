@@ -13,30 +13,44 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     id: 1,
-    title: 'Alpine Dental Clinic',
-    category: 'Medical Precision',
-    image: '/assets/previews/dentist_website_mockup.png',
-    color: 'emerald',
+    title: 'Lusion',
+    category: 'Creative Agency',
+    image: 'https://lusion.co',
+    color: 'purple',
   },
   {
     id: 2,
-    title: 'Alta Cucina Gastronomy',
-    category: 'Elegant Luxury',
-    image: '/assets/previews/restaurant_website_mockup.png',
-    color: 'amber',
-  },
-  {
-    id: 3,
-    title: 'Neural Core AI',
-    category: 'Futuristic SaaS',
-    image: '/assets/previews/saas_website_mockup.png',
+    title: 'Amie',
+    category: 'Productivity App',
+    image: 'https://amie.so',
     color: 'blue',
   },
   {
+    id: 3,
+    title: 'Vercel Ship',
+    category: 'Tech / SaaS',
+    image: 'https://vercel.com/ship',
+    color: 'emerald',
+  },
+  {
     id: 4,
-    title: 'Modern Agency',
-    category: 'Creative Design',
-    image: '/assets/previews/agency_modern_mockup.png',
+    title: 'Metalab',
+    category: 'Design Studio',
+    image: 'https://metalab.com',
+    color: 'amber',
+  },
+  {
+    id: 5,
+    title: 'Notion',
+    category: 'Product',
+    image: 'https://notion.so',
+    color: 'blue',
+  },
+  {
+    id: 6,
+    title: 'SuperHi',
+    category: 'Education',
+    image: 'https://superhi.com',
     color: 'purple',
   },
 ];
@@ -106,11 +120,24 @@ export const WebdesignSlideshow: React.FC = () => {
             }}
             className="absolute inset-0"
           >
-            <img
-              src={currentSlide.image}
-              alt={currentSlide.title}
-              className="w-full h-full object-cover"
-            />
+            {/* Animated Preview - Live Website */}
+            <div className="relative w-full h-full overflow-hidden">
+              <iframe
+                src={currentSlide.image}
+                className="absolute inset-0 w-full h-full scale-150 origin-center pointer-events-none"
+                style={{
+                  transform: 'scale(1.5)',
+                  transformOrigin: 'top left',
+                  width: '133.33%',
+                  height: '133.33%',
+                }}
+                title={`Live preview of ${currentSlide.title}`}
+                sandbox="allow-same-origin allow-scripts"
+                loading="lazy"
+              />
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
+            </div>
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
 
