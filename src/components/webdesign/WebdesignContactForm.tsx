@@ -90,9 +90,111 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     files: [] as File[]
   });
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    if (!email) return lang === 'de' ? 'E-Mail ist erforderlich' : 'Email is required';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return lang === 'de' ? 'Ungültige E-Mail-Adresse' : 'Invalid email address';
+    }
+    return null;
+  };
+
+  const validateName = (name: string): string | null => {
+    if (!name.trim()) return lang === 'de' ? 'Name ist erforderlich' : 'Name is required';
+    if (name.trim().length < 2) {
+      return lang === 'de' ? 'Name muss mindestens 2 Zeichen lang sein' : 'Name must be at least 2 characters';
+    }
+    return null;
+  };
+
+  const validateMessage = (message: string): string | null => {
+    if (!message.trim()) return lang === 'de' ? 'Nachricht ist erforderlich' : 'Message is required';
+    if (message.trim().length < 10) {
+      return lang === 'de' ? 'Nachricht muss mindestens 10 Zeichen lang sein' : 'Message must be at least 10 characters';
+    }
+    return null;
+  };
+
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'name':
+        return validateName(value);
+      case 'email':
+        return validateEmail(value);
+      case 'message':
+        return validateMessage(value);
+      default:
+        return null;
+    }
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, value);
+    if (error) {
+      setErrors(prev => ({ ...prev, [field]: error }));
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Real-time validation for touched fields
+    if (touched[field]) {
+      const error = validateField(field, value);
+      if (error) {
+        setErrors(prev => ({ ...prev, [field]: error }));
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all required fields
+    const newErrors: Record<string, string> = {};
+    const nameError = validateName(formData.name);
+    if (nameError) newErrors.name = nameError;
+    
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
+    
+    const messageError = validateMessage(formData.message);
+    if (messageError) newErrors.message = messageError;
+
+    // Mark all fields as touched
+    setTouched({
+      name: true,
+      email: true,
+      message: true,
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      // Focus first error field
+      const firstErrorField = Object.keys(newErrors)[0];
+      const firstErrorInput = document.getElementById(`input-${firstErrorField}`);
+      if (firstErrorInput) {
+        firstErrorInput.focus();
+      }
+      return;
+    }
+
     setFormState('loading');
     
     // Simulate API call
@@ -111,38 +213,72 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     placeholder: string;
     onFocus: () => void;
     isRequired?: boolean;
-  }> = ({ label, id_key, value, placeholder, onFocus, isRequired = false }) => (
-    <div className="relative group">
-       <label htmlFor={`input-${id_key}`} className="sr-only">{label}</label>
-       {isRequired ? (
-         <input 
-            id={`input-${id_key}`}
+    error?: string;
+  }> = ({ label, id_key, value, placeholder, onFocus, isRequired = false, error }) => {
+    const inputId = `input-${id_key}`;
+    const errorId = `${inputId}-error`;
+    const describedBy = error ? errorId : undefined;
+    
+    return (
+      <div className="relative group">
+        <label htmlFor={inputId} className="sr-only">{label}</label>
+        {isRequired ? (
+          <input 
+            id={inputId}
             type={id_key === 'email' ? 'email' : 'text'}
             value={formData[value] as string}
-            onChange={e => setFormData(prev => ({ ...prev, [value]: e.target.value }))}
+            onChange={e => {
+              handleChange(value as string, e.target.value);
+            }}
+            onBlur={() => handleBlur(value as string, formData[value] as string)}
             onFocus={onFocus}
-            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none ${activeField === id_key ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' : 'border-white/10 hover:border-white/20'}`}
+            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+              error 
+                ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                : activeField === id_key 
+                  ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                  : 'border-white/10 hover:border-white/20'
+            }`}
             placeholder={placeholder}
             aria-required="true"
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={describedBy}
             required
-         />
-       ) : (
-         <input 
-            id={`input-${id_key}`}
+          />
+        ) : (
+          <input 
+            id={inputId}
             type={id_key === 'email' ? 'email' : 'text'}
             value={formData[value] as string}
-            onChange={e => setFormData(prev => ({ ...prev, [value]: e.target.value }))}
+            onChange={e => {
+              handleChange(value as string, e.target.value);
+            }}
+            onBlur={() => handleBlur(value as string, formData[value] as string)}
             onFocus={onFocus}
-            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none ${activeField === id_key ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' : 'border-white/10 hover:border-white/20'}`}
+            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+              error 
+                ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                : activeField === id_key 
+                  ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                  : 'border-white/10 hover:border-white/20'
+            }`}
             placeholder={placeholder}
             aria-required="false"
-         />
-       )}
-       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={describedBy}
+          />
+        )}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
           {label}
-       </div>
-    </div>
-  );
+        </div>
+        {error && (
+          <div id={errorId} role="alert" className="mt-2 text-sm text-red-400 font-mono">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (formState === 'success') {
     return (
@@ -150,15 +286,18 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-slate-900/50 backdrop-blur-xl border border-emerald-500/20 rounded-3xl p-12 text-center"
+        role="alert"
+        aria-live="polite"
+        aria-atomic="true"
       >
-        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-           <CheckCircle2 size={40} className="text-emerald-400" aria-hidden="true" />
+        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6" aria-hidden="true">
+           <CheckCircle2 size={40} className="text-emerald-400" />
         </div>
         <h3 className="text-2xl font-bold text-white mb-2">{t.success}</h3>
         <p className="text-gray-400 font-light mb-8 max-w-sm mx-auto">
            {t.successSub}
         </p>
-        <Button onClick={() => window.location.href = '/'} variant="outline">
+        <Button onClick={() => window.location.href = '/'} variant="outline" aria-label={t.back}>
            {t.back}
         </Button>
       </motion.div>
@@ -166,33 +305,49 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   }
 
   return (
-    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl focus-trap">
       <div className="grid grid-cols-1 lg:grid-cols-12">
         {/* Sidebar Info */}
-        <div className="lg:col-span-4 p-8 lg:p-12 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10">
+        <aside className="lg:col-span-4 p-8 lg:p-12 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10" aria-label="Form security information">
            <div className="space-y-8">
               <div>
                  <div className="text-[10px] font-mono text-swiss-red/80 uppercase tracking-widest mb-2">Protocol</div>
                  <h4 className="text-white font-bold text-xl">Digital Genesis</h4>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-4" role="list">
                  {[
                    { icon: Shield, label: 'End-to-End Encryption' },
                    { icon: Lock, label: 'Secure Data Handling' },
                    { icon: Zap, label: 'Priority Processing' }
                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-gray-300">
+                    <div key={i} className="flex items-center gap-3 text-sm text-gray-300" role="listitem">
                        <item.icon size={16} className="text-swiss-red/60" aria-hidden="true" />
-                       {item.label}
+                       <span>{item.label}</span>
                     </div>
                  ))}
               </div>
            </div>
-        </div>
+        </aside>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="lg:col-span-8 p-8 lg:p-12 space-y-6">
+        <form onSubmit={handleSubmit} className="lg:col-span-8 p-8 lg:p-12 space-y-6" noValidate>
+          {/* Live region for form errors */}
+          <div 
+            role="alert" 
+            aria-live="polite" 
+            aria-atomic="true" 
+            className="sr-only"
+          >
+            {Object.keys(errors).length > 0 && (
+              <span>
+                {lang === 'de' 
+                  ? `Formularfehler: ${Object.values(errors).join(', ')}` 
+                  : `Form errors: ${Object.values(errors).join(', ')}`}
+              </span>
+            )}
+          </div>
+          
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputGroup 
                 label={t.labels.name}
@@ -201,6 +356,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                 placeholder={t.placeholders.name}
                 onFocus={() => setActiveField('name')}
                 isRequired={true}
+                error={errors.name}
               />
               <InputGroup 
                 label={t.labels.email}
@@ -209,6 +365,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                 placeholder={t.placeholders.email}
                 onFocus={() => setActiveField('email')}
                 isRequired={true}
+                error={errors.email}
               />
            </div>
 
@@ -218,6 +375,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               value="company"
               placeholder={t.placeholders.company}
               onFocus={() => setActiveField('company')}
+              isRequired={false}
            />
 
            <div className="space-y-3">
@@ -244,7 +402,8 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                        key={b}
                        type="button"
                        onClick={() => setFormData(prev => ({ ...prev, budget: b }))}
-                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all ${formData.budget === b ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.budget === b ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                       aria-pressed={formData.budget === b}
                     >
                        {t.budgets[b]}
                     </button>
@@ -258,14 +417,30 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                  id="input-message"
                  rows={4}
                  value={formData.message}
-                 onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                 onChange={e => handleChange('message', e.target.value)}
+                 onBlur={() => handleBlur('message', formData.message)}
                  onFocus={() => setActiveField('message')}
-                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none resize-none ${activeField === 'message' ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' : 'border-white/10 hover:border-white/20'}`}
+                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                   errors.message 
+                     ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                     : activeField === 'message' 
+                       ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                       : 'border-white/10 hover:border-white/20'
+                 }`}
                  placeholder={t.placeholders.message}
+                 aria-required="true"
+                 aria-invalid={errors.message ? 'true' : 'false'}
+                 aria-describedby={errors.message ? 'input-message-error' : undefined}
+                 required
               />
               <div className="absolute right-3 top-3 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
                  Project Mission
               </div>
+              {errors.message && (
+                <div id="input-message-error" role="alert" className="mt-2 text-sm text-red-400 font-mono">
+                  {errors.message}
+                </div>
+              )}
            </div>
 
            <Button

@@ -9,6 +9,7 @@ import './styles/design-tokens.css';
 import './styles/animations.css';
 import './styles/dashboard.css';
 import './styles/mobile.css';
+import './styles/accessibility.css';
 import './retell/loadRetellWidget';
 
 // #region agent log

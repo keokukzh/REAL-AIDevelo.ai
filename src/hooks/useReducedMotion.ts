@@ -8,6 +8,11 @@ export const useReducedMotion = () => {
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
+    // Guard against SSR - window is not available during server-side rendering
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     
     // Set initial value

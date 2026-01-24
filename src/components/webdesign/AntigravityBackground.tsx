@@ -1,5 +1,6 @@
 import React from 'react';
 import AntigravityComponent from '../Antigravity';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface AntigravityBackgroundProps {
   count?: number;
@@ -24,6 +25,7 @@ interface AntigravityBackgroundProps {
  * 
  * Wraps the React Bits Antigravity component for use in WebdesignPage.
  * Provides 3D particle effects that form rings around cursor/magnet points.
+ * Respects user's reduced motion preferences.
  */
 export const AntigravityBackground: React.FC<AntigravityBackgroundProps> = ({
   count = 300,
@@ -42,6 +44,13 @@ export const AntigravityBackground: React.FC<AntigravityBackgroundProps> = ({
   particleShape = 'capsule',
   fieldStrength = 10,
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+
+  // Disable Antigravity for users who prefer reduced motion
+  if (prefersReducedMotion) {
+    return null;
+  }
+
   return (
     <div
       style={{
@@ -55,6 +64,7 @@ export const AntigravityBackground: React.FC<AntigravityBackgroundProps> = ({
         width: '100%',
         height: '100%',
       }}
+      aria-hidden="true"
     >
       <AntigravityComponent
         count={count}

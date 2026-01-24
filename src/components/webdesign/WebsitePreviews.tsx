@@ -170,27 +170,29 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
       <div className="container mx-auto px-6 relative z-20 mb-12">
         <div className="text-center max-w-3xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={prefersReducedMotion ? { duration: 0 } : {}}
             className="inline-block px-4 py-1.5 rounded-full bg-swiss-red/10 border border-swiss-red/20 text-swiss-red text-sm font-bold uppercase tracking-widest mb-4"
           >
             {t.badge}
           </motion.div>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            id="website-previews-heading"
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
             className="text-4xl md:text-5xl font-bold font-display text-white mb-6"
           >
             {t.title} <span className="text-swiss-red">{t.titleHighlight}</span>
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
             className="text-gray-300 text-lg"
           >
              {t.sub}
@@ -208,7 +210,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
 
           <motion.div 
             className="flex gap-12 w-max px-12"
-            style={{ x: xPercent }}
+            style={prefersReducedMotion ? {} : { x: xPercent }}
           >
               {carouselItems.map((item, index) => (
                   <div 

@@ -3,6 +3,7 @@ import { motion, useScroll, useSpring } from 'framer-motion';
 import { FileText, CreditCard, Code, CheckCircle, Search } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 import { BlurText } from './BlurText';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 const PROCESS_DICTIONARY = {
   de: {
@@ -85,6 +86,7 @@ const PROCESS_DICTIONARY = {
 
 export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
   const t = PROCESS_DICTIONARY[lang];
+  const prefersReducedMotion = useReducedMotion();
   const stepsData = t.steps.map((s, i) => ({
     ...s,
     icon: [FileText, Search, CreditCard, Code, CheckCircle][i],
@@ -103,8 +105,8 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
   });
 
   const scaleY = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
+    stiffness: prefersReducedMotion ? 1000 : 100,
+    damping: prefersReducedMotion ? 100 : 30,
     restDelta: 0.001,
   });
 
@@ -113,6 +115,8 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
       ref={containerRef}
       id="process-flow"
       className="py-32 relative overflow-hidden"
+      role="region"
+      aria-labelledby="process-flow-heading"
     >
       {/* Background Circuit Grid */}
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
@@ -145,9 +149,9 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
 
         <div className="relative max-w-5xl mx-auto">
           {/* Central Circuit Line (Desktop) */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-white/5 -translate-x-1/2 hidden md:block rounded-full">
+          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-white/5 -translate-x-1/2 hidden md:block rounded-full" aria-hidden="true">
             <motion.div
-              style={{ scaleY, transformOrigin: 'top' }}
+              style={prefersReducedMotion ? {} : { scaleY, transformOrigin: 'top' }}
               className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-swiss-red via-purple-500 to-blue-500 rounded-full"
             />
           </div>

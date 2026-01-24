@@ -37,7 +37,7 @@ export const Button: React.FC<ButtonProps> = ({
   const xTransform = useTransform(xSpring, [-1, 1], [-8, 8]);
   const yTransform = useTransform(ySpring, [-1, 1], [-8, 8]);
 
-  const baseStyles = "relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-semibold rounded-full transition-all duration-fast group z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background";
+  const baseStyles = "relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-semibold rounded-full transition-all duration-fast group z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:shadow-[0_0_0_4px_rgba(218,41,28,0.1)] min-h-[44px] min-w-[44px]";
   
   // Check if custom background color is provided in className
   const hasCustomBg = className.includes('bg-');
@@ -46,9 +46,9 @@ export const Button: React.FC<ButtonProps> = ({
   const variants = {
     primary: hasCustomBg 
       ? "" // Don't apply default primary styles if custom bg is provided
-      : "bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_35px_rgba(0,224,255,0.4)] border border-transparent focus:ring-accent",
-    secondary: "bg-primary/10 text-white border border-primary/20 hover:bg-primary/20 hover:border-accent/50 shadow-[0_0_15px_rgba(26,115,232,0.1)] hover:shadow-[0_0_25px_rgba(26,115,232,0.3)] focus:ring-primary",
-    outline: "bg-transparent text-white border-2 border-white/40 hover:border-white/70 hover:bg-white/10 backdrop-blur-sm shadow-sm hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] focus:ring-white"
+      : "bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_35px_rgba(0,224,255,0.4)] border border-transparent focus-visible:ring-swiss-red",
+    secondary: "bg-primary/10 text-white border border-primary/20 hover:bg-primary/20 hover:border-accent/50 shadow-[0_0_15px_rgba(26,115,232,0.1)] hover:shadow-[0_0_25px_rgba(26,115,232,0.3)] focus-visible:ring-primary",
+    outline: "bg-transparent text-white border-2 border-white/40 hover:border-white/70 hover:bg-white/10 backdrop-blur-sm shadow-sm hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] focus-visible:ring-white"
   };
 
   // Ensure text color is set if custom bg but no text color

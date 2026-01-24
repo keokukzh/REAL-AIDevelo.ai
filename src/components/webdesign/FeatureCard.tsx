@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 import { Magnetic } from './Magnetic';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface FeatureCardProps {
   icon: LucideIcon;
@@ -12,12 +13,13 @@ interface FeatureCardProps {
 
 export const FeatureCard = React.memo<FeatureCardProps>(({ icon: Icon, title, description, index }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const springConfig = { damping: 25, stiffness: 700 };
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [7.5, -7.5]), springConfig);
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-7.5, 7.5]), springConfig);
+  const springConfig = { damping: prefersReducedMotion ? 100 : 25, stiffness: prefersReducedMotion ? 1000 : 700 };
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], prefersReducedMotion ? [0, 0] : [7.5, -7.5]), springConfig);
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], prefersReducedMotion ? [0, 0] : [-7.5, 7.5]), springConfig);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -74,8 +76,8 @@ export const FeatureCard = React.memo<FeatureCardProps>(({ icon: Icon, title, de
           <motion.div
             className="w-12 h-12 bg-swiss-red/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
             aria-hidden="true"
-            animate={isHovered ? { scale: 1.1, rotate: [0, -5, 5, -5, 0] } : { scale: 1, rotate: 0 }}
-            transition={{ duration: 0.3 }}
+            animate={prefersReducedMotion || !isHovered ? { scale: 1, rotate: 0 } : { scale: 1.1, rotate: [0, -5, 5, -5, 0] }}
+            transition={prefersReducedMotion ? {} : { duration: 0.3 }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-swiss-red/40 to-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <Icon className="w-6 h-6 text-swiss-red relative z-10" aria-hidden="true" />

@@ -80,6 +80,19 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
     );
   }
 
+  const [shouldOptimize, setShouldOptimize] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isInView && !prefersReducedMotion) {
+      setShouldOptimize(true);
+      // Remove will-change after animation completes
+      const timer = setTimeout(() => {
+        setShouldOptimize(false);
+      }, (duration + delay) * 1000 + 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isInView, prefersReducedMotion, duration, delay]);
+
   return (
     <motion.div
       ref={ref}
@@ -91,6 +104,7 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
         ease: [0.22, 1, 0.36, 1],
       }}
       className={className}
+      style={shouldOptimize ? { willChange: 'transform, opacity' } : {}}
     >
       {children}
     </motion.div>

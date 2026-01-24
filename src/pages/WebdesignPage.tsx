@@ -1,9 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { Navbar } from '../components/Navbar';
-import { useState, useEffect, Suspense, lazy } from 'react';
 import {
   WebdesignContactForm,
   PricingCard,
@@ -15,7 +14,13 @@ import {
   BlurText,
   AntigravityBackground,
 } from '../components/webdesign';
+import { SkeletonLoader } from '../components/webdesign/SkeletonLoader';
+import { TableOfContents } from '../components/webdesign/TableOfContents';
+import { BackToTop } from '../components/webdesign/BackToTop';
+import { MobileNavigation } from '../components/webdesign/MobileNavigation';
+import { FloatingActionButton } from '../components/webdesign/FloatingActionButton';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // Lazy-load heavy below-the-fold sections for better LCP
 const WebdesignProcessFlow = lazy(() =>
@@ -44,6 +49,9 @@ import {
   Shield,
   ArrowRight,
   Layout,
+  Home,
+  DollarSign,
+  Mail,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
@@ -114,15 +122,50 @@ export const WebdesignPage = () => {
   const navigate = useNavigate();
   const [lang, setLang] = useState<'de' | 'en'>('de');
   const t = DICTIONARY[lang];
+  const prefersReducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('lang') === 'en') setLang('en');
-  }, []);
-
+  // Persist language preference
   const handleLangChange = useCallback((newLang: 'de' | 'en') => {
     setLang(newLang);
+    globalThis.localStorage.setItem('webdesign-lang', newLang);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('lang') === 'en') {
+      handleLangChange('en');
+      return;
+    }
+    
+    // Load language preference from localStorage
+    const savedLang = globalThis.localStorage.getItem('webdesign-lang') as 'de' | 'en' | null;
+    if (savedLang && (savedLang === 'de' || savedLang === 'en')) {
+      handleLangChange(savedLang);
+    }
+  }, [handleLangChange]);
+
+  // Keyboard shortcuts for language switching
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt+D for German, Alt+E for English
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleLangChange('de');
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleLangChange('en');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleLangChange]);
 
   const features = useMemo<Feature[]>(
     () => [
@@ -228,15 +271,19 @@ export const WebdesignPage = () => {
         <div className="flex gap-2">
           <button
             onClick={() => handleLangChange('de')}
-            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'de' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] min-w-[44px] ${lang === 'de' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
             aria-label="Switch to German"
+            aria-pressed={lang === 'de' ? 'true' : 'false'}
+            title="Switch to German (Alt+D)"
           >
             DE
           </button>
           <button
             onClick={() => handleLangChange('en')}
-            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${lang === 'en' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
+            className={`px-3 py-1 rounded-full text-xs font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] min-w-[44px] ${lang === 'en' ? 'bg-swiss-red border-swiss-red text-white shadow-[0_0_15px_rgba(218,41,28,0.4)]' : 'bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30'}`}
             aria-label="Switch to English"
+            aria-pressed={lang === 'en' ? 'true' : 'false'}
+            title="Switch to English (Alt+E)"
           >
             EN
           </button>
@@ -246,15 +293,33 @@ export const WebdesignPage = () => {
       {/* Premium Scroll Progress */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-swiss-red via-red-500 to-swiss-red z-[100] origin-left shadow-[0_0_20px_rgba(218,41,28,0.5)]"
-        style={{ scaleX }}
+        style={prefersReducedMotion ? {} : { scaleX }}
+        aria-hidden="true"
       />
 
-      {/* Skip to main content link */}
+      {/* Skip Links for Keyboard Navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-swiss-red focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+        className="skip-link"
+        aria-label={t.skipToContent}
       >
         {t.skipToContent}
+      </a>
+      <a
+        href="#pricing"
+        className="skip-link"
+        style={{ top: '-40px', left: '120px' }}
+        aria-label="Skip to pricing section"
+      >
+        {lang === 'de' ? 'Zu Preisen springen' : 'Skip to pricing'}
+      </a>
+      <a
+        href="#contact-form"
+        className="skip-link"
+        style={{ top: '-40px', left: '280px' }}
+        aria-label="Skip to contact form"
+      >
+        {lang === 'de' ? 'Zum Kontaktformular' : 'Skip to contact'}
       </a>
 
       {/* Global Seamless Background */}
@@ -269,11 +334,45 @@ export const WebdesignPage = () => {
 
       <Navbar />
 
+      {/* Table of Contents - Desktop Only */}
+      <TableOfContents
+        sections={[
+          { id: 'hero', title: lang === 'de' ? 'Start' : 'Hero', level: 1 },
+          { id: 'process-flow', title: lang === 'de' ? 'Prozess' : 'Process', level: 1 },
+          { id: 'pricing', title: lang === 'de' ? 'Preise' : 'Pricing', level: 1 },
+          { id: 'features', title: lang === 'de' ? 'Features' : 'Features', level: 1 },
+          { id: 'technologies', title: lang === 'de' ? 'Technologien' : 'Technologies', level: 1 },
+          { id: 'contact-form', title: lang === 'de' ? 'Kontakt' : 'Contact', level: 1 },
+        ]}
+      />
+
+      {/* Mobile Navigation */}
+      <MobileNavigation
+        items={[
+          { id: 'hero', label: lang === 'de' ? 'Start' : 'Home', icon: Home },
+          { id: 'pricing', label: lang === 'de' ? 'Preise' : 'Pricing', icon: DollarSign },
+          { id: 'features', label: lang === 'de' ? 'Features' : 'Features', icon: Zap },
+          { id: 'technologies', label: lang === 'de' ? 'Tech' : 'Tech', icon: Code },
+          { id: 'contact-form', label: lang === 'de' ? 'Kontakt' : 'Contact', icon: Mail },
+        ]}
+      />
+
+      {/* Floating Action Button for Contact */}
+      <FloatingActionButton
+        onClick={() => {
+          document.getElementById('contact-form')?.scrollIntoView({ 
+            behavior: prefersReducedMotion ? 'auto' : 'smooth' 
+          });
+        }}
+        label={lang === 'de' ? 'Kontakt' : 'Contact'}
+      />
+
       <main id="main-content" className="relative z-20">
         {/* Hero Section */}
         <section
           id="hero"
           className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20"
+          aria-labelledby="hero-heading"
         >
           <ErrorBoundary fallback={<WebdesignHero t={t} />}>
             <WebdesignHero t={t} />
@@ -281,12 +380,12 @@ export const WebdesignPage = () => {
         </section>
 
         {/* Process Flow Section */}
-        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+        <Suspense fallback={<SkeletonLoader variant="process" />}>
           <WebdesignProcessFlow lang={lang} />
         </Suspense>
 
         {/* Portfolio / Website Previews Section */}
-        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+        <Suspense fallback={<SkeletonLoader variant="preview" />}>
           <WebsitePreviews lang={lang} />
         </Suspense>
 
@@ -319,7 +418,7 @@ export const WebdesignPage = () => {
         </section>
 
         {/* Process Flow Section - Enhanced 5-Step Version */}
-        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+        <Suspense fallback={<SkeletonLoader variant="process" />}>
           <WebdesignProcessFlow lang={lang} />
         </Suspense>
 
@@ -330,18 +429,20 @@ export const WebdesignPage = () => {
           aria-labelledby="features-heading"
         >
           {/* Antigravity Background Effect */}
-          <div className="absolute inset-0 z-0">
-            <AntigravityBackground
-              count={200}
-              color="#DA291C"
-              magnetRadius={8}
-              ringRadius={8}
-              waveSpeed={0.3}
-              particleSize={1.5}
-              autoAnimate={true}
-              particleShape="capsule"
-            />
-          </div>
+          {!prefersReducedMotion && (
+            <div className="absolute inset-0 z-0">
+              <AntigravityBackground
+                count={200}
+                color="#DA291C"
+                magnetRadius={8}
+                ringRadius={8}
+                waveSpeed={0.3}
+                particleSize={1.5}
+                autoAnimate={true}
+                particleShape="capsule"
+              />
+            </div>
+          )}
           {/* Background Decorative Elements */}
           <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none z-0" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
@@ -464,7 +565,7 @@ export const WebdesignPage = () => {
         </section>
 
         {/* Technologies Section */}
-        <Suspense fallback={<div className="h-96 bg-slate-900/50 animate-pulse" />}>
+        <Suspense fallback={<SkeletonLoader variant="tech" />}>
           <WebdesignTechStack lang={lang} />
         </Suspense>
 
@@ -544,6 +645,7 @@ export const WebdesignPage = () => {
 
       <Footer />
       <WebdesignInquiryWidget lang={lang} />
+      <BackToTop />
     </div>
   );
 };

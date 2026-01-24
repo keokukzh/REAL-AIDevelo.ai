@@ -25,5 +25,11 @@ export { SmoothScroll } from './SmoothScroll';
 export { WebdesignInquiryWidget } from './WebdesignInquiryWidget';
 export { FaqSection } from './FaqSection';
 export { TestimonialSection } from './TestimonialSection';
+export { SkeletonLoader } from './SkeletonLoader';
+export { TableOfContents } from './TableOfContents';
+export { BackToTop } from './BackToTop';
+export { MobileNavigation } from './MobileNavigation';
+export { FloatingActionButton } from './FloatingActionButton';
+export { Accordion } from './Accordion';
 
 export { default as HeroUltraAnimation } from './hero/HeroUltraAnimation';

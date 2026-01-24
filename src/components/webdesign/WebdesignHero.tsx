@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { WebdesignSlideshow } from './WebdesignSlideshow';
 import { BlurText } from './BlurText';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface WebdesignHeroProps {
   t: {
@@ -20,6 +21,7 @@ interface WebdesignHeroProps {
 export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
+  const prefersReducedMotion = useReducedMotion();
   const y1 = useTransform(scrollY, [0, 500], [0, 100]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
@@ -29,7 +31,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
     <section
       ref={containerRef}
       className="relative min-h-[95vh] flex items-center justify-center pt-24 pb-12 overflow-visible"
-      aria-label="Webdesign Services Intro"
+      aria-label="Webdesign Services Introduction"
     >
       {/* Content Container */}
       <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -42,9 +44,9 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
         >
           {/* Status Chip */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
           >
             <div className="flex flex-wrap items-center gap-3 mb-8">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/10 text-xs font-mono text-white/80 ultra-glass">
@@ -104,6 +106,8 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
               onClick={() => setShowSpecs(!showSpecs)}
               variant="outline"
               className={`h-14 px-8 text-lg ultra-glass-light border border-white/10 transition-all duration-300 ${showSpecs ? 'bg-white/10 border-white/30 text-white' : 'hover:bg-white/5 text-gray-300'}`}
+              aria-label={showSpecs ? t.closeSpecs : t.showSpecs}
+              aria-expanded={showSpecs}
             >
               {showSpecs ? t.closeSpecs : t.showSpecs}
             </Button>
@@ -143,11 +147,11 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
 
         {/* Right Column: Premium Slideshow Showcase */}
         <motion.div
-          style={{ y: y1 }}
+          style={prefersReducedMotion ? {} : { y: y1 }}
           className="relative w-full z-10"
-          initial={{ opacity: 0, scale: 0.9, rotateX: 10 }}
+          initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9, rotateX: 10 }}
           animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-          transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           <WebdesignSlideshow />
 
@@ -176,8 +180,8 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
         </span>
         <motion.div
           className="w-px h-12 bg-gradient-to-b from-swiss-red to-transparent"
-          animate={{ height: ['0%', '100%', '0%'], opacity: [0, 1, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          animate={prefersReducedMotion ? {} : { height: ['0%', '100%', '0%'], opacity: [0, 1, 0] }}
+          transition={prefersReducedMotion ? {} : { duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
     </section>

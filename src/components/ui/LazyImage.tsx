@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface LazyImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
   src: string;
   alt: string;
   placeholderColor?: string;
   className?: string;
+  srcSet?: string;
+  sizes?: string;
+  webpSrc?: string;
+  webpSrcSet?: string;
 }
 
 export const LazyImage: React.FC<LazyImageProps> = ({ 
@@ -13,6 +17,10 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   alt, 
   placeholderColor = 'bg-slate-900', 
   className = '', 
+  srcSet,
+  sizes,
+  webpSrc,
+  webpSrcSet,
   ...props 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -54,16 +62,28 @@ export const LazyImage: React.FC<LazyImageProps> = ({
       </AnimatePresence>
 
       {isInView && (
-        <motion.img
-          src={src}
-          alt={alt}
-          onLoad={() => setIsLoaded(true)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isLoaded ? 1 : 0 }}
-          transition={{ duration: 0.5 }}
-          className={`w-full h-full object-cover ${className}`}
-          {...(props as any)}
-        />
+        <picture>
+          {webpSrc && (
+            <source
+              srcSet={webpSrcSet || webpSrc}
+              type="image/webp"
+              sizes={sizes}
+            />
+          )}
+          <motion.img
+            src={src}
+            srcSet={srcSet}
+            sizes={sizes || '100vw'}
+            alt={alt}
+            onLoad={() => setIsLoaded(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isLoaded ? 1 : 0 }}
+            transition={{ duration: 0.5 }}
+            className={`w-full h-full object-cover ${className}`}
+            loading="lazy"
+            {...(props as any)}
+          />
+        </picture>
       )}
     </div>
   );

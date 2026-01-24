@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Magnetic } from './Magnetic';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface PricingFeature {
   text: string;
@@ -16,6 +17,7 @@ interface PricingCardProps {
 
 export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disclaimer, features }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const leftColumnFeatures = features.slice(0, Math.ceil(features.length / 2));
   const rightColumnFeatures = features.slice(Math.ceil(features.length / 2));
 
@@ -34,21 +36,25 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
       }}
       className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
       aria-labelledby="pricing-heading"
-      style={{ willChange: 'transform' }}
+      role="region"
     >
       {/* Animated Decorative Elements */}
-      <motion.div
-        className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl"
-        animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
-        transition={{ duration: 0.5 }}
-        aria-hidden="true"
-      />
-      <motion.div
-        className="absolute bottom-0 left-0 w-64 h-64 bg-red-900/10 rounded-full blur-3xl"
-        animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
-        transition={{ duration: 0.5 }}
-        aria-hidden="true"
-      />
+      {!prefersReducedMotion && (
+        <>
+          <motion.div
+            className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl"
+            animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
+            transition={{ duration: 0.5 }}
+            aria-hidden="true"
+          />
+          <motion.div
+            className="absolute bottom-0 left-0 w-64 h-64 bg-red-900/10 rounded-full blur-3xl"
+            animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
+            transition={{ duration: 0.5 }}
+            aria-hidden="true"
+          />
+        </>
+      )}
 
       {/* Shine Effect */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden">
@@ -76,11 +82,13 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
             transition={{ duration: 2, repeat: Infinity }}
           >
             <span className="relative z-10 bg-gradient-to-r from-white via-swiss-red to-white bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-mesh">{price}</span>
-            <motion.div
-              className="absolute inset-0 bg-swiss-red/10 rounded-full blur-3xl"
-              animate={isHovered ? { scale: [1, 1.5, 1], opacity: [0.2, 0.4, 0.2] } : { scale: 1, opacity: 0 }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
+            {!prefersReducedMotion && (
+              <motion.div
+                className="absolute inset-0 bg-swiss-red/10 rounded-full blur-3xl"
+                animate={isHovered ? { scale: [1, 1.5, 1], opacity: [0.2, 0.4, 0.2] } : { scale: 1, opacity: 0 }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+            )}
           </motion.div>
           <p className="text-xl text-gray-300 mb-2">
             {subtitle}
@@ -122,22 +130,22 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
             {rightColumnFeatures.map((feature, index) => (
               <motion.div
                 key={`right-${index}`}
-                initial={{ opacity: 0, x: -20 }}
+                initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                transition={prefersReducedMotion ? {} : { duration: 0.5, delay: 0.4 + index * 0.1 }}
                 className="flex items-start gap-3 group/feature"
               >
                 <motion.div
-                  animate={isHovered ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
-                  transition={{ duration: 0.5, delay: (leftColumnFeatures.length + index) * 0.05 }}
+                  animate={prefersReducedMotion || !isHovered ? {} : { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                  transition={prefersReducedMotion ? {} : { duration: 0.5, delay: (leftColumnFeatures.length + index) * 0.05 }}
                 >
                   <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 </motion.div>
                 <motion.span
                   className="text-gray-300 group-hover/feature:text-white transition-colors"
-                  whileHover={{ x: 5 }}
-                  transition={{ duration: 0.2 }}
+                  whileHover={prefersReducedMotion ? {} : { x: 5 }}
+                  transition={prefersReducedMotion ? {} : { duration: 0.2 }}
                 >
                   {feature.text}
                 </motion.span>
@@ -151,7 +159,8 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           <Magnetic strength={1.2}>
             <button
               onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all hover:scale-105"
+              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all hover:scale-105 focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+              aria-label="Start project - Navigate to contact form"
             >
               Jetzt Projekt starten
             </button>
