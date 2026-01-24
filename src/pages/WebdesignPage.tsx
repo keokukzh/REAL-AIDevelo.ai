@@ -9,6 +9,7 @@ import {
   PricingCard,
   ScrollReveal,
   WebdesignAnimatedBackground,
+  SplashCursorBackground,
   WebdesignHero,
   WebdesignInquiryWidget,
 } from '../components/webdesign';
@@ -202,7 +203,7 @@ export const WebdesignPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white relative">
       <Helmet>
         <title>Premium Webdesign & Elegantes Redesign | AIDevelo</title>
         <meta
@@ -255,14 +256,18 @@ export const WebdesignPage = () => {
       </a>
 
       {/* Global Seamless Background */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* SplashCursor Background Effect - Only on Webdesign Page - Above other backgrounds */}
+        <div className="absolute inset-0 z-[1]">
+          <SplashCursorBackground />
+        </div>
         <WebdesignAnimatedBackground variant="hero" intensity="medium" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/80 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/2 via-slate-950/15 to-slate-950 z-[2]" />
       </div>
 
       <Navbar />
 
-      <main id="main-content">
+      <main id="main-content" className="relative z-20">
         {/* Hero Section */}
         <section
           id="hero"
@@ -286,10 +291,10 @@ export const WebdesignPage = () => {
         {/* Pricing Section */}
         <section
           id="pricing"
-          className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+          className="py-12 sm:py-20 relative overflow-hidden"
           aria-labelledby="pricing-heading"
         >
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-6 relative z-20">
             <ScrollReveal direction="up" delay={0.1} className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
                 <h2
@@ -319,14 +324,14 @@ export const WebdesignPage = () => {
         {/* Features Section - Bento Grid Layout */}
         <section
           id="features"
-          className="py-24 sm:py-32 bg-slate-950/30 relative overflow-hidden"
+          className="py-24 sm:py-32 relative overflow-hidden"
           aria-labelledby="features-heading"
         >
           {/* Background Decorative Elements */}
-          <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none z-0" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-6 relative z-20">
             <ScrollReveal direction="up" className="text-center mb-20">
               <h2
                 id="features-heading"
@@ -447,11 +452,11 @@ export const WebdesignPage = () => {
         {/* Contact Form Section */}
         <section
           id="contact-form"
-          className="py-12 sm:py-20 bg-slate-950/50 relative overflow-hidden"
+          className="py-12 sm:py-20 relative overflow-hidden"
           aria-labelledby="contact-heading"
           tabIndex={-1}
         >
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-6 relative z-20">
             <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
               <div className="relative z-10">
                 <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">

@@ -80,7 +80,8 @@
     "sip.js": "^0.21.2",
     "tailwind-merge": "^3.4.0",
     "three": "0.160.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -106,6 +107,7 @@
     "jsdom": "^27.3.0",
     "postcss": "^8.4.35",
     "prettier": "^3.4.2",
+    "shadcn": "^3.7.0",
     "supertest": "^7.1.4",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
