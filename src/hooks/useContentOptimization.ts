@@ -10,6 +10,7 @@ export interface OptimizeContentRequest {
 export interface OptimizeContentResponse {
   optimizedContent: string;
   suggestions?: string[];
+  hint?: string;
 }
 
 export interface ContentVariationsResponse {
@@ -19,6 +20,7 @@ export interface ContentVariationsResponse {
 export const useContentOptimization = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
 
   const optimizeContent = useCallback(
     async (request: OptimizeContentRequest): Promise<OptimizeContentResponse | null> => {
@@ -35,8 +37,12 @@ export const useContentOptimization = () => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Failed to optimize content' }));
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({ message: 'Failed to optimize content' })) as { error?: string; message?: string; hint?: string };
+          const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+          const error = new Error(errorMessage) as Error & { hint?: string };
+          error.hint = errorData.hint;
+          setHint(errorData.hint || null);
+          throw error;
         }
 
         const data = await response.json();
@@ -91,5 +97,6 @@ export const useContentOptimization = () => {
     getVariations,
     loading,
     error,
+    hint,
   };
 };

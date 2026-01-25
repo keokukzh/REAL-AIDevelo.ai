@@ -165,6 +165,7 @@ export const WebdesignPage = () => {
   const [optimizedText, setOptimizedText] = useState<string | null>(null);
   const [originalText, setOriginalText] = useState<string | null>(null);
   const [optimizingField, setOptimizingField] = useState<string | null>(null);
+  const [optimizationHint, setOptimizationHint] = useState<string | null>(null);
 
   // Handle content optimization
   const handleOptimizeHero = useCallback(async () => {
@@ -172,6 +173,8 @@ export const WebdesignPage = () => {
     const baseHeroSub = DICTIONARY[lang].heroSub; // Get original from base dictionary
     setOptimizingField('heroSub');
     setOriginalText(baseHeroSub); // Store original for comparison
+    setOptimizedText(null); // Clear previous result
+    
     const result = await optimizeContent({
       currentContent: currentHeroSub,
       context: {
@@ -186,9 +189,12 @@ export const WebdesignPage = () => {
     if (result?.optimizedContent) {
       setOptimizedText(result.optimizedContent);
       setShowOptimization(true);
+    } else if (optimizationError) {
+      // Show modal even on error to display the error message
+      setShowOptimization(true);
     }
     setOptimizingField(null);
-  }, [optimizeContent, t.heroSub, lang]);
+  }, [optimizeContent, t.heroSub, lang, optimizationError]);
 
   // Handle accepting optimized content
   const handleAcceptOptimization = useCallback(() => {
@@ -403,8 +409,15 @@ export const WebdesignPage = () => {
               </button>
             </div>
             {optimizationError && (
-              <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded text-red-400 text-sm">
-                {optimizationError}
+              <div className="mb-4 space-y-2">
+                <div className="p-3 bg-red-900/20 border border-red-500/50 rounded text-red-400 text-sm">
+                  {optimizationError}
+                </div>
+                {optimizationHint && (
+                  <div className="p-3 bg-yellow-900/20 border border-yellow-500/50 rounded text-yellow-400 text-sm">
+                    <strong>Hinweis:</strong> {optimizationHint}
+                  </div>
+                )}
               </div>
             )}
             {optimizedText && originalText && (
