@@ -239,6 +239,16 @@ router.post('/content/optimize', async (req: Request, res: Response, next: NextF
       language,
     });
 
+    // Check if CrewAI service is available
+    const isServiceAvailable = await crewaiService.healthCheck();
+    if (!isServiceAvailable) {
+      return res.status(503).json({
+        success: false,
+        error: 'Content optimization service is not available. The CrewAI service is not running or not configured.',
+        hint: 'This feature requires the CrewAI service to be deployed. It is currently only available in local Docker environments.',
+      });
+    }
+
     const result = await crewaiService.generateMarketingContent(
       `Optimize ${section} content for webdesign landing page`,
       'landing-page',
@@ -268,6 +278,15 @@ router.post('/content/optimize', async (req: Request, res: Response, next: NextF
     StructuredLoggingService.error('Webdesign content optimization failed', errorObj, {
       section: req.body.section,
     });
+
+    // Check if it's a connection error
+    if (errorObj.message.includes('ENOTFOUND') || errorObj.message.includes('ECONNREFUSED')) {
+      return res.status(503).json({
+        success: false,
+        error: 'Content optimization service is not available',
+        hint: 'The CrewAI service is not reachable. This feature requires the CrewAI service to be deployed.',
+      });
+    }
 
     res.status(500).json({
       success: false,
@@ -300,6 +319,16 @@ router.post('/content/variations', async (req: Request, res: Response, next: Nex
       language,
     });
 
+    // Check if CrewAI service is available
+    const isServiceAvailable = await crewaiService.healthCheck();
+    if (!isServiceAvailable) {
+      return res.status(503).json({
+        success: false,
+        error: 'Content optimization service is not available. The CrewAI service is not running or not configured.',
+        hint: 'This feature requires the CrewAI service to be deployed. It is currently only available in local Docker environments.',
+      });
+    }
+
     const results = await Promise.all(
       variations.map((variation: string) =>
         crewaiService.generateMarketingContent(
@@ -330,6 +359,15 @@ router.post('/content/variations', async (req: Request, res: Response, next: Nex
   } catch (error: unknown) {
     const errorObj = error instanceof Error ? error : new Error('Unknown error');
     StructuredLoggingService.error('Webdesign variation generation failed', errorObj);
+
+    // Check if it's a connection error
+    if (errorObj.message.includes('ENOTFOUND') || errorObj.message.includes('ECONNREFUSED')) {
+      return res.status(503).json({
+        success: false,
+        error: 'Content optimization service is not available',
+        hint: 'The CrewAI service is not reachable. This feature requires the CrewAI service to be deployed.',
+      });
+    }
 
     res.status(500).json({
       success: false,
