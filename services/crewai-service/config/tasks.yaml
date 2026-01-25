@@ -1,0 +1,42 @@
+research_task:
+  description: >
+    Conduct thorough research about {topic}.
+    Gather relevant information, facts, and context needed for creating {content_type} content.
+    Focus on accuracy and relevance to the target audience and business context.
+    Consider the following context: {context}
+  expected_output: >
+    A comprehensive research report with:
+    - Key facts and information about the topic
+    - Relevant statistics or data points
+    - Important considerations for the target audience
+    - Context-specific insights
+    Format: Bullet points with clear sections
+
+writing_task:
+  description: >
+    Based on the research findings, create {content_type} content about {topic}.
+    The content should be:
+    - Engaging and well-structured
+    - Appropriate for the target audience
+    - Formatted according to: {format}
+    - Tailored to the business context: {context}
+    - Written in {language} language
+    Use the research findings as the foundation, but write in a natural, engaging style.
+  expected_output: >
+    Complete {content_type} content in {format} format.
+    The content should be ready for use, properly formatted, and engaging.
+
+editing_task:
+  description: >
+    Review and refine the content created by the writer.
+    Ensure:
+    - Grammar and spelling are correct
+    - Style is consistent throughout
+    - Content flows naturally
+    - All facts are accurate
+    - The content meets the specified format requirements
+    - The tone is appropriate for the target audience
+    Make necessary improvements while preserving the writer's voice and style.
+  expected_output: >
+    Final polished content ready for publication.
+    Include a brief summary of any significant changes made during editing.

@@ -6,6 +6,8 @@ import { validateRequest } from '../middleware/validateRequest';
 import { sendMail } from '../services/emailService';
 import { createWebdesignRequest } from '../services/webdesignRequestService';
 import { getNewRequestEmail, getAcknowledgmentEmail } from '../services/webdesignEmailTemplates';
+import { crewaiService } from '../services/crewaiService';
+import { StructuredLoggingService } from '../services/loggingService';
 
 const router = Router();
 
@@ -208,6 +210,132 @@ router.post('/contact', (req: Request, res: Response, next: NextFunction) => {
   } catch (error) {
     console.error('[Webdesign] Error processing contact request:', error);
     next(new InternalServerError('Fehler beim Verarbeiten der Anfrage'));
+  }
+});
+
+/**
+ * POST /api/webdesign/content/optimize
+ * Optimize webdesign page content using CrewAI
+ */
+router.post('/content/optimize', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      section, // 'hero', 'cta', 'feature', 'meta', etc.
+      currentContent,
+      context = {},
+      language = 'de-CH',
+    } = req.body;
+
+    if (!section || !currentContent) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: section and currentContent',
+      });
+    }
+
+    StructuredLoggingService.info('Webdesign content optimization request', {
+      section,
+      contentLength: currentContent.length,
+      language,
+    });
+
+    const result = await crewaiService.generateMarketingContent(
+      `Optimize ${section} content for webdesign landing page`,
+      'landing-page',
+      {
+        currentContent,
+        targetAudience: 'Swiss SMEs',
+        goal: 'increase conversions',
+        ...context,
+      },
+      language
+    );
+
+    StructuredLoggingService.info('Webdesign content optimization completed', {
+      section,
+      originalLength: currentContent.length,
+      optimizedLength: result.content.length,
+    });
+
+    res.json({
+      success: true,
+      original: currentContent,
+      optimized: result.content,
+      metadata: result.metadata,
+    });
+  } catch (error) {
+    StructuredLoggingService.error('Webdesign content optimization failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      section: req.body.section,
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /api/webdesign/content/variations
+ * Generate multiple variations of content for A/B testing
+ */
+router.post('/content/variations', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      content,
+      variations = ['benefit-focused', 'urgency', 'curiosity'],
+      language = 'de-CH',
+    } = req.body;
+
+    if (!content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: content',
+      });
+    }
+
+    StructuredLoggingService.info('Generating webdesign content variations', {
+      variationCount: variations.length,
+      language,
+    });
+
+    const results = await Promise.all(
+      variations.map((variation: string) =>
+        crewaiService.generateMarketingContent(
+          `Create ${variation} variation of: ${content}`,
+          'landing-page',
+          {
+            variation,
+            original: content,
+            targetAudience: 'Swiss SMEs',
+            goal: 'increase conversions',
+          },
+          language
+        )
+      )
+    );
+
+    StructuredLoggingService.info('Webdesign content variations generated', {
+      count: results.length,
+    });
+
+    res.json({
+      success: true,
+      variations: results.map((r) => ({
+        content: r.content,
+        metadata: r.metadata,
+      })),
+    });
+  } catch (error) {
+    StructuredLoggingService.error('Webdesign variation generation failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

@@ -36,6 +36,7 @@ import { MobileNavigation } from '../components/webdesign/MobileNavigation';
 import { FloatingActionButton } from '../components/webdesign/FloatingActionButton';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useContentOptimization } from '../hooks/useContentOptimization';
 
 // Lazy-load heavy below-the-fold sections for better LCP
 const WebdesignProcessFlow = lazy(() =>
@@ -67,6 +68,8 @@ import {
   Home,
   DollarSign,
   Mail,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
@@ -136,8 +139,88 @@ const DICTIONARY = {
 export const WebdesignPage = () => {
   const navigate = useNavigate();
   const [lang, setLang] = useState<'de' | 'en'>('de');
-  const t = DICTIONARY[lang];
+  
+  // State to track dictionary overrides (for optimized content)
+  const [dictionaryOverrides, setDictionaryOverrides] = useState<Partial<typeof DICTIONARY>>(() => {
+    // Load saved overrides from localStorage
+    if (typeof window === 'undefined') return {};
+    try {
+      const saved = globalThis.localStorage.getItem('webdesign-dictionary-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Merge base dictionary with overrides
+  const t = useMemo(() => {
+    const base = DICTIONARY[lang];
+    const overrides = dictionaryOverrides[lang] || {};
+    return { ...base, ...overrides };
+  }, [lang, dictionaryOverrides]);
+
   const prefersReducedMotion = useReducedMotion();
+  const { optimizeContent, loading: isOptimizing, error: optimizationError } = useContentOptimization();
+  const [showOptimization, setShowOptimization] = useState(false);
+  const [optimizedText, setOptimizedText] = useState<string | null>(null);
+  const [originalText, setOriginalText] = useState<string | null>(null);
+  const [optimizingField, setOptimizingField] = useState<string | null>(null);
+
+  // Handle content optimization
+  const handleOptimizeHero = useCallback(async () => {
+    const currentHeroSub = t.heroSub;
+    const baseHeroSub = DICTIONARY[lang].heroSub; // Get original from base dictionary
+    setOptimizingField('heroSub');
+    setOriginalText(baseHeroSub); // Store original for comparison
+    const result = await optimizeContent({
+      currentContent: currentHeroSub,
+      context: {
+        pageType: 'landing-page',
+        section: 'hero',
+        targetAudience: 'Swiss SMEs',
+        goal: 'conversion',
+      },
+      language: lang === 'de' ? 'de-CH' : 'en',
+    });
+
+    if (result?.optimizedContent) {
+      setOptimizedText(result.optimizedContent);
+      setShowOptimization(true);
+    }
+    setOptimizingField(null);
+  }, [optimizeContent, t.heroSub, lang]);
+
+  // Handle accepting optimized content
+  const handleAcceptOptimization = useCallback(() => {
+    if (!optimizedText || !optimizingField) return;
+
+    // Update dictionary overrides
+    setDictionaryOverrides((prev) => {
+      const newOverrides = {
+        ...prev,
+        [lang]: {
+          ...prev[lang],
+          [optimizingField]: optimizedText,
+        },
+      };
+
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          globalThis.localStorage.setItem('webdesign-dictionary-overrides', JSON.stringify(newOverrides));
+        } catch (err) {
+          console.error('Failed to save dictionary overrides:', err);
+        }
+      }
+
+      return newOverrides;
+    });
+
+    setShowOptimization(false);
+    setOptimizedText(null);
+    setOriginalText(null);
+    setOptimizingField(null);
+  }, [optimizedText, optimizingField, lang]);
 
   // Persist language preference
   const handleLangChange = useCallback((newLang: 'de' | 'en') => {
@@ -271,6 +354,15 @@ export const WebdesignPage = () => {
       {/* Language & Theme Switcher */}
       <div className="fixed top-24 right-4 md:right-8 z-[100] flex items-center gap-3">
         <ThemeToggle />
+        <button
+          onClick={handleOptimizeHero}
+          disabled={isOptimizing}
+          className="px-3 py-1 rounded-full text-xs font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] bg-slate-900/50 border-white/10 text-gray-400 hover:border-white/30 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Optimize content"
+          title="Optimize hero content with AI"
+        >
+          <Sparkles className={`w-4 h-4 ${isOptimizing ? 'animate-spin' : ''}`} />
+        </button>
         <div className="flex gap-2">
           <button
             onClick={() => handleLangChange('de')}
@@ -292,6 +384,69 @@ export const WebdesignPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Optimization Modal */}
+      {showOptimization && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-lg p-6 max-w-2xl w-full shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Optimized Content</h3>
+              <button
+                onClick={() => {
+                  setShowOptimization(false);
+                  setOptimizedText(null);
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {optimizationError && (
+              <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded text-red-400 text-sm">
+                {optimizationError}
+              </div>
+            )}
+            {optimizedText && originalText && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Original:</p>
+                  <p className="text-gray-300 bg-slate-800/50 p-3 rounded">{originalText}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Current:</p>
+                  <p className="text-gray-400 bg-slate-800/30 p-3 rounded text-sm italic">
+                    {t.heroSub !== originalText ? t.heroSub : '(same as original)'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Optimized:</p>
+                  <p className="text-white bg-slate-800/50 p-3 rounded">{optimizedText}</p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={handleAcceptOptimization}
+                    className="bg-swiss-red hover:bg-red-600"
+                  >
+                    Use This Version
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowOptimization(false);
+                      setOptimizedText(null);
+                      setOriginalText(null);
+                      setOptimizingField(null);
+                    }}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Premium Scroll Progress */}
       <motion.div
