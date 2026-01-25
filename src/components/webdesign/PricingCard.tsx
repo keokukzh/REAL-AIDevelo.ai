@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, ChevronDown, Shield, Award, Zap } from 'lucide-react';
 import { Magnetic } from './Magnetic';
+import { Button } from '../ui/Button';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface PricingFeature {
@@ -17,9 +18,14 @@ interface PricingCardProps {
 
 export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disclaimer, features }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const prefersReducedMotion = useReducedMotion();
-  const leftColumnFeatures = features.slice(0, Math.ceil(features.length / 2));
-  const rightColumnFeatures = features.slice(Math.ceil(features.length / 2));
+  
+  // Show first 6-8 features, rest in accordion
+  const visibleFeatures = features.slice(0, 6);
+  const hiddenFeatures = features.slice(6);
+  const leftColumnFeatures = visibleFeatures.slice(0, Math.ceil(visibleFeatures.length / 2));
+  const rightColumnFeatures = visibleFeatures.slice(Math.ceil(visibleFeatures.length / 2));
 
   return (
     <motion.div
@@ -67,36 +73,60 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
       </div>
       
       <div className="relative z-10">
-        <div className="text-center mb-8">
-          {/* Price with Pulse Animation */}
+        <div className="text-center mb-10">
+          {/* Enhanced Price Hero */}
           <motion.div
             id="pricing-heading"
-            className="text-7xl md:text-8xl font-bold font-display text-white mb-2 relative inline-block"
-            animate={isHovered ? { 
-              scale: [1, 1.02, 1],
-              textShadow: [
-                '0 0 20px rgba(218,41,28,0)',
-                '0 0 40px rgba(218,41,28,0.5)',
-                '0 0 20px rgba(218,41,28,0)'
-              ]
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity }}
+            className="mb-6"
+            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+            whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
-            <span className="relative z-10 bg-gradient-to-r from-white via-swiss-red to-white bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-mesh">{price}</span>
-            {!prefersReducedMotion && (
+            <div className="text-7xl md:text-8xl lg:text-9xl font-bold font-display text-white mb-3 relative inline-block">
+              <span className="relative z-10 bg-gradient-to-r from-white via-swiss-red to-white bg-clip-text text-transparent">
+                {price}
+              </span>
+              {!prefersReducedMotion && (
+                <motion.div
+                  className="absolute inset-0 bg-swiss-red/20 rounded-full blur-3xl -z-10"
+                  animate={isHovered ? { scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] } : { scale: 1, opacity: 0.2 }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+              )}
+            </div>
+            <p className="text-2xl md:text-3xl text-gray-200 font-semibold mb-3">
+              {subtitle}
+            </p>
+            <p className="text-base text-gray-400 mb-6">
+              {disclaimer}
+            </p>
+            
+            {/* Trust Badges */}
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
               <motion.div
-                className="absolute inset-0 bg-swiss-red/10 rounded-full blur-3xl"
-                animate={isHovered ? { scale: [1, 1.5, 1], opacity: [0.2, 0.4, 0.2] } : { scale: 1, opacity: 0 }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-            )}
+                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300"
+              >
+                <Shield size={16} className="text-emerald-400" />
+                <span>Made in Switzerland</span>
+              </motion.div>
+              <motion.div
+                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300"
+              >
+                <Award size={16} className="text-blue-400" />
+                <span>Performance optimiert</span>
+              </motion.div>
+              <motion.div
+                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300"
+              >
+                <Zap size={16} className="text-purple-400" />
+                <span>Transparentes Festpreis-Modell</span>
+              </motion.div>
+            </div>
           </motion.div>
-          <p className="text-xl text-gray-300 mb-2">
-            {subtitle}
-          </p>
-          <p className="text-sm text-gray-400">
-            {disclaimer}
-          </p>
         </div>
         
         {/* Features with Stagger Animation */}
@@ -155,19 +185,65 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           </li>
         </ul>
 
-        {/* Action Button */}
+        {/* Accordion for Additional Features */}
+        {hiddenFeatures.length > 0 && (
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <motion.button
+              onClick={() => setShowMore(!showMore)}
+              className="w-full flex items-center justify-between text-left text-gray-300 hover:text-white transition-colors"
+              whileHover={prefersReducedMotion ? {} : { x: 4 }}
+            >
+              <span className="font-semibold">
+                {showMore ? 'Weniger anzeigen' : `Mehr anzeigen (${hiddenFeatures.length} weitere Leistungen)`}
+              </span>
+              <motion.div
+                animate={{ rotate: showMore ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronDown size={20} />
+              </motion.div>
+            </motion.button>
+            
+            <AnimatePresence>
+              {showMore && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid md:grid-cols-2 gap-4 mt-6">
+                    {hiddenFeatures.map((feature, index) => (
+                      <motion.div
+                        key={`hidden-${index}`}
+                        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="flex items-start gap-3"
+                      >
+                        <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <span className="text-gray-300 text-sm">{feature.text}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* Enhanced CTA Button */}
         <div className="mt-12 text-center">
           <Magnetic strength={prefersReducedMotion ? 0 : 1.2}>
-            <motion.button
+            <Button
               onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+              variant="primary"
+              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-5 px-12 text-lg shadow-lg shadow-swiss-red/30 hover:shadow-xl hover:shadow-swiss-red/40 transition-all"
               aria-label="Start project - Navigate to contact form"
             >
               Jetzt Projekt starten
-            </motion.button>
+            </Button>
           </Magnetic>
         </div>
       </div>

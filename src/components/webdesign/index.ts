@@ -30,5 +30,7 @@ export { BackToTop } from './BackToTop';
 export { MobileNavigation } from './MobileNavigation';
 export { FloatingActionButton } from './FloatingActionButton';
 export { Accordion } from './Accordion';
+export { ScrollCue } from './ScrollCue';
+export { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
 
 export { default as HeroUltraAnimation } from './hero/HeroUltraAnimation';

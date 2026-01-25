@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
-import { motion, useScroll, useSpring } from 'framer-motion';
-import { FileText, CreditCard, Code, CheckCircle, Search } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { motion, useScroll, useSpring, useInView, useTransform } from 'framer-motion';
+import { FileText, CreditCard, Code, CheckCircle, Search, ArrowRight } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 import { BlurText } from './BlurText';
+import { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 const PROCESS_DICTIONARY = {
@@ -87,6 +88,10 @@ const PROCESS_DICTIONARY = {
 export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' }) => {
   const t = PROCESS_DICTIONARY[lang];
   const prefersReducedMotion = useReducedMotion();
+  const [isMobile, setIsMobile] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   const stepsData = t.steps.map((s, i) => ({
     ...s,
     icon: [FileText, Search, CreditCard, Code, CheckCircle][i],
@@ -97,8 +102,32 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
       'text-purple-400',
       'text-swiss-red',
     ][i],
+    bgColor: [
+      'bg-blue-500/10',
+      'bg-amber-500/10',
+      'bg-emerald-500/10',
+      'bg-purple-500/10',
+      'bg-swiss-red/10',
+    ][i],
+    borderColor: [
+      'border-blue-500/20',
+      'border-amber-500/20',
+      'border-emerald-500/20',
+      'border-purple-500/20',
+      'border-swiss-red/20',
+    ][i],
   }));
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile for fallback
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
@@ -147,95 +176,108 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
           <p className="text-gray-400 text-lg leading-relaxed">{t.sub}</p>
         </RevealSection>
 
-        <div className="relative max-w-5xl mx-auto">
-          {/* Central Circuit Line (Desktop) */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-white/5 -translate-x-1/2 hidden md:block rounded-full" aria-hidden="true">
-            <motion.div
-              style={prefersReducedMotion ? {} : { scaleY, transformOrigin: 'top' }}
-              className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-swiss-red via-purple-500 to-blue-500 rounded-full"
-            />
-          </div>
-
-          <div className="space-y-12 md:space-y-24">
-            {stepsData.map((step, index) => {
-              const isEven = index % 2 === 0;
-              return (
-                <div
+        {/* Mobile: Vertical Timeline Fallback */}
+        {isMobile ? (
+          <div className="relative max-w-5xl mx-auto">
+            <div className="absolute left-8 top-0 bottom-0 w-1 bg-white/5 rounded-full" aria-hidden="true">
+              <motion.div
+                style={prefersReducedMotion ? {} : { scaleY, transformOrigin: 'top' }}
+                className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-swiss-red via-purple-500 to-blue-500 rounded-full"
+              />
+            </div>
+            <div className="space-y-12 pl-16">
+              {stepsData.map((step, index) => (
+                <motion.div
                   key={step.number}
-                  className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${isEven ? '' : 'md:flex-row-reverse'}`}
+                  initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, x: -30 }}
+                  whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.6, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative"
                 >
-                  {/* Step Card */}
-                  <div className="w-full md:w-1/2">
-                    <motion.div
-                      initial={{ opacity: 0, x: isEven ? -50 : 50 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true, margin: '-100px' }}
-                      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
-                      whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.01 }}
-                      className="group relative"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="relative bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-white/20 transition-all duration-300">
-                        {/* Corner Accents */}
-                        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/10 rounded-tl-lg group-hover:border-swiss-red/50 transition-colors" />
-                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white/10 rounded-tr-lg group-hover:border-blue-500/50 transition-colors" />
-                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white/10 rounded-bl-lg group-hover:border-purple-500/50 transition-colors" />
-                        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white/10 rounded-br-lg group-hover:border-white/30 transition-colors" />
-
-                        <div className="flex items-start gap-4 mb-4">
-                          <span
-                            className={`text-5xl font-bold font-display opacity-20 ${step.color}`}
-                          >
-                            {step.number}
-                          </span>
-                          <div
-                            className={`p-3 rounded-lg bg-white/5 border border-white/10 ${step.color}`}
-                          >
-                            <step.icon size={24} />
-                          </div>
-                        </div>
-
-                        <motion.h3
-                          className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all duration-300"
-                          whileHover={prefersReducedMotion ? {} : { x: 2 }}
-                        >
-                          {step.title}
-                        </motion.h3>
-                        <p className="text-gray-400 leading-relaxed font-light">
-                          {step.description}
-                        </p>
+                  <div className="absolute -left-12 top-0 w-8 h-8 bg-slate-950 border-2 border-white/30 rounded-full flex items-center justify-center z-10">
+                    <div className={`w-4 h-4 ${step.bgColor.replace('bg-', 'bg-').replace('/10', '/30')} rounded-full`} />
+                  </div>
+                  <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
+                    <div className="flex items-start gap-4 mb-4">
+                      <span className={`text-4xl font-bold font-display opacity-20 ${step.color}`}>
+                        {step.number}
+                      </span>
+                      <div className={`p-3 rounded-lg bg-white/5 border border-white/10 ${step.color}`}>
+                        {React.createElement(step.icon, { size: 20 } as React.ComponentProps<'svg'>)}
                       </div>
-                    </motion.div>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                    <p className="text-gray-400 leading-relaxed font-light text-sm">{step.description}</p>
                   </div>
-
-                  {/* Center Node Connection */}
-                  <div className="relative z-10 hidden md:flex items-center justify-center w-12 h-12">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
-                      className="w-4 h-4 bg-slate-950 border-2 border-white/30 rounded-full z-10"
-                    />
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      className={`absolute w-8 h-8 ${step.color.replace('text-', 'bg-')}/20 rounded-full animate-ping`}
-                    />
-                    {/* Horizontal Connector */}
-                    <div
-                      className={`absolute h-px w-8 md:w-16 bg-gradient-to-r from-transparent via-white/20 to-transparent ${isEven ? 'right-full' : 'left-full'}`}
-                    />
-                  </div>
-
-                  {/* Spacer for the other side */}
-                  <div className="w-full md:w-1/2 hidden md:block" />
-                </div>
-              );
-            })}
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Desktop: Horizontal Scroll Timeline */
+          <div className="relative">
+            <HorizontalScrollTimeline
+              showScrollCue={true}
+              snapType="mandatory"
+              className="max-w-full"
+            >
+              {stepsData.map((step, index) => {
+                const stepRef = useRef<HTMLDivElement>(null);
+                const isInViewStep = useInView(stepRef, { once: true, amount: 0.5 });
+                
+                return (
+                  <motion.div
+                    key={step.number}
+                    ref={stepRef}
+                    initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                    animate={isInViewStep ? { opacity: 1, scale: 1 } : { opacity: 0.7, scale: 0.95 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    whileHover={prefersReducedMotion ? {} : { y: -6, scale: 1.02 }}
+                    className="group relative w-[380px] md:w-[420px] flex-shrink-0"
+                  >
+                    {/* Progress Indicator */}
+                    <div className="absolute -top-2 left-0 right-0 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full ${step.bgColor.replace('bg-', 'bg-gradient-to-r').replace('/10', '')} rounded-full`}
+                        initial={{ width: 0 }}
+                        animate={isInViewStep ? { width: '100%' } : { width: 0 }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      />
+                    </div>
+
+                    <div className={`absolute inset-0 ${step.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl blur-xl`} />
+                    <div className="relative bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all duration-300 h-full">
+                      {/* Step Number & Icon */}
+                      <div className="flex items-start gap-4 mb-6">
+                        <span className={`text-6xl font-bold font-display opacity-20 ${step.color}`}>
+                          {step.number}
+                        </span>
+                        <div className={`p-4 rounded-xl ${step.bgColor} ${step.borderColor} border group-hover:scale-110 transition-transform duration-300`}>
+                          {React.createElement(step.icon, { size: 28, className: step.color } as React.ComponentProps<'svg'>)}
+                        </div>
+                      </div>
+
+                      <h3 className={`text-2xl font-bold mb-4 ${step.color} group-hover:text-white transition-colors`}>
+                        {step.title}
+                      </h3>
+                      <p className="text-gray-400 leading-relaxed font-light mb-6">
+                        {step.description}
+                      </p>
+
+                      {/* Arrow Indicator */}
+                      {index < stepsData.length - 1 && (
+                        <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-white/20">
+                          <ArrowRight size={24} />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </HorizontalScrollTimeline>
+          </div>
+        )}
 
         {/* Pricing Summary Card */}
         <motion.div

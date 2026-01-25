@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Shield, Lock, Zap, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Shield, Lock, Zap, ArrowRight, Mail, Phone, Calendar, FileText } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { API_BASE_URL } from '../../services/apiBase';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -38,7 +38,14 @@ const FORM_DICTIONARY = {
     successSub: "Wir werden Ihre Vision prüfen und uns innerhalb von 24 Stunden bei Ihnen melden.",
     back: "Zurück zum Dashboard",
     error: "Fehler beim Senden",
-    errorSub: "Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt."
+    errorSub: "Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.",
+    whatHappensNext: "Was passiert nach Ihrer Anfrage?",
+    nextSteps: [
+      { icon: Mail, text: "Bestätigungs-E-Mail innerhalb von 1 Stunde" },
+      { icon: Calendar, text: "Terminvereinbarung für Erstberatung (kostenlos)" },
+      { icon: FileText, text: "Massgeschneidertes Angebot innerhalb von 48 Stunden" },
+      { icon: Phone, text: "Persönlicher Ansprechpartner für alle Fragen" },
+    ],
   },
   en: {
     labels: {
@@ -88,6 +95,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   const [activeField, setActiveField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // Validation functions
   const validateEmail = (email: string): string | null => {
@@ -282,13 +290,19 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
             onChange={e => {
               handleChange(value as string, e.target.value);
             }}
-            onBlur={() => handleBlur(value as string, formData[value] as string)}
-            onFocus={onFocus}
+            onBlur={() => {
+              handleBlur(value as string, formData[value] as string);
+              setFocusedField(null);
+            }}
+            onFocus={() => {
+              onFocus();
+              setFocusedField(id_key);
+            }}
             className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               error 
                 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                : activeField === id_key 
-                  ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                : focusedField === id_key 
+                  ? 'border-swiss-red/50 shadow-[0_0_20px_rgba(218,41,28,0.2)] scale-[1.01]' 
                   : 'border-white/10 hover:border-white/20'
             }`}
             placeholder={placeholder}
@@ -305,13 +319,19 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
             onChange={e => {
               handleChange(value as string, e.target.value);
             }}
-            onBlur={() => handleBlur(value as string, formData[value] as string)}
-            onFocus={onFocus}
+            onBlur={() => {
+              handleBlur(value as string, formData[value] as string);
+              setFocusedField(null);
+            }}
+            onFocus={() => {
+              onFocus();
+              setFocusedField(id_key);
+            }}
             className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               error 
                 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                : activeField === id_key 
-                  ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                : focusedField === id_key 
+                  ? 'border-swiss-red/50 shadow-[0_0_20px_rgba(218,41,28,0.2)] scale-[1.01]' 
                   : 'border-white/10 hover:border-white/20'
             }`}
             placeholder={placeholder}
@@ -382,6 +402,42 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
 
   return (
     <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl focus-trap">
+      {/* "Was passiert danach?" Section */}
+      <div className="p-8 lg:p-12 border-b border-white/10 bg-white/5">
+        <motion.div
+          initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+          whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto"
+        >
+          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <Zap className="w-6 h-6 text-swiss-red" />
+            {t.whatHappensNext}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {t.nextSteps.map((step, index) => (
+              <motion.div
+                key={index}
+                initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, x: -20 }}
+                whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={prefersReducedMotion ? {} : { x: 4, scale: 1.02 }}
+                className="flex items-center gap-3 p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/20 transition-all group"
+              >
+                <div className="p-2 rounded-lg bg-swiss-red/10 border border-swiss-red/20 group-hover:bg-swiss-red/20 transition-colors">
+                  <step.icon size={20} className="text-swiss-red" />
+                </div>
+                <span className="text-gray-300 group-hover:text-white transition-colors text-sm font-medium">
+                  {step.text}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12">
         {/* Sidebar Info */}
         <aside className="lg:col-span-4 p-8 lg:p-12 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10" aria-label="Form security information">
@@ -502,12 +558,16 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                  value={formData.message}
                  onChange={e => handleChange('message', e.target.value)}
                  onBlur={() => handleBlur('message', formData.message)}
-                 onFocus={() => setActiveField('message')}
+                 onFocus={() => {
+                   setActiveField('message');
+                   setFocusedField('message');
+                 }}
+                 onBlur={() => setFocusedField(null)}
                  className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                    errors.message 
                      ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                     : activeField === 'message' 
-                       ? 'border-swiss-red/50 shadow-[0_0_15px_rgba(218,41,28,0.1)]' 
+                     : focusedField === 'message' 
+                       ? 'border-swiss-red/50 shadow-[0_0_20px_rgba(218,41,28,0.2)] scale-[1.01]' 
                        : 'border-white/10 hover:border-white/20'
                  }`}
                  placeholder={t.placeholders.message}
