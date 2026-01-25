@@ -214,18 +214,6 @@ export const WebdesignPage = () => {
     [],
   );
 
-  // Removed unused technologies variable to fix lint error
-  // const technologies = useMemo<Technology[]>(
-  //   () => [
-  //     { name: 'React', description: 'Moderne Frontend-Bibliothek' },
-  //     { name: 'TypeScript', description: 'Typsichere Entwicklung' },
-  //     { name: 'Tailwind CSS', description: 'Utility-First CSS Framework' },
-  //     { name: 'Vite', description: 'Schneller Build-Tool' },
-  //     { name: 'Responsive Design', description: 'Mobile-First Ansatz' },
-  //     { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich' },
-  //   ],
-  //   [],
-  // );
 
   const pricingFeatures = useMemo(
     () => [
@@ -416,11 +404,6 @@ export const WebdesignPage = () => {
             </ScrollReveal>
           </div>
         </section>
-
-        {/* Process Flow Section - Enhanced 5-Step Version */}
-        <Suspense fallback={<SkeletonLoader variant="process" />}>
-          <WebdesignProcessFlow lang={lang} />
-        </Suspense>
 
         {/* Features Section - Bento Grid Layout */}
         <section

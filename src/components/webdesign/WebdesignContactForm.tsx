@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle2, AlertCircle, Upload, X, Shield, Lock, Zap, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CheckCircle2, AlertCircle, Shield, Lock, Zap, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { API_BASE_URL } from '../../services/apiBase';
 
 interface WebdesignContactFormProps {
   onSuccess?: () => void;
@@ -13,26 +14,22 @@ const FORM_DICTIONARY = {
     labels: {
       name: "Vollständiger Name",
       email: "E-Mail Adresse",
+      phone: "Telefonnummer (Optional)",
       company: "Unternehmen (Optional)",
+      currentWebsiteUrl: "Aktuelle Website URL (Optional)",
       message: "Erzählen Sie uns von Ihrem Projekt..."
     },
     placeholders: {
       name: "Max Mustermann",
       email: "max@beispiel.ch",
+      phone: "+41 79 123 45 67",
       company: "Beispiel GmbH",
+      currentWebsiteUrl: "https://www.beispiel.ch",
       message: "Was ist Ihr Ziel? Was soll Ihre neue Website erreichen?"
     },
-    projectTypes: {
-      business: "Business Website",
-      ecommerce: "E-Commerce",
-      startup: "Startup Genesis",
-      enterprise: "Enterprise Solution"
-    },
-    budgets: {
-       low: "5k - 10k CHF",
-       med: "10k - 25k CHF",
-       high: "25k - 50k CHF",
-       ultra: "50k+ CHF"
+    requestTypes: {
+      new: "Neue Website",
+      redesign: "Redesign"
     },
     submit: "Projektanfrage senden",
     submitting: "Initialisiere Anfrage...",
@@ -46,26 +43,22 @@ const FORM_DICTIONARY = {
     labels: {
       name: "Full Name",
       email: "Email Address",
+      phone: "Phone Number (Optional)",
       company: "Company (Optional)",
+      currentWebsiteUrl: "Current Website URL (Optional)",
       message: "Tell us about your project..."
     },
     placeholders: {
       name: "John Doe",
       email: "john@example.com",
+      phone: "+1 555 123 4567",
       company: "Example Ltd",
+      currentWebsiteUrl: "https://www.example.com",
       message: "What is your goal? What should your new website achieve?"
     },
-    projectTypes: {
-      business: "Business Website",
-      ecommerce: "E-Commerce",
-      startup: "Startup Genesis",
-      enterprise: "Enterprise Solution"
-    },
-    budgets: {
-       low: "5k - 10k CHF",
-       med: "10k - 25k CHF",
-       high: "25k - 50k CHF",
-       ultra: "50k+ CHF"
+    requestTypes: {
+      new: "New Website",
+      redesign: "Redesign"
     },
     submit: "Send Project Inquiry",
     submitting: "Initializing Inquiry...",
@@ -83,9 +76,10 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     company: '',
-    projectType: 'business',
-    budget: '5k-10k',
+    requestType: 'new' as 'new' | 'redesign',
+    currentWebsiteUrl: '',
     message: '',
     files: [] as File[]
   });
@@ -113,10 +107,20 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
 
   const validateMessage = (message: string): string | null => {
     if (!message.trim()) return lang === 'de' ? 'Nachricht ist erforderlich' : 'Message is required';
-    if (message.trim().length < 10) {
-      return lang === 'de' ? 'Nachricht muss mindestens 10 Zeichen lang sein' : 'Message must be at least 10 characters';
+    if (message.trim().length < 12) {
+      return lang === 'de' ? 'Nachricht muss mindestens 12 Zeichen lang sein' : 'Message must be at least 12 characters';
     }
     return null;
+  };
+
+  const validateUrl = (url: string): string | null => {
+    if (!url.trim()) return null; // Optional field
+    try {
+      new URL(url);
+      return null;
+    } catch {
+      return lang === 'de' ? 'Ungültige URL' : 'Invalid URL';
+    }
   };
 
   const validateField = (field: string, value: string): string | null => {
@@ -127,6 +131,8 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         return validateEmail(value);
       case 'message':
         return validateMessage(value);
+      case 'currentWebsiteUrl':
+        return validateUrl(value);
       default:
         return null;
     }
@@ -196,14 +202,58 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     }
 
     setFormState('loading');
-    
-    // Simulate API call
-    setTimeout(() => {
-      setFormState('success');
-      setTimeout(() => {
-        if (onSuccess) onSuccess();
-      }, 3000);
-    }, 2000);
+
+    try {
+      // Prepare FormData for multipart/form-data request
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('requestType', formData.requestType);
+      formDataToSend.append('message', formData.message);
+      
+      if (formData.phone) {
+        formDataToSend.append('phone', formData.phone);
+      }
+      if (formData.company) {
+        formDataToSend.append('company', formData.company);
+      }
+      if (formData.currentWebsiteUrl) {
+        formDataToSend.append('currentWebsiteUrl', formData.currentWebsiteUrl);
+      }
+
+      // Append files if any
+      formData.files.forEach((file) => {
+        formDataToSend.append('files', file);
+      });
+
+      // Make API call
+      const response = await fetch(`${API_BASE_URL}/webdesign/contact`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Failed to submit request');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setFormState('success');
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 3000);
+      } else {
+        throw new Error(result.message || 'Failed to submit request');
+      }
+    } catch (error) {
+      console.error('[WebdesignContactForm] Error submitting form:', error);
+      setFormState('error');
+      setErrors({
+        submit: error instanceof Error ? error.message : (lang === 'de' ? 'Fehler beim Senden der Anfrage' : 'Error sending request'),
+      });
+    }
   };
 
   const InputGroup: React.FC<{
@@ -304,6 +354,30 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     );
   }
 
+  if (formState === 'error') {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-slate-900/50 backdrop-blur-xl border border-red-500/20 rounded-3xl p-12 text-center"
+        role="alert"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6" aria-hidden="true">
+           <AlertCircle size={40} className="text-red-400" />
+        </div>
+        <h3 className="text-2xl font-bold text-white mb-2">{t.error}</h3>
+        <p className="text-gray-400 font-light mb-8 max-w-sm mx-auto">
+           {errors.submit || t.errorSub}
+        </p>
+        <Button onClick={() => setFormState('idle')} variant="outline" aria-label={lang === 'de' ? 'Erneut versuchen' : 'Try again'}>
+           {lang === 'de' ? 'Erneut versuchen' : 'Try again'}
+        </Button>
+      </motion.div>
+    );
+  }
+
   return (
     <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl focus-trap">
       <div className="grid grid-cols-1 lg:grid-cols-12">
@@ -370,6 +444,15 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
            </div>
 
            <InputGroup 
+              label={t.labels.phone}
+              id_key="phone"
+              value="phone"
+              placeholder={t.placeholders.phone}
+              onFocus={() => setActiveField('phone')}
+              isRequired={false}
+           />
+
+           <InputGroup 
               label={t.labels.company}
               id_key="company"
               value="company"
@@ -379,37 +462,35 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
            />
 
            <div className="space-y-3">
-              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">Project Type</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                 {(Object.keys(t.projectTypes) as Array<keyof typeof t.projectTypes>).map((type) => (
+              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">
+                {lang === 'de' ? 'Anfrageart' : 'Request Type'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                 {(Object.keys(t.requestTypes) as Array<'new' | 'redesign'>).map((type) => (
                     <button
                        key={type}
                        type="button"
-                       onClick={() => setFormData(prev => ({ ...prev, projectType: type }))}
-                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all ${formData.projectType === type ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                       onClick={() => setFormData(prev => ({ ...prev, requestType: type }))}
+                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.requestType === type ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                       aria-pressed={formData.requestType === type}
                     >
-                       {t.projectTypes[type]}
+                       {t.requestTypes[type]}
                     </button>
                  ))}
               </div>
            </div>
 
-           <div className="space-y-3">
-              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">Budget Allocation</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                 {(Object.keys(t.budgets) as Array<keyof typeof t.budgets>).map((b) => (
-                    <button
-                       key={b}
-                       type="button"
-                       onClick={() => setFormData(prev => ({ ...prev, budget: b }))}
-                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.budget === b ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
-                       aria-pressed={formData.budget === b}
-                    >
-                       {t.budgets[b]}
-                    </button>
-                 ))}
-              </div>
-           </div>
+           {formData.requestType === 'redesign' && (
+              <InputGroup 
+                 label={t.labels.currentWebsiteUrl}
+                 id_key="currentWebsiteUrl"
+                 value="currentWebsiteUrl"
+                 placeholder={t.placeholders.currentWebsiteUrl}
+                 onFocus={() => setActiveField('currentWebsiteUrl')}
+                 isRequired={false}
+                 error={errors.currentWebsiteUrl}
+              />
+           )}
 
            <div className="relative group">
               <label htmlFor="input-message" className="sr-only">{t.labels.message}</label>

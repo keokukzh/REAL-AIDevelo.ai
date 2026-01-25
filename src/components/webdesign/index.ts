@@ -1,7 +1,5 @@
 export { WebdesignHero } from './WebdesignHero';
 export { WebdesignTechStack } from './WebdesignTechStack';
-export { WebdesignArchitecture } from './WebdesignArchitecture';
-export { WebdesignComparison } from './WebdesignComparison';
 export { WebdesignProcessFlow } from './WebdesignProcessFlow';
 export { WebsitePreviews } from './WebsitePreviews';
 export { WebdesignContactForm } from './WebdesignContactForm';
