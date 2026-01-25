@@ -6,7 +6,6 @@ import { Navbar } from '../components/Navbar';
 import {
   WebdesignContactForm,
   PricingCard,
-  ScrollReveal,
   WebdesignAnimatedBackground,
   SplashCursorBackground,
   WebdesignHero,
@@ -15,6 +14,21 @@ import {
   AntigravityBackground,
   SocialProofSection,
 } from '../components/webdesign';
+// ScrollReveal is kept for backward compatibility but replaced with React Bits components where possible
+import {
+  AuroraBackground,
+  SilkBackground,
+  DarkVeilBackground,
+  DitherBackground,
+  LazyBackground,
+  AnimatedContent,
+  FadeContent,
+  GlareHover,
+  GradientText,
+  ShinyText,
+  Noise,
+  ShapeBlur,
+} from '../components/webdesign/react-bits';
 import { SkeletonLoader } from '../components/webdesign/SkeletonLoader';
 import { TableOfContents } from '../components/webdesign/TableOfContents';
 import { BackToTop } from '../components/webdesign/BackToTop';
@@ -317,8 +331,15 @@ export const WebdesignPage = () => {
         <div className="absolute inset-0 z-[1]">
           <SplashCursorBackground />
         </div>
+        {/* React Bits Aurora Background for Hero Section */}
+        <LazyBackground className="absolute inset-0 z-[0]">
+          <AuroraBackground className="absolute inset-0" />
+        </LazyBackground>
+        {/* Fallback to original background if React Bits not available */}
         <WebdesignAnimatedBackground variant="hero" intensity="medium" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/2 via-slate-950/15 to-slate-950 z-[2]" />
+        {/* Noise overlay for texture */}
+        <Noise intensity={0.03} speed={2} className="z-[3]" />
       </div>
 
       <Navbar />
@@ -387,14 +408,20 @@ export const WebdesignPage = () => {
           className="py-12 sm:py-20 relative overflow-hidden scroll-mt-20"
           aria-labelledby="pricing-heading"
         >
+          {/* React Bits DarkVeil Background for Pricing Section */}
+          <LazyBackground className="absolute inset-0 z-0">
+            <DarkVeilBackground className="absolute inset-0" />
+          </LazyBackground>
           <div className="container mx-auto px-6 relative z-20">
-            <ScrollReveal direction="up" delay={0.1} className="max-w-4xl mx-auto">
+            <AnimatedContent direction="up" delay={0.1} className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
                 <h2
                   id="pricing-heading"
                   className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tight"
                 >
-                  {t.pricingTitle}
+                  <GradientText colors={['#ffffff', '#DA291C', '#ffffff']} speed={4}>
+                    {t.pricingTitle}
+                  </GradientText>
                 </h2>
                 <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">{t.pricingSub}</p>
               </div>
@@ -405,7 +432,7 @@ export const WebdesignPage = () => {
                 disclaimer={t.pricingDisclaimer}
                 features={pricingFeatures}
               />
-            </ScrollReveal>
+            </AnimatedContent>
           </div>
         </section>
 
@@ -415,9 +442,13 @@ export const WebdesignPage = () => {
           className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
           aria-labelledby="features-heading"
         >
+          {/* React Bits Silk Background for Features Section */}
+          <LazyBackground className="absolute inset-0 z-0">
+            <SilkBackground className="absolute inset-0" />
+          </LazyBackground>
           {/* Antigravity Background Effect */}
           {!prefersReducedMotion && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-[1]">
               <AntigravityBackground
                 count={200}
                 color="#DA291C"
@@ -435,7 +466,7 @@ export const WebdesignPage = () => {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
-            <ScrollReveal direction="up" className="text-center mb-12 sm:mb-16 md:mb-20">
+            <AnimatedContent direction="up" className="text-center mb-12 sm:mb-16 md:mb-20">
               <div className="mb-6 sm:mb-8">
                 <BlurText
                   text={t.featuresTitle}
@@ -449,12 +480,14 @@ export const WebdesignPage = () => {
               <p className="text-gray-400 text-lg sm:text-xl max-w-3xl mx-auto font-light leading-relaxed px-4">
                 {t.featuresSub}
               </p>
-            </ScrollReveal>
+            </AnimatedContent>
 
             <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 max-w-7xl mx-auto">
               {/* Responsive Design - Large Item */}
-              <ScrollReveal direction="up" delay={0.1} className="md:col-span-4 lg:col-span-3">
-                <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
+              <AnimatedContent direction="up" delay={0.1} className="md:col-span-4 lg:col-span-3">
+                <ShapeBlur intensity={0.2}>
+                  <GlareHover intensity={0.2}>
+                    <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Globe size={120} className="text-white" />
                   </div>
@@ -473,12 +506,15 @@ export const WebdesignPage = () => {
                       <ArrowRight size={14} />
                     </div>
                   </div>
-                </div>
-              </ScrollReveal>
+                    </div>
+                  </GlareHover>
+                </ShapeBlur>
+              </AnimatedContent>
 
               {/* Performance - Tall Item */}
-              <ScrollReveal direction="up" delay={0.2} className="md:col-span-2 lg:col-span-3">
-                <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
+              <AnimatedContent direction="up" delay={0.2} className="md:col-span-2 lg:col-span-3">
+                <GlareHover intensity={0.2}>
+                  <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
                   <div className="relative z-10">
                     <div className="p-4 w-fit rounded-2xl bg-white/5 border border-white/10 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-colors mb-8">
                       <Zap className="w-8 h-8 text-emerald-400" />
@@ -506,12 +542,14 @@ export const WebdesignPage = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </ScrollReveal>
+                  </div>
+                </GlareHover>
+              </AnimatedContent>
 
               {/* SEO - Small Item */}
-              <ScrollReveal direction="up" delay={0.3} className="md:col-span-2 lg:col-span-2">
-                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+              <AnimatedContent direction="up" delay={0.3} className="md:col-span-2 lg:col-span-2">
+                <GlareHover intensity={0.15}>
+                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
                   <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-colors mb-6">
                     <Search className="w-6 h-6 text-purple-400" />
                   </div>
@@ -519,12 +557,14 @@ export const WebdesignPage = () => {
                   <p className="text-gray-400 text-sm leading-relaxed font-light">
                     {features[2].description}
                   </p>
-                </div>
-              </ScrollReveal>
+                  </div>
+                </GlareHover>
+              </AnimatedContent>
 
               {/* Modern Design - Small Item */}
-              <ScrollReveal direction="up" delay={0.4} className="md:col-span-2 lg:col-span-2">
-                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+              <AnimatedContent direction="up" delay={0.4} className="md:col-span-2 lg:col-span-2">
+                <GlareHover intensity={0.15}>
+                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
                   <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-blue-500/10 group-hover:border-blue-500/20 transition-colors mb-6">
                     <Palette className="w-6 h-6 text-blue-400" />
                   </div>
@@ -532,12 +572,14 @@ export const WebdesignPage = () => {
                   <p className="text-gray-400 text-sm leading-relaxed font-light">
                     {features[3].description}
                   </p>
-                </div>
-              </ScrollReveal>
+                  </div>
+                </GlareHover>
+              </AnimatedContent>
 
               {/* Security - Small Item */}
-              <ScrollReveal direction="up" delay={0.5} className="md:col-span-4 lg:col-span-2">
-                <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
+              <AnimatedContent direction="up" delay={0.5} className="md:col-span-4 lg:col-span-2">
+                <GlareHover intensity={0.15}>
+                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
                   <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors mb-6">
                     <Shield className="w-6 h-6 text-swiss-red" />
                   </div>
@@ -545,16 +587,23 @@ export const WebdesignPage = () => {
                   <p className="text-gray-400 text-sm leading-relaxed font-light">
                     {features[6].description}
                   </p>
-                </div>
-              </ScrollReveal>
+                  </div>
+                </GlareHover>
+              </AnimatedContent>
             </div>
           </div>
         </section>
 
         {/* Technologies Section */}
-        <Suspense fallback={<SkeletonLoader variant="tech" />}>
-          <WebdesignTechStack lang={lang} />
-        </Suspense>
+        <section className="relative overflow-hidden">
+          {/* React Bits Dither Background for Tech Stack Section */}
+          <LazyBackground className="absolute inset-0 z-0">
+            <DitherBackground className="absolute inset-0" />
+          </LazyBackground>
+          <Suspense fallback={<SkeletonLoader variant="tech" />}>
+            <WebdesignTechStack lang={lang} />
+          </Suspense>
+        </section>
 
         {/* Contact Form Section */}
         <section
@@ -564,20 +613,22 @@ export const WebdesignPage = () => {
           tabIndex={-1}
         >
           <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
-            <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
+            <AnimatedContent direction="up" distance={30} className="max-w-4xl mx-auto">
               <div className="relative z-10">
-                <ScrollReveal direction="fade" delay={0.2} className="text-center mb-12 sm:mb-16">
+                <FadeContent delay={0.2} className="text-center mb-12 sm:mb-16">
                   <h2
                     id="contact-heading"
                     className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-display mb-4 sm:mb-6 tracking-tighter"
                   >
-                    {t.contactTitle}
+                    <ShinyText speed={3}>
+                      {t.contactTitle}
+                    </ShinyText>
                   </h2>
                   <p className="text-gray-400 text-lg sm:text-xl font-light px-4">{t.contactSub}</p>
-                </ScrollReveal>
+                </FadeContent>
                 <WebdesignContactForm onSuccess={() => navigate('/')} lang={lang} />
               </div>
-            </ScrollReveal>
+            </AnimatedContent>
           </div>
         </section>
 

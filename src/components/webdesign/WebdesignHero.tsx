@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { WebdesignSlideshow } from './WebdesignSlideshow';
 import { BlurText } from './BlurText';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { Magnet, ClickSpark, StarBorder } from './react-bits';
 
 interface WebdesignHeroProps {
   t: {
@@ -75,30 +76,34 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
             className="mb-10"
           >
             <div className="flex flex-wrap items-center gap-3 mb-6">
-              <motion.div
-                initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={prefersReducedMotion ? {} : { delay: 0.2, duration: 0.4 }}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/20 text-xs font-mono text-white/90 shadow-lg ultra-glass"
-              >
-                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                SYSTEMS ONLINE & READY
-              </motion.div>
-              <motion.div
-                initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 0.4 }}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-swiss-red/20 backdrop-blur-xl border border-swiss-red/30 text-xs font-mono text-swiss-red shadow-lg ultra-glass"
-              >
-                <img
-                  src="https://flagcdn.com/w20/ch.png"
-                  alt="Switzerland"
-                  className="w-5 h-auto rounded-sm"
-                />
-                MADE IN SWITZERLAND
-              </motion.div>
+              <StarBorder starCount={8} speed={0.5}>
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={prefersReducedMotion ? {} : { delay: 0.2, duration: 0.4 }}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/20 text-xs font-mono text-white/90 shadow-lg ultra-glass"
+                >
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                  SYSTEMS ONLINE & READY
+                </motion.div>
+              </StarBorder>
+              <StarBorder starCount={8} speed={0.5}>
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 0.4 }}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-swiss-red/20 backdrop-blur-xl border border-swiss-red/30 text-xs font-mono text-swiss-red shadow-lg ultra-glass"
+                >
+                  <img
+                    src="https://flagcdn.com/w20/ch.png"
+                    alt="Switzerland"
+                    className="w-5 h-auto rounded-sm"
+                  />
+                  MADE IN SWITZERLAND
+                </motion.div>
+              </StarBorder>
             </div>
             
             {/* Additional Trust Badges Row */}
@@ -167,48 +172,54 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
             transition={prefersReducedMotion ? {} : { delay: 0.8, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-5 mb-12"
           >
-            <motion.div
-              whileHover={prefersReducedMotion ? {} : { scale: 1.03 }}
-              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
-              <Button
-                onClick={() =>
-                  document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })
-                }
-                variant="primary"
-                className="group relative overflow-hidden h-16 px-12 text-lg font-bold shadow-[0_0_40px_-10px_rgba(220,38,38,0.5)] hover:shadow-[0_0_60px_-10px_rgba(220,38,38,0.7)] transition-all duration-500 bg-swiss-red hover:bg-red-600"
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_2s_infinite]" />
-                <span className="relative z-10 flex items-center gap-3 uppercase tracking-wider">
-                  {t.missionStart}{' '}
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
-                </span>
-              </Button>
-            </motion.div>
+            <Magnet strength={0.2}>
+              <ClickSpark particleCount={12} color="#DA291C">
+                <motion.div
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.03 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                >
+                  <Button
+                    onClick={() =>
+                      document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })
+                    }
+                    variant="primary"
+                    className="group relative overflow-hidden h-16 px-12 text-lg font-bold shadow-[0_0_40px_-10px_rgba(220,38,38,0.5)] hover:shadow-[0_0_60px_-10px_rgba(220,38,38,0.7)] transition-all duration-500 bg-swiss-red hover:bg-red-600"
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_2s_infinite]" />
+                    <span className="relative z-10 flex items-center gap-3 uppercase tracking-wider">
+                      {t.missionStart}{' '}
+                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+                    </span>
+                  </Button>
+                </motion.div>
+              </ClickSpark>
+            </Magnet>
 
-            <motion.div
-              whileHover={prefersReducedMotion ? {} : { scale: 1.03 }}
-              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
-              <Button
-                onClick={() => setShowSpecs(!showSpecs)}
-                variant="outline"
-                className={`h-16 px-10 text-lg ultra-glass-light border-2 transition-all duration-300 ${
-                  showSpecs 
-                    ? 'bg-white/10 border-white/40 text-white shadow-lg' 
-                    : 'border-white/20 hover:border-white/40 hover:bg-white/5 text-gray-300 hover:text-white hover:shadow-lg'
-                }`}
-                aria-label={showSpecs ? t.closeSpecs : t.showSpecs}
-                aria-expanded={showSpecs}
+            <Magnet strength={0.15}>
+              <motion.div
+                whileHover={prefersReducedMotion ? {} : { scale: 1.03 }}
+                whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
               >
-                <span className="relative flex items-center gap-2">
-                  {showSpecs ? t.closeSpecs : t.showSpecs}
-                  <Zap size={18} className={showSpecs ? 'rotate-180 transition-transform duration-300' : 'transition-transform duration-300'} />
-                </span>
-              </Button>
-            </motion.div>
+                <Button
+                  onClick={() => setShowSpecs(!showSpecs)}
+                  variant="outline"
+                  className={`h-16 px-10 text-lg ultra-glass-light border-2 transition-all duration-300 ${
+                    showSpecs 
+                      ? 'bg-white/10 border-white/40 text-white shadow-lg' 
+                      : 'border-white/20 hover:border-white/40 hover:bg-white/5 text-gray-300 hover:text-white hover:shadow-lg'
+                  }`}
+                  aria-label={showSpecs ? t.closeSpecs : t.showSpecs}
+                  aria-expanded={showSpecs}
+                >
+                  <span className="relative flex items-center gap-2">
+                    {showSpecs ? t.closeSpecs : t.showSpecs}
+                    <Zap size={18} className={showSpecs ? 'rotate-180 transition-transform duration-300' : 'transition-transform duration-300'} />
+                  </span>
+                </Button>
+              </motion.div>
+            </Magnet>
           </motion.div>
 
           {/* Enhanced Trust Indicators - More Prominent */}

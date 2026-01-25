@@ -4,6 +4,7 @@ import { Check, ChevronDown, Shield, Award, Zap } from 'lucide-react';
 import { Magnetic } from './Magnetic';
 import { Button } from '../ui/Button';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { GlareHover, ElectricBorder } from './react-bits';
 
 interface PricingFeature {
   text: string;
@@ -28,23 +29,24 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
   const rightColumnFeatures = visibleFeatures.slice(Math.ceil(visibleFeatures.length / 2));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      whileHover={prefersReducedMotion ? {} : { 
-        y: -8,
-        scale: 1.01,
-        transition: { duration: 0.3, ease: 'easeOut' }
-      }}
-      className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
-      aria-labelledby="pricing-heading"
-      role="region"
-      style={{ transform: 'translateZ(0)' }}
-    >
+    <GlareHover intensity={0.3}>
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, margin: '-100px' }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+        whileHover={prefersReducedMotion ? {} : { 
+          y: -8,
+          scale: 1.01,
+          transition: { duration: 0.3, ease: 'easeOut' }
+        }}
+        className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
+        aria-labelledby="pricing-heading"
+        role="region"
+        style={{ transform: 'translateZ(0)' }}
+      >
       {/* Animated Decorative Elements */}
       {!prefersReducedMotion && (
         <>
@@ -248,6 +250,8 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
         </div>
       </div>
     </motion.div>
+      </GlareHover>
+    </ElectricBorder>
   );
 });
 

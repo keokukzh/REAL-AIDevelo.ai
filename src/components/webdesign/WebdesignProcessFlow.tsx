@@ -5,6 +5,7 @@ import { RevealSection } from '../layout/RevealSection';
 import { BlurText } from './BlurText';
 import { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { SplitText } from './react-bits';
 
 const PROCESS_DICTIONARY = {
   de: {
@@ -207,7 +208,9 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
                         {React.createElement(step.icon, { size: 20 } as React.ComponentProps<'svg'>)}
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      <SplitText splitBy="words" delay={30}>{step.title}</SplitText>
+                    </h3>
                     <p className="text-gray-400 leading-relaxed font-light text-sm">{step.description}</p>
                   </div>
                 </motion.div>
@@ -259,7 +262,7 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
                       </div>
 
                       <h3 className={`text-2xl font-bold mb-4 ${step.color} group-hover:text-white transition-colors`}>
-                        {step.title}
+                        <SplitText splitBy="words" delay={30}>{step.title}</SplitText>
                       </h3>
                       <p className="text-gray-400 leading-relaxed font-light mb-6">
                         {step.description}
