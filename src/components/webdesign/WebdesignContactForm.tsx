@@ -74,7 +74,14 @@ const FORM_DICTIONARY = {
     successSub: "We will review your vision and get back to you within 24 hours.",
     back: "Back to Dashboard",
     error: "Sending Error",
-    errorSub: "Please try again or contact us directly."
+    errorSub: "Please try again or contact us directly.",
+    whatHappensNext: "What happens after your inquiry?",
+    nextSteps: [
+      { icon: Mail, text: "Confirmation email within 1 hour" },
+      { icon: Calendar, text: "Schedule free consultation call" },
+      { icon: FileText, text: "Customized offer within 48 hours" },
+      { icon: Phone, text: "Personal contact person for all questions" },
+    ],
   }
 };
 
