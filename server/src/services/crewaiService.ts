@@ -4,7 +4,6 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { config } from '../config/env';
 import { StructuredLoggingService } from './loggingService';
 
 export interface GenerateContentRequest {
@@ -59,10 +58,9 @@ class CrewAIService {
         });
         return config;
       },
-      (error) => {
-        StructuredLoggingService.error('CrewAI service request error', {
-          error: error.message,
-        });
+      (error: unknown) => {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        StructuredLoggingService.error('CrewAI service request error', errorObj);
         return Promise.reject(error);
       }
     );
@@ -76,11 +74,12 @@ class CrewAIService {
         });
         return response;
       },
-      (error: AxiosError) => {
-        StructuredLoggingService.error('CrewAI service response error', {
-          url: error.config?.url,
-          status: error.response?.status,
-          message: error.message,
+      (error: unknown) => {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        const axiosError = axios.isAxiosError(error) ? error : null;
+        StructuredLoggingService.error('CrewAI service response error', errorObj, {
+          url: axiosError?.config?.url,
+          status: axiosError?.response?.status,
         });
         return Promise.reject(error);
       }
@@ -109,15 +108,10 @@ class CrewAIService {
     try {
       const response = await this.client.get<ContentType[]>('/types');
       return response.data;
-    } catch (error) {
-      StructuredLoggingService.error('Failed to fetch content types', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw new Error(
-        `Failed to fetch content types: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      StructuredLoggingService.error('Failed to fetch content types', errorObj);
+      throw new Error(`Failed to fetch content types: ${errorObj.message}`);
     }
   }
 
@@ -145,7 +139,7 @@ class CrewAIService {
       });
 
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<{ detail: string }>;
         const errorMessage =
@@ -153,25 +147,23 @@ class CrewAIService {
           axiosError.message ||
           'Unknown error';
         
-        StructuredLoggingService.error('Content generation failed', {
+        const errorObj = new Error(errorMessage);
+        StructuredLoggingService.error('Content generation failed', errorObj, {
           type: request.type,
           topic: request.topic,
-          error: errorMessage,
           status: axiosError.response?.status,
         });
 
-        throw new Error(`Content generation failed: ${errorMessage}`);
+        throw errorObj;
       }
 
-      StructuredLoggingService.error('Content generation error', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      StructuredLoggingService.error('Content generation error', errorObj, {
+        type: request.type,
+        topic: request.topic,
       });
 
-      throw new Error(
-        `Content generation failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
+      throw new Error(`Content generation failed: ${errorObj.message}`);
     }
   }
 

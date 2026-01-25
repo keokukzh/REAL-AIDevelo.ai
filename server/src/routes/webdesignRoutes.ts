@@ -263,15 +263,15 @@ router.post('/content/optimize', async (req: Request, res: Response, next: NextF
       optimized: result.content,
       metadata: result.metadata,
     });
-  } catch (error) {
-    StructuredLoggingService.error('Webdesign content optimization failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error('Unknown error');
+    StructuredLoggingService.error('Webdesign content optimization failed', errorObj, {
       section: req.body.section,
     });
 
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorObj.message,
     });
   }
 });
@@ -327,14 +327,13 @@ router.post('/content/variations', async (req: Request, res: Response, next: Nex
         metadata: r.metadata,
       })),
     });
-  } catch (error) {
-    StructuredLoggingService.error('Webdesign variation generation failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error('Unknown error');
+    StructuredLoggingService.error('Webdesign variation generation failed', errorObj);
 
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorObj.message,
     });
   }
 });
