@@ -22,7 +22,10 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const prefersReducedMotion = useReducedMotion();
-  const y1 = useTransform(scrollY, [0, 500], [0, 100]);
+  // Subtle parallax for slideshow
+  const y1 = useTransform(scrollY, [0, 500], [0, 50]);
+  // Parallax for badges (slight upward movement)
+  const badgeY = useTransform(scrollY, [0, 300], [0, -10]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   const [showSpecs, setShowSpecs] = useState(false);
@@ -47,20 +50,31 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
             initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
+            style={prefersReducedMotion ? {} : { y: badgeY }}
           >
             <div className="flex flex-wrap items-center gap-3 mb-8">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/10 text-xs font-mono text-white/80 ultra-glass">
+              <motion.div
+                initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={prefersReducedMotion ? {} : { delay: 0.2, duration: 0.4 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/10 text-xs font-mono text-white/80 ultra-glass"
+              >
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 SYSTEMS ONLINE & READY
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-swiss-red/10 backdrop-blur-md border border-swiss-red/20 text-xs font-mono text-swiss-red ultra-glass">
+              </motion.div>
+              <motion.div
+                initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 0.4 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-swiss-red/10 backdrop-blur-md border border-swiss-red/20 text-xs font-mono text-swiss-red ultra-glass"
+              >
                 <img
                   src="https://flagcdn.com/w20/ch.png"
                   alt="Switzerland"
                   className="w-4 h-auto rounded-sm"
                 />
                 MADE IN SWITZERLAND
-              </div>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -149,11 +163,16 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
         <motion.div
           style={prefersReducedMotion ? {} : { y: y1 }}
           className="relative w-full z-10"
-          initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9, rotateX: 10 }}
-          animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <WebdesignSlideshow />
+          <motion.div
+            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <WebdesignSlideshow />
+          </motion.div>
 
           {/* Decorative Floating Elements */}
           <motion.div

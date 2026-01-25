@@ -13,6 +13,7 @@ import {
   WebdesignInquiryWidget,
   BlurText,
   AntigravityBackground,
+  SocialProofSection,
 } from '../components/webdesign';
 import { SkeletonLoader } from '../components/webdesign/SkeletonLoader';
 import { TableOfContents } from '../components/webdesign/TableOfContents';
@@ -359,13 +360,16 @@ export const WebdesignPage = () => {
         {/* Hero Section */}
         <section
           id="hero"
-          className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-32 pb-12 sm:pb-20"
+          className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 md:pt-32 pb-12 sm:pb-16 md:pb-20 scroll-mt-20"
           aria-labelledby="hero-heading"
         >
           <ErrorBoundary fallback={<WebdesignHero t={t} />}>
             <WebdesignHero t={t} />
           </ErrorBoundary>
         </section>
+
+        {/* Social Proof / Key Benefits Section */}
+        <SocialProofSection lang={lang} />
 
         {/* Process Flow Section */}
         <Suspense fallback={<SkeletonLoader variant="process" />}>
@@ -380,7 +384,7 @@ export const WebdesignPage = () => {
         {/* Pricing Section */}
         <section
           id="pricing"
-          className="py-12 sm:py-20 relative overflow-hidden"
+          className="py-12 sm:py-20 relative overflow-hidden scroll-mt-20"
           aria-labelledby="pricing-heading"
         >
           <div className="container mx-auto px-6 relative z-20">
@@ -408,7 +412,7 @@ export const WebdesignPage = () => {
         {/* Features Section - Bento Grid Layout */}
         <section
           id="features"
-          className="py-24 sm:py-32 relative overflow-hidden"
+          className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
           aria-labelledby="features-heading"
         >
           {/* Antigravity Background Effect */}
@@ -430,24 +434,24 @@ export const WebdesignPage = () => {
           <div className="absolute top-1/2 left-0 w-96 h-96 bg-swiss-red/5 blur-[120px] rounded-full pointer-events-none z-0" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
-          <div className="container mx-auto px-6 relative z-20">
-            <ScrollReveal direction="up" className="text-center mb-20">
-              <div className="mb-8">
+          <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
+            <ScrollReveal direction="up" className="text-center mb-12 sm:mb-16 md:mb-20">
+              <div className="mb-6 sm:mb-8">
                 <BlurText
                   text={t.featuresTitle}
                   animateBy="words"
                   direction="top"
                   delay={100}
                   stepDuration={0.3}
-                  className="text-5xl md:text-7xl font-bold font-display tracking-tight"
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight"
                 />
               </div>
-              <p className="text-gray-400 text-xl max-w-3xl mx-auto font-light leading-relaxed">
+              <p className="text-gray-400 text-lg sm:text-xl max-w-3xl mx-auto font-light leading-relaxed px-4">
                 {t.featuresSub}
               </p>
             </ScrollReveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 max-w-7xl mx-auto">
               {/* Responsive Design - Large Item */}
               <ScrollReveal direction="up" delay={0.1} className="md:col-span-4 lg:col-span-3">
                 <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
@@ -555,21 +559,21 @@ export const WebdesignPage = () => {
         {/* Contact Form Section */}
         <section
           id="contact-form"
-          className="py-12 sm:py-20 relative overflow-hidden"
+          className="py-12 sm:py-16 md:py-20 relative overflow-hidden scroll-mt-20"
           aria-labelledby="contact-heading"
           tabIndex={-1}
         >
-          <div className="container mx-auto px-6 relative z-20">
+          <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
             <ScrollReveal direction="scale" className="max-w-4xl mx-auto">
               <div className="relative z-10">
-                <ScrollReveal direction="fade" delay={0.2} className="text-center mb-16">
+                <ScrollReveal direction="fade" delay={0.2} className="text-center mb-12 sm:mb-16">
                   <h2
                     id="contact-heading"
-                    className="text-4xl md:text-6xl font-bold font-display mb-6 tracking-tighter"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-display mb-4 sm:mb-6 tracking-tighter"
                   >
                     {t.contactTitle}
                   </h2>
-                  <p className="text-gray-400 text-xl font-light">{t.contactSub}</p>
+                  <p className="text-gray-400 text-lg sm:text-xl font-light px-4">{t.contactSub}</p>
                 </ScrollReveal>
                 <WebdesignContactForm onSuccess={() => navigate('/')} lang={lang} />
               </div>
@@ -580,10 +584,10 @@ export const WebdesignPage = () => {
         {/* Related Links Section */}
         <section
           id="related-links"
-          className="py-12 sm:py-20 relative overflow-hidden"
+          className="py-8 sm:py-12 relative overflow-hidden scroll-mt-20"
           aria-labelledby="related-links-heading"
         >
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -592,34 +596,46 @@ export const WebdesignPage = () => {
             >
               <h2
                 id="related-links-heading"
-                className="text-3xl font-bold font-display mb-10 tracking-tight text-white/80"
+                className="text-2xl sm:text-3xl font-bold font-display mb-6 sm:mb-10 tracking-tight text-white/80"
               >
                 {t.relatedTitle}
               </h2>
-              <p className="text-gray-400 mb-8">Entdecken Sie unsere anderen Angebote</p>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <Button
-                  onClick={() => navigate(ROUTES.VOICE_AGENTS)}
-                  variant="outline"
-                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
-                  aria-label="Zu Voice Agents navigieren"
+              <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base px-4">Entdecken Sie unsere anderen Angebote</p>
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
+                <motion.div
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                 >
-                  <span className="flex items-center gap-2">
-                    <Zap size={18} className="text-yellow-500" />
-                    Voice Agents
-                  </span>
-                </Button>
-                <Button
-                  onClick={() => navigate(ROUTES.DASHBOARD)}
-                  variant="outline"
-                  className="min-h-[56px] px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all"
-                  aria-label="Zum Dashboard navigieren"
+                  <Button
+                    onClick={() => navigate(ROUTES.VOICE_AGENTS)}
+                    variant="outline"
+                    className="min-h-[56px] px-6 sm:px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all duration-300"
+                    aria-label="Zu Voice Agents navigieren"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Zap size={18} className="text-yellow-500" />
+                      Voice Agents
+                    </span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                 >
-                  <span className="flex items-center gap-2">
-                    <Layout size={18} className="text-blue-500" />
-                    Dashboard
-                  </span>
-                </Button>
+                  <Button
+                    onClick={() => navigate(ROUTES.DASHBOARD)}
+                    variant="outline"
+                    className="min-h-[56px] px-6 sm:px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all duration-300"
+                    aria-label="Zum Dashboard navigieren"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Layout size={18} className="text-blue-500" />
+                      Dashboard
+                    </span>
+                  </Button>
+                </motion.div>
               </div>
             </motion.div>
           </div>

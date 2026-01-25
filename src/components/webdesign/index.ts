@@ -2,6 +2,7 @@ export { WebdesignHero } from './WebdesignHero';
 export { WebdesignTechStack } from './WebdesignTechStack';
 export { WebdesignProcessFlow } from './WebdesignProcessFlow';
 export { WebsitePreviews } from './WebsitePreviews';
+export { SocialProofSection } from './SocialProofSection';
 export { WebdesignContactForm } from './WebdesignContactForm';
 export { WebdesignAnimatedBackground } from './WebdesignAnimatedBackground';
 export { SplashCursorBackground } from './SplashCursorBackground';

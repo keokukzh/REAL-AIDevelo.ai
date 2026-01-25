@@ -104,7 +104,14 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
         ease: [0.22, 1, 0.36, 1],
       }}
       className={className}
-      style={shouldOptimize ? { willChange: 'transform, opacity' } : {}}
+      style={
+        shouldOptimize
+          ? {
+              willChange: 'transform, opacity',
+              transform: 'translateZ(0)',
+            }
+          : {}
+      }
     >
       {children}
     </motion.div>

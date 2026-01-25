@@ -114,7 +114,7 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
     <section
       ref={containerRef}
       id="process-flow"
-      className="py-32 relative overflow-hidden"
+      className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20"
       role="region"
       aria-labelledby="process-flow-heading"
     >
@@ -170,11 +170,12 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
                       initial={{ opacity: 0, x: isEven ? -50 : 50 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, margin: '-100px' }}
-                      transition={{ duration: 0.7, delay: 0.2 }}
+                      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
+                      whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.01 }}
                       className="group relative"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="relative bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-white/20 transition-colors">
+                      <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="relative bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-white/20 transition-all duration-300">
                         {/* Corner Accents */}
                         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/10 rounded-tl-lg group-hover:border-swiss-red/50 transition-colors" />
                         <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white/10 rounded-tr-lg group-hover:border-blue-500/50 transition-colors" />
@@ -194,9 +195,12 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
                           </div>
                         </div>
 
-                        <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">
+                        <motion.h3
+                          className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all duration-300"
+                          whileHover={prefersReducedMotion ? {} : { x: 2 }}
+                        >
                           {step.title}
-                        </h3>
+                        </motion.h3>
                         <p className="text-gray-400 leading-relaxed font-light">
                           {step.description}
                         </p>
@@ -238,8 +242,8 @@ export const WebdesignProcessFlow: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="mt-32 relative max-w-4xl mx-auto"
+          transition={{ delay: 0.4, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-24 sm:mt-32 relative max-w-4xl mx-auto"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-swiss-red/20 via-purple-500/20 to-blue-500/20 blur-3xl opacity-30" />
           <div className="relative bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 md:p-12 overflow-hidden group">

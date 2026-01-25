@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, AlertCircle, Shield, Lock, Zap, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { API_BASE_URL } from '../../services/apiBase';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface WebdesignContactFormProps {
   onSuccess?: () => void;
@@ -72,6 +73,7 @@ const FORM_DICTIONARY = {
 
 export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSuccess, lang = 'de' }) => {
   const t = FORM_DICTIONARY[lang];
+  const prefersReducedMotion = useReducedMotion();
   const [formState, setFormState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
     name: '',
@@ -282,7 +284,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
             }}
             onBlur={() => handleBlur(value as string, formData[value] as string)}
             onFocus={onFocus}
-            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               error 
                 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                 : activeField === id_key 
@@ -305,7 +307,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
             }}
             onBlur={() => handleBlur(value as string, formData[value] as string)}
             onFocus={onFocus}
-            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               error 
                 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                 : activeField === id_key 
@@ -471,7 +473,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                        key={type}
                        type="button"
                        onClick={() => setFormData(prev => ({ ...prev, requestType: type }))}
-                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.requestType === type ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all duration-300 focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.requestType === type ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
                        aria-pressed={formData.requestType === type}
                     >
                        {t.requestTypes[type]}
@@ -501,7 +503,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                  onChange={e => handleChange('message', e.target.value)}
                  onBlur={() => handleBlur('message', formData.message)}
                  onFocus={() => setActiveField('message')}
-                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                    errors.message 
                      ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                      : activeField === 'message' 
@@ -524,25 +526,31 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               )}
            </div>
 
-           <Button
-             type="submit"
-             disabled={formState === 'loading'}
-             variant="primary"
-             className="w-full h-14 relative overflow-hidden group/btn shadow-[0_0_30px_rgba(218,41,28,0.2)]"
-             aria-label={formState === 'loading' ? t.submitting : t.submit}
+           <motion.div
+             whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+             whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+             transition={{ duration: 0.3, ease: 'easeOut' }}
            >
-              {formState === 'loading' ? (
-                <div className="flex items-center gap-3">
-                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   {t.submitting}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                   {t.submit}
-                   <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" aria-hidden="true" />
-                </div>
-              )}
-           </Button>
+             <Button
+               type="submit"
+               disabled={formState === 'loading'}
+               variant="primary"
+               className="w-full h-14 relative overflow-hidden group/btn shadow-[0_0_30px_rgba(218,41,28,0.2)] transition-all duration-300"
+               aria-label={formState === 'loading' ? t.submitting : t.submit}
+             >
+                {formState === 'loading' ? (
+                  <div className="flex items-center gap-3">
+                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                     {t.submitting}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                     {t.submit}
+                     <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform duration-300" aria-hidden="true" />
+                  </div>
+                )}
+             </Button>
+           </motion.div>
         </form>
       </div>
     </div>

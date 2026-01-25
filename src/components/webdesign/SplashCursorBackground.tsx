@@ -26,8 +26,8 @@ export const SplashCursorBackground: React.FC = () => {
       VELOCITY_DISSIPATION={1}
       PRESSURE={0.3}
       CURL={30}
-      SPLAT_RADIUS={0.5}
-      SPLAT_FORCE={20000}
+      SPLAT_RADIUS={0.25}
+      SPLAT_FORCE={8000}
       COLOR_UPDATE_SPEED={50}
     />
   );

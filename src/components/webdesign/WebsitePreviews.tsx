@@ -140,7 +140,7 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
     const carouselItems = t.items;
 
     return (
-    <section id="website-previews" className="py-24 relative overflow-hidden">
+    <section id="website-previews" className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-swiss-red/5 rounded-full blur-[120px] -mr-64 -mt-32" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] -ml-64 -mb-32" />
@@ -179,9 +179,9 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
       </div>
 
       {/* Grid Layout - No infinite loop */}
-      <div className="relative w-full py-20">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="relative w-full py-12 sm:py-20">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {carouselItems.map((item, index) => (
               <motion.div 
                 key={item.id}
@@ -225,8 +225,8 @@ export const WebsitePreviews: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'de' 
                 </div>
                         
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
-                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                     <span className="inline-block px-3 py-1 bg-swiss-red/20 text-swiss-red text-xs font-bold rounded-full mb-2 border border-swiss-red/20 uppercase tracking-widest">
                       {item.category}
                     </span>

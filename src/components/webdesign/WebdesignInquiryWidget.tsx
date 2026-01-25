@@ -40,7 +40,7 @@ export const WebdesignInquiryWidget: React.FC<{ lang?: 'de' | 'en' }> = ({ lang 
   return (
     <motion.div
       style={{ opacity, scale }}
-      className="fixed bottom-8 right-8 z-[90] pointer-events-none"
+      className="fixed bottom-8 right-8 z-[90] pointer-events-none hidden md:block"
     >
       <div className="relative pointer-events-auto">
         {/* Animated Rings */}

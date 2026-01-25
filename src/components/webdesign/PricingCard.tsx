@@ -26,17 +26,18 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.8, type: 'spring', stiffness: 100 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      whileHover={{ 
-        y: -10,
-        scale: 1.02,
-        transition: { duration: 0.3 }
+      whileHover={prefersReducedMotion ? {} : { 
+        y: -8,
+        scale: 1.01,
+        transition: { duration: 0.3, ease: 'easeOut' }
       }}
       className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
       aria-labelledby="pricing-heading"
       role="region"
+      style={{ transform: 'translateZ(0)' }}
     >
       {/* Animated Decorative Elements */}
       {!prefersReducedMotion && (
@@ -156,14 +157,17 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
 
         {/* Action Button */}
         <div className="mt-12 text-center">
-          <Magnetic strength={1.2}>
-            <button
+          <Magnetic strength={prefersReducedMotion ? 0 : 1.2}>
+            <motion.button
               onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all hover:scale-105 focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-swiss-red/20 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               aria-label="Start project - Navigate to contact form"
             >
               Jetzt Projekt starten
-            </button>
+            </motion.button>
           </Magnetic>
         </div>
       </div>
