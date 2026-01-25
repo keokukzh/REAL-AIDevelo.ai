@@ -29,8 +29,9 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
   const rightColumnFeatures = visibleFeatures.slice(Math.ceil(visibleFeatures.length / 2));
 
   return (
-    <GlareHover intensity={0.3}>
-      <motion.div
+    <ElectricBorder intensity={0.3}>
+      <GlareHover intensity={0.3}>
+        <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         whileInView={{ opacity: 1, y: 0, scale: 1 }}
         viewport={{ once: true, margin: '-100px' }}
@@ -249,7 +250,7 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           </Magnetic>
         </div>
       </div>
-    </motion.div>
+        </motion.div>
       </GlareHover>
     </ElectricBorder>
   );
