@@ -91,12 +91,11 @@ class CrewAIService {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.client.get('/health');
-      return response.data.status === 'healthy';
-    } catch (error) {
-      StructuredLoggingService.warn('CrewAI service health check failed', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      const response = await this.client.get('/health', { timeout: 5000 });
+      return response.data.status === 'healthy' || response.status === 200;
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      StructuredLoggingService.warn('CrewAI service health check failed', errorObj);
       return false;
     }
   }
