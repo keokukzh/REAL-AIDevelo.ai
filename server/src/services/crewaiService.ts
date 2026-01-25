@@ -95,7 +95,7 @@ class CrewAIService {
       return response.data.status === 'healthy' || response.status === 200;
     } catch (error: unknown) {
       const errorObj = error instanceof Error ? error : new Error('Unknown error');
-      StructuredLoggingService.warn('CrewAI service health check failed', errorObj);
+      StructuredLoggingService.warn('CrewAI service health check failed', errorObj, {});
       return false;
     }
   }
