@@ -84,7 +84,7 @@ src/
    3. Start API: `cd server && npm run dev`
 
    ### VS Code Setup
-   - See DEVELOPER_SETUP.md for recommended extensions and workspace configuration.
+   - See [docs/setup/developer-setup.md](docs/setup/developer-setup.md) for recommended extensions and workspace configuration.
    - Tasks: Dev Server, Tests: Watch, and Lint available via Terminal > Run Task.
 
    ### Linting & Formatting
@@ -120,12 +120,23 @@ The project uses a custom Tailwind configuration (`tailwind.config.cjs`) with:
 
 ## 📚 Documentation
 
-- **[SETUP.md](SETUP.md)** - Local development setup and environment variables
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+### Getting Started
+- **[docs/setup/setup.md](docs/setup/setup.md)** - Local development setup and environment variables
+- **[docs/setup/developer-setup.md](docs/setup/developer-setup.md)** - VS Code setup and workspace configuration
+- **[docs/setup/crewai-api-key.md](docs/setup/crewai-api-key.md)** - CrewAI API key setup
+- **[docs/troubleshooting.md](docs/troubleshooting.md)** - Common issues and solutions
+
+### Deployment & Operations
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** - Deployment guide (Frontend: Cloudflare Pages, Backend: Render)
 - **API Documentation**: Available at `/api-docs` when server is running
 - **Server API Docs**: See [server/API_DOCUMENTATION.md](server/API_DOCUMENTATION.md)
 - **Voice Agent Service**: See [server/src/voice-agent/README.md](server/src/voice-agent/README.md)
+
+### Additional Resources
+- **[docs/mcp/README.md](docs/mcp/README.md)** - MCP (Model Context Protocol) documentation
+- **[docs/reports/](docs/reports/)** - Audit reports and summaries
+- **[docs/brainstorming/](docs/brainstorming/)** - Design brainstorming documents
+- **[docs/design-concepts/](docs/design-concepts/)** - Design concept JSON files
 
 ### Superpowers Development Workflow
 

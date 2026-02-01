@@ -80,7 +80,7 @@ This document summarizes the implementation of Superpowers skills integration fo
 
 - **Task 5.3:** Updated main README
   - Added Superpowers section to README.md
-  - Added reference to DEVELOPER_SETUP.md
+  - Added reference to docs/setup/developer-setup.md
   - Linked to setup and usage guides
 
 ## Files Created
@@ -102,7 +102,7 @@ This document summarizes the implementation of Superpowers skills integration fo
 - `.cursorrules` - Enhanced with Cursor-specific instructions
 - `.agent/rules/superpowers.md` - Added Cursor integration notes
 - `README.md` - Added Superpowers section
-- `DEVELOPER_SETUP.md` - Added Superpowers workflow section
+- `docs/setup/developer-setup.md` - Added Superpowers workflow section
 
 ## File Structure
 

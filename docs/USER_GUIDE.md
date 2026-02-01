@@ -123,5 +123,5 @@ The call details modal shows:
 
 For additional help:
 - Check the [API Documentation](../server/API_DOCUMENTATION.md)
-- Review [Troubleshooting Guide](./TROUBLESHOOTING.md)
+- Review [Troubleshooting Guide](./troubleshooting.md)
 - Contact support at support@aidevelo.ai

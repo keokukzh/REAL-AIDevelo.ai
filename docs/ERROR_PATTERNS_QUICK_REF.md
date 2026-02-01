@@ -202,7 +202,7 @@ curl -H "x-aidevelo-debug: <secret>" ...
 ## 📚 Related Documentation
 
 - [ERROR_ANALYSIS.md](./ERROR_ANALYSIS.md) - Comprehensive error analysis
-- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - General troubleshooting guide
+- [troubleshooting.md](./troubleshooting.md) - General troubleshooting guide
 - [AUTH_500_FIX_PROOF.md](./AUTH_500_FIX_PROOF.md) - Auth error fixes
 
 ---

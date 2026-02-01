@@ -215,5 +215,5 @@ WEB_ORIGIN=https://aidevelo.ai
 
 ## Additional Resources
 
-- [SETUP.md](../SETUP.md) - Local development setup
-- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Common issues and solutions
+- [docs/setup/setup.md](./setup/setup.md) - Local development setup
+- [docs/troubleshooting.md](./troubleshooting.md) - Common issues and solutions

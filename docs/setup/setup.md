@@ -149,6 +149,6 @@ Der Backend-Server stellt folgende API-Endpunkte bereit:
 
 ## Weitere Dokumentation
 
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Häufige Probleme und Lösungen
+- **[docs/troubleshooting.md](../troubleshooting.md)** - Häufige Probleme und Lösungen
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** - Deployment-Anleitung für Frontend (Cloudflare Pages) und Backend (Render)
 
