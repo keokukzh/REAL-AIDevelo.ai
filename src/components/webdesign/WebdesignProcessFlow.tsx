@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useSpring, useInView } from 'framer-motion';
-import { FileText, CreditCard, Code, CheckCircle, Search, ArrowRight } from 'lucide-react';
+import { motion, useScroll, useSpring, useInView, AnimatePresence } from 'framer-motion';
+import { FileText, CreditCard, Code, CheckCircle, Search, ArrowRight, ChevronDown, Calendar, Package } from 'lucide-react';
 import { RevealSection } from '../layout/RevealSection';
 import { BlurText } from './BlurText';
 import { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
@@ -19,30 +19,65 @@ const PROCESS_DICTIONARY = {
         title: 'Kostenlose Erstberatung',
         description:
           'Strategische Analyse Ihrer Ziele und Anforderungen. Wir identifizieren Wachstumspotenziale und entwickeln gemeinsam Ihre digitale Strategie – unverbindlich und kostenlos.',
+        timeline: 'Woche 1',
+        deliverables: [
+          'Strategie-Dokument',
+          'Zielgruppenanalyse',
+          'Wettbewerbsrecherche',
+        ],
+        duration: '30-45 Minuten',
       },
       {
         number: '02',
         title: 'Konzept & Analyse',
         description:
           'Tiefgreifende Zielgruppenanalyse und Wettbewerbsrecherche. Sie erhalten ein massgeschneidertes Konzept mit transparentem Festpreis – keine Überraschungen, volle Planungssicherheit.',
+        timeline: 'Woche 1-2',
+        deliverables: [
+          'Massgeschneidertes Konzept',
+          'Transparenter Festpreis',
+          'Projekt-Roadmap',
+        ],
+        duration: '48 Stunden',
       },
       {
         number: '03',
         title: 'Design-Phase (100 CHF)',
         description:
           'Professionelles visuelles Konzept, das Ihre Marke stärkt und Conversion optimiert. Wir sichern Domain & Hosting und legen das technische Fundament für langfristigen Erfolg.',
+        timeline: 'Woche 2',
+        deliverables: [
+          'Visuelles Design-Konzept',
+          'Domain & Hosting gesichert',
+          'Technisches Fundament',
+        ],
+        duration: '1 Woche',
       },
       {
         number: '04',
         title: 'Entwicklung & Feedback',
         description:
           'Hochperformanter Code mit Lighthouse Score 99/100. Sie erhalten Zugriff auf die Live-Vorschau, testen alle Funktionen und geben Feedback – iterativ bis zur Perfektion.',
+        timeline: 'Woche 2-3',
+        deliverables: [
+          'Live-Vorschau Zugriff',
+          'Hochperformanter Code',
+          'Lighthouse Score 99/100',
+        ],
+        duration: '1-2 Wochen',
       },
       {
         number: '05',
         title: 'Launch & Erfolg',
         description:
           'Nach Abnahme und Restzahlung geht Ihre Website live. Wir übergeben alle Zugänge, schulen Sie ein und stehen für Fragen bereit – Ihr Erfolg ist unser Ziel.',
+        timeline: 'Woche 3',
+        deliverables: [
+          'Website geht live',
+          'Alle Zugänge übergeben',
+          'Einweisung & Support',
+        ],
+        duration: '1 Tag',
       },
     ],
   },
@@ -57,30 +92,65 @@ const PROCESS_DICTIONARY = {
         title: 'Free Consultation',
         description:
           'Strategic analysis of your goals and requirements. We identify growth opportunities and develop your digital strategy together – non-binding and free of charge.',
+        timeline: 'Week 1',
+        deliverables: [
+          'Strategy Document',
+          'Target Audience Analysis',
+          'Competitor Research',
+        ],
+        duration: '30-45 Minutes',
       },
       {
         number: '02',
         title: 'Concept & Analysis',
         description:
           'We analyze your target audience and create a tailor-made offer at a fixed price.',
+        timeline: 'Week 1-2',
+        deliverables: [
+          'Tailor-made Concept',
+          'Transparent Fixed Price',
+          'Project Roadmap',
+        ],
+        duration: '48 Hours',
       },
       {
         number: '03',
         title: 'Design Phase (100 CHF)',
         description:
           'Professional visual concept that strengthens your brand and optimizes conversion. We secure domain & hosting and lay the technical foundation for long-term success.',
+        timeline: 'Week 2',
+        deliverables: [
+          'Visual Design Concept',
+          'Domain & Hosting Secured',
+          'Technical Foundation',
+        ],
+        duration: '1 Week',
       },
       {
         number: '04',
         title: 'Development & Feedback',
         description:
           'We transform the design into fast code. You get access to the live preview and provide feedback.',
+        timeline: 'Week 2-3',
+        deliverables: [
+          'Live Preview Access',
+          'High-Performance Code',
+          'Lighthouse Score 99/100',
+        ],
+        duration: '1-2 Weeks',
       },
       {
         number: '05',
         title: 'Launch & Success',
         description:
           'After approval and final payment, your website goes live. We hand over all access, provide training, and remain available for questions – your success is our goal.',
+        timeline: 'Week 3',
+        deliverables: [
+          'Website Goes Live',
+          'All Access Handed Over',
+          'Training & Support',
+        ],
+        duration: '1 Day',
       },
     ],
   },
@@ -276,6 +346,9 @@ interface ProcessStepCardProps {
     color: string;
     bgColor: string;
     borderColor: string;
+    timeline?: string;
+    deliverables?: string[];
+    duration?: string;
   };
   index: number;
   totalSteps: number;
@@ -285,6 +358,13 @@ interface ProcessStepCardProps {
 const ProcessStepCard: React.FC<ProcessStepCardProps> = ({ step, index, totalSteps, prefersReducedMotion }) => {
   const stepRef = useRef<HTMLDivElement>(null);
   const isInViewStep = useInView(stepRef, { once: true, amount: 0.5 });
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleClick = () => {
+    if (!prefersReducedMotion) {
+      setIsExpanded(!isExpanded);
+    }
+  };
 
   return (
     <motion.div
@@ -306,7 +386,20 @@ const ProcessStepCard: React.FC<ProcessStepCardProps> = ({ step, index, totalSte
       </div>
 
       <div className={`absolute inset-0 ${step.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl blur-xl`} />
-      <div className="relative bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all duration-300 h-full">
+      <div 
+        className={`relative bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl hover:border-white/30 transition-all duration-300 h-full cursor-pointer ${isExpanded ? 'border-white/40' : ''}`}
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-label={`${step.title} - ${isExpanded ? 'Details ausblenden' : 'Details anzeigen'}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+      >
         {/* Step Number & Icon */}
         <div className="flex items-start gap-4 mb-6">
           <span className={`text-6xl font-bold font-display opacity-20 ${step.color}`}>
@@ -317,12 +410,68 @@ const ProcessStepCard: React.FC<ProcessStepCardProps> = ({ step, index, totalSte
           </div>
         </div>
 
+        {/* Timeline Badge */}
+        {(step as any).timeline && (
+          <div className="flex items-center gap-2 mb-4 text-xs text-gray-400">
+            <Calendar size={14} aria-hidden="true" />
+            <span>{(step as any).timeline}</span>
+            {(step as any).duration && (
+              <>
+                <span className="mx-1">•</span>
+                <span>{(step as any).duration}</span>
+              </>
+            )}
+          </div>
+        )}
+
         <h3 className={`text-2xl font-bold mb-4 ${step.color} group-hover:text-white transition-colors`}>
           <SplitText splitBy="words" delay={30}>{step.title}</SplitText>
         </h3>
         <p className="text-gray-400 leading-relaxed font-light mb-6">
           {step.description}
         </p>
+
+        {/* Expandable Details */}
+        <AnimatePresence>
+          {isExpanded && (step as any).deliverables && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-4 pt-4 border-t border-white/10"
+            >
+              <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-white">
+                <Package size={16} aria-hidden="true" />
+                <span>Deliverables:</span>
+              </div>
+              <ul className="space-y-2">
+                {((step as any).deliverables as string[]).map((deliverable, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+                    <CheckCircle size={16} className="text-emerald-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                    <span>{deliverable}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expand/Collapse Indicator */}
+        {(step as any).deliverables && (
+          <div className="flex items-center justify-center mt-4 pt-4 border-t border-white/5">
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-gray-400"
+            >
+              <ChevronDown size={20} aria-hidden="true" />
+            </motion.div>
+            <span className="ml-2 text-xs text-gray-500">
+              {isExpanded ? (step as any).lang === 'de' ? 'Weniger anzeigen' : 'Show Less' : (step as any).lang === 'de' ? 'Mehr Details' : 'More Details'}
+            </span>
+          </div>
+        )}
 
         {/* Arrow Indicator */}
         {index < totalSteps - 1 && (

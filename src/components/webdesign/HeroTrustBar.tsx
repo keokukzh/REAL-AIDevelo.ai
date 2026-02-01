@@ -39,13 +39,15 @@ const TRUST_METRICS: TrustMetric[] = [
 ];
 
 /**
- * HeroTrustBar - Kompakte horizontale Trust-Bar mit 3-4 Badges
+ * HeroTrustBar - Enhanced Trust Bar with improved visual weight and accessibility
  * 
  * Features:
- * - Desktop: Reihe mit subtilen Dividers
- * - Mobile: 2x2 Grid
- * - whileInView Fade-in Animation mit Stagger
- * - Glassmorphism-Design
+ * - Desktop: 4-column grid with enhanced glassmorphism
+ * - Mobile: 2x2 Grid with proper spacing
+ * - Enhanced hover effects for engagement
+ * - Proper contrast in light/dark modes
+ * - Accessibility: ARIA labels, keyboard navigation
+ * - Better visual weight with improved shadows and borders
  */
 export const HeroTrustBar: React.FC = () => {
   const prefersReducedMotion = useReducedMotion();
@@ -53,11 +55,11 @@ export const HeroTrustBar: React.FC = () => {
 
   return (
     <section
-      className="py-8 sm:py-12 relative overflow-hidden border-b border-white/10"
+      className="py-6 sm:py-8 relative overflow-hidden"
       aria-label="Trust Metrics"
     >
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {TRUST_METRICS.map((metric, index) => {
             const Icon = metric.icon;
             return (
@@ -71,16 +73,23 @@ export const HeroTrustBar: React.FC = () => {
                   delay: index * 0.1,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -2 }}
-                className="text-center p-4 sm:p-6 rounded-xl bg-slate-900/40 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all"
+                whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -4 }}
+                className="text-center p-5 sm:p-7 rounded-xl bg-slate-900/60 dark:bg-white/80 backdrop-blur-xl border border-white/20 dark:border-gray-200 hover:border-white/40 dark:hover:border-gray-300 hover:shadow-lg hover:shadow-swiss-red/10 transition-all cursor-pointer group"
+                tabIndex={0}
+                role="article"
+                aria-label={`${metric.value} ${metric.label}`}
               >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Icon size={18} className={metric.color} />
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Icon 
+                    size={20} 
+                    className={`${metric.color} group-hover:scale-110 transition-transform duration-300`}
+                    aria-hidden="true"
+                  />
                 </div>
-                <div className={`text-2xl sm:text-3xl font-bold ${metric.color} mb-1`}>
+                <div className={`text-3xl sm:text-4xl font-bold ${metric.color} mb-2 group-hover:scale-105 transition-transform duration-300`}>
                   {metric.value}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-400 font-medium leading-tight">
+                <div className="text-xs sm:text-sm text-gray-300 dark:text-slate-700 font-medium leading-tight group-hover:text-white dark:group-hover:text-slate-900 transition-colors">
                   {metric.label}
                 </div>
               </motion.div>

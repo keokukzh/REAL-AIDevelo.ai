@@ -8,6 +8,7 @@ import {
   PricingCard,
   WebdesignAnimatedBackground,
   WebdesignHero,
+  WebdesignHeroOptimized,
   WebdesignInquiryWidget,
   BlurText,
   SocialProofSection,
@@ -243,9 +244,9 @@ const DICTIONARY = {
     heroPrice: 'CHF 599',
     heroPriceSubtitle: 'Festpreis • Alles inklusive',
     heroComparisonHint: 'Vergleich: Agenturen verlangen CHF 2000-5000 für ähnliche Leistungen',
-    heroHeadline: 'Premium Webdesign, das messbare Ergebnisse liefert – für Schweizer KMU, die online wachsen wollen.',
+    heroHeadline: 'Mehr Leads durch professionelle Websites – in 2-3 Wochen live',
     heroSubheadline:
-      'Websites mit 100/100 Lighthouse-Score, die Conversion um durchschnittlich 25% steigern. Individuelles Design, Schweizer Qualität, transparente Festpreise – in 2-3 Wochen live.',
+      'CHF 599 Festpreis • 100/100 Lighthouse Score • Made in Switzerland',
     heroBullets: [
       '100/100 Lighthouse-Score – messbar schneller als 95% der Konkurrenz',
       'Ladezeiten unter 1 Sekunde – steigert Conversion um bis zu 20%',
@@ -290,9 +291,9 @@ const DICTIONARY = {
     heroPrice: 'CHF 599',
     heroPriceSubtitle: 'Fixed Price • All Inclusive',
     heroComparisonHint: 'Comparison: Agencies charge CHF 2000-5000 for similar services',
-    heroHeadline: 'Premium Web Design That Delivers Measurable Results – For Swiss SMEs Ready to Grow Online.',
+    heroHeadline: 'More Leads Through Professional Websites – Live in 2-3 Weeks',
     heroSubheadline:
-      'Websites with 100/100 Lighthouse Score that increase conversion by an average of 25%. Individual design, Swiss quality, transparent fixed prices – live in 2-3 weeks.',
+      'CHF 599 Fixed Price • 100/100 Lighthouse Score • Made in Switzerland',
     heroBullets: [
       '100/100 Lighthouse Score – measurably faster than 95% of competitors',
       'Load Times Under 1 Second – increases conversion by up to 20%',
@@ -756,9 +757,21 @@ export const WebdesignPage = () => {
       />
 
       <main id="main-content" className="relative z-20">
-        {/* Trust Bar Section */}
-        <Suspense fallback={<div className="py-8 sm:py-12" />}>
-          <HeroTrustBar />
+        {/* Optimized Hero Section with Integrated Trust Bar */}
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <WebdesignHeroOptimized
+            t={{
+              heroHeadline: t.heroHeadline,
+              heroSubheadline: t.heroSubheadline,
+              heroComparisonHint: t.heroComparisonHint,
+              ctaPrimary: t.ctaPrimary,
+              ctaSecondary: t.ctaSecondary,
+              phoneNumber: '+41 79 XXX XX XX', // TODO: Add actual phone number
+              emailAddress: 'webdesign@aidevelo.ai', // TODO: Add actual email
+              scrollExplore: t.scrollExplore,
+            }}
+            lang={lang}
+          />
         </Suspense>
 
         {/* Process Flow Section */}

@@ -151,18 +151,16 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Real-time validation for touched fields
-    if (touched[field]) {
-      const error = validateField(field, value);
-      if (error) {
-        setErrors(prev => ({ ...prev, [field]: error }));
-      } else {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[field];
-          return newErrors;
-        });
-      }
+    // Real-time validation - validate immediately on change for better UX
+    const error = validateField(field, value);
+    if (error) {
+      setErrors(prev => ({ ...prev, [field]: error }));
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
@@ -250,7 +248,10 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     
     return (
       <div className="relative group">
-        <label htmlFor={inputId} className="sr-only">{label}</label>
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-300 mb-2">
+          {label}
+          {isRequired && <span className="text-swiss-red ml-1" aria-label="required">*</span>}
+        </label>
         {isRequired ? (
           <input 
             id={inputId}
@@ -513,7 +514,10 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
            </div>
 
            <div className="relative group">
-              <label htmlFor="input-message" className="sr-only">{t.labels.message}</label>
+              <label htmlFor="input-message" className="block text-sm font-medium text-gray-300 mb-2">
+                {t.labels.message}
+                <span className="text-gray-500 text-xs ml-2">({lang === 'de' ? 'Optional' : 'Optional'})</span>
+              </label>
               <textarea 
                  id="input-message"
                  rows={4}

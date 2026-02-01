@@ -20,10 +20,16 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang = 'de' }) => {
             FAQ
           </div>
           <h2 className="text-4xl md:text-5xl font-bold font-display text-white mb-6">
-            Häufig gestellte <span className="text-blue-500">Fragen</span>
+            {lang === 'de' ? (
+              <>Häufig gestellte <span className="text-blue-500">Fragen</span></>
+            ) : (
+              <>Frequently Asked <span className="text-blue-500">Questions</span></>
+            )}
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-            Alles, was Sie über unsere Webdesign-Prozesse wissen müssen.
+            {lang === 'de' 
+              ? 'Alles, was Sie über unsere Webdesign-Prozesse wissen müssen.'
+              : 'Everything you need to know about our web design processes.'}
           </p>
         </div>
 
@@ -37,8 +43,10 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang = 'de' }) => {
               >
                 <button
                   onClick={() => setOpenIndex(isExpanded ? null : index)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
+                  className="w-full px-6 py-5 flex items-center justify-between text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 transition-all min-h-[60px] cursor-pointer"
                   aria-expanded={isExpanded ? "true" : "false"}
+                  aria-controls={`faq-answer-${index}`}
+                  id={`faq-question-${index}`}
                 >
                   <span className="text-lg font-medium text-white group-hover:text-blue-400 transition-colors">
                     {faq.question}
@@ -57,6 +65,9 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang = 'de' }) => {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      id={`faq-answer-${index}`}
+                      role="region"
+                      aria-labelledby={`faq-question-${index}`}
                     >
                       <div className="px-6 pb-6 text-gray-400 font-light leading-relaxed">
                         {faq.answer}
