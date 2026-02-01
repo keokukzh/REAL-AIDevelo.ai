@@ -74,7 +74,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 ${
+                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 cursor-pointer ${
                   activeItem === item.id
                     ? 'text-swiss-red'
                     : 'text-gray-400 hover:text-white'
@@ -91,7 +91,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
           })}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2"
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 cursor-pointer"
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMenuOpen}
           >

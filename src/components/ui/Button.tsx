@@ -115,7 +115,7 @@ export const Button: React.FC<ButtonProps> = ({
       whileTap={prefersReducedMotion ? {} : { scale: tapScale }}
       style={magneticTransform}
       disabled={isDisabled}
-      className={`${baseStyles} ${variants[variant]} ${defaultTextColor} ${className} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`${baseStyles} ${variants[variant]} ${defaultTextColor} ${className} ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       aria-busy={isLoading}
       aria-disabled={isDisabled}
       {...props}

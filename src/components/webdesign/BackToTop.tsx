@@ -44,7 +44,7 @@ export const BackToTop: React.FC<BackToTopProps> = ({
           exit={{ opacity: 0, scale: 0.8, y: 20 }}
           transition={{ duration: prefersReducedMotion ? 0 : 0.3 }}
           onClick={scrollToTop}
-          className={`fixed bottom-8 left-8 z-[100] bg-swiss-red hover:bg-red-700 text-white p-4 rounded-full shadow-lg shadow-swiss-red/30 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px] min-w-[44px] flex items-center justify-center ${className}`}
+          className={`fixed bottom-8 left-8 z-[100] bg-swiss-red hover:bg-red-700 text-white p-4 rounded-full shadow-lg shadow-swiss-red/30 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer ${className}`}
           aria-label="Back to top"
         >
           <ArrowUp size={20} aria-hidden="true" />

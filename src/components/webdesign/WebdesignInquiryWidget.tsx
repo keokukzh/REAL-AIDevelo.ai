@@ -75,7 +75,8 @@ export const WebdesignInquiryWidget: React.FC<{ lang?: 'de' | 'en' }> = ({ lang 
           onClick={handleScrollToForm}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative group bg-slate-950/80 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center gap-3 overflow-hidden"
+          className="relative group bg-slate-950/80 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center gap-3 overflow-hidden cursor-pointer"
+          aria-label={t.cta}
         >
           {/* Glimmer Effect */}
           <motion.div

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Zap } from 'lucide-react';
+import { Award, Zap, Code, FileCode, Palette, Zap as ZapIcon, Smartphone, Search } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 import { AnimatedList } from './AnimatedList';
 import { Accordion } from './Accordion';
@@ -12,12 +12,12 @@ const TECH_DICTIONARY = {
     sub: 'Warum moderne Technologien für Ihr KMU wichtig sind: Speed, SEO und Wartbarkeit.',
     kmuText: 'Für Schweizer KMU bedeutet das: Schnellere Ladezeiten = mehr Conversions, bessere SEO = mehr Sichtbarkeit, sauberer Code = langfristig günstiger.',
     items: [
-      { name: 'React', description: 'Moderne Frontend-Bibliothek', logo: '⚛️' },
-      { name: 'TypeScript', description: 'Typsichere Entwicklung', logo: '📘' },
-      { name: 'Tailwind CSS', description: 'Utility-First CSS Framework', logo: '🎨' },
-      { name: 'Vite', description: 'Schneller Build-Tool', logo: '⚡' },
-      { name: 'Responsive Design', description: 'Mobile-First Ansatz', logo: '📱' },
-      { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich', logo: '🔍' },
+      { name: 'React', description: 'Moderne Frontend-Bibliothek', icon: Code },
+      { name: 'TypeScript', description: 'Typsichere Entwicklung', icon: FileCode },
+      { name: 'Tailwind CSS', description: 'Utility-First CSS Framework', icon: Palette },
+      { name: 'Vite', description: 'Schneller Build-Tool', icon: ZapIcon },
+      { name: 'Responsive Design', description: 'Mobile-First Ansatz', icon: Smartphone },
+      { name: 'SEO-Optimiert', description: 'Suchmaschinen-freundlich', icon: Search },
     ],
   },
   en: {
@@ -25,12 +25,12 @@ const TECH_DICTIONARY = {
     sub: 'Why modern technologies matter for your SME: Speed, SEO, and maintainability.',
     kmuText: 'For Swiss SMEs, this means: Faster load times = more conversions, better SEO = more visibility, clean code = cheaper long-term.',
     items: [
-      { name: 'React', description: 'Modern Frontend Library', logo: '⚛️' },
-      { name: 'TypeScript', description: 'Type-Safe Development', logo: '📘' },
-      { name: 'Tailwind CSS', description: 'Utility-First CSS Framework', logo: '🎨' },
-      { name: 'Vite', description: 'Fast Build Tool', logo: '⚡' },
-      { name: 'Responsive Design', description: 'Mobile-First Approach', logo: '📱' },
-      { name: 'SEO Optimized', description: 'Search Engine Friendly', logo: '🔍' },
+      { name: 'React', description: 'Modern Frontend Library', icon: Code },
+      { name: 'TypeScript', description: 'Type-Safe Development', icon: FileCode },
+      { name: 'Tailwind CSS', description: 'Utility-First CSS Framework', icon: Palette },
+      { name: 'Vite', description: 'Fast Build Tool', icon: ZapIcon },
+      { name: 'Responsive Design', description: 'Mobile-First Approach', icon: Smartphone },
+      { name: 'SEO Optimized', description: 'Search Engine Friendly', icon: Search },
     ],
   },
 };
@@ -130,7 +130,9 @@ export const WebdesignTechStack: React.FC<{ lang?: 'de' | 'en' }> = ({ lang = 'd
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${index % 2 === 0 ? 'from-blue-500/5' : 'from-purple-500/5'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
                   <div className="relative z-10 flex items-start gap-4">
-                    <div className="text-3xl">{item.logo}</div>
+                    <div className="p-2 rounded-lg bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors">
+                      {React.createElement(item.icon, { size: 24, className: 'text-swiss-red' } as React.ComponentProps<'svg'>)}
+                    </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-white mb-2 group-hover:text-swiss-red transition-colors duration-300">
                         {item.name}

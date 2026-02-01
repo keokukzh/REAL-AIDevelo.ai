@@ -12,37 +12,37 @@ const PROCESS_DICTIONARY = {
     workflow: 'Workflow',
     title: 'In 5 Schritten zur',
     titleHighlight: 'neuen Website',
-    sub: 'Ein strukturierter Prozess für erstklassige Resultate. Von der Idee bis zum Launch – transparent und effizient.',
+    sub: 'Ein strukturierter Prozess für messbare Geschäftsergebnisse. Von der Strategie bis zum Launch – transparent, effizient und auf Ihr Wachstum ausgerichtet.',
     steps: [
       {
         number: '01',
         title: 'Kostenlose Erstberatung',
         description:
-          'Wir besprechen Ihre Ziele und Anforderungen in einem unverbindlichen Gespräch (Zoom oder Telefon).',
+          'Strategische Analyse Ihrer Ziele und Anforderungen. Wir identifizieren Wachstumspotenziale und entwickeln gemeinsam Ihre digitale Strategie – unverbindlich und kostenlos.',
       },
       {
         number: '02',
         title: 'Konzept & Analyse',
         description:
-          'Wir analysieren Ihre Zielgruppe und erstellen ein massgeschneidertes Angebot zum Festpreis.',
+          'Tiefgreifende Zielgruppenanalyse und Wettbewerbsrecherche. Sie erhalten ein massgeschneidertes Konzept mit transparentem Festpreis – keine Überraschungen, volle Planungssicherheit.',
       },
       {
         number: '03',
         title: 'Design-Phase (100 CHF)',
         description:
-          'Nach Startschuss erstellen wir das visuelle Konzept. Wir sichern Domain & Hosting und legen das Fundament.',
+          'Professionelles visuelles Konzept, das Ihre Marke stärkt und Conversion optimiert. Wir sichern Domain & Hosting und legen das technische Fundament für langfristigen Erfolg.',
       },
       {
         number: '04',
         title: 'Entwicklung & Feedback',
         description:
-          'Wir verwandeln das Design in schnellen Code. Sie erhalten Zugriff auf die Live-Vorschau und geben Feedback.',
+          'Hochperformanter Code mit Lighthouse Score 99/100. Sie erhalten Zugriff auf die Live-Vorschau, testen alle Funktionen und geben Feedback – iterativ bis zur Perfektion.',
       },
       {
         number: '05',
         title: 'Launch & Erfolg',
         description:
-          'Nach Abnahme und Restzahlung geht Ihre Website live. Wir übergeben alle Zugänge und schulen Sie kurz ein.',
+          'Nach Abnahme und Restzahlung geht Ihre Website live. Wir übergeben alle Zugänge, schulen Sie ein und stehen für Fragen bereit – Ihr Erfolg ist unser Ziel.',
       },
     ],
   },
@@ -50,13 +50,13 @@ const PROCESS_DICTIONARY = {
     workflow: 'Workflow',
     title: '5 Steps to your',
     titleHighlight: 'new Website',
-    sub: 'A structured process for top-tier results. From idea to launch – transparent and efficient.',
+    sub: 'A structured process for measurable business results. From strategy to launch – transparent, efficient, and focused on your growth.',
     steps: [
       {
         number: '01',
         title: 'Free Consultation',
         description:
-          'We discuss your goals and requirements in a non-binding conversation (Zoom or Phone).',
+          'Strategic analysis of your goals and requirements. We identify growth opportunities and develop your digital strategy together – non-binding and free of charge.',
       },
       {
         number: '02',
@@ -68,7 +68,7 @@ const PROCESS_DICTIONARY = {
         number: '03',
         title: 'Design Phase (100 CHF)',
         description:
-          'After the go-ahead, we create the visual concept. We secure domain & hosting and lay the foundation.',
+          'Professional visual concept that strengthens your brand and optimizes conversion. We secure domain & hosting and lay the technical foundation for long-term success.',
       },
       {
         number: '04',
@@ -80,7 +80,7 @@ const PROCESS_DICTIONARY = {
         number: '05',
         title: 'Launch & Success',
         description:
-          'After approval and final payment, your website goes live. We hand over all access and provide a brief training.',
+          'After approval and final payment, your website goes live. We hand over all access, provide training, and remain available for questions – your success is our goal.',
       },
     ],
   },

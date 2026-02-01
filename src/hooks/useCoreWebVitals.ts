@@ -23,6 +23,18 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
 
     const metrics: CoreWebVitals = {};
 
+    const report = (m: CoreWebVitals) => {
+      if (import.meta.env.DEV && Object.keys(m).length > 0) {
+        const parts = [];
+        if (m.lcp != null) parts.push(`LCP: ${(m.lcp / 1000).toFixed(2)}s`);
+        if (m.fcp != null) parts.push(`FCP: ${(m.fcp / 1000).toFixed(2)}s`);
+        if (m.cls != null) parts.push(`CLS: ${m.cls.toFixed(3)}`);
+        if (m.fid != null) parts.push(`FID: ${m.fid.toFixed(0)}ms`);
+        if (parts.length) console.log('[Core Web Vitals]', parts.join(' | '));
+      }
+      onReport?.(m);
+    };
+
     // Track Largest Contentful Paint (LCP)
     try {
       const lcpObserver = new PerformanceObserver((list) => {
@@ -30,7 +42,7 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
         const lastEntry = entries[entries.length - 1] as any;
         if (lastEntry) {
           metrics.lcp = lastEntry.renderTime || lastEntry.loadTime;
-          if (onReport) onReport({ ...metrics });
+          report({ ...metrics });
         }
       });
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
@@ -45,7 +57,7 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
         entries.forEach((entry: any) => {
           if (entry.processingStart && entry.startTime) {
             metrics.fid = entry.processingStart - entry.startTime;
-            if (onReport) onReport({ ...metrics });
+            report({ ...metrics });
           }
         });
       });
@@ -63,7 +75,7 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
           if (!entry.hadRecentInput) {
             clsValue += entry.value;
             metrics.cls = clsValue;
-            if (onReport) onReport({ ...metrics });
+            report({ ...metrics });
           }
         });
       });
@@ -79,7 +91,7 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
         entries.forEach((entry: any) => {
           if (entry.name === 'first-contentful-paint') {
             metrics.fcp = entry.startTime;
-            if (onReport) onReport({ ...metrics });
+            report({ ...metrics });
           }
         });
       });
@@ -93,23 +105,10 @@ export const useCoreWebVitals = (onReport?: (metrics: CoreWebVitals) => void) =>
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       if (navigation) {
         metrics.ttfb = navigation.responseStart - navigation.requestStart;
-        if (onReport) onReport({ ...metrics });
+        report({ ...metrics });
       }
     } catch (e) {
       // TTFB not available
-    }
-
-    // Log metrics to console in development
-    if (import.meta.env.DEV) {
-      const logInterval = setInterval(() => {
-        if (Object.keys(metrics).length > 0) {
-          console.log('[Core Web Vitals]', metrics);
-        }
-      }, 5000);
-
-      return () => {
-        clearInterval(logInterval);
-      };
     }
   }, [onReport]);
 };

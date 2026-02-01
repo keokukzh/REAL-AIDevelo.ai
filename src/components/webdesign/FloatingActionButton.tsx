@@ -25,7 +25,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
       onClick={onClick}
-      className={`md:hidden fixed bottom-24 right-4 z-50 bg-swiss-red hover:bg-red-700 text-white p-4 rounded-full shadow-lg shadow-swiss-red/30 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[56px] min-w-[56px] flex items-center justify-center gap-2 ${className}`}
+      className={`md:hidden fixed bottom-24 right-4 z-50 bg-swiss-red hover:bg-red-700 text-white p-4 rounded-full shadow-lg shadow-swiss-red/30 transition-all focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[56px] min-w-[56px] flex items-center justify-center gap-2 cursor-pointer ${className}`}
       aria-label={label}
     >
       <Mail size={20} aria-hidden="true" />

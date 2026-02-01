@@ -7,13 +7,33 @@ import {
   WebdesignContactForm,
   PricingCard,
   WebdesignAnimatedBackground,
-  SplashCursorBackground,
   WebdesignHero,
   WebdesignInquiryWidget,
   BlurText,
-  AntigravityBackground,
   SocialProofSection,
 } from '../components/webdesign';
+
+// Lazy-load heavy background effects for better LCP
+const SplashCursorBackground = lazy(() =>
+  import('../components/webdesign/SplashCursorBackground').then((m) => ({
+    default: m.SplashCursorBackground,
+  })),
+) as React.LazyExoticComponent<React.FC>;
+
+const AntigravityBackground = lazy(() =>
+  import('../components/webdesign/AntigravityBackground').then((m) => ({
+    default: m.AntigravityBackground,
+  })),
+) as React.LazyExoticComponent<React.FC<{
+  count?: number;
+  color?: string;
+  magnetRadius?: number;
+  ringRadius?: number;
+  waveSpeed?: number;
+  particleSize?: number;
+  autoAnimate?: boolean;
+  particleShape?: string;
+}>>;
 // ScrollReveal is kept for backward compatibility but replaced with React Bits components where possible
 import {
   AuroraBackground,
@@ -37,6 +57,7 @@ import { FloatingActionButton } from '../components/webdesign/FloatingActionButt
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useContentOptimization } from '../hooks/useContentOptimization';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 // Lazy-load heavy below-the-fold sections for better LCP
 const WebdesignProcessFlow = lazy(() =>
@@ -83,56 +104,187 @@ interface Feature {
   description: string;
 }
 
+const PRICING_FEATURES_DICTIONARY: Record<'de' | 'en', { text: string }[]> = {
+  de: [
+    { text: 'Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.) – vollständige Online-Präsenz' },
+    { text: 'Responsive Design – steigert mobile Conversion um bis zu 40%' },
+    { text: 'SEO-Optimierung – erhöht organischen Traffic um durchschnittlich 35%' },
+    { text: 'Kontaktformular mit E-Mail-Benachrichtigung – keine Leads mehr verpassen' },
+    { text: 'Social Media Integration – stärkt Ihre Markenpräsenz' },
+    { text: 'Lighthouse Score 99/100 – messbar schnell, besser als 95% der Konkurrenz' },
+    { text: 'Wartbarer Code – langfristige Kosteneinsparung durch einfache Erweiterungen' },
+    { text: '2–3 Wochen Umsetzung – schneller Markteintritt, schneller ROI' },
+  ],
+  en: [
+    { text: 'Up to 5 pages (Home, About, Services, Contact, etc.) – complete online presence' },
+    { text: 'Responsive design – increases mobile conversion by up to 40%' },
+    { text: 'SEO optimization – increases organic traffic by an average of 35%' },
+    { text: 'Contact form with email notification – never miss a lead again' },
+    { text: 'Social media integration – strengthens your brand presence' },
+    { text: 'Lighthouse Score 99/100 – measurably fast, better than 95% of competitors' },
+    { text: 'Maintainable code – long-term cost savings through easy extensions' },
+    { text: '2–3 weeks delivery – faster market entry, faster ROI' },
+  ],
+};
+
+const FEATURES_DICTIONARY: Record<'de' | 'en', Feature[]> = {
+  de: [
+    {
+      icon: Globe,
+      title: 'Responsive Design',
+      description:
+        'Steigert mobile Conversion um bis zu 40% durch perfekte Darstellung auf allen Geräten. Jeder Besucher erlebt optimale Nutzererfahrung – unabhängig vom Endgerät.',
+    },
+    {
+      icon: Zap,
+      title: 'Schnelle Ladezeiten',
+      description:
+        'Lighthouse Score 99/100 garantiert. Ladezeiten unter 2.5 Sekunden steigern Conversion um bis zu 20% und verbessern Google-Rankings messbar – Ihre Wettbewerbsvorteile.',
+    },
+    {
+      icon: Search,
+      title: 'SEO-Optimierung',
+      description:
+        'Schema.org, XML-Sitemap, semantisches HTML. Erhöht organischen Traffic um durchschnittlich 35% durch verbesserte Rankings – mehr qualifizierte Leads ohne Werbekosten.',
+    },
+    {
+      icon: Palette,
+      title: 'Modernes Design',
+      description:
+        'Professionelles UI/UX nach aktuellen Standards stärkt Ihre Marke und erhöht Conversion um durchschnittlich 25%. Klare Hierarchie und starke CTAs führen Besucher gezielt zum Ziel.',
+    },
+    {
+      icon: Code,
+      title: 'Sauberer Code',
+      description:
+        'TypeScript, React, Tailwind – wartbar und zukunftssicher. Sparen Sie langfristig Kosten durch einfache Erweiterungen ohne teure Neuentwicklung. Ihre Investition bleibt wertvoll.',
+    },
+    {
+      icon: Smartphone,
+      title: 'Mobile-First',
+      description:
+        'Touch-optimiert, schnelle Ladezeiten auf 4G. Erreichen Sie über 60% Ihrer Zielgruppe optimal – Ihre Website ist für den mobilen Markt perfekt vorbereitet.',
+    },
+    {
+      icon: Shield,
+      title: 'Sicherheit',
+      description:
+        'HTTPS, DSGVO-konform, sichere Formulare. Stärken Sie Kundenvertrauen und schützen Sie sensible Daten. Regelmäßige Updates gewährleisten langfristige Sicherheit.',
+    },
+  ],
+  en: [
+    {
+      icon: Globe,
+      title: 'Responsive Design',
+      description:
+        'Increases mobile conversion by up to 40% through perfect display on all devices. Every visitor experiences optimal user experience – regardless of device.',
+    },
+    {
+      icon: Zap,
+      title: 'Fast Load Times',
+      description:
+        'Lighthouse Score 99/100 guaranteed. Load times under 2.5 seconds increase conversion by up to 20% and measurably improve Google rankings – your competitive advantages.',
+    },
+    {
+      icon: Search,
+      title: 'SEO Optimization',
+      description:
+        'Schema.org, XML sitemap, semantic HTML. Maximum visibility in search engines – measurable through improved rankings.',
+    },
+    {
+      icon: Palette,
+      title: 'Modern Design',
+      description:
+        'Professional UI/UX to current standards strengthens your brand and increases conversion by an average of 25%. Clear hierarchy and strong CTAs guide visitors purposefully to their goal.',
+    },
+    {
+      icon: Code,
+      title: 'Clean Code',
+      description:
+        'TypeScript, React, Tailwind – maintainable and future-proof. Save long-term costs through easy extensions without costly redevelopment. Your investment remains valuable.',
+    },
+    {
+      icon: Smartphone,
+      title: 'Mobile-First',
+      description:
+        'Touch-optimized, fast load times on 4G. Reach over 60% of your target audience optimally – your website is perfectly prepared for the mobile market.',
+    },
+    {
+      icon: Shield,
+      title: 'Security',
+      description:
+        'HTTPS, GDPR compliant, secure forms. Strengthen customer trust and protect sensitive data. Regular updates ensure long-term security.',
+    },
+  ],
+};
+
 const DICTIONARY = {
   de: {
     heroText1: 'Premium Websites für',
     heroText2: 'Schweizer KMU',
     heroSub:
-      'Ihre digitale Visitenkarte: High-End Design, blitzschnelle Performance und maximale Konversion. Made in Switzerland für höchste Ansprüche.',
+      'Steigern Sie Ihre Online-Präsenz mit messbaren Ergebnissen: Websites mit 99+ Lighthouse Score, die Conversion-Raten um durchschnittlich 25% erhöhen. Schweizer Qualität, transparente Festpreise, 2–3 Wochen bis zum Launch.',
     missionStart: 'Kostenlose Erstberatung buchen',
     showSpecs: 'Technik-Check',
     closeSpecs: 'Analyse schließen',
     pricingTitle: 'Transparente Preisgestaltung',
-    pricingSub: 'Alles inklusive – keine versteckten Kosten, keine Überraschungen',
+    pricingSub: 'Ein Festpreis, alle Leistungen inklusive. Keine versteckten Kosten, keine Überraschungen – planen Sie Ihr Budget mit vollständiger Sicherheit.',
     pricingInvest: 'Investition',
-    pricingSubtitle: 'Einmalig - Alles inklusive',
-    pricingDisclaimer: 'Anzahlung nur 100 CHF • Maximale Sicherheit',
+    pricingSubtitle: 'Einmalig – Alles inklusive',
+    pricingDisclaimer: 'Nur 100 CHF Anzahlung • Sichere Zahlung • Volle Transparenz',
     featuresTitle: 'Performance & Design',
-    featuresSub: 'Modernste Webtechnologien, die Ihre Konkurrenz alt aussehen lassen.',
+    featuresSub: 'Technologie, die messbare Geschäftsergebnisse liefert: Schnelle Ladezeiten steigern Conversion, starke SEO bringt mehr qualifizierte Leads, modernes Design stärkt Ihre Marke.',
     processTitle: 'In 5 Schritten zum Launch',
-    processSub: 'Effizient, transparent und auf Ihr Business zugeschnitten.',
-    technologiesTitle: 'Tech-Stack der Extraklasse',
-    technologiesSub: 'Wir bauen auf stabile, zukunftssichere Technologien.',
+    processSub: 'Ein strukturierter Prozess für messbare Geschäftsergebnisse. Von der Strategie bis zum Launch – transparent, effizient und auf Ihr Wachstum ausgerichtet.',
+    technologiesTitle: 'Bewährter Tech-Stack',
+    technologiesSub: 'React, TypeScript, Tailwind – moderne Technologien für zukunftssichere Websites.',
     contactTitle: 'Projekt anfragen',
-    contactSub: 'Lassen Sie uns gemeinsam etwas Grossartiges schaffen.',
+    contactSub: 'Lassen Sie uns gemeinsam Ihre digitale Strategie entwickeln. Kostenlose Erstberatung – wir melden uns innerhalb von 24 Stunden.',
     relatedTitle: 'Weitere Services',
+    relatedSub: 'Entdecken Sie unsere anderen Angebote',
     skipToContent: 'Zum Hauptinhalt springen',
     scrollExplore: 'Scrollen zum Entdecken',
+    heroBadgeSystems: 'SYSTEMS ONLINE & READY',
+    heroBadgeSwiss: 'MADE IN SWITZERLAND',
+    heroBadgePerformance: 'Performance optimiert',
+    heroBadgePricing: 'Transparentes Festpreis-Modell',
+    heroTrustLighthouse: '99+ Lighthouse Score',
+    heroTrustLoadTime: '< 2.5s Ladezeit',
+    heroTrustGdpr: 'DSGVO-konform',
   },
   en: {
     heroText1: 'Premium Websites for',
     heroText2: 'Swiss SMEs',
     heroSub:
-      'Your digital storefront: High-end design, lightning-fast performance, and maximum conversion. Swiss-made quality for the highest demands.',
+      'Elevate your online presence with measurable results: Websites scoring 99+ on Lighthouse that increase conversion rates by an average of 25%. Swiss quality, transparent fixed pricing, 2–3 weeks to launch.',
     missionStart: 'Book Free Consultation',
     showSpecs: 'Tech Check',
     closeSpecs: 'Close Analysis',
     pricingTitle: 'Transparent Pricing',
-    pricingSub: 'All inclusive – no hidden costs, no surprises',
+    pricingSub: 'One fixed price, everything included. No hidden costs, no surprises – plan your budget with complete confidence.',
     pricingInvest: 'Investment',
-    pricingSubtitle: 'One-time - All inclusive',
-    pricingDisclaimer: 'Only 100 CHF Deposit • Maximum Security',
+    pricingSubtitle: 'One-time – All inclusive',
+    pricingDisclaimer: 'Only 100 CHF Deposit • Secure Payment • Full Transparency',
     featuresTitle: 'Performance & Design',
-    featuresSub: 'State-of-the-art web technologies that leave your competition behind.',
+    featuresSub: 'Technology that delivers measurable business results: Fast load times increase conversion, strong SEO brings more qualified leads, modern design strengthens your brand.',
     processTitle: '5 Steps to Launch',
-    processSub: 'Efficient, transparent, and tailored to your business.',
-    technologiesTitle: 'World-Class Tech Stack',
-    technologiesSub: 'We build on stable, future-proof technologies.',
+    processSub: 'A structured process for measurable business results. From strategy to launch – transparent, efficient, and focused on your growth.',
+    technologiesTitle: 'Proven Tech Stack',
+    technologiesSub: 'React, TypeScript, Tailwind – modern technologies for future-proof websites.',
     contactTitle: 'Request Project',
-    contactSub: 'Let’s create something great together.',
+    contactSub: 'Let us develop your digital strategy together. Free initial consultation – we will get back to you within 24 hours.',
+
     relatedTitle: 'Other Services',
+    relatedSub: 'Explore our other services',
     skipToContent: 'Skip to main content',
     scrollExplore: 'Scroll to Explore',
+    heroBadgeSystems: 'SYSTEMS ONLINE & READY',
+    heroBadgeSwiss: 'MADE IN SWITZERLAND',
+    heroBadgePerformance: 'Performance optimized',
+    heroBadgePricing: 'Transparent fixed-price model',
+    heroTrustLighthouse: '99+ Lighthouse Score',
+    heroTrustLoadTime: '< 2.5s load time',
+    heroTrustGdpr: 'GDPR compliant',
   },
 };
 
@@ -160,6 +312,7 @@ export const WebdesignPage = () => {
   }, [lang, dictionaryOverrides]);
 
   const prefersReducedMotion = useReducedMotion();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const { optimizeContent, loading: isOptimizing, error: optimizationError } = useContentOptimization();
   const [showOptimization, setShowOptimization] = useState(false);
   const [optimizedText, setOptimizedText] = useState<string | null>(null);
@@ -255,6 +408,14 @@ export const WebdesignPage = () => {
     if (typeof window === 'undefined') return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: close optimization modal
+      if (e.key === 'Escape' && showOptimization) {
+        setShowOptimization(false);
+        setOptimizedText(null);
+        setOriginalText(null);
+        setOptimizingField(null);
+        return;
+      }
       // Alt+D for German, Alt+E for English
       if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
         if (e.key === 'd' || e.key === 'D') {
@@ -269,68 +430,14 @@ export const WebdesignPage = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleLangChange]);
+  }, [handleLangChange, showOptimization]);
 
-  const features = useMemo<Feature[]>(
-    () => [
-      {
-        icon: Globe,
-        title: 'Responsive Design',
-        description:
-          'Ihre Website sieht auf allen Geräten perfekt aus - Desktop, Tablet und Smartphone. Pixelgenaue Umsetzung mit modernen CSS-Frameworks.',
-      },
-      {
-        icon: Zap,
-        title: 'Schnelle Ladezeiten',
-        description:
-          'Optimierte Performance mit Code-Splitting, Lazy Loading und modernen Build-Tools. Lighthouse Score 90+ garantiert.',
-      },
-      {
-        icon: Search,
-        title: 'SEO-Optimierung',
-        description:
-          'Meta-Tags, strukturierte Daten (Schema.org), XML-Sitemap und semantisches HTML für maximale Sichtbarkeit.',
-      },
-      {
-        icon: Palette,
-        title: 'Modernes Design',
-        description:
-          'Zeitgemäßes, professionelles Design basierend auf aktuellen UI/UX-Trends und Best Practices.',
-      },
-      {
-        icon: Code,
-        title: 'Sauberer Code',
-        description:
-          'Wartbarer, strukturierter Code nach modernen Standards (TypeScript, React, Tailwind CSS).',
-      },
-      {
-        icon: Smartphone,
-        title: 'Mobile-First',
-        description:
-          'Mobile-optimierte Websites mit Touch-optimierter Navigation und schnellen Ladezeiten.',
-      },
-      {
-        icon: Shield,
-        title: 'Sicherheit',
-        description: 'HTTPS, sichere Formulare, DSGVO-konform und regelmäßige Security-Updates.',
-      },
-    ],
-    [],
-  );
+  const features = useMemo<Feature[]>(() => FEATURES_DICTIONARY[lang], [lang]);
 
 
   const pricingFeatures = useMemo(
-    () => [
-      { text: 'Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.)' },
-      { text: 'Responsive Design (Mobile, Tablet, Desktop)' },
-      { text: 'Grundlegende SEO-Optimierung (Meta-Tags, Sitemap)' },
-      { text: 'Kontaktformular mit E-Mail-Benachrichtigung' },
-      { text: 'Social Media Integration (Links, Sharing)' },
-      { text: 'Schnelle Ladezeiten (Lighthouse Score 90+)' },
-      { text: 'Wartbarer, sauberer Code (TypeScript, React)' },
-      { text: '2-3 Wochen Umsetzungszeit' },
-    ],
-    [],
+    () => PRICING_FEATURES_DICTIONARY[lang],
+    [lang],
   );
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -340,21 +447,51 @@ export const WebdesignPage = () => {
   });
 
   return (
-    <div className="min-h-screen text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white relative">
+    <div
+      className="min-h-screen text-white selection:bg-swiss-red/30 overflow-x-hidden selection:text-white relative"
+      lang={lang === 'de' ? 'de-CH' : 'en'}
+    >
       <Helmet>
         <title>Premium Webdesign & Elegantes Redesign | AIDevelo</title>
         <meta
           name="description"
           content="Professionelle, moderne Websites mit modernsten Technologien. Von der Konzeption bis zum Launch – alles zum transparenten Festpreis von 599 CHF."
         />
+        <meta name="keywords" content="Webdesign, Website, Redesign, Schweiz, KMU, React, TypeScript, SEO, responsive" />
+        <link rel="canonical" href="https://aidevelo.ai/webdesign" />
         <meta property="og:title" content="Premium Webdesign | AIDevelo" />
         <meta
           property="og:description"
           content="Moderne Websites & Elegantes Redesign. Professionelle Umsetzung zum transparenten Festpreis."
         />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://aidevelo.ai/webdesign" />
+        <meta property="og:image" content="https://aidevelo.ai/og-image.png" />
+        <meta property="og:locale" content={lang === 'de' ? 'de_CH' : 'en_US'} />
         <link rel="alternate" hrefLang="de-CH" href="https://aidevelo.ai/webdesign" />
         <link rel="alternate" hrefLang="en" href="https://aidevelo.ai/en/webdesign" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Service',
+            name: 'Premium Webdesign',
+            description:
+              lang === 'de'
+                ? 'Professionelle Websites für Schweizer KMU. Schnell, SEO-optimiert und konversionsstark.'
+                : 'Professional websites for Swiss SMEs. Fast, SEO-optimized, and conversion-focused.',
+            provider: {
+              '@type': 'Organization',
+              name: 'AIDevelo',
+              url: 'https://aidevelo.ai',
+            },
+            areaServed: { '@type': 'Country', name: 'Switzerland' },
+            offers: {
+              '@type': 'Offer',
+              price: '599',
+              priceCurrency: 'CHF',
+            },
+          })}
+        </script>
       </Helmet>
 
       {/* Language & Theme Switcher */}
@@ -393,17 +530,27 @@ export const WebdesignPage = () => {
 
       {/* Optimization Modal */}
       {showOptimization && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-lg p-6 max-w-2xl w-full shadow-xl">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="optimization-modal-title"
+        >
+          <div
+            className="bg-slate-900 border border-white/10 rounded-lg p-6 max-w-2xl w-full shadow-xl"
+            tabIndex={-1}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Optimized Content</h3>
+              <h3 id="optimization-modal-title" className="text-xl font-bold text-white">
+                Optimized Content
+              </h3>
               <button
                 onClick={() => {
                   setShowOptimization(false);
                   setOptimizedText(null);
                 }}
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Close"
+                className="text-gray-400 hover:text-white transition-colors p-1 rounded focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -495,10 +642,14 @@ export const WebdesignPage = () => {
 
       {/* Global Seamless Background */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* SplashCursor Background Effect - Only on Webdesign Page - Above other backgrounds */}
-        <div className="absolute inset-0 z-[1]">
-          <SplashCursorBackground />
-        </div>
+        {/* SplashCursor Background Effect - Only on Webdesign Page - Above other backgrounds. Disabled on mobile for performance. */}
+        {!isMobile && (
+          <div className="absolute inset-0 z-[1]">
+            <Suspense fallback={null}>
+              <SplashCursorBackground />
+            </Suspense>
+          </div>
+        )}
         {/* React Bits Aurora Background for Hero Section */}
         <LazyBackground className="absolute inset-0 z-[0]">
           <AuroraBackground className="absolute inset-0" />
@@ -561,26 +712,54 @@ export const WebdesignPage = () => {
         <SocialProofSection lang={lang} />
 
         {/* Process Flow Section */}
-        <Suspense fallback={<SkeletonLoader variant="process" />}>
-          <WebdesignProcessFlow lang={lang} />
-        </Suspense>
+        <ErrorBoundary
+          fallback={
+            <section className="py-16 sm:py-24 md:py-32">
+              <div className="container mx-auto px-4 sm:px-6 text-center">
+                <p className="text-gray-400">
+                  {lang === 'de'
+                    ? 'Prozessübersicht wird geladen... Bei Problemen die Seite neu laden.'
+                    : 'Process overview loading... Refresh the page if issues persist.'}
+                </p>
+              </div>
+            </section>
+          }
+        >
+          <Suspense fallback={<SkeletonLoader variant="process" />}>
+            <WebdesignProcessFlow lang={lang} />
+          </Suspense>
+        </ErrorBoundary>
 
         {/* Portfolio / Website Previews Section */}
-        <Suspense fallback={<SkeletonLoader variant="preview" />}>
-          <WebsitePreviews lang={lang} />
-        </Suspense>
+        <ErrorBoundary
+          fallback={
+            <section className="py-16 sm:py-24 md:py-32">
+              <div className="container mx-auto px-4 sm:px-6 text-center">
+                <p className="text-gray-400">
+                  {lang === 'de'
+                    ? 'Portfolio wird geladen... Bei Problemen die Seite neu laden.'
+                    : 'Portfolio loading... Refresh the page if issues persist.'}
+                </p>
+              </div>
+            </section>
+          }
+        >
+          <Suspense fallback={<SkeletonLoader variant="preview" />}>
+            <WebsitePreviews lang={lang} />
+          </Suspense>
+        </ErrorBoundary>
 
         {/* Pricing Section */}
         <section
           id="pricing"
-          className="py-12 sm:py-20 relative overflow-hidden scroll-mt-20"
+          className="py-16 sm:py-24 md:py-28 relative overflow-hidden scroll-mt-20"
           aria-labelledby="pricing-heading"
         >
           {/* React Bits DarkVeil Background for Pricing Section */}
           <LazyBackground className="absolute inset-0 z-0">
             <DarkVeilBackground className="absolute inset-0" />
           </LazyBackground>
-          <div className="container mx-auto px-6 relative z-20">
+          <div className="container mx-auto px-4 sm:px-6 relative z-20">
             <AnimatedContent direction="up" delay={0.1} className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
                 <h2
@@ -617,16 +796,18 @@ export const WebdesignPage = () => {
           {/* Antigravity Background Effect */}
           {!prefersReducedMotion && (
             <div className="absolute inset-0 z-[1]">
-              <AntigravityBackground
-                count={200}
-                color="#DA291C"
-                magnetRadius={8}
-                ringRadius={8}
-                waveSpeed={0.3}
-                particleSize={1.5}
-                autoAnimate={true}
-                particleShape="capsule"
-              />
+              <Suspense fallback={null}>
+                <AntigravityBackground
+                  count={isMobile ? 60 : 200}
+                  color="#DA291C"
+                  magnetRadius={isMobile ? 6 : 8}
+                  ringRadius={isMobile ? 6 : 8}
+                  waveSpeed={0.3}
+                  particleSize={isMobile ? 1 : 1.5}
+                  autoAnimate={true}
+                  particleShape="capsule"
+                />
+              </Suspense>
             </div>
           )}
           {/* Background Decorative Elements */}
@@ -669,7 +850,7 @@ export const WebdesignPage = () => {
                     <p className="text-gray-400 text-lg leading-relaxed font-light mb-8">
                       {features[0].description}
                     </p>
-                    <div className="mt-auto flex items-center gap-2 text-swiss-red font-mono text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
+                    <div className="mt-auto flex items-center gap-2 text-swiss-red font-mono text-xs uppercase tracking-widest group-hover:gap-3 transition-all duration-300">
                       <span>Live Preview</span>
                       <ArrowRight size={14} />
                     </div>
@@ -768,19 +949,31 @@ export const WebdesignPage = () => {
           <LazyBackground className="absolute inset-0 z-0">
             <DitherBackground className="absolute inset-0" />
           </LazyBackground>
-          <Suspense fallback={<SkeletonLoader variant="tech" />}>
-            <WebdesignTechStack lang={lang} />
-          </Suspense>
+          <ErrorBoundary
+            fallback={
+              <div className="container mx-auto px-4 sm:px-6 py-16 text-center">
+                <p className="text-gray-400">
+                  {lang === 'de'
+                    ? 'Technologie-Übersicht wird geladen... Bei Problemen die Seite neu laden.'
+                    : 'Technology overview loading... Refresh the page if issues persist.'}
+                </p>
+              </div>
+            }
+          >
+            <Suspense fallback={<SkeletonLoader variant="tech" />}>
+              <WebdesignTechStack lang={lang} />
+            </Suspense>
+          </ErrorBoundary>
         </section>
 
         {/* Contact Form Section */}
         <section
           id="contact-form"
-          className="py-12 sm:py-16 md:py-20 relative overflow-hidden scroll-mt-20"
-          aria-labelledby="contact-heading"
-          tabIndex={-1}
-        >
-          <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
+          className="py-16 sm:py-24 md:py-28 relative overflow-hidden scroll-mt-20"
+        aria-labelledby="contact-heading"
+        tabIndex={-1}
+      >
+        <div className="container mx-auto px-4 sm:px-6 relative z-20 max-w-7xl">
             <AnimatedContent direction="up" distance={30} className="max-w-4xl mx-auto">
               <div className="relative z-10">
                 <FadeContent delay={0.2} className="text-center mb-12 sm:mb-16">
@@ -803,10 +996,10 @@ export const WebdesignPage = () => {
         {/* Related Links Section */}
         <section
           id="related-links"
-          className="py-8 sm:py-12 relative overflow-hidden scroll-mt-20"
-          aria-labelledby="related-links-heading"
-        >
-          <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
+          className="py-12 sm:py-16 md:py-20 relative overflow-hidden scroll-mt-20"
+        aria-labelledby="related-links-heading"
+      >
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -819,7 +1012,7 @@ export const WebdesignPage = () => {
               >
                 {t.relatedTitle}
               </h2>
-              <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base px-4">Entdecken Sie unsere anderen Angebote</p>
+              <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base px-4">{t.relatedSub}</p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
                 <motion.div
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
@@ -830,7 +1023,7 @@ export const WebdesignPage = () => {
                     onClick={() => navigate(ROUTES.VOICE_AGENTS)}
                     variant="outline"
                     className="min-h-[56px] px-6 sm:px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all duration-300"
-                    aria-label="Zu Voice Agents navigieren"
+                    aria-label={lang === 'de' ? 'Zu Voice Agents navigieren' : 'Navigate to Voice Agents'}
                   >
                     <span className="flex items-center gap-2">
                       <Zap size={18} className="text-yellow-500" />
@@ -847,7 +1040,7 @@ export const WebdesignPage = () => {
                     onClick={() => navigate(ROUTES.DASHBOARD)}
                     variant="outline"
                     className="min-h-[56px] px-6 sm:px-8 text-white border-white/10 hover:border-white/20 hover:bg-white/5 backdrop-blur-sm transition-all duration-300"
-                    aria-label="Zum Dashboard navigieren"
+                    aria-label={lang === 'de' ? 'Zum Dashboard navigieren' : 'Navigate to Dashboard'}
                   >
                     <span className="flex items-center gap-2">
                       <Layout size={18} className="text-blue-500" />

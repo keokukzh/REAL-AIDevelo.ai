@@ -29,19 +29,21 @@ if (!existsSync(DIST_DIR)) {
 console.log('📊 Analyzing chunk sizes...\n');
 
 try {
-  // Read dist directory structure
+  // Read dist directory structure (Vite outputs to dist/assets/)
   const { readdirSync, statSync } = await import('fs');
-  const files = readdirSync(DIST_DIR);
-  
-  const chunks = files
-    .filter(file => file.endsWith('.js') || file.endsWith('.css'))
-    .map(file => {
-      const filePath = join(DIST_DIR, file);
+  const assetsDir = join(DIST_DIR, 'assets');
+  const scanDir = existsSync(assetsDir) ? assetsDir : DIST_DIR;
+  const entries = readdirSync(scanDir);
+
+  const chunks = entries
+    .filter(name => name.endsWith('.js') || name.endsWith('.css'))
+    .map(name => {
+      const filePath = join(scanDir, name);
       const stats = statSync(filePath);
       const sizeKB = (stats.size / 1024).toFixed(2);
       const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
       return {
-        name: file,
+        name,
         size: stats.size,
         sizeKB: parseFloat(sizeKB),
         sizeMB: parseFloat(sizeMB),
@@ -72,6 +74,18 @@ try {
 
   console.log('\n' + '-'.repeat(80));
   console.log(`Total: ${totalSizeKB} KB (${totalSizeMB} MB)`);
+
+  // Performance budgets (KB) - fail build if exceeded
+  const BUDGETS = {
+    total: 3000, // 3MB total
+    singleChunk: 1200, // 1.2MB per chunk (vendor-three is ~1MB)
+    webdesignPage: 200, // WebdesignPage chunk target
+  };
+
+  const webdesignChunk = chunks.find(c => c.name.includes('WebdesignPage'));
+  if (webdesignChunk && webdesignChunk.sizeKB > BUDGETS.webdesignPage) {
+    console.log(`\n⚠️  WebdesignPage chunk (${webdesignChunk.sizeKB} KB) exceeds budget (${BUDGETS.webdesignPage} KB)`);
+  }
   
   const largeChunks = chunks.filter(c => c.sizeKB > 500);
   if (largeChunks.length > 0) {

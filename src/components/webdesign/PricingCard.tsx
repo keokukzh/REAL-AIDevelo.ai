@@ -43,7 +43,7 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           scale: 1.01,
           transition: { duration: 0.3, ease: 'easeOut' }
         }}
-        className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50"
+        className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50 cursor-pointer"
         aria-labelledby="pricing-heading"
         role="region"
         style={{ transform: 'translateZ(0)' }}
@@ -193,8 +193,10 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           <div className="mt-8 border-t border-white/10 pt-6">
             <motion.button
               onClick={() => setShowMore(!showMore)}
-              className="w-full flex items-center justify-between text-left text-gray-300 hover:text-white transition-colors"
+              className="w-full flex items-center justify-between text-left text-gray-300 hover:text-white transition-colors cursor-pointer"
               whileHover={prefersReducedMotion ? {} : { x: 4 }}
+              aria-expanded={showMore}
+              aria-controls="additional-features"
             >
               <span className="font-semibold">
                 {showMore ? 'Weniger anzeigen' : `Mehr anzeigen (${hiddenFeatures.length} weitere Leistungen)`}

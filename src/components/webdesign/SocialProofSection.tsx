@@ -13,13 +13,13 @@ const SOCIAL_PROOF_DICTIONARY = {
     eyebrow: 'Warum AIDevelo',
     title: 'Vertrauen durch',
     titleHighlight: 'Exzellenz',
-    sub: 'Messbare Ergebnisse, bewährte Technologien, höchste Standards.',
+    sub: 'Messbare Geschäftsergebnisse, bewährte Technologien, höchste Schweizer Qualitätsstandards. Jede Website ein strategischer Wettbewerbsvorteil.',
     items: [
       {
         icon: Award,
         value: '99/100',
         label: 'Lighthouse Score',
-        description: 'Top Performance garantiert',
+        description: 'Top Performance – besser als 95% der Konkurrenz',
         color: 'text-emerald-400',
         bgColor: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/20',
@@ -28,7 +28,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Zap,
         value: '< 2.5s',
         label: 'Ladezeit',
-        description: 'Blitzschnelle Websites',
+        description: 'Steigert Conversion um bis zu 20%',
         color: 'text-blue-400',
         bgColor: 'bg-blue-500/10',
         borderColor: 'border-blue-500/20',
@@ -37,7 +37,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Shield,
         value: '100%',
         label: 'DSGVO-konform',
-        description: 'Maximale Sicherheit',
+        description: 'Schützt Kundenvertrauen & Daten',
         color: 'text-purple-400',
         bgColor: 'bg-purple-500/10',
         borderColor: 'border-purple-500/20',
@@ -46,7 +46,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: CheckCircle2,
         value: 'Made in',
         label: 'Switzerland',
-        description: 'Swiss Quality Standards',
+        description: 'Präzision & Zuverlässigkeit',
         color: 'text-swiss-red',
         bgColor: 'bg-swiss-red/10',
         borderColor: 'border-swiss-red/20',
@@ -55,7 +55,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Smartphone,
         value: '100%',
         label: 'Mobiloptimiert',
-        description: 'Perfekt auf allen Geräten',
+        description: 'Erreicht 60%+ Ihrer Zielgruppe',
         color: 'text-amber-400',
         bgColor: 'bg-amber-500/10',
         borderColor: 'border-amber-500/20',
@@ -64,7 +64,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Users,
         value: '1:1',
         label: 'Persönliche Betreuung',
-        description: 'Direkter Ansprechpartner',
+        description: 'Strategischer Partner für Ihr Wachstum',
         color: 'text-cyan-400',
         bgColor: 'bg-cyan-500/10',
         borderColor: 'border-cyan-500/20',
@@ -75,13 +75,13 @@ const SOCIAL_PROOF_DICTIONARY = {
     eyebrow: 'Why AIDevelo',
     title: 'Trust through',
     titleHighlight: 'Excellence',
-    sub: 'Measurable results, proven technologies, highest standards.',
+    sub: 'Measurable business results, proven technologies, highest Swiss quality standards. Every website a strategic competitive advantage.',
     items: [
       {
         icon: Award,
         value: '99/100',
         label: 'Lighthouse Score',
-        description: 'Top performance guaranteed',
+        description: 'Top performance – better than 95% of competitors',
         color: 'text-emerald-400',
         bgColor: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/20',
@@ -90,7 +90,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Zap,
         value: '< 2.5s',
         label: 'Load Time',
-        description: 'Lightning-fast websites',
+        description: 'Increases conversion by up to 20%',
         color: 'text-blue-400',
         bgColor: 'bg-blue-500/10',
         borderColor: 'border-blue-500/20',
@@ -99,7 +99,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Shield,
         value: '100%',
         label: 'GDPR Compliant',
-        description: 'Maximum security',
+        description: 'Protects customer trust & data',
         color: 'text-purple-400',
         bgColor: 'bg-purple-500/10',
         borderColor: 'border-purple-500/20',
@@ -117,7 +117,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Smartphone,
         value: '100%',
         label: 'Mobile Optimized',
-        description: 'Perfect on all devices',
+        description: 'Reaches 60%+ of your target audience',
         color: 'text-amber-400',
         bgColor: 'bg-amber-500/10',
         borderColor: 'border-amber-500/20',
@@ -126,7 +126,7 @@ const SOCIAL_PROOF_DICTIONARY = {
         icon: Users,
         value: '1:1',
         label: 'Personal Support',
-        description: 'Direct contact person',
+        description: 'Strategic partner for your growth',
         color: 'text-cyan-400',
         bgColor: 'bg-cyan-500/10',
         borderColor: 'border-cyan-500/20',
@@ -184,7 +184,7 @@ export const SocialProofSection: React.FC<SocialProofSectionProps> = ({ lang = '
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               whileHover={prefersReducedMotion ? {} : { y: -6, scale: 1.02 }}
-              className="h-full p-6 md:p-8 rounded-3xl bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden"
+              className="h-full p-6 md:p-8 rounded-3xl bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden cursor-pointer"
             >
               <div className={`absolute inset-0 ${t.items[0].bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl blur-xl`} aria-hidden="true" />
               <div className="relative z-10 h-full flex flex-col">
@@ -216,7 +216,7 @@ export const SocialProofSection: React.FC<SocialProofSectionProps> = ({ lang = '
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
               whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02 }}
-              className="h-full p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden"
+              className="h-full p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden cursor-pointer"
             >
               <div className={`absolute inset-0 ${t.items[1].bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl blur-xl`} aria-hidden="true" />
               <div className="relative z-10 text-center">
@@ -250,7 +250,7 @@ export const SocialProofSection: React.FC<SocialProofSectionProps> = ({ lang = '
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.6, delay: 0.3 + index * 0.1, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02 }}
-                className="h-full p-5 md:p-6 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden"
+                className="h-full p-5 md:p-6 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden cursor-pointer"
               >
                 <div className={`absolute inset-0 ${item.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl blur-xl`} aria-hidden="true" />
                 <div className="relative z-10 text-center">

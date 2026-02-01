@@ -26,7 +26,7 @@ const FORM_DICTIONARY = {
       phone: "+41 79 123 45 67",
       company: "Beispiel GmbH",
       currentWebsiteUrl: "https://www.beispiel.ch",
-      message: "Was ist Ihr Ziel? Was soll Ihre neue Website erreichen?"
+      message: "Welche Geschäftsziele verfolgen Sie? Wie soll Ihre Website zu Ihrem Wachstum beitragen?"
     },
     requestTypes: {
       new: "Neue Website",
@@ -35,16 +35,16 @@ const FORM_DICTIONARY = {
     submit: "Projektanfrage senden",
     submitting: "Initialisiere Anfrage...",
     success: "Anfrage erfolgreich gesendet!",
-    successSub: "Wir werden Ihre Vision prüfen und uns innerhalb von 24 Stunden bei Ihnen melden.",
+    successSub: "Vielen Dank für Ihr Vertrauen. Wir analysieren Ihre Anforderungen strategisch und melden uns innerhalb von 24 Stunden mit einem massgeschneiderten Konzept.",
     back: "Zurück zum Dashboard",
     error: "Fehler beim Senden",
-    errorSub: "Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.",
+    errorSub: "Bitte versuchen Sie es erneut. Bei anhaltenden Problemen kontaktieren Sie uns direkt – wir helfen Ihnen gerne persönlich weiter.",
     whatHappensNext: "Was passiert nach Ihrer Anfrage?",
     nextSteps: [
-      { icon: Mail, text: "Bestätigungs-E-Mail innerhalb von 1 Stunde" },
-      { icon: Calendar, text: "Terminvereinbarung für Erstberatung (kostenlos)" },
-      { icon: FileText, text: "Massgeschneidertes Angebot innerhalb von 48 Stunden" },
-      { icon: Phone, text: "Persönlicher Ansprechpartner für alle Fragen" },
+      { icon: Mail, text: "Sofortige Bestätigung per E-Mail – Ihre Anfrage ist bei uns angekommen" },
+      { icon: Calendar, text: "Kostenlose Erstberatung – wir entwickeln gemeinsam Ihre digitale Strategie" },
+      { icon: FileText, text: "Massgeschneidertes Konzept mit transparentem Festpreis innerhalb von 48 Stunden" },
+      { icon: Phone, text: "Persönlicher Ansprechpartner – wir begleiten Sie von der Idee bis zum Erfolg" },
     ],
   },
   en: {
@@ -54,7 +54,7 @@ const FORM_DICTIONARY = {
       phone: "Phone Number (Optional)",
       company: "Company (Optional)",
       currentWebsiteUrl: "Current Website URL (Optional)",
-      message: "Tell us about your project..."
+      message: "Describe your project and goals..."
     },
     placeholders: {
       name: "John Doe",
@@ -62,7 +62,7 @@ const FORM_DICTIONARY = {
       phone: "+1 555 123 4567",
       company: "Example Ltd",
       currentWebsiteUrl: "https://www.example.com",
-      message: "What is your goal? What should your new website achieve?"
+      message: "What business goals are you pursuing? How should your website contribute to your growth?"
     },
     requestTypes: {
       new: "New Website",
@@ -71,16 +71,16 @@ const FORM_DICTIONARY = {
     submit: "Send Project Inquiry",
     submitting: "Initializing Inquiry...",
     success: "Inquiry Sent Successfully!",
-    successSub: "We will review your vision and get back to you within 24 hours.",
+    successSub: "Thank you for your trust. We will strategically analyze your requirements and get back to you within 24 hours with a tailor-made concept.",
     back: "Back to Dashboard",
     error: "Sending Error",
-    errorSub: "Please try again or contact us directly.",
+    errorSub: "Please try again. If problems persist, contact us directly – we are happy to help you personally.",
     whatHappensNext: "What happens after your inquiry?",
     nextSteps: [
-      { icon: Mail, text: "Confirmation email within 1 hour" },
-      { icon: Calendar, text: "Schedule free consultation call" },
-      { icon: FileText, text: "Customized offer within 48 hours" },
-      { icon: Phone, text: "Personal contact person for all questions" },
+      { icon: Mail, text: "Immediate confirmation email – your inquiry has been received" },
+      { icon: Calendar, text: "Free initial consultation – we develop your digital strategy together" },
+      { icon: FileText, text: "Tailor-made concept with transparent fixed pricing within 48 hours" },
+      { icon: Phone, text: "Personal contact person – we accompany you from idea to success" },
     ],
   }
 };
@@ -334,7 +334,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               onFocus();
               setFocusedField(id_key);
             }}
-            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${
               error 
                 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                 : focusedField === id_key 
@@ -564,13 +564,15 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                  rows={4}
                  value={formData.message}
                  onChange={e => handleChange('message', e.target.value)}
-                 onBlur={() => handleBlur('message', formData.message)}
+                 onBlur={() => {
+                   handleBlur('message', formData.message);
+                   setFocusedField(null);
+                 }}
                  onFocus={() => {
                    setActiveField('message');
                    setFocusedField('message');
                  }}
-                 onBlur={() => setFocusedField(null)}
-                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                 className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 transition-all duration-300 outline-none resize-none focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${
                    errors.message 
                      ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                      : focusedField === 'message' 

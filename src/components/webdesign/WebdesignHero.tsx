@@ -16,6 +16,13 @@ interface WebdesignHeroProps {
     showSpecs: string;
     closeSpecs: string;
     scrollExplore: string;
+    heroBadgeSystems?: string;
+    heroBadgeSwiss?: string;
+    heroBadgePerformance?: string;
+    heroBadgePricing?: string;
+    heroTrustLighthouse?: string;
+    heroTrustLoadTime?: string;
+    heroTrustGdpr?: string;
   };
 }
 
@@ -85,7 +92,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/20 text-xs font-mono text-white/90 shadow-lg ultra-glass"
                 >
                   <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                  SYSTEMS ONLINE & READY
+                  {t.heroBadgeSystems ?? 'SYSTEMS ONLINE & READY'}
                 </motion.div>
               </StarBorder>
               <StarBorder starCount={8} speed={0.5}>
@@ -101,7 +108,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                     alt="Switzerland"
                     className="w-5 h-auto rounded-sm"
                   />
-                  MADE IN SWITZERLAND
+                  {t.heroBadgeSwiss ?? 'MADE IN SWITZERLAND'}
                 </motion.div>
               </StarBorder>
             </div>
@@ -116,7 +123,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors"
               >
                 <Shield size={14} className="text-emerald-400" />
-                Performance optimiert
+                {t.heroBadgePerformance ?? 'Performance optimized'}
               </motion.div>
               <motion.div
                 initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
@@ -126,7 +133,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors"
               >
                 <Award size={14} className="text-blue-400" />
-                Transparentes Festpreis-Modell
+                {t.heroBadgePricing ?? 'Transparent fixed-price model'}
               </motion.div>
             </div>
           </motion.div>
@@ -238,7 +245,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 className="text-emerald-500 group-hover:scale-125 transition-transform"
               />
               <span className="text-gray-200 group-hover:text-white font-medium transition-colors">
-                99+ Lighthouse Score
+                {t.heroTrustLighthouse ?? '99+ Lighthouse Score'}
               </span>
             </motion.div>
             <motion.div
@@ -250,7 +257,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 className="text-blue-500 group-hover:scale-125 transition-transform"
               />
               <span className="text-gray-200 group-hover:text-white font-medium transition-colors">
-                &lt; 2.5s Ladezeit
+                {t.heroTrustLoadTime ?? '< 2.5s load time'}
               </span>
             </motion.div>
             <motion.div
@@ -262,7 +269,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 className="text-purple-500 group-hover:scale-125 transition-transform"
               />
               <span className="text-gray-200 group-hover:text-white font-medium transition-colors">
-                DSGVO-konform
+                {t.heroTrustGdpr ?? 'GDPR compliant'}
               </span>
             </motion.div>
           </motion.div>
