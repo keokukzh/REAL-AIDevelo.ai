@@ -241,14 +241,32 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
         {/* Enhanced CTA Button */}
         <div className="mt-12 text-center">
           <Magnetic strength={prefersReducedMotion ? 0 : 1.2}>
-            <Button
-              onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-              variant="primary"
-              className="bg-swiss-red hover:bg-red-700 text-white font-bold py-5 px-12 text-lg shadow-lg shadow-swiss-red/30 hover:shadow-xl hover:shadow-swiss-red/40 transition-all"
-              aria-label="Start project - Navigate to contact form"
-            >
-              Jetzt Projekt starten
-            </Button>
+            <div className="relative inline-block">
+              <Button
+                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
+                variant="primary"
+                className="bg-swiss-red hover:bg-red-700 text-white font-bold py-5 px-12 text-lg shadow-lg shadow-swiss-red/30 hover:shadow-xl hover:shadow-swiss-red/40 transition-all relative overflow-hidden group/cta"
+                aria-label="Start project - Navigate to contact form"
+              >
+                Jetzt Projekt starten
+              </Button>
+              {/* Urgency pulse effect */}
+              {!prefersReducedMotion && (
+                <motion.span
+                  className="absolute inset-0 bg-white/20 rounded-full pointer-events-none"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+            </div>
           </Magnetic>
         </div>
       </div>

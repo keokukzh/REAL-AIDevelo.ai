@@ -70,6 +70,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
     setMobileMenuOpen(false);
   };
 
+  // Check if we're on the webdesign page
+  const isWebdesignPage = location.pathname === ROUTES.WEBDESIGN;
+  const shouldBeTransparent = isWebdesignPage && !scrolled;
+
   return (
     <motion.header
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3' : 'py-4'}`}
@@ -77,10 +81,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
       <div className="container mx-auto px-4 sm:px-6">
         <div
           ref={headerRef}
-          className={`relative flex items-center justify-between rounded-full px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-300 overflow-hidden ${scrolled ? 'bg-black/60 backdrop-blur-lg border border-white/10 shadow-lg' : 'bg-transparent'}`}
+          className={`relative flex items-center justify-between rounded-full px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-300 overflow-hidden ${
+            shouldBeTransparent
+              ? 'bg-transparent'
+              : 'bg-black/60 backdrop-blur-lg border border-white/10 shadow-lg'
+          }`}
         >
+          {/* Gradient Overlay for transparent state on webdesign page */}
+          {shouldBeTransparent && (
+            <div className="absolute inset-0 pointer-events-none rounded-full bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+          )}
+
           {/* Wave Glow Effect - Animated Background */}
-          {!prefersReducedMotion && (
+          {!prefersReducedMotion && !shouldBeTransparent && (
             <motion.div
               className="absolute inset-0 pointer-events-none rounded-full"
               style={{
@@ -91,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onStartOnboarding }) => {
           )}
 
           {/* Shimmer Wave Effect */}
-          {!prefersReducedMotion && (
+          {!prefersReducedMotion && !shouldBeTransparent && (
             <motion.div
               className="absolute inset-0 pointer-events-none rounded-full"
               style={{

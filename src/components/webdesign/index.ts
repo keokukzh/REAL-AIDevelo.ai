@@ -1,4 +1,7 @@
 export { WebdesignHero } from './WebdesignHero';
+export { WebdesignHeroRedesigned } from './WebdesignHeroRedesigned';
+export { HeroShowcase } from './HeroShowcase';
+export { HeroTrustBar } from './HeroTrustBar';
 export { WebdesignTechStack } from './WebdesignTechStack';
 export { WebdesignProcessFlow } from './WebdesignProcessFlow';
 export { WebsitePreviews } from './WebsitePreviews';
@@ -32,5 +35,6 @@ export { FloatingActionButton } from './FloatingActionButton';
 export { Accordion } from './Accordion';
 export { ScrollCue } from './ScrollCue';
 export { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
+export { SectionTransition } from './SectionTransition';
 
 export { default as HeroUltraAnimation } from './hero/HeroUltraAnimation';

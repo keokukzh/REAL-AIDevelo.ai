@@ -8,9 +8,11 @@ import {
   PricingCard,
   WebdesignAnimatedBackground,
   WebdesignHero,
+  WebdesignHeroRedesigned,
   WebdesignInquiryWidget,
   BlurText,
   SocialProofSection,
+  SectionTransition,
 } from '../components/webdesign';
 
 // Lazy-load heavy background effects for better LCP
@@ -76,6 +78,20 @@ const WebdesignTechStack = lazy(() =>
   })),
 ) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
+// Lazy-load hero components for better initial load performance
+const HeroTrustBar = lazy(() =>
+  import('../components/webdesign/HeroTrustBar').then((m) => ({
+    default: m.HeroTrustBar,
+  })),
+) as React.LazyExoticComponent<React.FC>;
+
+// Lazy-load TestimonialSection to avoid JSON import issues during initial load
+const TestimonialSection = lazy(() =>
+  import('../components/webdesign/TestimonialSection').then((m) => ({
+    default: m.TestimonialSection,
+  })),
+) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
+
 import {
   Globe,
   Zap,
@@ -106,24 +122,24 @@ interface Feature {
 
 const PRICING_FEATURES_DICTIONARY: Record<'de' | 'en', { text: string }[]> = {
   de: [
-    { text: 'Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.) – vollständige Online-Präsenz' },
-    { text: 'Responsive Design – steigert mobile Conversion um bis zu 40%' },
-    { text: 'SEO-Optimierung – erhöht organischen Traffic um durchschnittlich 35%' },
-    { text: 'Kontaktformular mit E-Mail-Benachrichtigung – keine Leads mehr verpassen' },
-    { text: 'Social Media Integration – stärkt Ihre Markenpräsenz' },
-    { text: 'Lighthouse Score 99/100 – messbar schnell, besser als 95% der Konkurrenz' },
-    { text: 'Wartbarer Code – langfristige Kosteneinsparung durch einfache Erweiterungen' },
-    { text: '2–3 Wochen Umsetzung – schneller Markteintritt, schneller ROI' },
+    { text: 'Bis zu 5 Seiten (Home, Über uns, Services, Kontakt, etc.) – vollständige Online-Präsenz (vs. 2000+ CHF bei Agenturen)' },
+    { text: 'Responsive Design – steigert mobile Conversion um bis zu 40% (ROI: Mehr Umsatz ohne zusätzliche Werbekosten)' },
+    { text: 'SEO-Optimierung – erhöht organischen Traffic um durchschnittlich 35% (spart langfristig Werbebudget)' },
+    { text: 'Kontaktformular mit E-Mail-Benachrichtigung – keine Leads mehr verpassen (automatisiert, 24/7)' },
+    { text: 'Social Media Integration – stärkt Ihre Markenpräsenz (konsistente Markenführung)' },
+    { text: 'Lighthouse Score 99/100 – messbar schnell, besser als 95% der Konkurrenz (steigert Conversion um 20%+)' },
+    { text: 'Wartbarer Code – langfristige Kosteneinsparung durch einfache Erweiterungen (50-70% günstiger als Neuentwicklung)' },
+    { text: '2–3 Wochen Umsetzung – schneller Markteintritt, schneller ROI (vs. 2-4 Monate bei Agenturen)' },
   ],
   en: [
-    { text: 'Up to 5 pages (Home, About, Services, Contact, etc.) – complete online presence' },
-    { text: 'Responsive design – increases mobile conversion by up to 40%' },
-    { text: 'SEO optimization – increases organic traffic by an average of 35%' },
-    { text: 'Contact form with email notification – never miss a lead again' },
-    { text: 'Social media integration – strengthens your brand presence' },
-    { text: 'Lighthouse Score 99/100 – measurably fast, better than 95% of competitors' },
-    { text: 'Maintainable code – long-term cost savings through easy extensions' },
-    { text: '2–3 weeks delivery – faster market entry, faster ROI' },
+    { text: 'Up to 5 pages (Home, About, Services, Contact, etc.) – complete online presence (vs. 2000+ CHF at agencies)' },
+    { text: 'Responsive design – increases mobile conversion by up to 40% (ROI: More revenue without additional ad costs)' },
+    { text: 'SEO optimization – increases organic traffic by an average of 35% (saves advertising budget long-term)' },
+    { text: 'Contact form with email notification – never miss a lead again (automated, 24/7)' },
+    { text: 'Social media integration – strengthens your brand presence (consistent brand management)' },
+    { text: 'Lighthouse Score 99/100 – measurably fast, better than 95% of competitors (increases conversion by 20%+)' },
+    { text: 'Maintainable code – long-term cost savings through easy extensions (50-70% cheaper than redevelopment)' },
+    { text: '2–3 weeks delivery – faster market entry, faster ROI (vs. 2-4 months at agencies)' },
   ],
 };
 
@@ -145,19 +161,19 @@ const FEATURES_DICTIONARY: Record<'de' | 'en', Feature[]> = {
       icon: Search,
       title: 'SEO-Optimierung',
       description:
-        'Schema.org, XML-Sitemap, semantisches HTML. Erhöht organischen Traffic um durchschnittlich 35% durch verbesserte Rankings – mehr qualifizierte Leads ohne Werbekosten.',
+        'Schema.org, XML-Sitemap, semantisches HTML. Erhöht organischen Traffic um durchschnittlich 35% durch verbesserte Rankings – mehr qualifizierte Leads ohne Werbekosten. ROI: Jeder investierte Franken spart langfristig Werbekosten.',
     },
     {
       icon: Palette,
       title: 'Modernes Design',
       description:
-        'Professionelles UI/UX nach aktuellen Standards stärkt Ihre Marke und erhöht Conversion um durchschnittlich 25%. Klare Hierarchie und starke CTAs führen Besucher gezielt zum Ziel.',
+        'Professionelles UI/UX nach aktuellen Standards stärkt Ihre Marke und erhöht Conversion um durchschnittlich 25%. Klare Hierarchie und starke CTAs führen Besucher gezielt zum Ziel. Vergleich: Baukasten-Templates erreichen nur 5-10% Conversion-Steigerung.',
     },
     {
       icon: Code,
       title: 'Sauberer Code',
       description:
-        'TypeScript, React, Tailwind – wartbar und zukunftssicher. Sparen Sie langfristig Kosten durch einfache Erweiterungen ohne teure Neuentwicklung. Ihre Investition bleibt wertvoll.',
+        'TypeScript, React, Tailwind – wartbar und zukunftssicher. Sparen Sie langfristig Kosten durch einfache Erweiterungen ohne teure Neuentwicklung. Ihre Investition bleibt wertvoll. ROI: 50-70% Kosteneinsparung bei zukünftigen Updates vs. Agentur-Neuentwicklung.',
     },
     {
       icon: Smartphone,
@@ -189,19 +205,19 @@ const FEATURES_DICTIONARY: Record<'de' | 'en', Feature[]> = {
       icon: Search,
       title: 'SEO Optimization',
       description:
-        'Schema.org, XML sitemap, semantic HTML. Maximum visibility in search engines – measurable through improved rankings.',
+        'Schema.org, XML sitemap, semantic HTML. Increases organic traffic by an average of 35% through improved rankings – more qualified leads without advertising costs. ROI: Every franc invested saves long-term advertising costs.',
     },
     {
       icon: Palette,
       title: 'Modern Design',
       description:
-        'Professional UI/UX to current standards strengthens your brand and increases conversion by an average of 25%. Clear hierarchy and strong CTAs guide visitors purposefully to their goal.',
+        'Professional UI/UX to current standards strengthens your brand and increases conversion by an average of 25%. Clear hierarchy and strong CTAs guide visitors purposefully to their goal. Comparison: Template builders achieve only 5-10% conversion increase.',
     },
     {
       icon: Code,
       title: 'Clean Code',
       description:
-        'TypeScript, React, Tailwind – maintainable and future-proof. Save long-term costs through easy extensions without costly redevelopment. Your investment remains valuable.',
+        'TypeScript, React, Tailwind – maintainable and future-proof. Save long-term costs through easy extensions without costly redevelopment. Your investment remains valuable. ROI: 50-70% cost savings on future updates vs. agency redevelopment.',
     },
     {
       icon: Smartphone,
@@ -224,11 +240,22 @@ const DICTIONARY = {
     heroText2: 'Schweizer KMU',
     heroSub:
       'Steigern Sie Ihre Online-Präsenz mit messbaren Ergebnissen: Websites mit 99+ Lighthouse Score, die Conversion-Raten um durchschnittlich 25% erhöhen. Schweizer Qualität, transparente Festpreise, 2–3 Wochen bis zum Launch.',
+    heroHeadline: 'Premium Webdesign, das messbare Ergebnisse liefert – für Schweizer KMU, die online wachsen wollen.',
+    heroSubheadline:
+      'Websites mit 100/100 Lighthouse-Score, die Conversion um durchschnittlich 25% steigern. Individuelles Design, Schweizer Qualität, transparente Festpreise – in 2-3 Wochen live.',
+    heroBullets: [
+      '100/100 Lighthouse-Score – messbar schneller als 95% der Konkurrenz',
+      'Ladezeiten unter 1 Sekunde – steigert Conversion um bis zu 20%',
+      'Individuelles Design statt Templates – Ihre Marke, nicht ein Baukasten',
+      'Persönliche 1:1 Betreuung aus der Schweiz – von Strategie bis Launch',
+    ],
+    ctaPrimary: 'Projekt unverbindlich anfragen',
+    ctaSecondary: 'Beispiele ansehen',
     missionStart: 'Kostenlose Erstberatung buchen',
     showSpecs: 'Technik-Check',
     closeSpecs: 'Analyse schließen',
     pricingTitle: 'Transparente Preisgestaltung',
-    pricingSub: 'Ein Festpreis, alle Leistungen inklusive. Keine versteckten Kosten, keine Überraschungen – planen Sie Ihr Budget mit vollständiger Sicherheit.',
+    pricingSub: 'Ein Festpreis, alle Leistungen inklusive. Keine versteckten Kosten, keine Überraschungen – planen Sie Ihr Budget mit vollständiger Sicherheit. Vergleich: Agenturen verlangen 2000-5000 CHF für ähnliche Leistungen.',
     pricingInvest: 'Investition',
     pricingSubtitle: 'Einmalig – Alles inklusive',
     pricingDisclaimer: 'Nur 100 CHF Anzahlung • Sichere Zahlung • Volle Transparenz',
@@ -257,11 +284,22 @@ const DICTIONARY = {
     heroText2: 'Swiss SMEs',
     heroSub:
       'Elevate your online presence with measurable results: Websites scoring 99+ on Lighthouse that increase conversion rates by an average of 25%. Swiss quality, transparent fixed pricing, 2–3 weeks to launch.',
+    heroHeadline: 'Premium Web Design That Delivers Measurable Results – For Swiss SMEs Ready to Grow Online.',
+    heroSubheadline:
+      'Websites with 100/100 Lighthouse Score that increase conversion by an average of 25%. Individual design, Swiss quality, transparent fixed prices – live in 2-3 weeks.',
+    heroBullets: [
+      '100/100 Lighthouse Score – measurably faster than 95% of competitors',
+      'Load Times Under 1 Second – increases conversion by up to 20%',
+      'Individual Design Instead of Templates – Your brand, not a cookie-cutter',
+      'Personal 1:1 Support from Switzerland – from strategy to launch',
+    ],
+    ctaPrimary: 'Request Project',
+    ctaSecondary: 'View Examples',
     missionStart: 'Book Free Consultation',
     showSpecs: 'Tech Check',
     closeSpecs: 'Close Analysis',
     pricingTitle: 'Transparent Pricing',
-    pricingSub: 'One fixed price, everything included. No hidden costs, no surprises – plan your budget with complete confidence.',
+    pricingSub: 'One fixed price, everything included. No hidden costs, no surprises – plan your budget with complete confidence. Comparison: Agencies charge 2000-5000 CHF for similar services.',
     pricingInvest: 'Investment',
     pricingSubtitle: 'One-time – All inclusive',
     pricingDisclaimer: 'Only 100 CHF Deposit • Secure Payment • Full Transparency',
@@ -459,10 +497,10 @@ export const WebdesignPage = () => {
         />
         <meta name="keywords" content="Webdesign, Website, Redesign, Schweiz, KMU, React, TypeScript, SEO, responsive" />
         <link rel="canonical" href="https://aidevelo.ai/webdesign" />
-        <meta property="og:title" content="Premium Webdesign | AIDevelo" />
+        <meta property="og:title" content="Premium Webdesign für Schweizer KMU | 100/100 Lighthouse Score" />
         <meta
           property="og:description"
-          content="Moderne Websites & Elegantes Redesign. Professionelle Umsetzung zum transparenten Festpreis."
+          content="Websites mit 100/100 Lighthouse Score, die Conversion um 25% steigern. Individuelles Design, transparente Festpreise (599 CHF), Made in Switzerland."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aidevelo.ai/webdesign" />
@@ -477,19 +515,33 @@ export const WebdesignPage = () => {
             name: 'Premium Webdesign',
             description:
               lang === 'de'
-                ? 'Professionelle Websites für Schweizer KMU. Schnell, SEO-optimiert und konversionsstark.'
-                : 'Professional websites for Swiss SMEs. Fast, SEO-optimized, and conversion-focused.',
+                ? 'Premium Webdesign mit 100/100 Lighthouse Score für Schweizer KMU. Websites, die Conversion um durchschnittlich 25% steigern. Individuelles Design, transparente Festpreise, Made in Switzerland.'
+                : 'Premium web design with 100/100 Lighthouse Score for Swiss SMEs. Websites that increase conversion by an average of 25%. Individual design, transparent fixed prices, Made in Switzerland.',
             provider: {
               '@type': 'Organization',
               name: 'AIDevelo',
               url: 'https://aidevelo.ai',
+              logo: 'https://aidevelo.ai/logo-white.png',
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'CH',
+              },
             },
             areaServed: { '@type': 'Country', name: 'Switzerland' },
             offers: {
               '@type': 'Offer',
               price: '599',
               priceCurrency: 'CHF',
+              availability: 'https://schema.org/InStock',
+              priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             },
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '5',
+              reviewCount: '10',
+            },
+            serviceType: 'Web Design',
+            category: 'Web Development',
           })}
         </script>
       </Helmet>
@@ -703,13 +755,35 @@ export const WebdesignPage = () => {
           className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 md:pt-32 pb-12 sm:pb-16 md:pb-20 scroll-mt-20"
           aria-labelledby="hero-heading"
         >
-          <ErrorBoundary fallback={<WebdesignHero t={t} />}>
-            <WebdesignHero t={t} />
+          <ErrorBoundary
+            fallback={
+              <WebdesignHeroRedesigned
+                t={{
+                  heroHeadline: t.heroHeadline,
+                  heroSubheadline: t.heroSubheadline,
+                  heroBullets: t.heroBullets,
+                  ctaPrimary: t.ctaPrimary,
+                  ctaSecondary: t.ctaSecondary,
+                }}
+              />
+            }
+          >
+            <WebdesignHeroRedesigned
+              t={{
+                heroHeadline: t.heroHeadline,
+                heroSubheadline: t.heroSubheadline,
+                heroBullets: t.heroBullets,
+                ctaPrimary: t.ctaPrimary,
+                ctaSecondary: t.ctaSecondary,
+              }}
+            />
           </ErrorBoundary>
         </section>
 
-        {/* Social Proof / Key Benefits Section */}
-        <SocialProofSection lang={lang} />
+        {/* Trust Bar Section */}
+        <Suspense fallback={<div className="py-8 sm:py-12" />}>
+          <HeroTrustBar />
+        </Suspense>
 
         {/* Process Flow Section */}
         <ErrorBoundary
@@ -750,11 +824,12 @@ export const WebdesignPage = () => {
         </ErrorBoundary>
 
         {/* Pricing Section */}
-        <section
-          id="pricing"
-          className="py-16 sm:py-24 md:py-28 relative overflow-hidden scroll-mt-20"
-          aria-labelledby="pricing-heading"
-        >
+        <SectionTransition variant="fade" intensity="medium">
+          <section
+            id="pricing"
+            className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
+            aria-labelledby="pricing-heading"
+          >
           {/* React Bits DarkVeil Background for Pricing Section */}
           <LazyBackground className="absolute inset-0 z-0">
             <DarkVeilBackground className="absolute inset-0" />
@@ -782,13 +857,15 @@ export const WebdesignPage = () => {
             </AnimatedContent>
           </div>
         </section>
+        </SectionTransition>
 
         {/* Features Section - Bento Grid Layout */}
-        <section
-          id="features"
-          className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
-          aria-labelledby="features-heading"
-        >
+        <SectionTransition variant="parallax" intensity="subtle">
+          <section
+            id="features"
+            className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
+            aria-labelledby="features-heading"
+          >
           {/* React Bits Silk Background for Features Section */}
           <LazyBackground className="absolute inset-0 z-0">
             <SilkBackground className="absolute inset-0" />
@@ -942,6 +1019,14 @@ export const WebdesignPage = () => {
             </div>
           </div>
         </section>
+        </SectionTransition>
+
+        {/* Testimonials Section */}
+        <SectionTransition variant="fade" intensity="subtle">
+          <Suspense fallback={<div className="py-24" />}>
+            <TestimonialSection lang={lang} />
+          </Suspense>
+        </SectionTransition>
 
         {/* Technologies Section */}
         <section className="relative overflow-hidden">
@@ -969,7 +1054,7 @@ export const WebdesignPage = () => {
         {/* Contact Form Section */}
         <section
           id="contact-form"
-          className="py-16 sm:py-24 md:py-28 relative overflow-hidden scroll-mt-20"
+          className="py-16 sm:py-24 md:py-32 relative overflow-hidden scroll-mt-20"
         aria-labelledby="contact-heading"
         tabIndex={-1}
       >
