@@ -1,5 +1,6 @@
 export { WebdesignHero } from './WebdesignHero';
 export { WebdesignHeroRedesigned } from './WebdesignHeroRedesigned';
+export { WebdesignHeroFuturistic } from './WebdesignHeroFuturistic';
 export { HeroShowcase } from './HeroShowcase';
 export { HeroTrustBar } from './HeroTrustBar';
 export { WebdesignTechStack } from './WebdesignTechStack';

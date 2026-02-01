@@ -1,0 +1,51 @@
+{
+  "text": {
+    "eyebrow": "UPLINK_STATUS: BEREIT",
+    "headline_lines": [
+      "Premium Webdesign,",
+      "das messbare Ergebnisse liefert",
+      "– für Schweizer KMU, die online wachsen wollen."
+    ],
+    "subheadline": "Websites mit 100/100 Lighthouse-Score, die Conversion um durchschnittlich 25% steigern. Individuelles Design, Schweizer Qualität, transparente Festpreise – in 2-3 Wochen live.",
+    "bullets": [
+      "100/100 Lighthouse-Score – messbar schneller als 95% der Konkurrenz",
+      "Ladezeiten unter 1 Sekunde – steigert Conversion um bis zu 20%",
+      "Individuelles Design statt Templates – Ihre Marke, nicht ein Baukasten",
+      "Persönliche 1:1 Betreuung aus der Schweiz – von Strategie bis Launch"
+    ],
+    "primary_cta": "Projekt unverbindlich anfragen",
+    "secondary_cta": "Beispiele ansehen"
+  },
+  "design_concept": {
+    "layout": "2-Spalten-Grid: Links Text-Stack (max-w-xl), rechts 3D-Device-Frame (aspect-[16/10]). Mobile: Stack-Layout. Container: max-w-7xl, gap-12 lg:gap-16",
+    "background": [
+      "Dunkler Hintergrund: bg-slate-950 (tiefes Anthrazit)",
+      "Neon-Blobs: 3 animierte Blobs (Cyan/Violett) mit blur-[120px], langsame Float-Animation (10-20s Loop, scale 1->1.2->1, position drift)",
+      "Grid-Overlay: Subtiles Grid-Pattern (60px Raster) mit opacity-[0.08], leichter Parallax beim Scrollen (translateY -10px)"
+    ],
+    "hero_visual": {
+      "type": "3D-device-frame",
+      "description": "Laptop/Monitor-Frame mit leicht gekipptem 3D-Effekt. Im Inneren: Website-Preview (Screenshot/Mockup im Vercel Ship / Lusion Stil). Badges oben rechts: '100/100 Lighthouse', '< 1 Sekunde Ladezeit'. Glassmorphism-Container: bg-slate-900/60 backdrop-blur-xl, border-white/20, rounded-[2.5rem]"
+    },
+    "animations": {
+      "headline": "Line 1: opacity 0->1, y 20->0 (duration 0.4s, delay 0.2s, ease [0.22,1,0.36,1]). Line 2 (betont): opacity 0->1, x -50->0, clipPath inset(0 100% 0 0)->inset(0 0% 0 0) (duration 0.6s, delay 0.4s) + Neon-Glow-Linie unter Text (scaleX 0->1, delay 0.8s, duration 0.8s). Line 3: opacity 0->1, y 20->0 (duration 0.5s, delay 0.6s)",
+      "ctas": "Primary CTA: initial scale 0.96, opacity 0.8 -> whileInView scale 1, opacity 1 (delay 0.7s, duration 0.5s). Hover: scale 1.03, shadow-glow verstärkt (shadow-[0_0_60px_-10px_rgba(6,182,212,0.7)]), gradient-shift (from-cyan-600 to-violet-600 -> from-cyan-500 to-violet-500). Secondary CTA: initial scale 0.96 -> whileInView scale 1 (delay 0.7s). Hover: underline-wipe (scaleX 0->1 from center, duration 0.3s)",
+      "hero_visual": "Initial: opacity 0, scale 0.9, y 24 -> whileInView: opacity 1, scale 1, y 0 (delay 0.3s, duration 0.8s). Idle: Floating-Animation (y -4->4->-4, duration 5s, infinite, easeInOut). Mouse-Parallax: rotateX ±8°, rotateY ±8° (useMotionValue + useTransform, spring damping 50, stiffness 200)",
+      "background": "Blobs: animate scale [1,1.2,1], position drift (x/y ±30px), opacity [0.3,0.5,0.3] (duration 15s, infinite, easeInOut, staggered delays 0s/2s/4s). Grid: Parallax beim Scrollen (useScroll + useTransform, translateY -10px bei scrollY 0->1000)"
+    }
+  },
+  "code_skeleton": {
+    "component_name": "HeroSection",
+    "notes": [
+      "React-Komponente mit TypeScript: export const HeroSection: React.FC<HeroSectionProps>",
+      "Framer Motion: Verwende whileInView statt animate für Scroll-Reveal (viewport: {once: true, amount: 0.3, margin: '-100px'})",
+      "Container-Variants: staggerChildren 0.1s für gestufte Entry-Animationen",
+      "Headline: motion.span pro Zeile, Line 2 mit speziellem clipPath-Effekt + Neon-Glow-Linie (motion.span mit scaleX)",
+      "CTAs: motion.div wrapper mit whileHover für Scale + Shadow-Glow, Button-Komponente innerhalb",
+      "3D-Device: HeroDeviceFrame-Komponente mit useMotionValue/useTransform für Mouse-Parallax, floatingVariants für Idle-Animation",
+      "Background: NeonBackgroundBlobs + GridOverlay als separate Komponenten, absolute positioned, z-0",
+      "Tailwind-Klassen: bg-slate-950 (Section), bg-gradient-to-r from-cyan-600 to-violet-600 (Primary CTA), backdrop-blur-xl (Glassmorphism), shadow-[...] für Neon-Glows",
+      "Performance: willChange für animierte Elemente (transform, opacity), GPU-optimierte Transforms, useReducedMotion Hook für Accessibility"
+    ]
+  }
+}

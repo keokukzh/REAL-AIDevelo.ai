@@ -8,7 +8,7 @@ import { GridOverlay } from './GridOverlay';
 import { AnimatedHeadline } from './AnimatedHeadline';
 import { HeroDeviceFrame } from './HeroDeviceFrame';
 
-interface WebdesignHeroRedesignedProps {
+interface WebdesignHeroFuturisticProps {
   t: {
     heroHeadline: string;
     heroSubheadline: string;
@@ -23,19 +23,18 @@ interface WebdesignHeroRedesignedProps {
 }
 
 /**
- * WebdesignHeroRedesigned - Futuristischer Hero-Header im Stil von Vercel Ship & Lusion
+ * WebdesignHeroFuturistic - Futuristischer Hero-Header im Stil von Vercel Ship & Lusion
  * 
- * Komplett neu gestaltet basierend auf JSON-Konzept:
- * - 2-spaltiges Layout (Text links, 3D-Device-Frame rechts)
+ * Features:
+ * - 2-spaltiges Layout (Text links, Device-Frame rechts)
  * - Neon-Glow-Effekte (Cyan/Violett)
- * - Animierte Hintergrund-Blobs + Grid-Overlay
+ * - Animierte Hintergrund-Blobs
  * - 3D-Device-Frame mit Mouse-Parallax
  * - Entry-Animationen mit Stagger
  * - Hover-Interaktionen
  * - Performance-optimiert (GPU-Transforms, Reduced Motion)
- * - Trust-Bar mit 4 Indikatoren
  */
-export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = ({ t }) => {
+export const WebdesignHeroFuturistic: React.FC<WebdesignHeroFuturisticProps> = ({ t }) => {
   const prefersReducedMotion = useReducedMotion();
 
   // Headline in Zeilen aufteilen basierend auf dem Plan-Format
@@ -95,71 +94,111 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
     return [headline];
   })();
 
-  // Animation settings matching rest of page
-  // Using whileInView pattern consistent with ScrollReveal and other sections
-  const viewportSettings = {
-    once: true,
-    amount: 0.3,
-    margin: '-100px',
+  // Entry Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: prefersReducedMotion ? 0 : 0.6,
+        staggerChildren: 0.1,
+      },
+    },
   };
 
-  const defaultTransition = {
-    duration: prefersReducedMotion ? 0 : 0.6,
-    ease: [0.22, 1, 0.36, 1] as const,
+  const itemVariants = {
+    hidden: { opacity: 0, y: 24 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: prefersReducedMotion ? 0 : 0.6,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    },
+  };
+
+  const bulletVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: prefersReducedMotion ? 0 : 0.8 + i * 0.06,
+        duration: prefersReducedMotion ? 0 : 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    }),
+  };
+
+  const ctaVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        delay: prefersReducedMotion ? 0 : 0.8,
+        duration: prefersReducedMotion ? 0 : 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    },
+  };
+
+  const deviceVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 24 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        delay: prefersReducedMotion ? 0 : 0.4,
+        duration: prefersReducedMotion ? 0 : 0.8,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    },
   };
 
   const handlePrimaryCTA = () => {
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
-      contactForm.scrollIntoView({ 
-        behavior: prefersReducedMotion ? 'auto' : 'smooth' 
-      });
+      contactForm.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const handleSecondaryCTA = () => {
-    const examples = document.getElementById('examples') || 
-                     document.getElementById('showcase') ||
-                     document.getElementById('website-previews');
+    const examples = document.getElementById('examples') || document.getElementById('showcase');
     if (examples) {
-      examples.scrollIntoView({ 
-        behavior: prefersReducedMotion ? 'auto' : 'smooth' 
-      });
+      examples.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   return (
     <section
       className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden bg-slate-950"
-      aria-labelledby="webdesign-hero-heading"
+      aria-label="Hero Section"
     >
       {/* Background Layers */}
       <NeonBackgroundBlobs />
       <GridOverlay />
 
       {/* Content Container */}
-      <div className="container mx-auto px-4 sm:px-6 relative z-10">
+      <div className="container mx-auto px-6 relative z-10">
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto"
-          initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-          whileInView={prefersReducedMotion ? {} : { opacity: 1 }}
-          viewport={viewportSettings}
-          transition={defaultTransition}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
           {/* Left Column: Text Stack */}
           <motion.div
             className="text-left relative z-20"
-            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-            viewport={viewportSettings}
-            transition={{ ...defaultTransition, delay: 0.1 }}
+            variants={itemVariants}
           >
             {/* Status Badge */}
             <motion.div
-              initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-              viewport={viewportSettings}
-              transition={{ ...defaultTransition, delay: 0.2 }}
+              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: prefersReducedMotion ? 0 : 0.2, duration: 0.4 }}
               className="mb-8"
             >
               <motion.div
@@ -189,10 +228,13 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
 
             {/* Subheadline */}
             <motion.p
-              initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-              viewport={viewportSettings}
-              transition={{ ...defaultTransition, delay: 0.4 }}
+              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: prefersReducedMotion ? 0 : 0.6,
+                duration: prefersReducedMotion ? 0 : 0.8,
+                ease: [0.22, 1, 0.36, 1],
+              }}
               className="text-xl sm:text-2xl text-gray-300 mb-10 max-w-xl leading-relaxed font-light"
             >
               {t.heroSubheadline}
@@ -201,23 +243,19 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
             {/* Bullet Points */}
             <motion.ul
               className="space-y-4 mb-10"
+              initial="hidden"
+              animate="visible"
             >
               {t.heroBullets.map((bullet, index) => (
                 <motion.li
                   key={index}
-                  initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                  whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0 }}
-                  viewport={viewportSettings}
-                  transition={{
-                    ...defaultTransition,
-                    delay: prefersReducedMotion ? 0 : 0.5 + index * 0.06,
-                  }}
+                  custom={index}
+                  variants={bulletVariants}
                   className="flex items-start gap-3 text-gray-300"
                 >
                   <CheckCircle2
                     size={20}
                     className="text-cyan-400 mt-0.5 flex-shrink-0"
-                    aria-hidden="true"
                   />
                   <span className="leading-relaxed">{bullet}</span>
                 </motion.li>
@@ -227,10 +265,9 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
             {/* CTAs */}
             <motion.div
               className="flex flex-col sm:flex-row gap-5 mb-12"
-              initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-              whileInView={prefersReducedMotion ? {} : { opacity: 1, scale: 1 }}
-              viewport={viewportSettings}
-              transition={{ ...defaultTransition, delay: 0.7 }}
+              variants={ctaVariants}
+              initial="hidden"
+              animate="visible"
             >
               {/* Primary CTA */}
               <motion.div
@@ -242,7 +279,6 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
                   onClick={handlePrimaryCTA}
                   variant="primary"
                   className="group relative overflow-hidden h-16 px-12 text-lg font-bold shadow-[0_0_40px_-10px_rgba(6,182,212,0.5)] hover:shadow-[0_0_60px_-10px_rgba(6,182,212,0.7)] transition-all duration-500 bg-gradient-to-r from-cyan-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500"
-                  aria-label={t.ctaPrimary}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_2s_infinite]" />
                   <span className="relative z-10 flex items-center gap-3 uppercase tracking-wider">
@@ -250,7 +286,6 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
                     <ArrowRight
                       size={20}
                       className="group-hover:translate-x-1 transition-transform duration-300"
-                      aria-hidden="true"
                     />
                   </span>
                 </Button>
@@ -266,7 +301,6 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
                   onClick={handleSecondaryCTA}
                   variant="outline"
                   className="h-16 px-10 text-lg border-2 border-white/20 hover:border-white/40 hover:bg-white/5 text-gray-300 hover:text-white transition-all duration-300 relative group"
-                  aria-label={t.ctaSecondary}
                 >
                   <span className="relative flex items-center gap-2">
                     {t.ctaSecondary}
@@ -284,26 +318,28 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
 
             {/* Trust Bar */}
             <motion.div
-              initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-              viewport={viewportSettings}
-              transition={{ ...defaultTransition, delay: 0.9 }}
+              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: prefersReducedMotion ? 0 : 1,
+                duration: prefersReducedMotion ? 0 : 0.8,
+              }}
               className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm"
             >
               <div className="flex items-center gap-2 text-gray-300">
-                <CheckCircle2 size={16} className="text-emerald-400" aria-hidden="true" />
+                <CheckCircle2 size={16} className="text-emerald-400" />
                 <span>{t.heroTrustLighthouse || '100/100 Lighthouse-Score'}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-300">
-                <CheckCircle2 size={16} className="text-cyan-400" aria-hidden="true" />
+                <CheckCircle2 size={16} className="text-cyan-400" />
                 <span>{t.heroTrustLoadTime || '< 1 Sekunde Ladezeit'}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-300">
-                <CheckCircle2 size={16} className="text-violet-400" aria-hidden="true" />
+                <CheckCircle2 size={16} className="text-violet-400" />
                 <span>{t.heroTrustGdpr || 'DSGVO-konform & sicher gehostet'}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-300">
-                <CheckCircle2 size={16} className="text-swiss-red" aria-hidden="true" />
+                <CheckCircle2 size={16} className="text-swiss-red" />
                 <span>Made in Switzerland</span>
               </div>
             </motion.div>
@@ -312,10 +348,9 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
           {/* Right Column: Device Frame */}
           <motion.div
             className="relative w-full z-10"
-            initial={prefersReducedMotion ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 24 }}
-            whileInView={prefersReducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
-            viewport={viewportSettings}
-            transition={{ ...defaultTransition, delay: 0.3 }}
+            variants={deviceVariants}
+            initial="hidden"
+            animate="visible"
           >
             <HeroDeviceFrame
               badges={['100/100 Lighthouse', '< 1 Sekunde Ladezeit']}
@@ -326,10 +361,9 @@ export const WebdesignHeroRedesigned: React.FC<WebdesignHeroRedesignedProps> = (
         {/* Scroll Indicator */}
         {t.scrollExplore && (
           <motion.div
-            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-            whileInView={prefersReducedMotion ? {} : { opacity: 1 }}
-            viewport={viewportSettings}
-            transition={{ ...defaultTransition, delay: 1.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: prefersReducedMotion ? 0 : 1.2 }}
             className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
             aria-hidden="true"
           >

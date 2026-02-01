@@ -8,7 +8,6 @@ import {
   PricingCard,
   WebdesignAnimatedBackground,
   WebdesignHero,
-  WebdesignHeroRedesigned,
   WebdesignInquiryWidget,
   BlurText,
   SocialProofSection,
@@ -718,7 +717,6 @@ export const WebdesignPage = () => {
       {/* Table of Contents - Desktop Only */}
       <TableOfContents
         sections={[
-          { id: 'hero', title: lang === 'de' ? 'Start' : 'Hero', level: 1 },
           { id: 'process-flow', title: lang === 'de' ? 'Prozess' : 'Process', level: 1 },
           { id: 'pricing', title: lang === 'de' ? 'Preise' : 'Pricing', level: 1 },
           { id: 'features', title: lang === 'de' ? 'Features' : 'Features', level: 1 },
@@ -730,7 +728,6 @@ export const WebdesignPage = () => {
       {/* Mobile Navigation */}
       <MobileNavigation
         items={[
-          { id: 'hero', label: lang === 'de' ? 'Start' : 'Home', icon: Home },
           { id: 'pricing', label: lang === 'de' ? 'Preise' : 'Pricing', icon: DollarSign },
           { id: 'features', label: lang === 'de' ? 'Features' : 'Features', icon: Zap },
           { id: 'technologies', label: lang === 'de' ? 'Tech' : 'Tech', icon: Code },
@@ -749,37 +746,6 @@ export const WebdesignPage = () => {
       />
 
       <main id="main-content" className="relative z-20">
-        {/* Hero Section */}
-        <section
-          id="hero"
-          className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 md:pt-32 pb-12 sm:pb-16 md:pb-20 scroll-mt-20"
-          aria-labelledby="hero-heading"
-        >
-          <ErrorBoundary
-            fallback={
-              <WebdesignHeroRedesigned
-                t={{
-                  heroHeadline: t.heroHeadline,
-                  heroSubheadline: t.heroSubheadline,
-                  heroBullets: t.heroBullets,
-                  ctaPrimary: t.ctaPrimary,
-                  ctaSecondary: t.ctaSecondary,
-                }}
-              />
-            }
-          >
-            <WebdesignHeroRedesigned
-              t={{
-                heroHeadline: t.heroHeadline,
-                heroSubheadline: t.heroSubheadline,
-                heroBullets: t.heroBullets,
-                ctaPrimary: t.ctaPrimary,
-                ctaSecondary: t.ctaSecondary,
-              }}
-            />
-          </ErrorBoundary>
-        </section>
-
         {/* Trust Bar Section */}
         <Suspense fallback={<div className="py-8 sm:py-12" />}>
           <HeroTrustBar />
