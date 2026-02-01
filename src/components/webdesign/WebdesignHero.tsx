@@ -12,6 +12,9 @@ interface WebdesignHeroProps {
     heroText1: string;
     heroText2: string;
     heroSub: string;
+    heroPrice?: string;
+    heroPriceSubtitle?: string;
+    heroComparisonHint?: string;
     missionStart: string;
     showSpecs: string;
     closeSpecs: string;
@@ -74,6 +77,26 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
           className="text-left relative z-20"
         >
+          {/* Price Badge - Prominent Above Headline */}
+          {t.heroPrice && (
+            <motion.div
+              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={prefersReducedMotion ? {} : { delay: 0.1, duration: 0.5 }}
+              className="mb-8"
+            >
+              <div className="inline-flex flex-col items-start gap-2 px-6 py-4 bg-gradient-to-br from-swiss-red/20 to-red-600/20 backdrop-blur-xl border-2 border-swiss-red/40 rounded-2xl shadow-[0_0_30px_rgba(218,41,28,0.3)]">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl sm:text-5xl font-bold text-white">{t.heroPrice}</span>
+                  <span className="text-sm text-gray-300 font-medium">{t.heroPriceSubtitle || 'Festpreis'}</span>
+                </div>
+                {t.heroComparisonHint && (
+                  <p className="text-xs text-gray-400 mt-1">{t.heroComparisonHint}</p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* Enhanced Trust Badges - More Prominent */}
           <motion.div
             initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}

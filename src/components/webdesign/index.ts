@@ -37,5 +37,6 @@ export { Accordion } from './Accordion';
 export { ScrollCue } from './ScrollCue';
 export { HorizontalScrollTimeline } from './HorizontalScrollTimeline';
 export { SectionTransition } from './SectionTransition';
+export { PricingComparison } from './PricingComparison';
 
 export { default as HeroUltraAnimation } from './hero/HeroUltraAnimation';

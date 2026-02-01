@@ -12,6 +12,7 @@ import {
   BlurText,
   SocialProofSection,
   SectionTransition,
+  PricingComparison,
 } from '../components/webdesign';
 
 // Lazy-load heavy background effects for better LCP
@@ -235,10 +236,13 @@ const FEATURES_DICTIONARY: Record<'de' | 'en', Feature[]> = {
 
 const DICTIONARY = {
   de: {
-    heroText1: 'Premium Websites für',
-    heroText2: 'Schweizer KMU',
+    heroText1: 'Mehr Leads durch professionelle Websites',
+    heroText2: '– in 2-3 Wochen live',
     heroSub:
-      'Steigern Sie Ihre Online-Präsenz mit messbaren Ergebnissen: Websites mit 99+ Lighthouse Score, die Conversion-Raten um durchschnittlich 25% erhöhen. Schweizer Qualität, transparente Festpreise, 2–3 Wochen bis zum Launch.',
+      'CHF 599 Festpreis • 100/100 Lighthouse Score • Made in Switzerland. Websites, die Conversion-Raten um durchschnittlich 25% erhöhen. Individuelles Design statt Templates – Ihre Marke, nicht ein Baukasten.',
+    heroPrice: 'CHF 599',
+    heroPriceSubtitle: 'Festpreis • Alles inklusive',
+    heroComparisonHint: 'Vergleich: Agenturen verlangen CHF 2000-5000 für ähnliche Leistungen',
     heroHeadline: 'Premium Webdesign, das messbare Ergebnisse liefert – für Schweizer KMU, die online wachsen wollen.',
     heroSubheadline:
       'Websites mit 100/100 Lighthouse-Score, die Conversion um durchschnittlich 25% steigern. Individuelles Design, Schweizer Qualität, transparente Festpreise – in 2-3 Wochen live.',
@@ -279,10 +283,13 @@ const DICTIONARY = {
     heroTrustGdpr: 'DSGVO-konform',
   },
   en: {
-    heroText1: 'Premium Websites for',
-    heroText2: 'Swiss SMEs',
+    heroText1: 'More Leads Through Professional Websites',
+    heroText2: '– Live in 2-3 Weeks',
     heroSub:
-      'Elevate your online presence with measurable results: Websites scoring 99+ on Lighthouse that increase conversion rates by an average of 25%. Swiss quality, transparent fixed pricing, 2–3 weeks to launch.',
+      'CHF 599 Fixed Price • 100/100 Lighthouse Score • Made in Switzerland. Websites that increase conversion rates by an average of 25%. Individual design instead of templates – Your brand, not a cookie-cutter.',
+    heroPrice: 'CHF 599',
+    heroPriceSubtitle: 'Fixed Price • All Inclusive',
+    heroComparisonHint: 'Comparison: Agencies charge CHF 2000-5000 for similar services',
     heroHeadline: 'Premium Web Design That Delivers Measurable Results – For Swiss SMEs Ready to Grow Online.',
     heroSubheadline:
       'Websites with 100/100 Lighthouse Score that increase conversion by an average of 25%. Individual design, Swiss quality, transparent fixed prices – live in 2-3 weeks.',
@@ -322,6 +329,9 @@ const DICTIONARY = {
     heroTrustLighthouse: '99+ Lighthouse Score',
     heroTrustLoadTime: '< 2.5s load time',
     heroTrustGdpr: 'GDPR compliant',
+    heroPrice: 'CHF 599',
+    heroPriceSubtitle: 'Fixed Price • All Inclusive',
+    heroComparisonHint: 'Comparison: Agencies charge CHF 2000-5000 for similar services',
   },
 };
 
@@ -824,6 +834,9 @@ export const WebdesignPage = () => {
           </div>
         </section>
         </SectionTransition>
+
+        {/* Pricing Comparison Table */}
+        <PricingComparison lang={lang} />
 
         {/* Features Section - Bento Grid Layout */}
         <SectionTransition variant="parallax" intensity="subtle">

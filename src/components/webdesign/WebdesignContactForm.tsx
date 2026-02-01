@@ -92,12 +92,7 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
-    company: '',
-    requestType: 'new' as 'new' | 'redesign',
-    currentWebsiteUrl: '',
     message: '',
-    files: [] as File[]
   });
   const [activeField, setActiveField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -123,21 +118,8 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
   };
 
   const validateMessage = (message: string): string | null => {
-    if (!message.trim()) return lang === 'de' ? 'Nachricht ist erforderlich' : 'Message is required';
-    if (message.trim().length < 12) {
-      return lang === 'de' ? 'Nachricht muss mindestens 12 Zeichen lang sein' : 'Message must be at least 12 characters';
-    }
+    if (!message.trim()) return null; // Message is now optional
     return null;
-  };
-
-  const validateUrl = (url: string): string | null => {
-    if (!url.trim()) return null; // Optional field
-    try {
-      new URL(url);
-      return null;
-    } catch {
-      return lang === 'de' ? 'Ungültige URL' : 'Invalid URL';
-    }
   };
 
   const validateField = (field: string, value: string): string | null => {
@@ -148,8 +130,6 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
         return validateEmail(value);
       case 'message':
         return validateMessage(value);
-      case 'currentWebsiteUrl':
-        return validateUrl(value);
       default:
         return null;
     }
@@ -196,15 +176,11 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
     
     const emailError = validateEmail(formData.email);
     if (emailError) newErrors.email = emailError;
-    
-    const messageError = validateMessage(formData.message);
-    if (messageError) newErrors.message = messageError;
 
     // Mark all fields as touched
     setTouched({
       name: true,
       email: true,
-      message: true,
     });
 
     if (Object.keys(newErrors).length > 0) {
@@ -225,23 +201,9 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('email', formData.email);
-      formDataToSend.append('requestType', formData.requestType);
-      formDataToSend.append('message', formData.message);
-      
-      if (formData.phone) {
-        formDataToSend.append('phone', formData.phone);
+      if (formData.message) {
+        formDataToSend.append('message', formData.message);
       }
-      if (formData.company) {
-        formDataToSend.append('company', formData.company);
-      }
-      if (formData.currentWebsiteUrl) {
-        formDataToSend.append('currentWebsiteUrl', formData.currentWebsiteUrl);
-      }
-
-      // Append files if any
-      formData.files.forEach((file) => {
-        formDataToSend.append('files', file);
-      });
 
       // Make API call
       const response = await fetch(`${API_BASE_URL}/webdesign/contact`, {
@@ -409,6 +371,48 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
 
   return (
     <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl focus-trap">
+      {/* Alternative Contact Methods */}
+      <div className="p-6 sm:p-8 border-b border-white/10 bg-white/5">
+        <motion.div
+          initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+          whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto"
+        >
+          <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 text-center">
+            {lang === 'de' ? 'Oder kontaktieren Sie uns direkt:' : 'Or contact us directly:'}
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <motion.a
+              href="tel:+41791234567"
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+              className="flex items-center justify-center gap-3 px-6 py-3 bg-slate-900/40 border border-white/10 rounded-lg hover:border-white/20 hover:bg-white/5 transition-all text-white"
+              aria-label={lang === 'de' ? 'Direkt anrufen' : 'Call directly'}
+            >
+              <Phone className="w-5 h-5 text-swiss-red" />
+              <span className="font-medium">{lang === 'de' ? 'Direkt anrufen' : 'Call'}</span>
+            </motion.a>
+            <motion.a
+              href="mailto:webdesign@aidevelo.ai"
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+              className="flex items-center justify-center gap-3 px-6 py-3 bg-slate-900/40 border border-white/10 rounded-lg hover:border-white/20 hover:bg-white/5 transition-all text-white"
+              aria-label={lang === 'de' ? 'E-Mail senden' : 'Send email'}
+            >
+              <Mail className="w-5 h-5 text-swiss-red" />
+              <span className="font-medium">{lang === 'de' ? 'E-Mail senden' : 'Email'}</span>
+            </motion.a>
+          </div>
+          <p className="text-sm text-gray-400 mt-4 text-center">
+            {lang === 'de' 
+              ? 'Wir melden uns innerhalb von 24 Stunden' 
+              : 'We respond within 24 hours'}
+          </p>
+        </motion.div>
+      </div>
+
       {/* "Was passiert danach?" Section */}
       <div className="p-8 lg:p-12 border-b border-white/10 bg-white/5">
         <motion.div
@@ -508,55 +512,6 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
               />
            </div>
 
-           <InputGroup 
-              label={t.labels.phone}
-              id_key="phone"
-              value="phone"
-              placeholder={t.placeholders.phone}
-              onFocus={() => setActiveField('phone')}
-              isRequired={false}
-           />
-
-           <InputGroup 
-              label={t.labels.company}
-              id_key="company"
-              value="company"
-              placeholder={t.placeholders.company}
-              onFocus={() => setActiveField('company')}
-              isRequired={false}
-           />
-
-           <div className="space-y-3">
-              <label className="text-[10px] font-mono text-gray-400 uppercase tracking-widest pl-1">
-                {lang === 'de' ? 'Anfrageart' : 'Request Type'}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                 {(Object.keys(t.requestTypes) as Array<'new' | 'redesign'>).map((type) => (
-                    <button
-                       key={type}
-                       type="button"
-                       onClick={() => setFormData(prev => ({ ...prev, requestType: type }))}
-                       className={`px-3 py-2 rounded-lg text-[10px] font-mono border transition-all duration-300 focus-visible:ring-2 focus-visible:ring-swiss-red focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] ${formData.requestType === type ? 'bg-swiss-red/10 border-swiss-red/50 text-swiss-red' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
-                       aria-pressed={formData.requestType === type}
-                    >
-                       {t.requestTypes[type]}
-                    </button>
-                 ))}
-              </div>
-           </div>
-
-           {formData.requestType === 'redesign' && (
-              <InputGroup 
-                 label={t.labels.currentWebsiteUrl}
-                 id_key="currentWebsiteUrl"
-                 value="currentWebsiteUrl"
-                 placeholder={t.placeholders.currentWebsiteUrl}
-                 onFocus={() => setActiveField('currentWebsiteUrl')}
-                 isRequired={false}
-                 error={errors.currentWebsiteUrl}
-              />
-           )}
-
            <div className="relative group">
               <label htmlFor="input-message" className="sr-only">{t.labels.message}</label>
               <textarea 
@@ -580,13 +535,12 @@ export const WebdesignContactForm: React.FC<WebdesignContactFormProps> = ({ onSu
                        : 'border-white/10 hover:border-white/20'
                  }`}
                  placeholder={t.placeholders.message}
-                 aria-required="true"
+                 aria-required="false"
                  aria-invalid={errors.message ? 'true' : 'false'}
                  aria-describedby={errors.message ? 'input-message-error' : undefined}
-                 required
               />
               <div className="absolute right-3 top-3 text-[10px] text-gray-400 font-mono uppercase tracking-wider bg-slate-900/80 px-1" aria-hidden="true">
-                 Project Mission
+                 {lang === 'de' ? 'Kurze Nachricht (optional)' : 'Brief message (optional)'}
               </div>
               {errors.message && (
                 <div id="input-message-error" role="alert" className="mt-2 text-sm text-red-400 font-mono">
