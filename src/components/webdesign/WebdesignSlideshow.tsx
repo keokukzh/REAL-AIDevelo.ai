@@ -129,6 +129,7 @@ export const WebdesignSlideshow: React.FC = () => {
                 loop
                 muted
                 playsInline
+                crossOrigin="anonymous"
                 title={`Video preview of ${currentSlide.title}`}
                 onError={(e) => {
                   // Fallback to iframe if video fails

@@ -43,6 +43,7 @@ const PortfolioCard = React.memo<{
           loop
           muted
           playsInline
+          crossOrigin="anonymous"
           preload="metadata"
           title={`Video preview of ${item.title}`}
           style={{ willChange: 'transform' }}
