@@ -1002,6 +1002,13 @@ function SplashCursor({
 
     // Named event handlers for proper cleanup
     function handleMouseDown(e) {
+      // Ignore clicks inside elements that opt out (data-no-splash="true")
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (el && el.closest && el.closest('[data-no-splash]')) {
+        console.log('[SplashCursor] Ignoring click in no-splash area', { tag: el.tagName });
+        return;
+      }
+
       let pointer = pointers[0];
       let posX = scaleByPixelRatio(e.clientX);
       let posY = scaleByPixelRatio(e.clientY);
@@ -1029,8 +1036,15 @@ function SplashCursor({
       const touches = e.targetTouches;
       let pointer = pointers[0];
       for (let i = 0; i < touches.length; i++) {
-        let posX = scaleByPixelRatio(touches[i].clientX);
-        let posY = scaleByPixelRatio(touches[i].clientY);
+        const t = touches[i];
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        if (el && el.closest && el.closest('[data-no-splash]')) {
+          console.log('[SplashCursor] Ignoring touchstart in no-splash area', { tag: el.tagName });
+          continue;
+        }
+
+        let posX = scaleByPixelRatio(t.clientX);
+        let posY = scaleByPixelRatio(t.clientY);
         updatePointerDownData(pointer, touches[i].identifier, posX, posY);
       }
     }

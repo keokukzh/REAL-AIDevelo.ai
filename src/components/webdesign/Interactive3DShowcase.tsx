@@ -1,4 +1,5 @@
 import React, { useState, useRef, Suspense } from 'react';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
   Html,
@@ -210,10 +211,13 @@ export const Interactive3DShowcase = () => {
             <div className="order-1 lg:order-2 h-[400px] sm:h-[500px] w-full relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-swiss-red/5 to-blue-500/5 rounded-[2rem] blur-2xl" />
 
-              <div className="h-full w-full relative z-10 cursor-grab active:cursor-grabbing">
+              <div className="h-full w-full relative z-10 cursor-grab active:cursor-grabbing" data-no-splash="true">
                 <Canvas shadows camera={{ position: [0, 0, 6], fov: 45 }}>
                   <Suspense fallback={null}>
-                    <Environment preset="city" />
+                    {/* Environment can fail to load external HDRs (CSP/404). Wrap it so failure doesn't unmount the whole section */}
+                    <ErrorBoundary fallback={null}>
+                      <Environment preset="city" />
+                    </ErrorBoundary>
                     <ambientLight intensity={0.5} />
                     <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
 
