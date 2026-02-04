@@ -37,7 +37,7 @@ const PortfolioCard = React.memo<{
       {/* Video Preview - Animated Website */}
       <div className="relative w-full h-full overflow-hidden bg-slate-900">
         <video
-          src={`https://api.screenshotone.com/animate?access_key=demo&url=${encodeURIComponent(item.image)}&viewport_width=1920&viewport_height=1080&format=mp4`}
+          src={`https://api.screenshotone.com/animate?access_key=${SCREENSHOT_ONE_API_KEY}&url=${encodeURIComponent(item.image)}&viewport_width=1920&viewport_height=1080&format=mp4`}
           className="absolute inset-0 w-full h-full object-cover"
           autoPlay
           loop
