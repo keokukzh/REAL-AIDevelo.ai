@@ -79,6 +79,12 @@ const WebdesignTechStack = lazy(() =>
   })),
 ) as React.LazyExoticComponent<React.FC<{ lang?: 'de' | 'en' }>>;
 
+const Interactive3DShowcase = lazy(() =>
+  import('../components/webdesign/Interactive3DShowcase').then((m) => ({
+    default: m.Interactive3DShowcase,
+  })),
+) as React.LazyExoticComponent<React.FC>;
+
 // Lazy-load hero components for better initial load performance
 const HeroTrustBar = lazy(() =>
   import('../components/webdesign/HeroTrustBar').then((m) => ({
@@ -1012,6 +1018,15 @@ export const WebdesignPage = () => {
           </div>
         </section>
         </SectionTransition>
+
+        {/* 3D Showcase Section */}
+        {!prefersReducedMotion && !isMobile && (
+          <ErrorBoundary fallback={null}>
+             <Suspense fallback={<div className="h-[600px] w-full" />}>
+               <Interactive3DShowcase />
+             </Suspense>
+          </ErrorBoundary>
+        )}
 
         {/* Testimonials Section */}
         <SectionTransition variant="fade" intensity="subtle">
