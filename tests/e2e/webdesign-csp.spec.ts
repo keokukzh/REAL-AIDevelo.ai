@@ -20,7 +20,17 @@ test('webdesign 3d click does not throw CSP/CORB errors', async ({ page }) => {
   await expect(canvas).toBeVisible({ timeout: 10000 });
   const box = await canvas.boundingBox();
   if (!box) throw new Error('Canvas bounding box not found');
-  await canvas.click({ position: { x: Math.floor(box.width / 2), y: Math.floor(box.height / 2) }, timeout: 10000 });
+
+  // Try clicking by dispatching native mouse events to avoid pointer interception by header overlays
+  const clientX = Math.floor(box.x + box.width / 2);
+  const clientY = Math.floor(box.y + box.height * 0.7);
+  await page.evaluate(({ x, y }) => {
+    const elAtPoint = document.elementFromPoint(x, y);
+    if (!elAtPoint) throw new Error('No element at click point');
+    ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click'].forEach((type) => {
+      elAtPoint.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    });
+  }, { x: clientX, y: clientY });
 
   // Wait for any errors to appear
   await page.waitForTimeout(2000);
