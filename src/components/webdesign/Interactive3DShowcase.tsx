@@ -216,7 +216,11 @@ export const Interactive3DShowcase = () => {
                   <Suspense fallback={null}>
                     {/* Environment can fail to load external HDRs (CSP/404). Wrap it so failure doesn't unmount the whole section */}
                     <ErrorBoundary fallback={null}>
-                      <Environment preset="city" />
+                      <Environment
+                        preset="city"
+                        background={false}
+                        crossOrigin="anonymous"
+                      />
                     </ErrorBoundary>
                     <ambientLight intensity={0.5} />
                     <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />

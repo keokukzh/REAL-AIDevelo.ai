@@ -6,6 +6,8 @@ import { Button } from '../ui/Button';
 import { ScrollCue } from './ScrollCue';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
+const SCREENSHOT_ONE_API_KEY = import.meta.env.VITE_SCREENSHOT_ONE_API_KEY || 'demo';
+
 interface PreviewItem {
   id: string;
   title: string;
