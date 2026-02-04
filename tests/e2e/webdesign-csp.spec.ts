@@ -27,6 +27,7 @@ test('webdesign 3d click does not throw CSP/CORB errors', async ({ page }) => {
   await page.evaluate(({ x, y }) => {
     const elAtPoint = document.elementFromPoint(x, y);
     if (!elAtPoint) throw new Error('No element at click point');
+    console.log('Element at click point:', elAtPoint.tagName, elAtPoint.hasAttribute('data-no-splash'), elAtPoint.closest('[data-no-splash]'));
     ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click'].forEach((type) => {
       elAtPoint.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
     });

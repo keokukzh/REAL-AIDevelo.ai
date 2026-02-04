@@ -168,7 +168,7 @@ export const helmetMiddleware = config.isProduction
             'https://voice.twilio.com',
             'https://regions.twilio.com',
           ],
-          frameSrc: ["'self'", 'https://*.supabase.co'],
+          frameSrc: ["'self'", 'https://*.supabase.co', 'https://lusion.co', 'https://amie.so', 'https://vercel.com', 'https://metalab.com', 'https://notion.so', 'https://superhi.com'],
           mediaSrc: ["'self'", 'blob:', 'https://*.twilio.com', 'https://api.screenshotone.com'],
         },
       },

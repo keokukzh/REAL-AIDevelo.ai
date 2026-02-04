@@ -212,7 +212,7 @@ export const Interactive3DShowcase = () => {
               <div className="absolute inset-0 bg-gradient-to-tr from-swiss-red/5 to-blue-500/5 rounded-[2rem] blur-2xl" />
 
               <div className="h-full w-full relative z-10 cursor-grab active:cursor-grabbing" data-no-splash="true">
-                <Canvas shadows camera={{ position: [0, 0, 6], fov: 45 }}>
+                <Canvas shadows camera={{ position: [0, 0, 6], fov: 45 }} data-no-splash="true">
                   <Suspense fallback={null}>
                     {/* Environment can fail to load external HDRs (CSP/404). Wrap it so failure doesn't unmount the whole section */}
                     <ErrorBoundary fallback={null}>

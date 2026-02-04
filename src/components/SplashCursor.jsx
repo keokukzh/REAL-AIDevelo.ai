@@ -1004,8 +1004,9 @@ function SplashCursor({
     function handleMouseDown(e) {
       // Ignore clicks inside elements that opt out (data-no-splash="true")
       const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (el && el.closest && el.closest('[data-no-splash]')) {
-        console.log('[SplashCursor] Ignoring click in no-splash area', { tag: el.tagName });
+      console.log('[SplashCursor] Mouse down check', { el: el?.tagName, hasAttr: el?.hasAttribute('data-no-splash'), closest: el?.closest?.('[data-no-splash]')?.tagName });
+      if (el && (el.hasAttribute('data-no-splash') || (el.closest && el.closest('[data-no-splash]')))) {
+        console.log('[SplashCursor] Ignoring click in no-splash area', { tag: el.tagName, hasAttr: el.hasAttribute('data-no-splash') });
         return;
       }
 
@@ -1038,8 +1039,8 @@ function SplashCursor({
       for (let i = 0; i < touches.length; i++) {
         const t = touches[i];
         const el = document.elementFromPoint(t.clientX, t.clientY);
-        if (el && el.closest && el.closest('[data-no-splash]')) {
-          console.log('[SplashCursor] Ignoring touchstart in no-splash area', { tag: el.tagName });
+        if (el && (el.hasAttribute('data-no-splash') || (el.closest && el.closest('[data-no-splash]')))) {
+          console.log('[SplashCursor] Ignoring touchstart in no-splash area', { tag: el.tagName, hasAttr: el.hasAttribute('data-no-splash') });
           continue;
         }
 
