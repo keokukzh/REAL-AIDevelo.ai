@@ -15,12 +15,12 @@ interface PreviewItem {
   tags: string[];
 }
 
-// Separate component for portfolio card to use hooks
-const PortfolioCard: React.FC<{
+// Memoized portfolio card component for better re-render performance
+const PortfolioCard = React.memo<{
   item: PreviewItem;
   index: number;
   prefersReducedMotion: boolean;
-}> = ({ item, index, prefersReducedMotion }) => {
+}>(({ item, index, prefersReducedMotion }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const isInViewCard = useInView(cardRef, { once: true, amount: 0.3 });
 
@@ -43,7 +43,9 @@ const PortfolioCard: React.FC<{
           loop
           muted
           playsInline
+          preload="metadata"
           title={`Video preview of ${item.title}`}
+          style={{ willChange: 'transform' }}
           onError={(e) => {
             // Fallback to iframe if video fails
             const video = e.target as HTMLVideoElement;
@@ -94,7 +96,9 @@ const PortfolioCard: React.FC<{
       </div>
     </motion.div>
   );
-};
+});
+PortfolioCard.displayName = 'PortfolioCard';
+
 const PREVIEWS_DICTIONARY = {
   de: {
     badge: "Portfolio",

@@ -336,9 +336,6 @@ const DICTIONARY = {
     heroTrustLighthouse: '99+ Lighthouse Score',
     heroTrustLoadTime: '< 2.5s load time',
     heroTrustGdpr: 'GDPR compliant',
-    heroPrice: 'CHF 599',
-    heroPriceSubtitle: 'Fixed Price • All Inclusive',
-    heroComparisonHint: 'Comparison: Agencies charge CHF 2000-5000 for similar services',
   },
 };
 
