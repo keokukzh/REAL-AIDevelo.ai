@@ -9,7 +9,8 @@ test('webdesign 3d click does not throw CSP/CORB errors', async ({ page }) => {
     messages.push(`pageerror:${err.message}`);
   });
 
-  await page.goto('http://localhost:4000/webdesign', { waitUntil: 'networkidle' });
+  const BASE = process.env.BASE_URL || 'https://aidevelo.ai';
+  await page.goto(`${BASE}/webdesign`, { waitUntil: 'networkidle' });
 
   // Wait a bit for three scene to initialize
   await page.waitForTimeout(1500);
