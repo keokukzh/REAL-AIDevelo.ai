@@ -5,7 +5,7 @@ import { VoiceHero as Hero } from "../voiceagent/VoiceHero";
 describe("Hero", () => {
   it("renders headline and key value proposition", () => {
     render(<Hero />);
-    expect(screen.getByText(/Voice Agent/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sprach-KI/i)).toBeInTheDocument();
     const schweizerTexts = screen.getAllByText(/Schweizerdeutsch/i);
     expect(schweizerTexts.length).toBeGreaterThan(0);
   });
@@ -13,7 +13,7 @@ describe("Hero", () => {
   it("invokes onboarding when primary CTA is clicked", () => {
     const onStartOnboarding = vi.fn();
     render(<Hero onStartOnboarding={onStartOnboarding} />);
-    const cta = screen.getAllByLabelText(/Onboarding starten/i)[0];
+    const cta = screen.getAllByLabelText(/Jetzt kostenlos testen/i)[0];
     fireEvent.click(cta);
     expect(onStartOnboarding).toHaveBeenCalledTimes(1);
   });
@@ -21,7 +21,7 @@ describe("Hero", () => {
   it("scrolls to demo section when secondary CTA is clicked", () => {
     const scrollSpy = vi.spyOn(window, "scrollTo");
     const demo = document.createElement("div");
-    demo.id = "demo";
+    demo.id = "booking";
     demo.getBoundingClientRect = () => ({
       top: 150,
       left: 0,
@@ -36,7 +36,7 @@ describe("Hero", () => {
     document.body.appendChild(demo);
 
     render(<Hero />);
-    fireEvent.click(screen.getByLabelText(/Demo-Sektion scrollen/i));
+    fireEvent.click(screen.getByLabelText(/Zur Demo-Sektion scrollen/i));
 
     expect(scrollSpy).toHaveBeenCalled();
     document.body.removeChild(demo);
