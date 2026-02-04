@@ -169,7 +169,7 @@ export const helmetMiddleware = config.isProduction
             'https://regions.twilio.com',
           ],
           frameSrc: ["'self'", 'https://*.supabase.co'],
-          mediaSrc: ["'self'", 'blob:', 'https://*.twilio.com'],
+          mediaSrc: ["'self'", 'blob:', 'https://*.twilio.com', 'https://api.screenshotone.com'],
         },
       },
       crossOriginResourcePolicy: { policy: 'cross-origin' },
