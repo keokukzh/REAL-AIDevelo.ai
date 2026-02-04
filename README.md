@@ -128,6 +128,8 @@ The project uses a custom Tailwind configuration (`tailwind.config.cjs`) with:
 
 ### Deployment & Operations
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** - Deployment guide (Frontend: Cloudflare Pages, Backend: Render)
+- **[docs/MERGE_TO_MAIN_AND_DEPLOY.md](docs/MERGE_TO_MAIN_AND_DEPLOY.md)** - Complete guide for merging to main and production deployment
+- **[docs/PRE_MERGE_CHECKLIST.md](docs/PRE_MERGE_CHECKLIST.md)** - Pre-merge checklist and validation steps
 - **API Documentation**: Available at `/api-docs` when server is running
 - **Server API Docs**: See [server/API_DOCUMENTATION.md](server/API_DOCUMENTATION.md)
 - **Voice Agent Service**: See [server/src/voice-agent/README.md](server/src/voice-agent/README.md)
@@ -155,6 +157,14 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for complete deployment instructions:
 
 - **Frontend**: Cloudflare Pages (build command, dist output, SPA routing, environment variables)
 - **Backend**: Render (service configuration, environment variables, database setup)
+
+### Production Release Process
+
+For merging changes to main and deploying to production:
+
+1. **Pre-Merge**: Follow the checklist in **[docs/PRE_MERGE_CHECKLIST.md](docs/PRE_MERGE_CHECKLIST.md)**
+2. **Merge & Deploy**: See complete guide in **[docs/MERGE_TO_MAIN_AND_DEPLOY.md](docs/MERGE_TO_MAIN_AND_DEPLOY.md)**
+3. **Automated Release**: Use GitHub Actions workflow "Production Release" for controlled deployments
 
 ## 🤝 Contributing
 

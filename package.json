@@ -23,6 +23,7 @@
     "audit:prod": "BASE_URL=https://aidevelo.ai playwright test tests/e2e/site-audit.spec.ts --project=site-audit",
     "audit:all": "npm run audit:local && npm run audit:prod",
     "deploy:cf": "npm run build && wrangler pages deploy dist --project-name $CF_PAGES_PROJECT_NAME",
+    "deploy:production": "bash scripts/deploy-production.sh",
     "workflow:run": "tsx workflows/cli/cli.ts run",
     "workflow:validate": "tsx workflows/cli/cli.ts validate",
     "workflow:schedule": "tsx workflows/cli/cli.ts schedule",
