@@ -6,7 +6,6 @@ import { Button } from '../ui/Button';
 import { ScrollCue } from './ScrollCue';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
-const SCREENSHOT_ONE_API_KEY = import.meta.env.VITE_SCREENSHOT_ONE_API_KEY || 'demo';
 
 interface PreviewItem {
   id: string;
@@ -38,35 +37,11 @@ const PortfolioCard = React.memo<{
     >
       {/* Video Preview - Animated Website */}
       <div className="relative w-full h-full overflow-hidden bg-slate-900">
-        <video
-          src={`https://api.screenshotone.com/animate?access_key=${SCREENSHOT_ONE_API_KEY}&url=${encodeURIComponent(item.image)}&viewport_width=1920&viewport_height=1080&format=mp4`}
+        <img
+          src="/images/website-preview-placeholder.svg" alt={`Preview of ${item.title}`}
           className="absolute inset-0 w-full h-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-          crossOrigin="anonymous"
-          preload="metadata"
-          title={`Video preview of ${item.title}`}
-          style={{ willChange: 'transform' }}
-          onError={(e) => {
-            // Fallback to iframe if video fails
-            const video = e.target as HTMLVideoElement;
-            const container = video.parentElement;
-            if (container) {
-              container.innerHTML = `
-                <iframe
-                  src="${item.image}"
-                  class="absolute inset-0 w-full h-full"
-                  style="transform: scale(0.67); transform-origin: top left; width: 150%; height: 150%;"
-                  title="Live preview of ${item.title}"
-                  sandbox="allow-same-origin allow-scripts allow-popups"
-                  loading="lazy"
-                ></iframe>
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none"></div>
-              `;
-            }
-          }}
+
+          alt={`Preview of ${item.title}`}
         />
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />

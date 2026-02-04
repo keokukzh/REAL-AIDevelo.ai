@@ -3,7 +3,6 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { Award, Zap } from 'lucide-react';
 
-const SCREENSHOT_ONE_API_KEY = import.meta.env.VITE_SCREENSHOT_ONE_API_KEY || 'demo';
 
 interface HeroDeviceFrameProps {
   imageUrl?: string;
@@ -16,7 +15,7 @@ interface HeroDeviceFrameProps {
  * - Mouse Parallax: rotateX/rotateY abhängig von Mausposition, max ±8-10 Grad
  */
 export const HeroDeviceFrame: React.FC<HeroDeviceFrameProps> = ({
-  imageUrl = `https://api.screenshotone.com/take?access_key=${SCREENSHOT_ONE_API_KEY}&url=https://vercel.com/ship&viewport_width=1920&viewport_height=1080`,
+  imageUrl = '/images/website-preview-placeholder.svg',
   badges = ['100/100 Lighthouse', '< 1 Sekunde Ladezeit'],
 }) => {
   const prefersReducedMotion = useReducedMotion();
