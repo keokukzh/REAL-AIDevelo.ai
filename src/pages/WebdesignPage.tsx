@@ -1021,7 +1021,28 @@ export const WebdesignPage = () => {
 
         {/* 3D Showcase Section */}
         {!prefersReducedMotion && !isMobile && (
-          <ErrorBoundary fallback={null}>
+          <ErrorBoundary
+            fallback={
+              <div className="h-[600px] w-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-gray-400 mb-4">
+                    Das interaktive 3D-Modul konnte nicht geladen werden. Bitte Seite neu laden oder versuche es später.
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 rounded bg-accent text-black"
+                    >
+                      Seite neu laden
+                    </button>
+                    <a href="#contact-form" className="px-4 py-2 rounded border border-white/10 text-gray-300 hover:text-white">
+                      Support kontaktieren
+                    </a>
+                  </div>
+                </div>
+              </div>
+            }
+          >
              <Suspense fallback={<div className="h-[600px] w-full" />}>
                <Interactive3DShowcase />
              </Suspense>

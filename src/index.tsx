@@ -20,6 +20,8 @@ if (globalThis.window) {
 
   w.addEventListener('securitypolicyviolation', (e) => {
     if (!__canDebugLog) return;
+
+    // Send to local debug ingestion for structured diagnostics
     fetch('http://127.0.0.1:7242/ingest/30ee3678-5abc-4df4-b37b-e571a3b256e0', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,6 +44,17 @@ if (globalThis.window) {
         timestamp: Date.now(),
       }),
     }).catch(() => {});
+
+    // Also surface violations in the browser console during development for easier debugging
+    console.warn('[CSP] securitypolicyviolation', {
+      effectiveDirective: (e as any).effectiveDirective,
+      violatedDirective: (e as any).violatedDirective,
+      blockedURI: (e as any).blockedURI,
+      sourceFile: (e as any).sourceFile,
+      lineNumber: (e as any).lineNumber,
+      columnNumber: (e as any).columnNumber,
+      disposition: (e as any).disposition,
+    });
   });
 
   w.addEventListener(
