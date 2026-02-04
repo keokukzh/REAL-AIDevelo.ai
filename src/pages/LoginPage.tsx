@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Loader2 } from 'lucide-react';
 import { ROUTES } from '../config/navigation';
 import { ConnectionDiagnostics } from '../components/auth/ConnectionDiagnostics';
 import { DevQuickLogin } from '../components/auth/DevQuickLogin';
@@ -114,7 +114,10 @@ export const LoginPage = () => {
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
+          <div
+            className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm"
+            role="alert"
+          >
             {error}
             {error.includes('Invalid API key') && (
               <div className="mt-2 text-xs text-red-300">
@@ -185,7 +188,7 @@ export const LoginPage = () => {
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <LoadingSpinner />
+                <Loader2 className="w-5 h-5 animate-spin" />
                 {isMagicLink ? 'Sende...' : isRegistering ? 'Registriere...' : 'Anmelden...'}
               </span>
             ) : isMagicLink ? (
