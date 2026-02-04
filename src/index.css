@@ -49,7 +49,77 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+      scroll-behavior: auto !important;
     }
+  }
+
+  /* Noise texture for depth and premium feel */
+  .noise-texture {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=');
+    background-repeat: repeat;
+  }
+
+  /* Section divider with premium gradient */
+  .section-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(218, 41, 28, 0.3) 20%, rgba(218, 41, 28, 0.6) 50%, rgba(218, 41, 28, 0.3) 80%, transparent);
+    position: relative;
+  }
+
+  .section-divider::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(90deg, transparent, rgba(218, 41, 28, 0.15) 20%, rgba(218, 41, 28, 0.3) 50%, rgba(218, 41, 28, 0.15) 80%, transparent);
+    filter: blur(2px);
+  }
+
+  /* Premium button shine effect */
+  .button-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer-shine 2s infinite;
+  }
+
+  @keyframes shimmer-shine {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Card hover lift effect */
+  .card-hover-lift {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-hover-lift:hover {
+    transform: translateY(-6px);
+  }
+
+  /* Premium input focus style */
+  .premium-input:focus {
+    border-color: rgba(218, 41, 28, 0.5);
+    box-shadow: 0 0 20px rgba(218, 41, 28, 0.2);
+  }
+
+  /* Text gradient utility */
+  .text-gradient-premium {
+    background: linear-gradient(135deg, #ffffff 0%, #DA291C 50%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 

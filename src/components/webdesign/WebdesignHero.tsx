@@ -69,7 +69,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/20 blur-[100px] rounded-full" />
       </motion.div>
       {/* Content Container */}
-      <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
         {/* Left Column: Typography & CTA */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -85,13 +85,13 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
               transition={prefersReducedMotion ? {} : { delay: 0.1, duration: 0.5 }}
               className="mb-8"
             >
-              <div className="inline-flex flex-col items-start gap-2 px-6 py-4 bg-gradient-to-br from-swiss-red/20 to-red-600/20 backdrop-blur-xl border-2 border-swiss-red/40 rounded-2xl shadow-[0_0_30px_rgba(218,41,28,0.3)]">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-bold text-white">{t.heroPrice}</span>
-                  <span className="text-sm text-gray-300 font-medium">{t.heroPriceSubtitle || 'Festpreis'}</span>
+              <div className="inline-flex flex-col items-start gap-3 px-10 py-6 bg-gradient-to-br from-swiss-red/30 to-red-600/30 backdrop-blur-xl border-3 border-swiss-red/60 rounded-3xl shadow-[0_0_60px_rgba(218,41,28,0.5),0_8px_32px_rgba(0,0,0,0.4)]">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-6xl sm:text-7xl lg:text-8xl font-black text-white">{t.heroPrice}</span>
+                  <span className="text-base text-gray-200 font-semibold">{t.heroPriceSubtitle || 'Festpreis'}</span>
                 </div>
                 {t.heroComparisonHint && (
-                  <p className="text-xs text-gray-400 mt-1">{t.heroComparisonHint}</p>
+                  <p className="text-sm text-gray-300 mt-1">{t.heroComparisonHint}</p>
                 )}
               </div>
             </motion.div>
@@ -112,7 +112,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={prefersReducedMotion ? {} : { delay: 0.2, duration: 0.4 }}
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/20 text-xs font-mono text-white/90 shadow-lg ultra-glass"
+                  className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/20 text-sm font-mono text-white/90 shadow-lg ultra-glass"
                 >
                   <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                   {t.heroBadgeSystems ?? 'SYSTEMS ONLINE & READY'}
@@ -124,7 +124,7 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 0.4 }}
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-swiss-red/20 backdrop-blur-xl border border-swiss-red/30 text-xs font-mono text-swiss-red shadow-lg ultra-glass"
+                  className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-swiss-red/20 backdrop-blur-xl border border-swiss-red/30 text-sm font-mono text-swiss-red shadow-lg ultra-glass"
                 >
                   <img
                     src="https://flagcdn.com/w20/ch.png"
@@ -143,9 +143,9 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 animate={{ opacity: 1 }}
                 transition={prefersReducedMotion ? {} : { delay: 0.4 }}
                 whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -2 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+                className="flex items-center gap-2 px-5 py-3 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-sm font-medium text-gray-300 hover:text-white transition-colors min-h-[44px]"
               >
-                <Shield size={14} className="text-emerald-400" />
+                <Shield size={16} className="text-emerald-400" />
                 {t.heroBadgePerformance ?? 'Performance optimized'}
               </motion.div>
               <motion.div
@@ -153,9 +153,9 @@ export const WebdesignHero: React.FC<WebdesignHeroProps> = ({ t }) => {
                 animate={{ opacity: 1 }}
                 transition={prefersReducedMotion ? {} : { delay: 0.5 }}
                 whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -2 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+                className="flex items-center gap-2 px-5 py-3 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 text-sm font-medium text-gray-300 hover:text-white transition-colors min-h-[44px]"
               >
-                <Award size={14} className="text-blue-400" />
+                <Award size={16} className="text-blue-400" />
                 {t.heroBadgePricing ?? 'Transparent fixed-price model'}
               </motion.div>
             </div>

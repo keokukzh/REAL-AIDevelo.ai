@@ -12,8 +12,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
+        sans: ['Cabinet Grotesk', 'system-ui', 'sans-serif'],
+        display: ['Clash Display', 'Cabinet Grotesk', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       spacing: {
         'safe-top': 'env(safe-area-inset-top)',

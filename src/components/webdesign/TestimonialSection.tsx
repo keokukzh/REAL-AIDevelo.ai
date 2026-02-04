@@ -78,10 +78,10 @@ export const TestimonialSection: React.FC<TestimonialSectionProps> = ({ lang = '
                 whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={prefersReducedMotion ? {} : { y: -4 }}
-                className="relative p-6 sm:p-8 rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-red-500/30 transition-all duration-500 group cursor-pointer"
+                whileHover={prefersReducedMotion ? {} : { y: -6, scale: 1.02 }}
+                className="relative p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-slate-900/70 to-slate-950/40 backdrop-blur-xl border border-white/10 hover:border-swiss-red/40 transition-all duration-500 group cursor-pointer shadow-premium hover:shadow-glow-red"
               >
-                <Quote className="absolute top-6 right-6 sm:right-8 text-white/5 group-hover:text-red-500/10 transition-colors" size={60} aria-hidden="true" />
+                <Quote className="absolute top-6 right-6 sm:right-8 text-white/5 group-hover:text-swiss-red/15 transition-colors" size={60} aria-hidden="true" />
                 
                 <div className="relative z-10">
                   {/* Result Badge */}

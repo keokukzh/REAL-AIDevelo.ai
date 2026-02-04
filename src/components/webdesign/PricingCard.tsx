@@ -43,7 +43,7 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
           scale: 1.01,
           transition: { duration: 0.3, ease: 'easeOut' }
         }}
-        className="bg-slate-900/50 backdrop-blur-xl border-2 border-swiss-red/20 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-2xl shadow-black/50 cursor-pointer"
+        className="bg-gradient-to-br from-slate-900/70 to-slate-950/50 backdrop-blur-xl border-2 border-swiss-red/40 rounded-3xl p-8 md:p-12 relative overflow-hidden group shadow-premium-lg shadow-swiss-red/20 cursor-pointer hover:border-swiss-red/60 transition-all duration-300"
         aria-labelledby="pricing-heading"
         role="region"
         style={{ transform: 'translateZ(0)' }}
@@ -52,14 +52,14 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
       {!prefersReducedMotion && (
         <>
           <motion.div
-            className="absolute top-0 right-0 w-64 h-64 bg-swiss-red/10 rounded-full blur-3xl"
-            animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
+            className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-swiss-red/30 to-red-500/10 rounded-full blur-3xl"
+            animate={isHovered ? { scale: 1.3, opacity: 0.4 } : { scale: 1, opacity: 0.25 }}
             transition={{ duration: 0.5 }}
             aria-hidden="true"
           />
           <motion.div
-            className="absolute bottom-0 left-0 w-64 h-64 bg-red-900/10 rounded-full blur-3xl"
-            animate={isHovered ? { scale: 1.2, opacity: 0.3 } : { scale: 1, opacity: 0.2 }}
+            className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-red-900/20 to-swiss-red/10 rounded-full blur-3xl"
+            animate={isHovered ? { scale: 1.3, opacity: 0.35 } : { scale: 1, opacity: 0.2 }}
             transition={{ duration: 0.5 }}
             aria-hidden="true"
           />
@@ -86,8 +86,8 @@ export const PricingCard = React.memo<PricingCardProps>(({ price, subtitle, disc
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <div className="text-7xl md:text-8xl lg:text-9xl font-bold font-display text-white mb-3 relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-white via-swiss-red to-white bg-clip-text text-transparent">
+            <div className="text-8xl md:text-9xl lg:text-[10rem] font-black font-display text-white mb-3 relative inline-block leading-none">
+              <span className="relative z-10 bg-gradient-to-br from-white via-swiss-red via-40% to-white bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(218,41,28,0.3)]">
                 {price}
               </span>
               {!prefersReducedMotion && (

@@ -12,7 +12,7 @@ const PROCESS_DICTIONARY = {
     workflow: 'Workflow',
     title: 'In 5 Schritten zur',
     titleHighlight: 'neuen Website',
-    sub: 'Ein strukturierter Prozess für messbare Geschäftsergebnisse. Von der Strategie bis zum Launch – transparent, effizient und auf Ihr Wachstum ausgerichtet.',
+    sub: 'Ein strukturierter Prozess für messbare Geschäftsergebnisse. Von der Strategie bis zum Launch – transparent, effizient und auf Ihr Wachstum ausgerichtet. Durchschnittliche Dauer: 2-3 Wochen, keine versteckten Kosten.',
     steps: [
       {
         number: '01',

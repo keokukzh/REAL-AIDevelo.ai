@@ -722,8 +722,9 @@ export const WebdesignPage = () => {
         {/* Fallback to original background if React Bits not available */}
         <WebdesignAnimatedBackground variant="hero" intensity="medium" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/2 via-slate-950/15 to-slate-950 z-[2]" />
-        {/* Noise overlay for texture */}
-        <Noise intensity={0.03} speed={2} className="z-[3]" />
+        {/* Noise overlay for texture and premium depth */}
+        <Noise intensity={0.05} speed={2} className="z-[3]" />
+        <div className="absolute inset-0 noise-texture z-[4] pointer-events-none" />
       </div>
 
       <Navbar />
@@ -908,18 +909,18 @@ export const WebdesignPage = () => {
               <AnimatedContent direction="up" delay={0.1} className="md:col-span-4 lg:col-span-3">
                 <ShapeBlur intensity={0.2}>
                   <GlareHover intensity={0.2}>
-                    <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Globe size={120} className="text-white" />
+                    <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-slate-900/50 to-slate-950/40 backdrop-blur-xl border border-white/10 hover:border-swiss-red/40 transition-all group relative overflow-hidden shadow-premium hover:shadow-glow-red">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-30 transition-opacity duration-300">
+                    <Globe size={120} className="text-swiss-red" />
                   </div>
                   <div className="relative z-10 h-full flex flex-col">
-                    <div className="p-4 w-fit rounded-2xl bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors mb-8">
+                    <div className="p-4 w-fit rounded-2xl bg-gradient-to-br from-swiss-red/20 to-red-600/10 border border-swiss-red/30 group-hover:from-swiss-red/40 group-hover:border-swiss-red/50 transition-all duration-300 mb-8">
                       <Globe className="w-8 h-8 text-swiss-red" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
+                    <h3 className="text-3xl lg:text-4xl font-black font-display text-white mb-5 tracking-tight leading-tight">
                       {features[0].title}
                     </h3>
-                    <p className="text-gray-400 text-lg leading-relaxed font-light mb-8">
+                    <p className="text-gray-300 text-lg lg:text-xl leading-relaxed font-light mb-8">
                       {features[0].description}
                     </p>
                     <div className="mt-auto flex items-center gap-2 text-swiss-red font-mono text-xs uppercase tracking-widest group-hover:gap-3 transition-all duration-300">
@@ -935,15 +936,15 @@ export const WebdesignPage = () => {
               {/* Performance - Tall Item */}
               <AnimatedContent direction="up" delay={0.2} className="md:col-span-2 lg:col-span-3">
                 <GlareHover intensity={0.2}>
-                  <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-slate-900/60 to-slate-950/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden">
+                  <div className="h-full p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-emerald-950/30 to-slate-950/40 backdrop-blur-xl border border-emerald-500/20 hover:border-emerald-400/40 transition-all group relative overflow-hidden shadow-premium hover:shadow-glow-cyan">
                   <div className="relative z-10">
-                    <div className="p-4 w-fit rounded-2xl bg-white/5 border border-white/10 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-colors mb-8">
+                    <div className="p-4 w-fit rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 border border-emerald-400/30 group-hover:from-emerald-500/40 group-hover:border-emerald-400/50 transition-all duration-300 mb-8">
                       <Zap className="w-8 h-8 text-emerald-400" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
+                    <h3 className="text-3xl lg:text-4xl font-black font-display text-white mb-5 tracking-tight leading-tight">
                       {features[1].title}
                     </h3>
-                    <p className="text-gray-400 text-lg leading-relaxed font-light">
+                    <p className="text-gray-300 text-lg lg:text-xl leading-relaxed font-light">
                       {features[1].description}
                     </p>
 
@@ -970,12 +971,12 @@ export const WebdesignPage = () => {
               {/* SEO - Small Item */}
               <AnimatedContent direction="up" delay={0.3} className="md:col-span-2 lg:col-span-2">
                 <GlareHover intensity={0.15}>
-                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
-                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-colors mb-6">
+                  <div className="h-full p-8 rounded-[2rem] bg-gradient-to-br from-purple-950/30 to-slate-950/40 backdrop-blur-xl border border-purple-500/20 hover:border-purple-400/40 transition-all group relative overflow-hidden shadow-premium">
+                  <div className="p-3 w-fit rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-600/10 border border-purple-400/30 group-hover:from-purple-500/40 group-hover:border-purple-400/50 transition-all mb-6">
                     <Search className="w-6 h-6 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{features[2].title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                  <h3 className="text-xl lg:text-2xl font-bold font-display text-white mb-3 tracking-tight">{features[2].title}</h3>
+                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed font-light">
                     {features[2].description}
                   </p>
                   </div>
@@ -985,12 +986,12 @@ export const WebdesignPage = () => {
               {/* Modern Design - Small Item */}
               <AnimatedContent direction="up" delay={0.4} className="md:col-span-2 lg:col-span-2">
                 <GlareHover intensity={0.15}>
-                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
-                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-blue-500/10 group-hover:border-blue-500/20 transition-colors mb-6">
+                  <div className="h-full p-8 rounded-[2rem] bg-gradient-to-br from-blue-950/30 to-slate-950/40 backdrop-blur-xl border border-blue-500/20 hover:border-blue-400/40 transition-all group relative overflow-hidden shadow-premium">
+                  <div className="p-3 w-fit rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-600/10 border border-blue-400/30 group-hover:from-blue-500/40 group-hover:border-blue-400/50 transition-all mb-6">
                     <Palette className="w-6 h-6 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{features[3].title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                  <h3 className="text-xl lg:text-2xl font-bold font-display text-white mb-3 tracking-tight">{features[3].title}</h3>
+                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed font-light">
                     {features[3].description}
                   </p>
                   </div>
@@ -1000,12 +1001,12 @@ export const WebdesignPage = () => {
               {/* Security - Small Item */}
               <AnimatedContent direction="up" delay={0.5} className="md:col-span-4 lg:col-span-2">
                 <GlareHover intensity={0.15}>
-                  <div className="h-full p-8 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:border-white/20 transition-all group">
-                  <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 group-hover:bg-swiss-red/10 group-hover:border-swiss-red/20 transition-colors mb-6">
-                    <Shield className="w-6 h-6 text-swiss-red" />
+                  <div className="h-full p-8 rounded-[2rem] bg-gradient-to-br from-red-950/25 to-slate-950/40 backdrop-blur-xl border border-red-500/20 hover:border-red-400/40 transition-all group relative overflow-hidden shadow-premium">
+                  <div className="p-3 w-fit rounded-xl bg-gradient-to-br from-red-500/20 to-orange-600/10 border border-red-400/30 group-hover:from-red-500/40 group-hover:border-red-400/50 transition-all mb-6">
+                    <Shield className="w-6 h-6 text-red-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{features[6].title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed font-light">
+                  <h3 className="text-xl lg:text-2xl font-bold font-display text-white mb-3 tracking-tight">{features[6].title}</h3>
+                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed font-light">
                     {features[6].description}
                   </p>
                   </div>
