@@ -127,6 +127,7 @@ The project uses a custom Tailwind configuration (`tailwind.config.cjs`) with:
 - **[docs/troubleshooting.md](docs/troubleshooting.md)** - Common issues and solutions
 
 ### Deployment & Operations
+- **[docs/DEPLOY_QUICK_REFERENCE.md](docs/DEPLOY_QUICK_REFERENCE.md)** - ⚡ Quick reference for production deployment
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** - Deployment guide (Frontend: Cloudflare Pages, Backend: Render)
 - **[docs/MERGE_TO_MAIN_AND_DEPLOY.md](docs/MERGE_TO_MAIN_AND_DEPLOY.md)** - Complete guide for merging to main and production deployment
 - **[docs/PRE_MERGE_CHECKLIST.md](docs/PRE_MERGE_CHECKLIST.md)** - Pre-merge checklist and validation steps
