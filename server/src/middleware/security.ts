@@ -138,6 +138,7 @@ export const helmetMiddleware = config.isProduction
             'https://*.microsoft.com', // Azure Speech
             'wss://*.microsoft.com', // Azure Speech WS
             'https://raw.githack.com', // Drei HDR assets
+            'https://raw.githubusercontent.com', // Drei HDR redirect target
             'wss://freeswitch.aidevelo.ai', // FreeSWITCH WebSocket via Cloudflare Tunnel (production, standard HTTPS port)
             'wss://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket
             'ws://*.aidevelo.ai', // Allow all aidevelo.ai subdomains for WebSocket (non-SSL)
